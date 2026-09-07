@@ -1,0 +1,123 @@
+{
+    "name": "athar/ai101-platform",
+    "type": "project",
+    "description": "Athar Training Centre - AI 101 programme platform (Laravel 11, MySQL 8, Hostinger shared hosting).",
+    "keywords": ["athar", "training", "laravel", "rtl", "arabic"],
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "ext-fileinfo": "*",
+        "ext-gd": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-zip": "*",
+        "barryvdh/laravel-dompdf": "^3.0",
+        "endroid/qr-code": "^5.0",
+        "laravel/framework": "^12.61.1",
+        "laravel/tinker": "^2.10",
+        "maatwebsite/excel": "^3.1.55"
+    },
+    "require-dev": {
+        "ext-pdo_sqlite": "*",
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.1",
+        "pestphp/pest": "^3.5",
+        "pestphp/pest-plugin-laravel": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ],
+        "lint": "vendor/bin/pint",
+        "test": "vendor/bin/pest",
+        "g1": "vendor/bin/pint --test",
+        "g2": "vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
+        "g3": "@php artisan gate:forbidden",
+        "g4": "@php artisan gate:clock",
+        "g5": "@php artisan gate:i18n",
+        "g6": "@php artisan gate:tokens",
+        "g7": "vendor/bin/pest",
+        "g8": "vendor/bin/pest --coverage --min=100",
+        "g9": "vendor/bin/pest --group=authz",
+        "g10": "@php artisan gate:br",
+        "g11": [
+            "@php artisan migrate:fresh --seed",
+            "@php artisan migrate:rollback"
+        ],
+        "g12": "@php artisan gate:traceability",
+        "gates": [
+            "@g1",
+            "@g2",
+            "@g3",
+            "@g4",
+            "@g5",
+            "@g6",
+            "@g7",
+            "@g8",
+            "@g9",
+            "@g10",
+            "@g11",
+            "@g12"
+        ]
+    },
+    "scripts-descriptions": {
+        "g1": "G1 formatting - Laravel Pint, zero deviation.",
+        "g2": "G2 static analysis - PHPStan/Larastan level 8, zero errors.",
+        "g3": "G3 forbidden list - Constitution Article 13.",
+        "g4": "G4 clock containment - no now()/date() outside the Clock service.",
+        "g5": "G5 string containment - no Arabic outside lang/.",
+        "g6": "G6 design token containment - no literal colours, no yellow or gold.",
+        "g7": "G7 test suite - Pest, everything green.",
+        "g8": "G8 critical logic coverage - 100% over app/Services.",
+        "g9": "G9 authorization - every protected route has a 403 test.",
+        "g10": "G10 business rules - every BR-01..36 has at least one test.",
+        "g11": "G11 migrations - fresh+seed then rollback, both directions.",
+        "g12": "G12 traceability - every requirement id has a TRACEABILITY.md row.",
+        "gates": "Runs G1..G12 in order (Constitution Article 26). Any failure blocks the merge."
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        },
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

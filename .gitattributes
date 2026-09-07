@@ -1,0 +1,37 @@
+# Normalise line endings in the repository to LF.
+#
+# This is not cosmetic. The release is built on Windows and extracted on a
+# Linux host: a shell script checked out with CRLF fails there with
+# "bad interpreter: /bin/sh^M", and `.htaccess` and cron lines break the same
+# way. Forcing LF on everything the server executes removes that whole class
+# of deployment failure.
+
+* text=auto eol=lf
+
+# Files the server executes or parses - LF, unconditionally.
+*.sh        text eol=lf
+*.php       text eol=lf
+*.blade.php text eol=lf
+.htaccess   text eol=lf
+*.env       text eol=lf
+*.json      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.neon      text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.md        text eol=lf
+
+# Binary - never touched.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.otf  binary

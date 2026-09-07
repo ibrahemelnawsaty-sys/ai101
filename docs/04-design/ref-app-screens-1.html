@@ -1,0 +1,646 @@
+
+<!-- ============================================================
+     الفصل الثاني — داخل المنصة
+     ============================================================ -->
+<div class="act" id="act-screens">
+<div class="stage">
+
+  <div class="stage__hd">
+    <span class="kicker"><svg><use href="#i-chevup"/></svg> داخل المنصة</span>
+    <h2 style="margin-block-start:var(--s3)">لوحة التحكم — كما يراها كل دور</h2>
+    <p>
+      كل شاشة أدناه مبنية على الوثيقة الحاكمة، ومعرّفات المتطلبات مذكورة تحت كل إطار.
+      لوحة التحكم فاتحة عن قصد: توزيع اللون <span class="u-num">60%</span> محايد و<span class="u-num">30%</span> بنفسجي
+      و<span class="u-num">10%</span> تركوازي كما تفرض الوثيقة، بينما الواجهة العامة داكنة لأن دليل الهوية نفسه
+      معروض على أسود.
+    </p>
+    <div style="margin-block-start:var(--s4)"><span class="demo-note"><svg><use href="#i-info"/></svg> كل البيانات المعروضة تجريبية — المحتوى الحقيقي يأتي من قاعدة البيانات ويُدار من لوحة المدير</span></div>
+  </div>
+
+  <div class="stage__layout">
+
+    <!-- الشريط الجانبي للمعرض -->
+    <nav class="rail" aria-label="شاشات المنصة">
+      <div class="rail__g">
+        <div class="rail__t">عام</div>
+        <button class="rail__b" data-scr="register"><i></i> التسجيل</button>
+        <button class="rail__b" data-scr="login"><i></i> تسجيل الدخول</button>
+        <button class="rail__b" data-scr="verify"><i></i> التحقق من البطاقة</button>
+        <button class="rail__b" data-scr="e404"><i></i> صفحة غير موجودة</button>
+      </div>
+      <div class="rail__g">
+        <div class="rail__t">المشارك</div>
+        <button class="rail__b" data-scr="home" aria-current="true"><i></i> الرئيسية</button>
+        <button class="rail__b" data-scr="card"><i></i> البطاقة الرقمية</button>
+        <button class="rail__b" data-scr="journey"><i></i> رحلتي</button>
+        <button class="rail__b" data-scr="schedule"><i></i> جدول البرنامج</button>
+        <button class="rail__b" data-scr="attend"><i></i> الحضور والغياب</button>
+        <button class="rail__b" data-scr="tasks"><i></i> المهام الأدائية</button>
+        <button class="rail__b" data-scr="grades"><i></i> التقييم والدرجات</button>
+        <button class="rail__b" data-scr="messages"><i></i> التواصل الداخلي</button>
+        <button class="rail__b" data-scr="cert"><i></i> الشهادة</button>
+      </div>
+      <div class="rail__g">
+        <div class="rail__t">المدرب</div>
+        <button class="rail__b" data-scr="tsubs"><i></i> لوحة التسليمات</button>
+      </div>
+      <div class="rail__g">
+        <div class="rail__t">مدير النظام</div>
+        <button class="rail__b" data-scr="ausers"><i></i> إدارة المستخدمين</button>
+        <button class="rail__b" data-scr="apreview"><i></i> وضع معاينة الحساب</button>
+      </div>
+    </nav>
+
+    <!-- المسرح -->
+    <div>
+
+    <!-- ========== الرئيسية ========== -->
+    <section class="scr is-live" id="scr-home">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard</div></div>
+        <div class="frame__body">
+          <div class="app">
+            <main class="main">
+              <div class="top">
+                <div class="top__t">لوحة التحكم<span>البرنامج التأسيسي في الذكاء الاصطناعي · الدفعة الأولى</span></div>
+                <div class="top__r">
+                  <button class="icb" aria-label="بحث سريع"><svg><use href="#i-search"/></svg></button>
+                  <button class="icb" aria-label="الإشعارات — 3 غير مقروءة"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button>
+                  <div class="av">م ق</div>
+                </div>
+              </div>
+              <div class="body">
+                <div class="dgrid">
+
+                  <div class="hello">
+                    <div class="hello__in">
+                      <div style="flex:1;min-inline-size:230px">
+                        <h3>مساء الخير يا محمد</h3>
+                        <p>أنت في منتصف الأسبوع الثالث. تبقّت لك مهمة واحدة هذا الأسبوع، وموعدها بعد يومين.</p>
+                      </div>
+                      <div style="text-align:center">
+                        <div style="font-size:36px;font-weight:700;line-height:1"><span class="u-num">60%</span></div>
+                        <div style="font-size:12px;color:#C9BFDE">من الرحلة</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="dc dc--2">
+                    <div class="dc__hd"><svg><use href="#i-video"/></svg><h4>الجلسة القادمة</h4><span class="pill pill--pr" style="margin-inline-start:auto">اليوم</span></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+                      <div style="flex:1;min-inline-size:210px">
+                        <b style="font-size:17px;color:var(--n-900);display:block">النماذج اللغوية: كيف تعمل فعلًا</b>
+                        <div style="font-size:13px;color:var(--n-600);margin-block-start:6px">الأحد <span class="u-num">18</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">7:00</span> — <span class="u-num">9:30</span> مساءً</div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-block-start:10px"><span class="av av--sm">س ق</span><span style="font-size:13px;color:var(--n-600)">سعد القحطاني</span></div>
+                      </div>
+                      <div style="text-align:center;padding:12px 18px;border-radius:var(--r-md);background:var(--violet-050);border:1px solid var(--violet-100)">
+                        <div style="font-size:11px;color:var(--n-600)">تبدأ بعد</div>
+                        <div style="font-size:22px;font-weight:700;color:var(--violet-700)" class="u-num" id="nextSess">01:12:40</div>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-block-start:16px;flex-wrap:wrap">
+                      <button class="btn btn--pri btn--sm" disabled>دخول المحاضرة</button>
+                      <button class="btn btn--sec btn--sm" style="border-color:var(--n-200);color:var(--n-600)">أضف إلى تقويمي</button>
+                      <span class="hint" style="margin-block-start:0;align-self:center"><svg><use href="#i-lock"/></svg> الرابط يظهر قبل البداية بـ <span class="u-num">15</span> دقيقة</span>
+                    </div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-user"/></svg><h4>نسبة الحضور</h4></div>
+                    <div class="stat"><div><div class="stat__n" data-count="83">83<small>%</small></div><div class="stat__l"><span class="u-num">5</span> جلسات من <span class="u-num">6</span> حتى الآن</div></div></div>
+                    <div class="pbar pbar--ok"><div class="pbar__f" data-fill="83"></div></div>
+                    <div class="pmeta"><span>الحد الأدنى للشهادة <span class="u-num">75%</span></span><span class="pill pill--go"><svg><use href="#i-check"/></svg> فوق الحد</span></div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-route"/></svg><h4>تقدّم الرحلة</h4><a href="#">رحلتي</a></div>
+                    <div class="stat"><div><div class="stat__n"><span class="u-num">6</span><small> / 10</small></div><div class="stat__l">خطوات مكتملة</div></div></div>
+                    <div class="pbar"><div class="pbar__f" data-fill="60"></div></div>
+                    <div class="pmeta"><span>الخطوة الحالية: الأسبوع الثالث</span><span class="u-num">60%</span></div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-chart"/></svg><h4>الدرجة الكلية</h4><a href="#">التقييم</a></div>
+                    <div class="stat"><div><div class="stat__n" data-count="34">34<small> / 100</small></div><div class="stat__l">مُرصد حتى الآن من <span class="u-num">50</span> متاحة</div></div></div>
+                    <div class="pbar"><div class="pbar__f" data-fill="34"></div></div>
+                    <div class="pmeta"><span>حد النجاح <span class="u-num">60</span></span><span>المشروع لم يُقيَّم بعد</span></div>
+                  </div>
+
+                  <div class="dc dc--2">
+                    <div class="dc__hd"><svg><use href="#i-file"/></svg><h4>المهام المستحقة</h4><a href="#">عرض الكل</a></div>
+                    <div class="row">
+                      <span class="pill pill--wa"><svg><use href="#i-warn"/></svg> يومان</span>
+                      <div class="row__m"><b>مهمة الأسبوع الثالث — تحليل مخرجات نموذج لغوي</b><span>الخميس <span class="u-num">22</span> أكتوبر · <span class="u-num">11:59</span> مساءً · إجبارية · <span class="u-num">15</span> درجة</span></div>
+                      <div class="row__e"><button class="btn btn--pri btn--sm">سلّم الآن</button></div>
+                    </div>
+                    <div class="row">
+                      <span class="pill pill--nu"><span class="u-num">9</span> أيام</span>
+                      <div class="row__m"><b>مهمة الأسبوع الرابع — دراسة حالة أخلاقيات</b><span>الخميس <span class="u-num">29</span> أكتوبر · <span class="u-num">11:59</span> مساءً · اختيارية · <span class="u-num">10</span> درجات</span></div>
+                      <div class="row__e"><button class="btn btn--sec btn--sm" style="border-color:var(--n-200);color:var(--n-600)">التفاصيل</button></div>
+                    </div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-badge"/></svg><h4>آخر الدرجات</h4><a href="#">الكل</a></div>
+                    <div class="row"><div class="row__m"><b>مهمة الأسبوع الثاني</b><span>رُصدت الخميس <span class="u-num">15</span> أكتوبر</span></div><div class="row__e"><b style="color:var(--violet-700);font-size:16px"><span class="u-num">13</span><small style="color:var(--n-400);font-size:12px"> / 15</small></b></div></div>
+                    <div class="row"><div class="row__m"><b>مهمة الأسبوع الأول</b><span>رُصدت الخميس <span class="u-num">8</span> أكتوبر</span></div><div class="row__e"><b style="color:var(--violet-700);font-size:16px"><span class="u-num">11</span><small style="color:var(--n-400);font-size:12px"> / 12</small></b></div></div>
+                    <div class="row"><div class="row__m"><b>تقييم المشاركة</b><span>رُصدت الثلاثاء <span class="u-num">13</span> أكتوبر</span></div><div class="row__e"><b style="color:var(--violet-700);font-size:16px"><span class="u-num">10</span><small style="color:var(--n-400);font-size:12px"> / 10</small></b></div></div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-bell"/></svg><h4>آخر الإعلانات</h4></div>
+                    <div class="row"><div class="row__m"><b>تسجيل جلسة الثلاثاء متاح الآن</b><span>قناة الإعلانات · قبل <span class="u-num">3</span> ساعات</span></div></div>
+                    <div class="row"><div class="row__m"><b>تنبيه: موعد تسليم مهمة الأسبوع الثالث</b><span>قناة الإعلانات · أمس</span></div></div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-folder"/></svg><h4>موارد جديدة</h4><a href="#">الحقيبة</a></div>
+                    <div class="empty" style="padding:22px 10px">
+                      <div class="empty__ic"><svg><use href="#i-folder"/></svg></div>
+                      <b>لم يُضف أي مورد بعد</b>
+                      <p>ستظهر موارد البرنامج هنا فور رفعها.</p>
+                    </div>
+                  </div>
+
+                  <div class="dc">
+                    <div class="dc__hd"><svg><use href="#i-clock"/></svg><h4>حالة التحميل — Skeleton</h4></div>
+                    <div style="display:grid;gap:9px">
+                      <div class="sk" style="block-size:34px;inline-size:60%"></div>
+                      <div class="sk" style="block-size:12px"></div>
+                      <div class="sk" style="block-size:12px;inline-size:80%"></div>
+                      <div class="sk" style="block-size:9px;margin-block-start:6px"></div>
+                    </div>
+                    <p style="font-size:12px;color:var(--n-400);margin-block-start:12px">كل بطاقة تُحمّل مستقلة بهيكل يحاكي شكل محتواها — لا شاشة بيضاء ولا دوّامة فارغة.</p>
+                  </div>
+
+                </div>
+              </div>
+            </main>
+
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b on"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b"><svg><use href="#i-card"/></svg> البطاقة الرقمية</button>
+                <button class="side__b"><svg><use href="#i-route"/></svg> رحلتي</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-cal"/></svg> جدول البرنامج</button>
+                <button class="side__b"><svg><use href="#i-user"/></svg> الحضور والغياب</button>
+                <button class="side__b"><svg><use href="#i-video"/></svg> المحاضرات المباشرة</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-file"/></svg> المهام الأدائية <span class="side__badge u-num">1</span></button>
+                <button class="side__b"><svg><use href="#i-folder"/></svg> الحقيبة التدريبية</button>
+                <button class="side__b"><svg><use href="#i-lock"/></svg> المشروع الختامي</button>
+                <button class="side__b"><svg><use href="#i-badge"/></svg> التقييم والدرجات</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chat"/></svg> التواصل <span class="side__badge u-num">4</span></button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>لوحة التحكم — الرئيسية</b> · تسع بطاقات مستقلة، لكل واحدة حالة تحميل وحالة فارغة</span>
+        <span class="frame__ids"><span class="idtag">PRD-9.5.3</span><span class="idtag">BR-36</span></span>
+      </div>
+    </section>
+
+    <!-- ========== البطاقة الرقمية ========== -->
+    <section class="scr" id="scr-card">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard/card</div></div>
+        <div class="frame__body">
+          <div class="app">
+            <main class="main">
+              <div class="top"><div class="top__t">البطاقة الرقمية<span>هويتك في البرنامج</span></div><div class="top__r"><button class="icb"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button><div class="av">م ق</div></div></div>
+              <div class="body">
+                <div class="idwrap">
+                  <div>
+                    <div class="idscene" id="idScene">
+                      <div class="idcard" id="idCard">
+                        <div class="idcard__grid" aria-hidden="true"></div>
+                        <div class="idcard__sheen" aria-hidden="true"></div>
+                        <div class="idcard__in">
+                          <div class="idcard__top">
+                            <svg viewBox="0 0 242.186 102.814" fill="#FFFFFF" role="img" aria-label="مركز أثر"><use href="#athar-wordmark"/></svg>
+                            <div class="idcard__prog">البرنامج التأسيسي في الذكاء الاصطناعي<br>الدفعة الأولى</div>
+                          </div>
+                          <div class="idcard__mid">
+                            <div class="av av--lg" style="background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3)">م ق</div>
+                            <div class="idcard__name">
+                              <b>محمد عبدالله سعد القحطاني</b>
+                              <span>Mohammed Abdullah Saad Alqahtani</span>
+                            </div>
+                          </div>
+                          <div class="idcard__bot">
+                            <div class="idcard__meta">
+                              الصفة · <b>مشارك</b><br>
+                              رقم البطاقة · <b class="u-num">AI101-0042</b><br>
+                              تاريخ الإصدار · <b class="u-num">27</b> سبتمبر <b class="u-num">2026</b>
+                            </div>
+                            <div class="qr" id="qrBox" aria-label="رمز التحقق"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="idacts">
+                      <button class="btn btn--pri btn--sm"><svg style="width:15px;height:15px"><use href="#i-down"/></svg> تحميل PNG</button>
+                      <button class="btn btn--sec btn--sm" style="border-color:var(--n-200);color:var(--n-600)">تحميل PDF</button>
+                      <button class="btn btn--sec btn--sm" style="border-color:var(--n-200);color:var(--n-600)">مشاركة</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="dc" style="margin-block-end:14px">
+                      <div class="dc__hd"><svg><use href="#i-shield"/></svg><h4>حالة البطاقة</h4></div>
+                      <div class="row"><div class="row__m"><b>سارية</b><span>تنتهي بانتهاء الدفعة — <span class="u-num">12</span> نوفمبر <span class="u-num">2026</span></span></div><div class="row__e"><span class="pill pill--go"><svg><use href="#i-check"/></svg> سارية</span></div></div>
+                      <div class="row"><div class="row__m"><b>رابط التحقق</b><span style="direction:ltr;display:inline-block">/verify/8f3a…d21c</span></div><div class="row__e"><button class="btn btn--sm btn--sec" style="border-color:var(--n-200);color:var(--n-600)">نسخ</button></div></div>
+                      <div class="row"><div class="row__m"><b>مرات المسح</b><span>إحصائي فقط — لا يُربط بهوية الماسح</span></div><div class="row__e"><b class="u-num" style="font-size:16px;color:var(--violet-700)">7</b></div></div>
+                    </div>
+
+                    <div class="dc">
+                      <div class="dc__hd"><svg><use href="#i-eye"/></svg><h4>ما يظهر لمن يمسح الرمز</h4></div>
+                      <p style="font-size:13.5px;color:var(--n-600);line-height:1.85">
+                        الاسم الأول واسم العائلة فقط، واسم البرنامج والدفعة، والصفة، وتاريخ الإصدار، وحالة السريان.
+                      </p>
+                      <div class="note" style="border-inline-start-color:var(--bad);background:#FBE9E9">
+                        <b style="color:#B23434">لا يظهر إطلاقًا</b>
+                        البريد الإلكتروني · رقم الجوال · الدرجات · نسبة الحضور · أي معرّف داخلي.
+                      </div>
+                    </div>
+
+                    <div class="dc" style="margin-block-start:14px">
+                      <div class="dc__hd"><svg><use href="#i-spark"/></svg><h4>الميلان ثلاثي الأبعاد</h4></div>
+                      <p style="font-size:13.5px;color:var(--n-600);line-height:1.85">
+                        حرّك المؤشر فوق البطاقة على سطح المكتب — الميل لا يتجاوز <span class="u-num">8</span> درجات،
+                        ويُعطَّل تمامًا على الجوال ولمن فعّل تقليل الحركة في نظامه.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b on"><svg><use href="#i-card"/></svg> البطاقة الرقمية</button>
+                <button class="side__b"><svg><use href="#i-route"/></svg> رحلتي</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-cal"/></svg> جدول البرنامج</button>
+                <button class="side__b"><svg><use href="#i-user"/></svg> الحضور والغياب</button>
+                <button class="side__b"><svg><use href="#i-video"/></svg> المحاضرات المباشرة</button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>البطاقة الرقمية</b> · ميلان ≤ <span class="u-num">8</span>° يتبع المؤشر · رمز QR مولَّد على الخادم</span>
+        <span class="frame__ids"><span class="idtag">PRD-9.6</span><span class="idtag">BR-25</span></span>
+      </div>
+    </section>
+
+    <!-- ========== رحلتي ========== -->
+    <section class="scr" id="scr-journey">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard/journey</div></div>
+        <div class="frame__body">
+          <div class="app">
+            <main class="main">
+              <div class="top"><div class="top__t">رحلتي<span>عشر خطوات تكتمل آليًا</span></div><div class="top__r"><button class="icb"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button><div class="av">م ق</div></div></div>
+              <div class="body">
+                <div class="dc" style="margin-block-end:18px">
+                  <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+                    <div style="flex:1;min-inline-size:200px">
+                      <b style="font-size:16px;color:var(--n-900);display:block">أكملت <span class="u-num">6</span> من <span class="u-num">10</span> خطوات</b>
+                      <span style="font-size:13px;color:var(--n-600)">لا يوجد تعليم يدوي — كل خطوة تكتمل من البيانات الفعلية</span>
+                    </div>
+                    <div style="font-size:30px;font-weight:700;color:var(--violet-700)"><span class="u-num">60%</span></div>
+                  </div>
+                  <div class="pbar"><div class="pbar__f" data-fill="60"></div></div>
+                </div>
+
+                <div class="jn" id="jnBox">
+                  <div class="jn__f" data-fill="58" id="jnFill"></div>
+
+                  <div class="jn__i done"><div class="jn__d"><svg><use href="#i-check"/></svg></div>
+                    <div class="jn__b"><b>1 · التسجيل في البرنامج</b><span>اكتملت تلقائيًا عند تفعيل الحساب — الأحد <span class="u-num">20</span> سبتمبر <span class="u-num">2026</span></span></div></div>
+
+                  <div class="jn__i done"><div class="jn__d"><svg><use href="#i-check"/></svg></div>
+                    <div class="jn__b"><b>2 · حضور اللقاء التعريفي</b><span>سُجّل حضورك الأحد <span class="u-num">27</span> سبتمبر الساعة <span class="u-num">6:52</span> مساءً</span></div></div>
+
+                  <div class="jn__i done"><div class="jn__d"><svg><use href="#i-check"/></svg></div>
+                    <div class="jn__b"><b>3 · الأسبوع الأول + المهمة الأدائية</b><span><span class="u-num">3</span> جلسات حضور كامل · المهمة مُسلَّمة ومُقيَّمة <span class="u-num">11</span>/<span class="u-num">12</span></span></div></div>
+
+                  <div class="jn__i done"><div class="jn__d"><svg><use href="#i-check"/></svg></div>
+                    <div class="jn__b"><b>4 · الأسبوع الثاني + المهمة الأدائية</b><span><span class="u-num">3</span> جلسات · <span class="u-num">1</span> منها متأخر · المهمة مُقيَّمة <span class="u-num">13</span>/<span class="u-num">15</span></span></div></div>
+
+                  <div class="jn__i now"><div class="jn__d"><svg><use href="#i-chevup"/></svg></div>
+                    <div class="jn__b">
+                      <b>5 · الأسبوع الثالث + المهمة الأدائية</b>
+                      <span>الخطوة الحالية · <span class="u-num">18</span>–<span class="u-num">22</span> أكتوبر <span class="u-num">2026</span></span>
+                      <div class="jn__x">
+                        <div class="jn__day"><span class="pill pill--go"><svg><use href="#i-check"/></svg> حاضر</span><b>الأحد <span class="u-num">18</span> أكتوبر</b> — النماذج اللغوية: كيف تعمل فعلًا</div>
+                        <div class="jn__day"><span class="pill pill--nu">قادمة</span><b>الثلاثاء <span class="u-num">20</span> أكتوبر</b> — صياغة التوجيه وحدود الثقة</div>
+                        <div class="jn__day"><span class="pill pill--nu">قادمة</span><b>الخميس <span class="u-num">22</span> أكتوبر</b> — بناء نموذج أولي</div>
+                        <div class="jn__day"><span class="pill pill--wa"><svg><use href="#i-warn"/></svg> لم تُسلَّم</span><b>المهمة الأدائية</b> — تنتهي الخميس <span class="u-num">11:59</span> مساءً</div>
+                        <div style="margin-block-start:6px"><button class="btn btn--pri btn--sm">اذهب إلى المهام</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="jn__i lock"><div class="jn__d"><svg><use href="#i-lock"/></svg></div>
+                    <div class="jn__b"><b>6 · الأسبوع الرابع + المهمة الأدائية</b><span><span class="u-num">25</span>–<span class="u-num">29</span> أكتوبر <span class="u-num">2026</span></span></div></div>
+
+                  <div class="jn__i lock"><div class="jn__d"><svg><use href="#i-lock"/></svg></div>
+                    <div class="jn__b"><b>7 · تسليم المشروع النهائي</b><span>يُفتح التبويب بتفعيل من المدرب</span></div></div>
+
+                  <div class="jn__i lock"><div class="jn__d"><svg><use href="#i-lock"/></svg></div>
+                    <div class="jn__b"><b>8 · تقييم المشروع الختامي</b><span><span class="u-num">50</span> درجة من <span class="u-num">100</span></span></div></div>
+
+                  <div class="jn__i lock"><div class="jn__d"><svg><use href="#i-lock"/></svg></div>
+                    <div class="jn__b"><b>9 · الحفل الختامي</b><span>الأحد <span class="u-num">8</span> نوفمبر <span class="u-num">2026</span></span></div></div>
+
+                  <div class="jn__i lock"><div class="jn__d"><svg><use href="#i-lock"/></svg></div>
+                    <div class="jn__b"><b>10 · شهادة إتمام البرنامج</b><span>تُصدر بعد استيفاء الحضور <span class="u-num">75%</span> والدرجة <span class="u-num">60</span> معًا</span></div></div>
+                </div>
+              </div>
+            </main>
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b"><svg><use href="#i-card"/></svg> البطاقة الرقمية</button>
+                <button class="side__b on"><svg><use href="#i-route"/></svg> رحلتي</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-cal"/></svg> جدول البرنامج</button>
+                <button class="side__b"><svg><use href="#i-user"/></svg> الحضور والغياب</button>
+                <button class="side__b"><svg><use href="#i-file"/></svg> المهام الأدائية <span class="side__badge u-num">1</span></button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>رحلتي</b> · مكتملة تركوازية · الحالية بنفسجية بحلقة نابضة · القادمة رمادية بقفل</span>
+        <span class="frame__ids"><span class="idtag">PRD-9.7</span><span class="idtag">BR-20</span><span class="idtag">BR-21</span></span>
+      </div>
+    </section>
+
+    <!-- ========== الحضور ========== -->
+    <section class="scr" id="scr-attend">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard/attendance</div></div>
+        <div class="frame__body">
+          <div class="app">
+            <main class="main">
+              <div class="top"><div class="top__t">الحضور والغياب<span>وقت الخادم بتوقيت الرياض هو المرجع الوحيد</span></div><div class="top__r"><button class="icb"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button><div class="av">م ق</div></div></div>
+              <div class="body">
+                <div class="dgrid" style="grid-template-columns:1fr">
+                  <div class="att" style="grid-column:1/-1">
+                    <div class="att__ses">
+                      جلسة اليوم
+                      <b>النماذج اللغوية: كيف تعمل فعلًا</b>
+                      الأحد <span class="u-num">18</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">7:00</span> — <span class="u-num">9:30</span> مساءً
+                    </div>
+                    <button class="checkin" id="ckBtn" data-state="wait">
+                      <span id="ckLabel">يُفتح بعد <span class="u-num" id="ckTimer">00:14:32</span></span>
+                    </button>
+                    <div class="att__msg" id="ckMsg">تُفتح نافذة التسجيل قبل بداية الجلسة بـ <span class="u-num">30</span> دقيقة وتُغلق بانتهائها</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-block-start:16px">
+                      <span class="pill pill--nu">قبل البداية أو خلال <span class="u-num">30</span> دقيقة ← حاضر</span>
+                      <span class="pill pill--nu">بعد <span class="u-num">30</span> دقيقة ← متأخر</span>
+                      <span class="pill pill--nu">بلا تسجيل حتى النهاية ← غائب آليًا</span>
+                    </div>
+                    <div style="margin-block-start:14px"><button class="btn btn--sm btn--sec" id="ckDemo" style="border-color:var(--n-200);color:var(--n-600)">شغّل المحاكاة — افتح النافذة</button></div>
+                  </div>
+
+                  <div class="dc dc--span">
+                    <div class="dc__hd"><svg><use href="#i-cal"/></svg><h4>سجلّ حضورك</h4><span class="pill pill--go" style="margin-inline-start:auto"><span class="u-num">83%</span> حضور</span></div>
+                    <div class="tscroll">
+                      <table class="atable">
+                        <thead><tr><th>الجلسة</th><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>الحالة</th></tr></thead>
+                        <tbody>
+                          <tr><td>اللقاء التعريفي</td><td class="u-num">27 سبتمبر</td><td class="u-num">6:52 م</td><td class="u-num">9:31 م</td><td><span class="pill pill--go"><svg><use href="#i-check"/></svg> حاضر</span></td></tr>
+                          <tr><td>الأساس والمصطلحات</td><td class="u-num">4 أكتوبر</td><td class="u-num">6:58 م</td><td class="u-num">9:28 م</td><td><span class="pill pill--go"><svg><use href="#i-check"/></svg> حاضر</span></td></tr>
+                          <tr><td>أنواع التعلّم</td><td class="u-num">6 أكتوبر</td><td class="u-num">7:12 م</td><td class="u-num">9:30 م</td><td><span class="pill pill--go"><svg><use href="#i-check"/></svg> حاضر</span></td></tr>
+                          <tr><td>البيانات: الوقود والقيد</td><td class="u-num">8 أكتوبر</td><td class="u-num">—</td><td class="u-num">—</td><td><span class="pill pill--no"><svg><use href="#i-warn"/></svg> غائب</span></td></tr>
+                          <tr><td>جمع البيانات وتنظيفها</td><td class="u-num">11 أكتوبر</td><td class="u-num">7:41 م</td><td class="u-num">9:29 م</td><td><span class="pill pill--wa"><svg><use href="#i-clock"/></svg> متأخر</span></td></tr>
+                          <tr><td>مقاييس التقييم</td><td class="u-num">13 أكتوبر</td><td class="u-num">6:55 م</td><td class="u-num">—</td><td><span class="pill pill--wa"><svg><use href="#i-warn"/></svg> غير مكتمل</span></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style="font-size:12px;color:var(--n-400);margin-block-start:12px">كل الأوقات بتوقيت الرياض. «غير مكتمل» تعني حضورًا بلا انصراف — يُنبَّه المدرب تلقائيًا.</p>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b"><svg><use href="#i-card"/></svg> البطاقة الرقمية</button>
+                <button class="side__b"><svg><use href="#i-route"/></svg> رحلتي</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-cal"/></svg> جدول البرنامج</button>
+                <button class="side__b on"><svg><use href="#i-user"/></svg> الحضور والغياب</button>
+                <button class="side__b"><svg><use href="#i-video"/></svg> المحاضرات المباشرة</button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>الحضور</b> · اضغط «شغّل المحاكاة» لترى الزر ينتقل من مُقفل ← نابض ← علامة صح</span>
+        <span class="frame__ids"><span class="idtag">BR-01</span><span class="idtag">BR-02</span><span class="idtag">BR-03</span><span class="idtag">BR-07</span><span class="idtag">BR-08</span><span class="idtag">BR-09</span></span>
+      </div>
+    </section>
+
+    <!-- ========== المهام ========== -->
+    <section class="scr" id="scr-tasks">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard/assignments/w3-llm-analysis</div></div>
+        <div class="frame__body" style="position:relative">
+          <div class="cf" id="cfBox" aria-hidden="true"></div>
+          <div class="app">
+            <main class="main">
+              <div class="top"><div class="top__t">مهمة الأسبوع الثالث<span>تحليل مخرجات نموذج لغوي</span></div><div class="top__r"><button class="icb"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button><div class="av">م ق</div></div></div>
+              <div class="body">
+                <div class="dgrid" style="grid-template-columns:1fr">
+                  <div class="dc dc--span" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+                    <div style="flex:1;min-inline-size:230px">
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-block-end:8px">
+                        <span class="pill pill--pr">إجبارية</span>
+                        <span class="pill pill--nu"><span class="u-num">15</span> درجة</span>
+                        <span class="pill pill--wa"><svg><use href="#i-clock"/></svg> تنتهي بعد يومين</span>
+                      </div>
+                      <b style="font-size:17px;color:var(--n-900)">حلّل ثلاثة مخرجات لنموذج لغوي واكتشف الهلوسة</b>
+                      <p style="font-size:13.5px;color:var(--n-600);margin-block-start:6px;line-height:1.8">
+                        اختر ثلاثة أسئلة من مجالك، أرسلها لنموذج لغوي، ووثّق المخرجات. ثم بيّن في كل مخرج
+                        ما يمكن التحقق منه وما لا يمكن، وكيف تتصرف مع الأخير.
+                      </p>
+                    </div>
+                    <div style="text-align:center;padding:14px 20px;border-radius:var(--r-md);background:#FBF0E3;border:1px solid #EBD8BB">
+                      <div style="font-size:11px;color:#9A5C10">الموعد النهائي</div>
+                      <div style="font-size:15px;font-weight:700;color:#9A5C10">الخميس <span class="u-num">22</span> أكتوبر</div>
+                      <div style="font-size:12px;color:#9A5C10"><span class="u-num">11:59</span> مساءً</div>
+                    </div>
+                  </div>
+
+                  <div class="dc dc--span">
+                    <div class="dc__hd"><svg><use href="#i-up"/></svg><h4>تسليمك</h4></div>
+
+                    <div class="drop" id="dropZone">
+                      <div class="drop__ic"><svg><use href="#i-up"/></svg></div>
+                      <b>اسحب ملفك هنا أو اضغط للاختيار</b>
+                      <span>PDF أو DOCX أو ZIP · حتى <span class="u-num">25</span> ميجابايت</span>
+                    </div>
+
+                    <div class="up" id="upBox" hidden>
+                      <div class="up__hd">
+                        <svg style="width:18px;height:18px;color:var(--violet-500)"><use href="#i-file"/></svg>
+                        <b>تحليل-المخرجات-محمد-القحطاني.pdf</b>
+                        <span class="u-num" id="upPct">0%</span>
+                      </div>
+                      <div class="pbar" style="margin-block:9px 5px"><div class="pbar__f" id="upBar" style="width:0"></div></div>
+                      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--n-600)">
+                        <span class="u-num" id="upSize">0.0 / 3.4 MB</span><span id="upState">جارٍ الرفع…</span>
+                      </div>
+                    </div>
+
+                    <div class="field" style="margin-block-start:18px">
+                      <label for="gh">رابط GitHub <span style="color:var(--n-400);font-weight:400">(اختياري)</span></label>
+                      <input class="inp inp--ltr" id="gh" type="url" placeholder="https://github.com/username/repo">
+                    </div>
+                    <div class="field">
+                      <label for="nt">ملاحظة للمدرب <span style="color:var(--n-400);font-weight:400">(اختياري)</span></label>
+                      <textarea class="inp" id="nt" rows="3" style="padding-block:12px;min-block-size:auto" placeholder="أي شيء تريد أن ينتبه له المدرب أثناء التقييم"></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap">
+                      <button class="btn btn--pri" id="submitBtn">سلّم المهمة</button>
+                      <button class="btn btn--sec" style="border-color:var(--n-200);color:var(--n-600)">احفظ كمسودة</button>
+                    </div>
+                    <p class="hint"><svg><use href="#i-info"/></svg> إعادة التسليم قبل الموعد تحفظ الإصدار السابق ولا تحذفه.</p>
+                  </div>
+
+                  <div class="dc dc--span">
+                    <div class="dc__hd"><svg><use href="#i-file"/></svg><h4>مهام الدفعة</h4></div>
+                    <div class="row"><span class="pill pill--go"><svg><use href="#i-check"/></svg> مُقيَّمة</span><div class="row__m"><b>الأسبوع الأول — خريطة مفاهيم</b><span>سُلّمت <span class="u-num">7</span> أكتوبر · <span class="u-num">11</span>/<span class="u-num">12</span></span></div></div>
+                    <div class="row"><span class="pill pill--go"><svg><use href="#i-check"/></svg> مُقيَّمة</span><div class="row__m"><b>الأسبوع الثاني — تنظيف مجموعة بيانات</b><span>سُلّمت <span class="u-num">14</span> أكتوبر · <span class="u-num">13</span>/<span class="u-num">15</span></span></div></div>
+                    <div class="row"><span class="pill pill--wa"><svg><use href="#i-clock"/></svg> مستحقة</span><div class="row__m"><b>الأسبوع الثالث — تحليل مخرجات نموذج لغوي</b><span>الموعد الخميس <span class="u-num">22</span> أكتوبر</span></div></div>
+                    <div class="row"><span class="pill pill--nu">قادمة</span><div class="row__m"><b>الأسبوع الرابع — دراسة حالة أخلاقيات</b><span>الموعد الخميس <span class="u-num">29</span> أكتوبر · اختيارية</span></div></div>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b"><svg><use href="#i-route"/></svg> رحلتي</button>
+                <button class="side__b"><svg><use href="#i-cal"/></svg> جدول البرنامج</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b on"><svg><use href="#i-file"/></svg> المهام الأدائية <span class="side__badge u-num">1</span></button>
+                <button class="side__b"><svg><use href="#i-folder"/></svg> الحقيبة التدريبية</button>
+                <button class="side__b"><svg><use href="#i-lock"/></svg> المشروع الختامي</button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>تسليم مهمة</b> · اضغط «سلّم المهمة» لترى شريط الرفع الحقيقي ثم احتفال ثانيتين</span>
+        <span class="frame__ids"><span class="idtag">PRD-9.11</span><span class="idtag">BR-17</span><span class="idtag">BR-18</span><span class="idtag">BR-19</span></span>
+      </div>
+    </section>
+
+    <!-- ========== الدرجات ========== -->
+    <section class="scr" id="scr-grades">
+      <div class="frame">
+        <div class="frame__bar"><div class="frame__dots"><i></i><i></i><i></i></div><div class="frame__url">ai.athar-dev.edu.sa/dashboard/grades</div></div>
+        <div class="frame__body">
+          <div class="app">
+            <main class="main">
+              <div class="top"><div class="top__t">التقييم والدرجات<span>المهام <span class="u-num">50</span> + المشروع <span class="u-num">50</span> = <span class="u-num">100</span></span></div><div class="top__r"><button class="icb"><svg><use href="#i-bell"/></svg><span class="icb__d"></span></button><div class="av">م ق</div></div></div>
+              <div class="body">
+                <div class="gtotal" style="margin-block-end:16px">
+                  <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+                    <div style="flex:1;min-inline-size:200px">
+                      <div style="font-size:13px;color:#C9BFDE">درجتك الكلية حتى الآن</div>
+                      <div class="gtotal__n"><span class="u-num" data-count="34">34</span><small> / 100</small></div>
+                    </div>
+                    <div style="text-align:end;font-size:13px;color:#C9BFDE;line-height:2">
+                      المهام الأدائية · <b style="color:#fff"><span class="u-num">34</span> / <span class="u-num">50</span></b><br>
+                      المشروع الختامي · <b style="color:#fff">لم يُقيَّم بعد</b>
+                    </div>
+                  </div>
+                  <div class="bar"><div class="bar__fill" data-fill="34"></div></div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:#C9BFDE;margin-block-start:9px">
+                    <span>حد النجاح <span class="u-num">60</span></span><span><span class="u-num">50</span> درجة ما زالت متاحة</span>
+                  </div>
+                </div>
+
+                <div class="dgrid" style="grid-template-columns:1fr">
+                  <div class="gitem">
+                    <div class="gitem__hd"><span class="pill pill--go"><svg><use href="#i-check"/></svg> مُقيَّمة</span><b>مهمة الأسبوع الأول — خريطة مفاهيم</b><span class="gitem__sc"><span class="u-num">11</span><small> / 12</small></span></div>
+                    <div class="pbar" style="margin-block:0 0"><div class="pbar__f" data-fill="92"></div></div>
+                    <div class="note"><b>ملاحظة المدرب — سعد القحطاني</b>خريطة واضحة ومترابطة، وربطك بين التعلّم المُوجَّه وغير المُوجَّه دقيق. نقص بسيط: لم تذكر التعلّم المعزّز أصلًا وهو النوع الثالث. راجع الشريحة <span class="u-num">14</span> من جلسة الثلاثاء.</div>
+                  </div>
+
+                  <div class="gitem">
+                    <div class="gitem__hd"><span class="pill pill--go"><svg><use href="#i-check"/></svg> مُقيَّمة</span><b>مهمة الأسبوع الثاني — تنظيف مجموعة بيانات</b><span class="gitem__sc"><span class="u-num">13</span><small> / 15</small></span></div>
+                    <div class="pbar" style="margin-block:0 0"><div class="pbar__f" data-fill="87"></div></div>
+                    <div class="note"><b>ملاحظة المدرب — د. نورة المطيري</b>تعاملك مع القيم الناقصة صحيح ومبرَّر، وهذا أهم جزء. لكنك قسّمت البيانات بعد التطبيع لا قبله، وهذا يسرّب معلومات من مجموعة الاختبار إلى التدريب. أعد ترتيب الخطوتين في المشروع الختامي.</div>
+                  </div>
+
+                  <div class="gitem">
+                    <div class="gitem__hd"><span class="pill pill--go"><svg><use href="#i-check"/></svg> مُقيَّمة</span><b>تقييم المشاركة — الأسبوعان الأول والثاني</b><span class="gitem__sc"><span class="u-num">10</span><small> / 10</small></span></div>
+                    <div class="pbar" style="margin-block:0 0"><div class="pbar__f" data-fill="100"></div></div>
+                    <div class="note"><b>ملاحظة المدرب — سعد القحطاني</b>حضور منتظم ومداخلات في محلها. سؤالك عن حدود التعميم في جلسة <span class="u-num">6</span> أكتوبر فتح نقاشًا استفاد منه بقية المتدربين.</div>
+                  </div>
+
+                  <div class="gitem" style="border-style:dashed;background:var(--n-100)">
+                    <div class="gitem__hd"><span class="pill pill--nu"><svg><use href="#i-clock"/></svg> بانتظار التسليم</span><b>مهمة الأسبوع الثالث — تحليل مخرجات نموذج لغوي</b><span class="gitem__sc" style="color:var(--n-400)">—<small> / 15</small></span></div>
+                  </div>
+
+                  <div class="gitem" style="border-style:dashed;background:var(--n-100)">
+                    <div class="gitem__hd"><span class="pill pill--nu"><svg><use href="#i-lock"/></svg> مقفل</span><b>المشروع الختامي</b><span class="gitem__sc" style="color:var(--n-400)">—<small> / 50</small></span></div>
+                    <p style="font-size:13px;color:var(--n-600)">يُفتح بتفعيل من المدرب في الأسبوع الرابع. القفل مفروض على الخادم، والمحتوى لا يُرسل للمتصفح قبل التفعيل.</p>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <aside class="side">
+              <div class="side__brand"><svg viewBox="0 0 242.186 102.814" fill="#7845B5"><use href="#athar-wordmark"/></svg></div>
+              <div class="side__g">
+                <button class="side__b"><svg><use href="#i-chart"/></svg> الرئيسية</button>
+                <button class="side__b"><svg><use href="#i-route"/></svg> رحلتي</button>
+                <button class="side__b"><svg><use href="#i-file"/></svg> المهام الأدائية</button>
+              </div>
+              <div class="side__g">
+                <button class="side__b on"><svg><use href="#i-badge"/></svg> التقييم والدرجات</button>
+                <button class="side__b"><svg><use href="#i-chat"/></svg> التواصل <span class="side__badge u-num">4</span></button>
+              </div>
+              <div class="side__foot"><b>الدفعة الأولى</b><span>البرنامج التأسيسي في الذكاء الاصطناعي</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="frame__cap">
+        <span><b>التقييم والدرجات</b> · ملاحظة المدرب إلزامية مع كل درجة وتُعرض كاملة لا مقتطعة</span>
+        <span class="frame__ids"><span class="idtag">BR-11</span><span class="idtag">BR-12</span><span class="idtag">BR-13</span><span class="idtag">BR-15</span><span class="idtag">BR-16</span></span>
+      </div>
+    </section>

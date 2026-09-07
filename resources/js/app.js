@@ -1,0 +1,881 @@
+/**
+ * منصة أثر — حزمة لوحة التحكم
+ *
+ * Alpine bootstrap plus the approved interaction layer.
+ * @see docs/04-design/ref-js-core.html · ref-js-interactions.html
+ * @see CONSTITUTION Articles 5, 11, 16, 16-bis, 18, 19
+ *
+ * HARD RULES OBSERVED HERE
+ * -----------------------
+ * 1. Not one Arabic string.  Every label is passed in from Blade through
+ *    `__('file.key')` (Constitution Article 15).
+ * 2. The browser clock is never trusted.  Countdowns are anchored to a server
+ *    instant rendered into the markup and the offset is applied once (BR-07).
+ *    Nothing here decides an attendance window; the server alone does that.
+ * 3. `prefers-reduced-motion` is honoured by refusing to *bind* the effect at
+ *    all, not merely by shortening it.
+ * 4. No `console.*` anywhere (Article 13 rule 1).
+ * 5. Arabic text is never split per character.  `decodeWords` splits on
+ *    whitespace only (Article 16-bis).
+ *
+ * The landing-page canvas and the two interactive demos live in landing.js so
+ * this bundle stays small (Article 19: landing JS ≤ 40 KB gzipped).
+ */
+
+import Alpine from 'alpinejs';
+
+/* Side-effect import: ui.js registers the Blade component behaviours on the
+   standard `alpine:init` event, which fires inside Alpine.start() below. */
+import './ui.js';
+
+/* ==========================================================================
+   Environment probes
+   ========================================================================== */
+
+const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+const mqFine = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+/** Reduced motion is re-read on every call so an OS-level change takes effect. */
+export const reduced = () => mqReduce.matches;
+/** True only for a precise pointer — every tilt/magnet effect is gated on it. */
+export const finePointer = () => mqFine.matches;
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const pad2 = (n) => (n < 10 ? '0' + n : String(n));
+const qsa = (sel, root = document) => Array.prototype.slice.call(root.querySelectorAll(sel));
+
+const csrfToken = () => {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+};
+
+const FOCUSABLE = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'summary',
+    '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+/* ==========================================================================
+   Server-anchored clock
+   --------------------------------------------------------------------------
+   `<html data-server-now="2026-10-12T15:00:00Z">` is rendered by every layout
+   from Clock::now().  We measure the offset between that instant and the
+   browser clock once, then every countdown ticks on the corrected value.  A
+   user who moves their system clock changes nothing.
+   ========================================================================== */
+
+let serverOffsetMs = 0;
+
+function initServerClock() {
+    const raw = document.documentElement.getAttribute('data-server-now');
+    if (!raw) return;
+    const serverMs = Date.parse(raw);
+    if (Number.isNaN(serverMs)) return;
+    serverOffsetMs = serverMs - Date.now();
+}
+
+/** Current instant in milliseconds, corrected to server time (BR-07). */
+export const serverNow = () => Date.now() + serverOffsetMs;
+
+/* ==========================================================================
+   Progress bars — they fill from the RIGHT
+   --------------------------------------------------------------------------
+   The element lives in an RTL flow, so growing `inline-size` from 0 grows it
+   from the inline-start edge, which is the right-hand edge.  No physical
+   property is ever touched.  (Constitution Article 16.)
+   ========================================================================== */
+
+/**
+ * @param {ParentNode} root
+ */
+export function animateFills(root = document) {
+    qsa('[data-fill]', root).forEach((el) => {
+        const pct = clamp(parseFloat(el.dataset.fill) || 0, 0, 100) + '%';
+        const vertical = el.hasAttribute('data-fill-vertical');
+        const apply = () => {
+            if (vertical) el.style.blockSize = pct;
+            else el.style.inlineSize = pct;
+        };
+        if (reduced()) {
+            apply();
+            return;
+        }
+        if (vertical) el.style.blockSize = '0';
+        else el.style.inlineSize = '0';
+        requestAnimationFrame(() => requestAnimationFrame(apply));
+    });
+}
+
+/** Count a number up to `data-count`, or set it instantly under reduced motion. */
+export function animateCounts(root = document) {
+    qsa('[data-count]', root).forEach((el) => {
+        const target = parseInt(el.dataset.count, 10);
+        if (Number.isNaN(target)) return;
+        if (reduced()) {
+            el.textContent = String(target);
+            return;
+        }
+        const duration = 900;
+        let start = null;
+        el.textContent = '0';
+        const step = (ts) => {
+            if (start === null) start = ts;
+            const p = Math.min((ts - start) / duration, 1);
+            el.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+            if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+}
+
+/* ==========================================================================
+   Reveal on scroll · animated marker highlight
+   ========================================================================== */
+
+let revealObserver = null;
+
+export function initReveals(root = document) {
+    const items = qsa('.rv', root).filter((el) => !el.classList.contains('is-in'));
+    const light = (el, i) => {
+        window.setTimeout(() => {
+            el.classList.add('is-in');
+            animateFills(el);
+            animateCounts(el);
+        }, reduced() ? 0 : Math.min(i, 6) * 65);
+    };
+
+    if (reduced() || !('IntersectionObserver' in window)) {
+        items.forEach((el) => light(el, 0));
+        return;
+    }
+    if (!revealObserver) {
+        revealObserver = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const el = entry.target;
+                    const sibs = Array.prototype.slice
+                        .call(el.parentNode ? el.parentNode.children : [])
+                        .filter((c) => c.classList.contains('rv'));
+                    light(el, Math.max(0, sibs.indexOf(el)));
+                    revealObserver.unobserve(el);
+                });
+            },
+            { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
+        );
+    }
+    items.forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight * 0.95) light(el, 0);
+        else revealObserver.observe(el);
+    });
+}
+
+/** The marker pen sweep behind an inline phrase, and the drawn box variant. */
+export function initHighlights(root = document) {
+    const items = qsa('.hl, .hlbox', root);
+    items.forEach((el) => {
+        const rect = el.querySelector('rect');
+        if (!rect) return;
+        requestAnimationFrame(() => {
+            let len = 600;
+            try {
+                if (typeof rect.getTotalLength === 'function') len = rect.getTotalLength() || 600;
+            } catch (e) {
+                len = 600;
+            }
+            el.style.setProperty('--len', String(Math.round(len)));
+        });
+    });
+
+    if (reduced() || !('IntersectionObserver' in window)) {
+        items.forEach((el) => el.classList.add('is-lit'));
+        return;
+    }
+    const ob = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                window.setTimeout(() => entry.target.classList.add('is-lit'), 180);
+                ob.unobserve(entry.target);
+            });
+        },
+        { threshold: 0.6 }
+    );
+    items.forEach((el) => ob.observe(el));
+}
+
+/**
+ * Word-level heading entrance.
+ * Arabic letters connect, so the split is on whitespace and never on a
+ * character.  (Constitution Article 16-bis — non-negotiable.)
+ */
+export function decodeWords(root = document) {
+    if (reduced()) return;
+    qsa('[data-decode]', root).forEach((el) => {
+        if (el.dataset.decoded === '1') return;
+        el.dataset.decoded = '1';
+        const parts = el.textContent.split(/(\s+)/);
+        el.textContent = '';
+        const spans = [];
+        parts.forEach((part) => {
+            if (!part.trim()) {
+                el.appendChild(document.createTextNode(part));
+                return;
+            }
+            const span = document.createElement('span');
+            span.className = 'wd';
+            span.textContent = part;
+            el.appendChild(span);
+            spans.push(span);
+        });
+        const delay = parseInt(el.dataset.delay || '0', 10);
+        window.setTimeout(() => {
+            spans.forEach((s, i) => window.setTimeout(() => s.classList.add('is-lit'), i * 95));
+        }, delay + 140);
+    });
+
+    qsa('[data-wipe]', root).forEach((el) => {
+        el.classList.add('wipe-t');
+        const delay = parseInt(el.dataset.delay || '0', 10);
+        window.setTimeout(() => el.classList.add('is-lit'), delay + 140);
+    });
+}
+
+/* ==========================================================================
+   3D tilt — capped at 8°, refused on touch and on reduced motion
+   ========================================================================== */
+
+const TILT_MAX_DEG = 8;
+
+export function initTilt(root = document) {
+    if (reduced() || !finePointer()) return;
+    qsa('.tilt', root).forEach((el) => {
+        if (el.dataset.tiltBound === '1') return;
+        el.dataset.tiltBound = '1';
+        el.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'touch') return;
+            const r = el.getBoundingClientRect();
+            const px = (e.clientX - r.left) / r.width;
+            const py = (e.clientY - r.top) / r.height;
+            el.style.setProperty('--cx', (px * 100).toFixed(1) + '%');
+            el.style.setProperty('--cy', (py * 100).toFixed(1) + '%');
+            const ry = clamp((px - 0.5) * 2 * TILT_MAX_DEG, -TILT_MAX_DEG, TILT_MAX_DEG);
+            const rx = clamp((0.5 - py) * 2 * TILT_MAX_DEG, -TILT_MAX_DEG, TILT_MAX_DEG);
+            el.style.transform =
+                'perspective(900px) rotateY(' + ry.toFixed(2) + 'deg) rotateX(' + rx.toFixed(2) + 'deg) translateY(-4px)';
+        });
+        el.addEventListener('pointerleave', () => {
+            el.style.transform = '';
+        });
+    });
+}
+
+/* ==========================================================================
+   Magnetic buttons + click ripple
+   ========================================================================== */
+
+export function initMagnets(root = document) {
+    if (reduced() || !finePointer()) return;
+    qsa('.mag', root).forEach((btn) => {
+        if (btn.dataset.magBound === '1') return;
+        btn.dataset.magBound = '1';
+        const inner = btn.querySelector('.mag__t');
+        btn.addEventListener('pointermove', (e) => {
+            const r = btn.getBoundingClientRect();
+            const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+            const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+            btn.style.transform = 'translate(' + (dx * 14).toFixed(1) + 'px,' + (dy * 9).toFixed(1) + 'px)';
+            if (inner) inner.style.transform = 'translate(' + (dx * 7).toFixed(1) + 'px,' + (dy * 4).toFixed(1) + 'px)';
+        });
+        btn.addEventListener('pointerleave', () => {
+            btn.style.transform = '';
+            if (inner) inner.style.transform = '';
+        });
+    });
+}
+
+export function initRipples() {
+    document.addEventListener('click', (e) => {
+        if (reduced()) return;
+        const btn = e.target.closest ? e.target.closest('.btn') : null;
+        if (!btn || btn.hasAttribute('disabled')) return;
+        const r = btn.getBoundingClientRect();
+        const size = Math.max(r.width, r.height);
+        const dot = document.createElement('span');
+        dot.className = 'rip';
+        dot.style.inlineSize = size + 'px';
+        dot.style.blockSize = size + 'px';
+        dot.style.insetInlineStart = e.clientX - r.left - size / 2 + 'px';
+        dot.style.insetBlockStart = e.clientY - r.top - size / 2 + 'px';
+        if (window.getComputedStyle(btn).position === 'static') btn.style.position = 'relative';
+        btn.style.overflow = 'hidden';
+        btn.appendChild(dot);
+        window.setTimeout(() => dot.remove(), 640);
+    });
+}
+
+/* ==========================================================================
+   Confetti — 2 seconds maximum, brand colours only
+   ========================================================================== */
+
+const CONFETTI_MS = 2000;
+const CONFETTI_VARS = ['--confetti-1', '--confetti-2', '--confetti-3', '--confetti-4'];
+
+/**
+ * @param {HTMLElement|null} host element carrying `.cf`
+ */
+export function confetti(host) {
+    if (!host || reduced()) return;
+    if (host.dataset.busy === '1') return;
+    host.dataset.busy = '1';
+    const styles = getComputedStyle(document.documentElement);
+    const colours = CONFETTI_VARS.map((v) => styles.getPropertyValue(v).trim());
+    for (let i = 0; i < 48; i++) {
+        const bit = document.createElement('i');
+        bit.style.insetInlineStart = (12 + Math.random() * 76).toFixed(1) + '%';
+        bit.style.insetBlockStart = (14 + Math.random() * 12).toFixed(1) + '%';
+        bit.style.background = colours[i % colours.length];
+        bit.style.animationDelay = (Math.random() * 0.35).toFixed(2) + 's';
+        host.appendChild(bit);
+    }
+    window.setTimeout(() => {
+        host.innerHTML = '';
+        host.dataset.busy = '0';
+    }, CONFETTI_MS);
+}
+
+/* ==========================================================================
+   Logo draw-in
+   ========================================================================== */
+
+function initLogo() {
+    window.setTimeout(() => {
+        qsa('.logo--draw').forEach((l) => l.classList.add('is-drawn'));
+    }, 120);
+}
+
+/* ==========================================================================
+   Alpine components
+   ========================================================================== */
+
+/**
+ * Countdown to a server instant.
+ *
+ * Blade renders:
+ *   x-data="countdown({ target: '2026-10-12T15:00:00Z', labels: {...} })"
+ * where every label already went through __() .
+ *
+ * The value shown is a courtesy.  Nothing may be unlocked because this hits
+ * zero: the server re-checks the window on the request (Article 5, BR-07).
+ */
+function countdown() {
+    return (config = {}) => ({
+        targetMs: Date.parse(config.target || ''),
+        days: '00',
+        hours: '00',
+        minutes: '00',
+        seconds: '00',
+        finished: false,
+        timer: null,
+
+        init() {
+            if (Number.isNaN(this.targetMs)) {
+                this.finished = true;
+                return;
+            }
+            this.tick();
+            this.timer = window.setInterval(() => this.tick(), 1000);
+            this.$watch('finished', (value) => {
+                if (!value) return;
+                window.clearInterval(this.timer);
+                this.$dispatch('countdown-finished');
+            });
+        },
+
+        destroy() {
+            window.clearInterval(this.timer);
+        },
+
+        tick() {
+            const left = Math.max(0, this.targetMs - serverNow());
+            this.days = pad2(Math.floor(left / 86400000));
+            this.hours = pad2(Math.floor(left / 3600000) % 24);
+            this.minutes = pad2(Math.floor(left / 60000) % 60);
+            this.seconds = pad2(Math.floor(left / 1000) % 60);
+            if (left <= 0) this.finished = true;
+        },
+    });
+}
+
+/** Right-hand drawer for the mobile sidebar (Constitution Article 16). */
+function drawer() {
+    return () => ({
+        open: false,
+        previouslyFocused: null,
+
+        show() {
+            this.previouslyFocused = document.activeElement;
+            this.open = true;
+            document.body.style.overflow = 'hidden';
+            this.$nextTick(() => {
+                const panel = this.$refs.panel;
+                if (!panel) return;
+                const first = panel.querySelector(FOCUSABLE);
+                if (first) first.focus();
+            });
+        },
+
+        hide() {
+            this.open = false;
+            document.body.style.overflow = '';
+            if (this.previouslyFocused && this.previouslyFocused.focus) this.previouslyFocused.focus();
+        },
+
+        toggle() {
+            if (this.open) this.hide();
+            else this.show();
+        },
+
+        trap(event) {
+            if (!this.open || event.key !== 'Tab') return;
+            trapTab(event, this.$refs.panel);
+        },
+    });
+}
+
+/** Modal dialog: Escape closes, click outside closes, focus is trapped. */
+function modal() {
+    return (config = {}) => ({
+        open: Boolean(config.open),
+        previouslyFocused: null,
+
+        show() {
+            this.previouslyFocused = document.activeElement;
+            this.open = true;
+            document.body.style.overflow = 'hidden';
+            this.$nextTick(() => {
+                const box = this.$refs.box;
+                if (!box) return;
+                const first = box.querySelector(FOCUSABLE);
+                (first || box).focus();
+            });
+        },
+
+        hide() {
+            this.open = false;
+            document.body.style.overflow = '';
+            if (this.previouslyFocused && this.previouslyFocused.focus) this.previouslyFocused.focus();
+            this.$dispatch('modal-closed');
+        },
+
+        trap(event) {
+            if (!this.open || event.key !== 'Tab') return;
+            trapTab(event, this.$refs.box);
+        },
+    });
+}
+
+/** Shared Tab-cycling logic for modal and drawer. */
+function trapTab(event, container) {
+    if (!container) return;
+    const nodes = qsa(FOCUSABLE, container).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (nodes.length === 0) {
+        event.preventDefault();
+        return;
+    }
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+/** Dropdown menu: Escape closes and returns focus, click outside closes. */
+function menu() {
+    return () => ({
+        open: false,
+        trigger: null,
+
+        toggle() {
+            this.open = !this.open;
+            if (this.open) {
+                this.trigger = document.activeElement;
+                this.$nextTick(() => {
+                    const panel = this.$refs.panel;
+                    if (!panel) return;
+                    const first = panel.querySelector(FOCUSABLE);
+                    if (first) first.focus();
+                });
+            }
+        },
+
+        close(returnFocus = true) {
+            if (!this.open) return;
+            this.open = false;
+            if (returnFocus && this.trigger && this.trigger.focus) this.trigger.focus();
+        },
+    });
+}
+
+/** Tooltip: shows on hover AND on keyboard focus (PRD §5.8). */
+function tooltip() {
+    return () => ({
+        open: false,
+        show() { this.open = true; },
+        hide() { this.open = false; },
+    });
+}
+
+/** Sidebar collapse state, remembered per browser. */
+function sidebar() {
+    return (config = {}) => ({
+        collapsed: false,
+        storageKey: 'athar.sidebar.collapsed',
+
+        init() {
+            try {
+                const stored = window.localStorage.getItem(this.storageKey);
+                this.collapsed = stored === null ? Boolean(config.collapsed) : stored === '1';
+            } catch (e) {
+                this.collapsed = Boolean(config.collapsed);
+            }
+        },
+
+        toggle() {
+            this.collapsed = !this.collapsed;
+            try {
+                window.localStorage.setItem(this.storageKey, this.collapsed ? '1' : '0');
+            } catch (e) {
+                // Private mode: the preference simply does not persist.
+            }
+        },
+    });
+}
+
+/**
+ * File uploader with real transfer progress.
+ *
+ * Client-side checks here are a courtesy for the user.  The server re-validates
+ * size, count and MIME from file CONTENT before accepting anything
+ * (Constitution Article 5, Article 24).
+ */
+function uploader() {
+    return (config = {}) => ({
+        endpoint: config.endpoint || '',
+        fieldName: config.field || 'file',
+        maxBytes: Number(config.maxBytes || 0),
+        maxFiles: Number(config.maxFiles || 1),
+        accept: config.accept || '',
+        files: [],
+        hot: false,
+        state: 'idle', // idle | uploading | done | error
+        errorKey: '',
+
+        pick() {
+            if (this.$refs.input) this.$refs.input.click();
+        },
+
+        onDrop(event) {
+            this.hot = false;
+            this.add(event.dataTransfer ? event.dataTransfer.files : []);
+        },
+
+        onChange(event) {
+            this.add(event.target.files);
+            event.target.value = '';
+        },
+
+        add(fileList) {
+            const incoming = Array.prototype.slice.call(fileList || []);
+            for (const file of incoming) {
+                if (this.files.length >= this.maxFiles) {
+                    this.fail('too_many');
+                    return;
+                }
+                if (this.maxBytes > 0 && file.size > this.maxBytes) {
+                    this.fail('too_large');
+                    return;
+                }
+                this.files.push({
+                    id: 'f' + Date.now() + Math.random().toString(36).slice(2, 8),
+                    name: file.name,
+                    size: file.size,
+                    loaded: 0,
+                    percent: 0,
+                    status: 'ready',
+                    raw: file,
+                    xhr: null,
+                });
+            }
+            this.errorKey = '';
+            this.state = 'idle';
+        },
+
+        remove(id) {
+            const idx = this.files.findIndex((f) => f.id === id);
+            if (idx === -1) return;
+            const entry = this.files[idx];
+            if (entry.xhr) entry.xhr.abort();
+            this.files.splice(idx, 1);
+        },
+
+        fail(key) {
+            this.errorKey = key;
+            this.state = 'error';
+        },
+
+        humanSize(bytes) {
+            const mb = bytes / (1024 * 1024);
+            return mb >= 1 ? mb.toFixed(1) : (bytes / 1024).toFixed(0);
+        },
+
+        /** Uploads every ready file over XHR so real byte progress is available. */
+        submit() {
+            if (this.state === 'uploading' || this.files.length === 0 || !this.endpoint) return;
+            this.state = 'uploading';
+            this.errorKey = '';
+            let remaining = this.files.length;
+
+            this.files.forEach((entry) => {
+                if (entry.status === 'done') {
+                    remaining -= 1;
+                    return;
+                }
+                const form = new FormData();
+                form.append(this.fieldName, entry.raw, entry.name);
+                form.append('_token', csrfToken());
+
+                const xhr = new XMLHttpRequest();
+                entry.xhr = xhr;
+                entry.status = 'uploading';
+                xhr.open('POST', this.endpoint, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken());
+
+                xhr.upload.onprogress = (e) => {
+                    if (!e.lengthComputable) return;
+                    entry.loaded = e.loaded;
+                    entry.percent = Math.round((e.loaded / e.total) * 100);
+                };
+
+                xhr.onload = () => {
+                    entry.xhr = null;
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        entry.percent = 100;
+                        entry.status = 'done';
+                    } else {
+                        entry.status = 'error';
+                        this.errorKey = xhr.status === 413 ? 'too_large' : 'server';
+                    }
+                    remaining -= 1;
+                    if (remaining <= 0) this.settle();
+                };
+
+                xhr.onerror = () => {
+                    entry.xhr = null;
+                    entry.status = 'error';
+                    this.errorKey = 'network';
+                    remaining -= 1;
+                    if (remaining <= 0) this.settle();
+                };
+
+                xhr.send(form);
+            });
+
+            if (remaining <= 0) this.settle();
+        },
+
+        settle() {
+            const failed = this.files.some((f) => f.status === 'error');
+            this.state = failed ? 'error' : 'done';
+            if (!failed) {
+                this.$dispatch('upload-complete', { count: this.files.length });
+                confetti(this.$refs.confetti || null);
+            }
+        },
+    });
+}
+
+/**
+ * Async panel — the four mandatory states of Article 17 in one place.
+ * Fetches a fragment URL and renders loading / empty / error / normal.
+ */
+function asyncPanel() {
+    return (config = {}) => ({
+        url: config.url || '',
+        state: 'loading', // loading | normal | empty | error
+        html: '',
+
+        init() {
+            if (!this.url) {
+                this.state = 'empty';
+                return;
+            }
+            this.load();
+        },
+
+        async load() {
+            this.state = 'loading';
+            try {
+                const response = await fetch(this.url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) {
+                    this.state = 'error';
+                    return;
+                }
+                const body = (await response.text()).trim();
+                this.html = body;
+                this.state = body.length === 0 ? 'empty' : 'normal';
+                this.$nextTick(() => {
+                    const host = this.$refs.body;
+                    if (!host) return;
+                    animateFills(host);
+                    animateCounts(host);
+                    initTilt(host);
+                });
+            } catch (e) {
+                this.state = 'error';
+            }
+        },
+    });
+}
+
+/** Impersonation bar countdown to the hard 30-minute cap (Article 23). */
+function impersonation() {
+    return (config = {}) => ({
+        endsAtMs: Date.parse(config.endsAt || ''),
+        label: '00:00',
+        expired: false,
+        timer: null,
+
+        init() {
+            if (Number.isNaN(this.endsAtMs)) return;
+            this.tick();
+            this.timer = window.setInterval(() => this.tick(), 1000);
+        },
+
+        destroy() {
+            window.clearInterval(this.timer);
+        },
+
+        tick() {
+            const left = Math.max(0, this.endsAtMs - serverNow());
+            this.label = pad2(Math.floor(left / 60000)) + ':' + pad2(Math.floor(left / 1000) % 60);
+            if (left > 0) return;
+            this.expired = true;
+            window.clearInterval(this.timer);
+            // The session is already dead server-side; reload so the server says so.
+            if (this.$refs.stop) this.$refs.stop.submit();
+        },
+    });
+}
+
+/* ==========================================================================
+   Toast store — one aria-live region for the whole page
+   ========================================================================== */
+
+const TOAST_MS = 5000;
+
+const toastStore = {
+    items: [],
+    seq: 0,
+
+    /**
+     * @param {string} message already translated in PHP
+     * @param {'info'|'ok'|'warn'|'bad'} tone
+     */
+    push(message, tone = 'info') {
+        const id = ++this.seq;
+        this.items.push({ id, message, tone });
+        window.setTimeout(() => this.dismiss(id), TOAST_MS);
+        return id;
+    },
+
+    dismiss(id) {
+        const idx = this.items.findIndex((t) => t.id === id);
+        if (idx !== -1) this.items.splice(idx, 1);
+    },
+};
+
+/* ==========================================================================
+   Boot
+   ========================================================================== */
+
+initServerClock();
+
+Alpine.store('toast', toastStore);
+Alpine.data('countdown', countdown());
+Alpine.data('drawer', drawer());
+Alpine.data('modal', modal());
+Alpine.data('menu', menu());
+Alpine.data('tooltip', tooltip());
+Alpine.data('sidebar', sidebar());
+Alpine.data('uploader', uploader());
+Alpine.data('asyncPanel', asyncPanel());
+Alpine.data('impersonation', impersonation());
+
+window.Alpine = Alpine;
+
+/** Small public surface so page scripts and landing.js can reuse the helpers. */
+window.Athar = {
+    reduced,
+    finePointer,
+    serverNow,
+    animateFills,
+    animateCounts,
+    initReveals,
+    initHighlights,
+    decodeWords,
+    initTilt,
+    initMagnets,
+    confetti,
+    toast: (message, tone) => toastStore.push(message, tone),
+};
+
+/**
+ * Paints the browser chrome with the page background.
+ *
+ * The value is read from --surface-page at run time rather than written into
+ * the Blade file, because a colour literal in a template is forbidden and
+ * tokens.css is the single source of every colour (Article 6, Article 13
+ * rule 4).  A missing meta tag or an unsupported browser simply means no tint.
+ */
+function syncThemeColour() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    const value = getComputedStyle(document.documentElement)
+        .getPropertyValue('--surface-page')
+        .trim();
+    if (value) meta.setAttribute('content', value);
+}
+
+function boot() {
+    syncThemeColour();
+    initLogo();
+    initReveals();
+    initHighlights();
+    decodeWords();
+    initTilt();
+    initMagnets();
+    initRipples();
+    animateFills();
+    animateCounts();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+} else {
+    boot();
+}
+
+Alpine.start();

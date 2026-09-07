@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Athar — shared state classes
+   One definition for every `is-*` modifier the screens and the UI components
+   toggle.  Loaded by resources/css/app.css.
+
+   @see CONSTITUTION Articles 6, 17, 18
+
+   WHY THIS FILE EXISTS
+   --------------------
+   A state must look the same everywhere it appears: a selected table row on
+   the audit log and a selected row on the submissions board are the same
+   thing, so they share one rule rather than two lookalikes.
+
+   COLOUR IS NEVER THE ONLY SIGNAL (Article 18).  Each state below also carries
+   a border, a weight change or an inset marker, and the markup that sets it
+   always adds a word or an icon as well.
+   ========================================================================== */
+
+/* --------------------------------------------------------- SELECTED ROW */
+tr.is-selected,
+.is-selected {
+  background: var(--violet-050);
+box-shadow: inset var(--bw-marker) 0 0 0 var(--violet-500);
+}
+tr.is-selected td { font-weight: var(--fw-semi); }
+
+/* ------------------------------------------------------------ HIGHLIGHT */
+/* The row a deep link points at, so the eye lands on it without a scroll
+   hunt.  It fades after a moment; under reduced motion it simply stays. */
+.is-highlight {
+  animation: highlightFade 2.4s var(--e-out) 1;
+  border-color: var(--violet-500) !important;
+}
+@keyframes highlightFade {
+  0%   { background: var(--violet-100); }
+  100% { background: transparent; }
+}
+
+/* ------------------------------------------------------------- UNREAD */
+.is-unread {
+  background: var(--violet-050);
+border-inline-start: var(--bw-marker) solid var(--violet-500);
+}
+.is-unread b { font-weight: var(--fw-bold); }
+
+/* -------------------------------------------------------------- TODAY */
+.cal__day.is-today,
+.is-today { box-shadow: inset 0 0 0 var(--bw-strong) var(--violet-500); }
+
+/* --------------------------------------------------------------- NEXT */
+.is-next {
+  border-color: var(--teal-500) !important;
+box-shadow: 0 0 0 var(--bw-marker) var(--teal-100);
+}
+
+/* ---------------------------------------------------------- CANCELLED */
+/* Never colour alone: the markup also renders a «cancelled» pill. */
+.is-cancelled { opacity: 0.62; }
+.is-cancelled b,
+.is-cancelled td:first-child { text-decoration: line-through; }
+
+/* ------------------------------------------------------------ CURRENT */
+.wk__i.is-current,
+.is-current { border-color: var(--violet-500); box-shadow: 0 0 0 var(--bw-marker) var(--violet-100); }
+
+/* ------------------------------------------- DRAG AND DROP (uploaders) */
+.is-over,
+.drop.is-over,
+.drop.hot { border-color: var(--teal-500); background: var(--teal-100); }
+.is-dragging { cursor: grabbing; user-select: none; }
+
+/* ------------------------------------------------------------- ACTIVE */
+/* The keyboard-highlighted option inside a listbox. */
+.is-active { background: var(--violet-100); color: var(--violet-700); }
+
+/* ------------------------------------------------------------ LOADING */
+/* A button that has submitted keeps its width so the layout never jumps. */
+.is-loading { pointer-events: none; opacity: 0.75; }
+.is-loading > * { visibility: hidden; }
+.is-loading .btn__spinner { visibility: visible; }
+
+/* ------------------------------------------------------------ LEAVING */
+.is-leaving { opacity: 0; transform: translateY(calc(var(--s2) * -1)); transition: opacity var(--t-base), transform var(--t-base); }
+
+/* ------------------------------------------------------------ DISABLED */
+[aria-disabled="true"],
+[data-locked="true"] { opacity: 0.55; cursor: not-allowed; }
+
+/* ==========================================================================
+   REDUCED MOTION (Article 18)
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .is-highlight { animation: none !important; background: var(--violet-100); }
+  .is-leaving { transition: none !important; }
+}

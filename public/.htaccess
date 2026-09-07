@@ -1,0 +1,75 @@
+# Athar platform - Apache front controller and hardening.
+# Target: Hostinger shared hosting (cPanel, Apache + mod_rewrite, no root).
+# @see Constitution Article 10, Article 24 - PRD 12.3
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Force HTTPS. HTTPS is mandatory in every public environment (PRD 12.3).
+    # The second condition covers requests arriving through the host's proxy.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Pass the Authorization header through to PHP.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect trailing slashes if not a folder.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send everything else to the front controller.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# ── Static security headers ───────────────────────────────────────────────
+# The full header set (CSP with a per-request nonce, X-Frame-Options,
+# Referrer-Policy, HSTS) is emitted by App\Http\Middleware\SecurityHeaders.
+# Only what Apache serves WITHOUT touching PHP is repeated here - build assets,
+# fonts and images never reach the middleware. Nothing below may contradict it.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+
+    # HSTS - only meaningful once the certificate is live on the apex and the
+    # ai. subdomain. Two years, subdomains included, preload ready.
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" env=HTTPS
+
+    # Hashed Vite assets are immutable.
+    <FilesMatch "\.(?:css|js|woff2|svg|png|jpg|jpeg|webp|avif|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ── Never serve application internals ─────────────────────────────────────
+<FilesMatch "^(?:\.|composer\.|package\.|artisan)">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(?:env|lock|neon|xml|yml|yaml|md|log|sql|sh|bak|ini)$">
+    Require all denied
+</FilesMatch>
+
+# ── Compression ───────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml application/xml
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType font/woff2 .woff2
+</IfModule>
+
+ErrorDocument 403 /index.php
+ErrorDocument 404 /index.php

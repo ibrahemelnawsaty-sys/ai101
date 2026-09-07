@@ -1,0 +1,204 @@
+
+<script>
+(function () {
+  "use strict";
+
+  var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var FINE   = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
+
+  /* ==========================================================
+     الشعار يُرسَم عند التحميل
+     ========================================================== */
+  setTimeout(function () { $$(".logo").forEach(function (l) { l.classList.add("drawn"); }); }, 120);
+
+  /* ==========================================================
+     محاكي شروط الشهادة — BR-11 و BR-26 حرفيًا
+       المهام الأدائية 50 + المشروع 50 = 100
+       الشهادة تشترط حضور ≥ 75% و درجة ≥ 60 معًا
+     ========================================================== */
+  (function simulator() {
+    var sA = $("#sA"), sB = $("#sB"), sC = $("#sC");
+    if (!sA) return;
+
+    var SESSIONS = 12, TASKS = 4, TASK_POINTS = 50, PROJECT_POINTS = 50;
+    var MIN_ATTENDANCE = 75, PASS_SCORE = 60;
+
+    function pill(n) { return String(n); }
+
+    /* العدد في العربية: مفرد ومثنّى وجمع قلّة وجمع كثرة */
+    function sessions(n, color) {
+      var c = color || "#fff";
+      var num = '<b class="u-num" style="color:' + c + '">' + n + '</b>';
+      if (n === 1) return "جلسة واحدة";
+      if (n === 2) return "جلستين";
+      if (n <= 10) return num + " جلسات";
+      return num + " جلسة";
+    }
+
+    function compute() {
+      var a = +sA.value, b = +sB.value, c = +sC.value;
+
+      $("#vA").textContent = pill(a);
+      $("#vB").textContent = pill(b);
+      $("#vC").textContent = pill(c);
+      $("#fA").style.width = (a / SESSIONS * 100) + "%";
+      $("#fB").style.width = (b / TASKS * 100) + "%";
+      $("#fC").style.width = (c / PROJECT_POINTS * 100) + "%";
+
+      var attendance = Math.round(a / SESSIONS * 100);
+      var taskScore  = Math.round(b / TASKS * TASK_POINTS);
+      var total      = taskScore + c;
+
+      var passA = attendance >= MIN_ATTENDANCE;
+      var passB = total >= PASS_SCORE;
+
+      /* الشرط الأول */
+      $("#pctA").textContent = attendance;
+      $("#barA").style.width = clamp(attendance, 0, 100) + "%";
+      var gA = $("#gateA");
+      gA.classList.toggle("pass", passA);
+      gA.classList.toggle("fail", !passA);
+      $("#icA").innerHTML = passA
+        ? '<svg><use href="#i-check"/></svg>'
+        : '<svg><use href="#i-warn"/></svg>';
+      if (passA) {
+        var spare = a - Math.ceil(SESSIONS * MIN_ATTENDANCE / 100);
+        $("#noteA").innerHTML = spare > 0
+          ? 'يمكنك تفويت ' + sessions(spare) + ' بعد ولا تسقط الشرط'
+          : 'على الحد تمامًا — أي غياب إضافي يُسقط الشرط';
+      } else {
+        var need = Math.ceil(SESSIONS * MIN_ATTENDANCE / 100) - a;
+        $("#noteA").innerHTML = 'ينقصك حضور ' + sessions(need, "#E2A867") +
+          ' للوصول إلى <span class="u-num">75%</span>';
+      }
+
+      /* الشرط الثاني */
+      $("#pctB").textContent = total;
+      $("#barB").style.width = clamp(total, 0, 100) + "%";
+      var gB = $("#gateB");
+      gB.classList.toggle("pass", passB);
+      gB.classList.toggle("fail", !passB);
+      $("#icB").innerHTML = passB
+        ? '<svg><use href="#i-check"/></svg>'
+        : '<svg><use href="#i-warn"/></svg>';
+      $("#noteB").innerHTML = 'المهام <b class="u-num" style="color:#fff">' + taskScore + '</b>' +
+        ' + المشروع <b class="u-num" style="color:#fff">' + c + '</b>' +
+        (passB ? ' — فوق حد النجاح <span class="u-num">60</span>'
+               : ' — ينقصك <b class="u-num" style="color:#E2A867">' + (PASS_SCORE - total) + '</b> درجة');
+
+      /* الحكم */
+      var v = $("#verdict"), ok = passA && passB;
+      v.classList.toggle("pass", ok);
+      $("#vicIc").innerHTML = ok
+        ? '<svg><use href="#i-check"/></svg>'
+        : '<svg><use href="#i-warn"/></svg>';
+
+      if (ok) {
+        $("#vTitle").textContent = "تستوفي شروط الشهادة";
+        $("#vDesc").innerHTML = 'بهذا الالتزام تُصدَر شهادتاك تلقائيًا بعد الحفل الختامي، بدرجة ' +
+          '<b class="u-num">' + total + '</b> من <span class="u-num">100</span> ونسبة حضور ' +
+          '<b class="u-num">' + attendance + '%</b>.';
+      } else if (!passA && !passB) {
+        $("#vTitle").textContent = "لا يكفي — الشرطان غير مستوفَيين";
+        $("#vDesc").innerHTML = 'الحضور والدرجة كلاهما تحت الحد. ' +
+          'البرنامج أربعة أسابيع فقط، والانتظام فيه هو كل شيء.';
+      } else if (!passA) {
+        $("#vTitle").textContent = "درجتك تكفي، لكن حضورك لا";
+        $("#vDesc").innerHTML = 'درجتك <b class="u-num">' + total + '</b> فوق حد النجاح، ' +
+          'لكن الحضور <b class="u-num">' + attendance + '%</b> تحت <span class="u-num">75%</span>. ' +
+          'الشرطان يُطبَّقان معًا — لا يُعوَّض أحدهما بالآخر.';
+      } else {
+        $("#vTitle").textContent = "حضورك يكفي، لكن درجتك لا";
+        $("#vDesc").innerHTML = 'حضورك <b class="u-num">' + attendance + '%</b> ممتاز، ' +
+          'لكن مجموعك <b class="u-num">' + total + '</b> تحت حد النجاح <span class="u-num">60</span>. ' +
+          'الحضور وحده لا يمنح شهادة.';
+      }
+    }
+
+    [sA, sB, sC].forEach(function (el) {
+      el.addEventListener("input", compute);
+      el.addEventListener("change", compute);
+    });
+    compute();
+  })();
+
+  /* ==========================================================
+     شريط الموضوعات يتفاعل مع سرعة التمرير واتجاهه
+     ========================================================== */
+  if (!REDUCE) (function reactiveTicker() {
+    var track = $(".tick__track"); if (!track) return;
+    var lastY = window.scrollY, vel = 0, raf = null;
+
+    addEventListener("scroll", function () {
+      var y = window.scrollY;
+      vel = clamp((y - lastY) * 0.55, -22, 22);
+      lastY = y;
+      if (!raf) raf = requestAnimationFrame(tick);
+    }, { passive: true });
+
+    function tick() {
+      raf = null;
+      var speed = clamp(1 + Math.abs(vel) * 0.42, 1, 7);
+      track.style.animationDuration = (42 / speed).toFixed(2) + "s";
+      track.style.animationDirection = vel < -3 ? "reverse" : "normal";
+      vel *= 0.9;
+      if (Math.abs(vel) > 0.35) raf = requestAnimationFrame(tick);
+      else { track.style.animationDuration = "42s"; track.style.animationDirection = "normal"; }
+    }
+  })();
+
+  /* ==========================================================
+     انزلاق الأرقام العملاقة مع التمرير + وسم رؤوس الأقسام
+     ========================================================== */
+  if (!REDUCE) (function parallax() {
+    var nums = $$(".deck__no, .goal__n");
+    var heads = $$(".sec__hd");
+    var ticking = false;
+    function run() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        var vh = innerHeight;
+        nums.forEach(function (n) {
+          var r = n.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) return;
+          var p = (r.top + r.height / 2 - vh / 2) / vh;   /* -0.5 … 0.5 */
+          n.style.transform = "translateY(" + (p * -34).toFixed(1) + "px)";
+        });
+        heads.forEach(function (h) {
+          var r = h.getBoundingClientRect();
+          if (r.top < vh * 0.82 && r.bottom > 0) h.classList.add("seen");
+        });
+      });
+    }
+    addEventListener("scroll", run, { passive: true });
+    run();
+  })();
+
+  /* ==========================================================
+     كلمات العنوان تبتعد عن المؤشر
+     ========================================================== */
+  if (FINE && !REDUCE) (function wordMagnet() {
+    var h1 = $(".hero h1"); if (!h1) return;
+    h1.addEventListener("pointermove", function (e) {
+      $$(".wd.lit", h1).forEach(function (w) {
+        var r = w.getBoundingClientRect();
+        var dx = e.clientX - (r.left + r.width / 2);
+        var dy = e.clientY - (r.top + r.height / 2);
+        var d  = Math.hypot(dx, dy);
+        if (d > 190) { w.style.transform = ""; return; }
+        var f = (1 - d / 190) * 13;
+        w.style.transform = "translate(" + (-dx / d * f).toFixed(1) + "px," +
+                            (-dy / d * f).toFixed(1) + "px)";
+      });
+    });
+    h1.addEventListener("pointerleave", function () {
+      $$(".wd", h1).forEach(function (w) { w.style.transform = ""; });
+    });
+  })();
+})();
+</script>

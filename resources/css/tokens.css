@@ -1,0 +1,559 @@
+/* ==========================================================================
+   منصة أثر — الرموز التصميمية (Design Tokens)
+   THE single source of every colour, spacing, radius, shadow, typography and
+   motion value in the platform.  Constitution Article 6 · Article 13 rule 4.
+
+   @see PRD §5.1 … §5.7 · CONSTITUTION Article 14 · DECISIONS D-23 (contrast),
+        D-01 (dark public shell / light dashboard shell)
+   NOTE: first-edition numbering called these D-27 and D-28; both were renumbered.
+   Approved design: docs/04-design/ref-css-base.html
+                    docs/04-design/ref-css-motion.html
+                    docs/04-design/ref-css-interactions.html
+
+   RULES ENFORCED BY THIS FILE
+   ---------------------------
+   * NO YELLOW, NO GOLD, IN ANY SHADE.  Every warm token in this file sits at
+     hue 31°–34° (burnt orange).  Any colour whose hue falls between 40° and
+     65° is forbidden platform-wide (D-23) and none exists here.
+   * This is the ONLY file in the repository allowed to contain a raw colour
+     literal.  Gate G6 (`php artisan gate:tokens`) enforces that.
+   * Two layers: PRIMITIVES (locked identity + scales) then SEMANTIC ROLES.
+     Components consume semantic roles, never primitives, wherever a role
+     exists.
+   ========================================================================== */
+
+:root {
+
+  /* ======================================================================
+     1 · IDENTITY PRIMITIVES — LOCKED.  Never edited without a written
+         product-owner decision (CONSTITUTION Article 14).
+     ====================================================================== */
+  --violet-900: #3D2361;
+  --violet-700: #5A3289;
+  --violet-600: #6B3CA0;
+  --violet-500: #7845B5;   /* brand-primary */
+  --violet-400: #8850C6;   /* hover on primary button */
+  --violet-300: #B191D9;
+  --violet-100: #EFE7F8;
+  --violet-050: #F8F5FC;
+
+  --teal-800:  #015C5E;    /* D-23 · contrast 7.80 on white */
+  --teal-700:  #017E80;
+  --teal-600:  #018487;    /* D-23 · contrast 4.51 on white — small text OK */
+  --teal-500:  #01AAAD;    /* brand-secondary */
+  --teal-300:  #5BC9CB;
+  --teal-100:  #E0F6F6;
+
+  --white: #FFFFFF;
+  --black: #000000;
+
+  /* ======================================================================
+     2 · INK SCALE — violet-leaning near-blacks (public / dark surfaces)
+     ====================================================================== */
+  --ink:      #0A0713;   /* page background, dark shell */
+  --ink-2:    #120C1F;
+  --ink-3:    #1A1229;
+  --ink-950:  #08070C;
+  --ink-900:  #0D0B14;
+  --ink-850:  #110E1A;
+  --ink-800:  #16121F;
+  --ink-700:  #221B30;
+  --ink-600:  #2E2542;
+  --ink-500:  #241C36;   /* raised card on dark */
+  --ink-450:  #2C1A4A;   /* final CTA gradient head */
+  --ink-400:  #2A1745;
+  --ink-350:  #1A1029;
+  --ink-300:  #0F0B1A;
+
+  /* ======================================================================
+     3 · NEUTRAL SCALE — light surfaces (dashboard, auth, verify)
+     ====================================================================== */
+  --n-900: #111114;
+  --n-600: #5A5A66;
+  --n-500: #6E6E7E;   /* D-23 · contrast 5.01 — the smallest readable grey */
+  --n-400: #9A9AA8;   /* decorative / disabled only — NOT for body text */
+  --n-200: #E4E4EB;
+  --n-150: #EFEFF3;
+  --n-100: #F5F5F7;
+  --n-000: #FFFFFF;
+
+  /* ======================================================================
+     4 · SEMANTIC STATUS — narrow-area use only (PRD §5.2)
+         Every warm value below measured at hue 31°–34°.  Zero gold.
+     ====================================================================== */
+  --ok:        #0E9F6E;
+  --ok-700:    #0A7C57;   /* D-23 · 5.21 on white — use for status TEXT */
+  --ok-100:    #E4F7EF;
+  --ok-800:    #0B7A55;
+
+  --warn:      #C97A17;   /* burnt orange · hue 33° · NEVER gold */
+  --warn-700:  #8A5210;   /* D-23 · 6.37 on white — status TEXT */
+  --warn-100:  #FBF0E3;
+  --warn-800:  #9A5C10;
+  --warn-300:  #E2A867;   /* on dark surfaces only */
+
+  --bad:       #D64545;
+  --bad-700:   #B02D2D;   /* D-23 · 6.44 on white — status TEXT */
+  --bad-100:   #FBE9E9;
+  --bad-800:   #B23434;
+  --bad-300:   #F0A5A5;   /* on dark surfaces only */
+  --bad-200:   #C6A6B0;
+
+  --info:      var(--violet-500);   /* PRD §5.2 — info uses brand primary */
+
+  /* ======================================================================
+     5 · TEXT SCALE ON DARK SURFACES
+     ====================================================================== */
+  --dk-1:  #EDEAF3;   /* primary body text on ink */
+  --dk-2:  #DCD6E8;
+  --dk-3:  #C5BED4;
+  --dk-4:  #B9B2C9;
+  --dk-5:  #ADA5BD;
+  --dk-6:  #A79FB8;
+  --dk-7:  #8E85A3;
+  --dk-8:  #8C8499;
+  --dk-9:  #6E6880;
+  --dk-10: #5E5770;
+  --dk-tint-1: #D6CEE6;   /* violet-tinted text on violet gradients */
+  --dk-tint-2: #C9BFDE;
+  --dk-tint-3: #C9B6E4;
+  --dk-tint-4: #B6ADC9;
+  --dk-tint-5: #9C93AE;
+
+  /* ======================================================================
+     6 · ALPHA OVERLAYS — neutral.  Surfaces (sf) and lines (ln).
+     ====================================================================== */
+  --sf-01: rgba(255, 255, 255, 0.020);
+  --sf-02: rgba(255, 255, 255, 0.030);
+  --sf-03: rgba(255, 255, 255, 0.045);
+  --sf-04: rgba(255, 255, 255, 0.060);
+  --sf-05: rgba(255, 255, 255, 0.090);
+  --sf-06: rgba(255, 255, 255, 0.140);
+
+  --ln-01: rgba(255, 255, 255, 0.060);
+  --ln-02: rgba(255, 255, 255, 0.080);
+  --ln-03: rgba(255, 255, 255, 0.100);
+  --ln-04: rgba(255, 255, 255, 0.120);
+  --ln-05: rgba(255, 255, 255, 0.160);
+  --ln-06: rgba(255, 255, 255, 0.220);
+  --ln-07: rgba(255, 255, 255, 0.260);
+  --ln-08: rgba(255, 255, 255, 0.400);
+  --ln-09: rgba(255, 255, 255, 0.550);
+
+  --scrim-1: rgba(0, 0, 0, 0.260);
+  --scrim-2: rgba(0, 0, 0, 0.320);
+  --scrim-3: rgba(0, 0, 0, 0.360);
+  --scrim-4: rgba(0, 0, 0, 0.560);
+  --scrim-5: rgba(0, 0, 0, 0.750);
+  --scrim-6: rgba(0, 0, 0, 0.900);
+
+  --glass-nav:  rgba(8, 7, 12, 0.72);
+  --glass-pill: rgba(13, 11, 20, 0.82);
+  --glass-hud:  rgba(10, 7, 19, 0.82);
+  --glass-dot:  rgba(10, 7, 19, 0.75);
+
+  /* ======================================================================
+     7 · BRAND ALPHA — violet / teal / status washes
+     ====================================================================== */
+  --violet-a08: rgba(120, 69, 181, 0.08);
+  --violet-a11: rgba(120, 69, 181, 0.11);
+  --violet-a13: rgba(120, 69, 181, 0.13);
+  --violet-a16: rgba(120, 69, 181, 0.16);
+  --violet-a20: rgba(120, 69, 181, 0.20);
+  --violet-a24: rgba(120, 69, 181, 0.24);
+  --violet-a28: rgba(120, 69, 181, 0.28);
+  --violet-a32: rgba(120, 69, 181, 0.32);
+  --violet-a38: rgba(120, 69, 181, 0.38);
+  --violet-a50: rgba(120, 69, 181, 0.50);
+  --violet-a55: rgba(120, 69, 181, 0.55);
+  --violet-a60: rgba(120, 69, 181, 0.60);
+  --violet-a70: rgba(120, 69, 181, 0.70);
+  --violet-a90: rgba(120, 69, 181, 0.90);
+  --violet-a00: rgba(120, 69, 181, 0);
+
+  --v300-a12: rgba(177, 145, 217, 0.12);
+  --v300-a14: rgba(177, 145, 217, 0.14);
+  --v300-a20: rgba(177, 145, 217, 0.20);
+  --v300-a22: rgba(177, 145, 217, 0.22);
+  --v300-a24: rgba(177, 145, 217, 0.24);
+  --v300-a28: rgba(177, 145, 217, 0.28);
+  --v300-a30: rgba(177, 145, 217, 0.30);
+  --v300-a42: rgba(177, 145, 217, 0.42);
+  --v300-a55: rgba(177, 145, 217, 0.55);
+
+  --teal-a10: rgba(1, 170, 173, 0.10);
+  --teal-a16: rgba(1, 170, 173, 0.16);
+  --teal-a18: rgba(1, 170, 173, 0.18);
+  --teal-a20: rgba(1, 170, 173, 0.20);
+  --teal-a24: rgba(1, 170, 173, 0.24);
+  --teal-a26: rgba(1, 170, 173, 0.26);
+  --teal-a30: rgba(1, 170, 173, 0.30);
+  --teal-a34: rgba(1, 170, 173, 0.34);
+  --teal-a42: rgba(1, 170, 173, 0.42);
+  --teal-a50: rgba(1, 170, 173, 0.50);
+  --teal-a55: rgba(1, 170, 173, 0.55);
+  --teal-a60: rgba(1, 170, 173, 0.60);
+  --teal-a75: rgba(1, 170, 173, 0.75);
+  --teal-a00: rgba(1, 170, 173, 0);
+  --teal700-a85: rgba(1, 126, 128, 0.85);
+  --teal300-a85: rgba(91, 201, 203, 0.85);
+
+  --ok-a08:  rgba(14, 159, 110, 0.08);
+  --ok-a10:  rgba(14, 159, 110, 0.10);
+  --ok-a20:  rgba(14, 159, 110, 0.20);
+  --ok-a50:  rgba(14, 159, 110, 0.50);
+  --ok-a55:  rgba(14, 159, 110, 0.55);
+  --ok-a70:  rgba(14, 159, 110, 0.70);
+
+  --warn-a07: rgba(201, 122, 23, 0.07);
+  --warn-a13: rgba(201, 122, 23, 0.13);
+  --warn-a30: rgba(201, 122, 23, 0.30);
+  --warn-a32: rgba(201, 122, 23, 0.32);
+  --warn-a42: rgba(201, 122, 23, 0.42);
+
+  --bad-a10:  rgba(214, 69, 69, 0.10);
+  --bad-a30:  rgba(214, 69, 69, 0.30);
+  --bad-a55:  rgba(214, 69, 69, 0.55);
+  --bad-a60:  rgba(214, 69, 69, 0.60);
+  --bad-a00:  rgba(214, 69, 69, 0);
+
+  --shade-n900-05: rgba(17, 17, 20, 0.05);
+  --shade-n900-08: rgba(17, 17, 20, 0.08);
+  --shade-n900-12: rgba(17, 17, 20, 0.12);
+  --shade-v900-85: rgba(61, 35, 97, 0.85);
+
+  /* ======================================================================
+     8 · CONFETTI — brand colours ONLY (Constitution Article 14)
+     ====================================================================== */
+  --confetti-1: #7845B5;
+  --confetti-2: #01AAAD;
+  --confetti-3: #B191D9;
+  --confetti-4: #017E80;
+
+  /* ======================================================================
+     9 · SPACING AND SIZE — the 4px grid of PRD §5.5
+         PRD §5.5 names eight steps (1,2,3,4,6,8,12,16); the grid itself is
+         every multiple of 4px, and the token name is always the multiplier.
+         The unnamed steps are listed here so a component snaps to the grid
+         instead of eyeballing a value two pixels off it.  The same grid sizes
+         boxes, not only the gaps between them.
+     ====================================================================== */
+  --s1:  4px;    /* PRD §5.5 · icon to its label */
+  --s2:  8px;    /* PRD §5.5 · small inner padding */
+  --s3:  12px;   /* PRD §5.5 · between close form controls */
+  --s4:  16px;   /* PRD §5.5 · standard card padding */
+  --s5:  20px;
+  --s6:  24px;   /* PRD §5.5 · between cards */
+  --s7:  28px;
+  --s8:  32px;   /* PRD §5.5 · section padding */
+  --s9:  36px;
+  --s10: 40px;
+  --s11: 44px;
+  --s12: 48px;   /* PRD §5.5 · between major sections */
+  --s13: 52px;
+  --s14: 56px;
+  --s15: 60px;
+  --s16: 64px;   /* PRD §5.5 · between landing sections */
+  --s17: 68px;
+  --s18: 72px;
+  --s19: 76px;
+  --s20: 80px;
+  --s21: 84px;
+  --s22: 88px;
+  --s23: 92px;
+  --s24: 96px;
+
+  /* ======================================================================
+     10 · RADII (PRD §5.6)
+     ====================================================================== */
+  --r-xs:   3px;   /* an inner corner: the fill inside a track */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   16px;
+  --r-xl:   24px;
+  --r-full: 9999px;
+
+  /* ======================================================================
+     11 · SHADOWS (PRD §5.6)
+     ====================================================================== */
+  --sh-sm:    0 1px 2px var(--shade-n900-05);
+  --sh-md:    0 4px 12px var(--shade-n900-08);
+  --sh-lg:    0 12px 32px var(--shade-n900-12);
+  --sh-glow:  0 0 0 1px var(--violet-a28), 0 18px 60px -18px var(--violet-a55);
+  --sh-btn:   0 10px 30px -12px var(--violet-a90);
+  --sh-btn-h: 0 16px 40px -14px var(--violet-500);
+  --sh-card:  0 40px 100px -40px var(--scrim-6);
+  --sh-frame: 0 20px 50px -20px var(--scrim-6);
+  --sh-pop:   0 16px 44px -18px var(--scrim-6);
+  --sh-id:    0 30px 70px -26px var(--shade-v900-85);
+  --sh-av:    0 12px 30px -12px var(--violet-a70);
+  --sh-wa:    0 14px 34px -10px var(--teal700-a85);
+  --sh-ok:    0 0 0 1px var(--ok-a20), 0 18px 50px -24px var(--ok-a70);
+  --sh-focus: 0 0 0 3px var(--violet-100);
+
+  /* ======================================================================
+     12 · MOTION (Constitution Article 18 — all of this is switched off by
+          prefers-reduced-motion in app.css)
+     ====================================================================== */
+  --t-fast:   150ms;
+  --t-base:   200ms;
+  --t-screen: 300ms;
+  --t-slow:   420ms;
+  --t-bar:    800ms;
+  --t-reveal: 680ms;
+  --t-wipe:   1150ms;
+  --e-out: cubic-bezier(0.22, 0.75, 0.28, 1);
+  --e-io:  cubic-bezier(0.65, 0.02, 0.28, 1);
+  --e-draw: cubic-bezier(0.30, 0.85, 0.25, 1);
+  --confetti-life: 2000ms;   /* hard cap — never longer */
+  --tilt-max: 8deg;          /* hard cap — never steeper */
+
+  /* ======================================================================
+     13 · TYPOGRAPHY (PRD §5.4)
+          Arabic line-height never below 1.7 · never a weight under 400.
+     ====================================================================== */
+  --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-display: "Reem Kufi", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+
+  --fs-h1:   clamp(30px, 5.2vw, 40px);
+  --fs-h2:   clamp(24px, 3.6vw, 30px);
+  --fs-h3:   clamp(20px, 2.6vw, 24px);
+  --fs-h4:   clamp(18px, 2.1vw, 20px);
+  --fs-body: 16px;
+  --fs-sm:   14px;
+  --fs-xs:   12px;
+  --fs-2xs:  11px;
+  --fs-btn:  16px;
+  --fs-stat: clamp(28px, 4vw, 36px);
+  --fs-lead: clamp(16px, 2vw, 19px);   /* an intro paragraph, one step above body */
+
+  /* Display steps sit ABOVE H1 and belong to the public marketing pages and
+     to the single hero figure on a results or error screen.  Each keeps its
+     own clamp so it stays readable at 320px and never overruns at 1500px. */
+  --fs-display-1: clamp(64px, 11vw, 132px);   /* the landing statement */
+  --fs-display-2: clamp(38px, 7.6vw, 88px);   /* a hero headline or error code */
+  --fs-display-3: clamp(30px, 6vw, 52px);     /* a hero figure */
+  --fs-display-4: clamp(26px, 4vw, 42px);     /* a section headline */
+
+  --lh-h1:   1.3;
+  --lh-h2:   1.35;
+  --lh-h3:   1.4;
+  --lh-h4:   1.45;
+  --lh-body: 1.75;
+  --lh-sm:   1.7;
+  --lh-xs:   1.6;
+  --lh-flat: 1;
+  --lh-stat: 1.2;
+
+  --measure: 75ch;   /* PRD §5.4 — a long line never exceeds 75 characters */
+
+  /* ======================================================================
+     14 · LAYOUT
+     ====================================================================== */
+  --maxw:          1240px;   /* approved design shell */
+  --maxw-content:  1280px;   /* PRD §5.5 content cap */
+  --maxw-stage:    1500px;
+  --nav-h:         68px;     /* public marketing header */
+  --header-h:      64px;     /* dashboard header — PRD §5.5 */
+  --side-w:        264px;    /* PRD §5.5 · Constitution Article 16 */
+  --side-w-collapsed: 72px;
+  --touch-min:     44px;     /* WCAG 2.1 AA floor · PRD §5.9, §13.2 */
+  --touch:         var(--touch-min);   /* legacy alias — same single value */
+  --gutter:        24px;
+  --z-base:     0;
+  --z-raised:   20;
+  --z-sticky:   80;
+  --z-header:   200;
+  --z-drawer:   700;
+  --z-overlay:  800;
+  --z-float:    850;
+  --z-modal:    900;
+  --z-toast:    1000;
+
+  /* ======================================================================
+     15 · SEMANTIC ROLES — DARK SHELL (default: public marketing pages)
+          Components consume these, not the primitives above.
+     ====================================================================== */
+  --surface-page:     var(--ink);
+  --surface-1:        var(--sf-02);
+  --surface-2:        var(--sf-03);
+  --surface-3:        var(--sf-04);
+  --surface-inset:    var(--scrim-2);
+  --surface-raised:   var(--ink-500);
+  --surface-footer:   var(--ink-900);
+
+  --text-strong:  var(--white);
+  --text-body:    var(--dk-1);
+  --text-muted:   var(--dk-5);
+  --text-subtle:  var(--dk-8);
+  --text-faint:   var(--dk-9);
+  --text-accent:  var(--violet-300);
+  --text-accent-2:var(--teal-300);
+  --text-invert:  var(--n-900);
+
+  --border-1: var(--ln-02);
+  --border-2: var(--ln-03);
+  --border-3: var(--ln-04);
+  --border-accent: var(--v300-a42);
+
+  --focus-ring: var(--violet-300);
+
+  --status-ok-text:   var(--ok);
+  --status-warn-text: var(--warn-300);
+  --status-bad-text:  var(--bad-300);
+
+  /* ======================================================================
+     15b · BORDER, OUTLINE, RING AND STROKE WIDTHS (PRD §5.6, §5.7)
+          A width drawn as a line, whatever property draws it: border,
+          outline, text-stroke, or the spread of a ring-shaped box-shadow.
+     ====================================================================== */
+  --bw-hairline: 1px;     /* PRD §5.6 border-default — cards, tables, rules */
+  --bw-icon:     1.5px;   /* PRD §5.7 — the one icon stroke weight */
+  --bw-strong:   2px;     /* PRD §5.6 border-focus — focus ring, active tab */
+  --bw-marker:   3px;     /* an emphasis rail: active nav item, quote bar */
+  --ring-pulse:  8px;     /* the outer edge of an attention pulse keyframe */
+
+  /* ======================================================================
+     15c · ICON SIZES — PRD §5.7 allows these three and no others
+     ====================================================================== */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* ======================================================================
+     15d · CONTROL, TARGET AND SILHOUETTE HEIGHTS
+          PRD §5.8/§5.9 · WCAG 2.1 AA.  --touch-min is the floor for anything
+          a finger has to hit; a control may be shorter only when it is not
+          itself the target (a bar, a dot, a chip inside a larger row).
+     ====================================================================== */
+  --control-sm:  32px;
+  --control-md:  40px;
+  --control-lg:  48px;
+  --bar-track:    8px;   /* a progress or meter track */
+  --dot:         12px;   /* a timeline or status dot */
+  --avatar-xs:   24px;
+  --avatar-sm:   32px;
+  --avatar-md:   40px;
+  --avatar-lg:   64px;
+  --avatar-xl:   96px;
+
+  /* ======================================================================
+     15e · DIMENSION SCALE — panels, columns, media and content measures
+          above the 4px grid.  One scale for both axes: a component picks the
+          step nearest its need, never a raw pixel value.
+     ====================================================================== */
+  --d-1:  120px;
+  --d-2:  160px;
+  --d-3:  200px;
+  --d-4:  240px;
+  --d-5:  280px;
+  --d-6:  320px;
+  --d-7:  400px;
+  --d-8:  480px;
+  --d-9:  560px;
+  --d-10: 640px;
+  --d-11: 760px;
+  --d-12: 880px;
+
+  /* ======================================================================
+     15f · EFFECT DEPTHS — blur radii and the 3D scene depth
+     ====================================================================== */
+  --blur-xs:  2px;
+  --blur-sm:  8px;
+  --blur-md: 16px;
+  --blur-lg: 24px;
+  --perspective: 1400px;
+}
+
+/* ==========================================================================
+   16 · SEMANTIC ROLES — LIGHT SHELL
+        Applied by <html data-surface="light"> on dashboard, auth, verify and
+        print/PDF views.  D-01 keeps both shells in one token layer, so a
+        component never needs a second definition.
+   ========================================================================== */
+[data-surface="light"] {
+  --surface-page:   var(--n-100);
+  --surface-1:      var(--n-000);
+  --surface-2:      var(--n-100);
+  --surface-3:      var(--n-150);
+  --surface-inset:  var(--n-100);
+  --surface-raised: var(--n-000);
+  --surface-footer: var(--n-000);
+
+  --text-strong: var(--n-900);
+  --text-body:   var(--n-900);
+  --text-muted:  var(--n-600);
+  --text-subtle: var(--n-500);
+  --text-faint:  var(--n-400);
+  --text-accent: var(--violet-700);
+  --text-accent-2: var(--teal-700);
+  --text-invert: var(--white);
+
+  --border-1: var(--n-200);
+  --border-2: var(--n-200);
+  --border-3: var(--n-200);
+  --border-accent: var(--violet-300);
+
+  --focus-ring: var(--violet-500);
+
+  --status-ok-text:   var(--ok-700);
+  --status-warn-text: var(--warn-700);
+  --status-bad-text:  var(--bad-700);
+}
+
+/* A light island inside the dark public shell (PRD §5.3 — 60% neutral). */
+.surface-light {
+  --surface-page:   var(--n-000);
+  --surface-1:      var(--n-000);
+  --surface-2:      var(--n-100);
+  --surface-3:      var(--n-150);
+  --surface-inset:  var(--n-100);
+  --surface-raised: var(--n-000);
+  --text-strong: var(--n-900);
+  --text-body:   var(--n-900);
+  --text-muted:  var(--n-600);
+  --text-subtle: var(--n-500);
+  --text-faint:  var(--n-400);
+  --text-accent: var(--violet-700);
+  --text-accent-2: var(--teal-700);
+  --border-1: var(--n-200);
+  --border-2: var(--n-200);
+  --border-3: var(--n-200);
+  --border-accent: var(--violet-300);
+  --focus-ring: var(--violet-500);
+  --status-ok-text:   var(--ok-700);
+  --status-warn-text: var(--warn-700);
+  --status-bad-text:  var(--bad-700);
+  background: var(--surface-page);
+  color: var(--text-body);
+}
+
+.surface-tint {
+  --surface-page: var(--violet-050);
+}
+
+/* ==========================================================================
+   17 · COMPONENT SHADOWS ADDED FOR THE LANDING DEMOS
+        Ported from docs/04-design/ref-css-motion.html and
+        ref-css-interactions.html.  Declared here, like every other colour, so
+        Gate G6 still finds one file and one file only.
+   ========================================================================== */
+:root {
+  --sh-lab:    0 40px 110px -46px var(--violet-a70);
+  --sh-sim:    0 40px 110px -46px var(--teal-a42);
+  --sh-thumb:  0 4px 16px var(--teal-a60);
+  --sh-trace:  0 0 14px var(--teal-a55);
+  --sh-comet:  0 0 18px 5px var(--teal-a75);
+
+  /* Film grain used by .grain — a data: URI, so it costs no request. */
+  --grain-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+
+  /* Blueprint grid revealed by the pointer on the public shell. */
+  --line-blueprint: var(--v300-a14);
+}

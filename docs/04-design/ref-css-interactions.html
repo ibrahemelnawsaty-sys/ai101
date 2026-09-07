@@ -1,0 +1,206 @@
+
+<style>
+/* ============================================================
+   جرعة ثانية — طبقات الحياة
+   ============================================================ */
+
+/* ---------- حبيبات فيلمية فوق الأقسام الداكنة ---------- */
+.grain{
+  position:fixed;inset:-120px;z-index:1;pointer-events:none;
+  opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  animation:grainShift 700ms steps(4) infinite;
+}
+@keyframes grainShift{
+  0%{transform:translate(0,0)}25%{transform:translate(-14px,9px)}
+  50%{transform:translate(11px,-12px)}75%{transform:translate(-8px,-6px)}
+  100%{transform:translate(0,0)}
+}
+
+/* ---------- شفق يتحرّك ببطء في البنر ---------- */
+.hero__glow{animation:aur1 22s ease-in-out infinite alternate;will-change:transform}
+.hero__glow--2{animation:aur2 27s ease-in-out infinite alternate}
+@keyframes aur1{
+  0%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(-7%,5%) scale(1.14)}
+  100%{transform:translate(5%,-4%) scale(.94)}
+}
+@keyframes aur2{
+  0%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(8%,-6%) scale(1.18)}
+  100%{transform:translate(-5%,4%) scale(.92)}
+}
+
+/* ---------- الشعار يُرسَم عند التحميل ---------- */
+.logo svg{
+  clip-path:inset(0 0 0 100%);
+  transition:clip-path 900ms cubic-bezier(.3,.85,.25,1);
+}
+.logo.drawn svg{clip-path:inset(0 0 0 0)}
+.nav .logo{position:relative;overflow:hidden;border-radius:4px}
+.nav .logo::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 38%,rgba(1,170,173,.75) 50%,transparent 62%);
+  background-size:260% 100%;background-position:220% 0;opacity:0;
+}
+.nav .logo:hover::after{
+  background-position:-90% 0;opacity:1;
+  transition:background-position 780ms cubic-bezier(.3,.85,.25,1),opacity 120ms linear;
+}
+
+/* ---------- كلمات العنوان تتفاعل مع المؤشر ---------- */
+.wd{will-change:transform}
+.wd.lit{transition:opacity 680ms cubic-bezier(.22,.75,.28,1),
+                   transform 340ms cubic-bezier(.22,.75,.28,1),
+                   filter 680ms cubic-bezier(.22,.75,.28,1)}
+
+/* ---------- الأرقام العملاقة تنزلق مع التمرير ---------- */
+.deck__no,.goal__n{will-change:transform}
+
+/* ---------- الشهادة تنقلب ---------- */
+.flip{perspective:1500px}
+.flip__in{
+  position:relative;transform-style:preserve-3d;
+  transition:transform 780ms cubic-bezier(.3,.85,.25,1);
+  min-block-size:296px;
+}
+.flip:hover .flip__in,.flip:focus-within .flip__in{transform:rotateY(180deg)}
+.flip__f,.flip__b{
+  position:absolute;inset:0;backface-visibility:hidden;
+  border-radius:var(--r-xl);padding:var(--s8);
+  background:linear-gradient(150deg,#241C36,#0F0B1A);
+  border:1px solid rgba(255,255,255,.1);overflow:hidden;
+}
+.flip__f::before{
+  content:"";position:absolute;inset-block-start:0;inset-inline:0;block-size:4px;
+  background:linear-gradient(-90deg,var(--violet-500),var(--teal-500));
+}
+.flip__b{transform:rotateY(180deg);border-color:rgba(1,170,173,.3);display:flex;flex-direction:column;justify-content:center}
+.flip__hint{
+  position:absolute;inset-block-end:16px;inset-inline-start:20px;
+  font-size:11.5px;color:#6D6580;display:flex;align-items:center;gap:6px;
+}
+.flip__hint svg{inline-size:12px;block-size:12px}
+.flip__row{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-block-end:1px solid rgba(255,255,255,.08);font-size:13.5px;color:#8E85A3}
+.flip__row:last-child{border-block-end:0}
+.flip__row b{color:#fff;font-weight:600}
+
+/* ============================================================
+   محاكي الشهادة — يطبّق BR-11 و BR-26 على الحقيقة
+   ============================================================ */
+.sim{
+  border-radius:var(--r-xl);overflow:hidden;
+  background:linear-gradient(160deg,var(--ink-3),var(--ink-2) 60%,var(--ink));
+  border:1px solid rgba(1,170,173,.24);
+  box-shadow:0 40px 110px -46px rgba(1,170,173,.42);
+}
+.sim__grid{display:grid;grid-template-columns:1fr}
+@media(min-width:900px){.sim__grid{grid-template-columns:1.05fr .95fr}}
+.sim__in{padding:28px;display:grid;gap:22px;align-content:start}
+.sim__out{
+  padding:28px;border-inline-start:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;gap:18px;
+}
+@media(max-width:899px){.sim__out{border-inline-start:0;border-block-start:1px solid rgba(255,255,255,.08)}}
+
+.sl__hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-block-end:12px}
+.sl__hd label{font-size:14px;font-weight:600;color:#DCD6E8}
+.sl__hd b{font-size:19px;font-weight:700;color:var(--teal-300)}
+.sl__hd b small{font-size:12px;color:#6D6580;font-weight:500}
+.sl__track{position:relative;block-size:36px;display:flex;align-items:center}
+.sl__rail{position:absolute;inset-inline:0;block-size:7px;border-radius:4px;background:rgba(255,255,255,.09)}
+.sl__fill{
+  position:absolute;inset-inline-start:0;block-size:7px;border-radius:4px;
+  background:linear-gradient(90deg,var(--violet-500),var(--teal-500));
+  transition:inline-size 160ms var(--e-out);
+}
+.sl input{
+  position:relative;inline-size:100%;margin:0;background:transparent;
+  -webkit-appearance:none;appearance:none;block-size:36px;cursor:grab;direction:rtl;
+}
+.sl input:active{cursor:grabbing}
+.sl input::-webkit-slider-thumb{
+  -webkit-appearance:none;inline-size:26px;block-size:26px;border-radius:50%;
+  background:#fff;border:4px solid var(--teal-500);
+  box-shadow:0 4px 16px rgba(1,170,173,.6);cursor:grab;
+}
+.sl input::-moz-range-thumb{
+  inline-size:22px;block-size:22px;border-radius:50%;border:4px solid var(--teal-500);
+  background:#fff;box-shadow:0 4px 16px rgba(1,170,173,.6);cursor:grab;
+}
+.sl input:focus-visible{outline:2px solid var(--violet-300);outline-offset:4px;border-radius:var(--r-full)}
+.sl__scale{display:flex;justify-content:space-between;font-size:11px;color:#5E5770;margin-block-start:2px}
+
+/* بوابات الشرطين */
+.gate{
+  padding:16px 18px;border-radius:var(--r-md);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);
+  transition:border-color 300ms,background 300ms;
+}
+.gate.pass{border-color:rgba(14,159,110,.5);background:rgba(14,159,110,.08)}
+.gate.fail{border-color:rgba(201,122,23,.42);background:rgba(201,122,23,.07)}
+.gate__hd{display:flex;align-items:center;gap:10px;margin-block-end:10px}
+.gate__hd > span:not(.gate__ic){font-size:13.5px;font-weight:600;color:#DCD6E8;flex:1;min-inline-size:0}
+.gate__hd .gate__ic{
+  inline-size:22px;block-size:22px;min-inline-size:22px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+  background:rgba(255,255,255,.09);color:#6D6580;transition:background 300ms,color 300ms;
+}
+.gate__ic svg{inline-size:12px;block-size:12px}
+.gate.pass .gate__ic{background:var(--ok);color:#fff}
+.gate.fail .gate__ic{background:rgba(201,122,23,.3);color:#E2A867}
+.gate__val{font-size:22px;font-weight:700;color:#fff;line-height:1}
+.gate__val small{font-size:12px;color:#6D6580;font-weight:500}
+.gate__bar{block-size:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin-block:10px 7px;position:relative}
+.gate__barf{position:absolute;inset-block:0;inset-inline-start:0;border-radius:3px;background:var(--warn);transition:inline-size 240ms var(--e-out),background 300ms}
+.gate.pass .gate__barf{background:var(--ok)}
+.gate__min{
+  position:absolute;inset-block:-3px;inline-size:2px;background:rgba(255,255,255,.55);border-radius:1px;
+}
+.gate__note{font-size:12px;color:#8E85A3;line-height:1.7}
+
+/* الحكم */
+.verdict{
+  margin-block-start:auto;padding:20px;border-radius:var(--r-lg);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);
+  transition:border-color 380ms,background 380ms,box-shadow 380ms;
+}
+.verdict.pass{
+  border-color:rgba(14,159,110,.55);background:rgba(14,159,110,.1);
+  box-shadow:0 0 0 1px rgba(14,159,110,.2),0 18px 50px -24px rgba(14,159,110,.7);
+}
+.verdict__t{display:flex;align-items:center;gap:11px;font-size:17px;font-weight:700;color:#fff}
+.verdict__t .vic{
+  inline-size:30px;block-size:30px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:rgba(255,255,255,.1);color:#9C93AE;transition:background 380ms,color 380ms,transform 380ms;
+}
+.verdict.pass .vic{background:var(--ok);color:#fff;transform:scale(1.06)}
+.verdict__t .vic svg{inline-size:16px;block-size:16px}
+.verdict__d{font-size:13.5px;color:#A79FB8;margin-block-start:10px;line-height:1.85}
+.verdict__d b{color:#fff}
+.simtag{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:var(--r-full);
+  font-size:11px;font-weight:700;background:rgba(120,69,181,.2);color:#C9B6E4;
+  border:1px solid rgba(177,145,217,.28);direction:ltr;
+}
+
+/* ---------- شريط الموضوعات يتفاعل مع سرعة التمرير ---------- */
+.tick__track{will-change:transform}
+
+/* ---------- كشف بشيفرون على عناوين الأقسام ---------- */
+.kicker{position:relative}
+.kicker svg{transition:transform 420ms var(--e-out)}
+.sec__hd.seen .kicker svg{transform:translateY(-2px) scale(1.25)}
+
+/* ---------- تقليل الحركة ---------- */
+@media(prefers-reduced-motion:reduce){
+  .grain{display:none}
+  .hero__glow,.hero__glow--2{animation:none}
+  .logo svg{clip-path:none !important}
+  .flip__in{transition:none}
+  .flip:hover .flip__in,.flip:focus-within .flip__in{transform:none}
+  .flip__b{position:static;transform:none;margin-block-start:14px}
+  .flip__f{position:static}
+  .flip__in{min-block-size:auto}
+  .tick__track{animation:none}
+}
+</style>

@@ -1,0 +1,27 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Constitution art. 9 and gate G2: level 8, zero errors.
+    level: 8
+
+    paths:
+        - app
+        - config
+        - database
+        - routes
+
+    # Pest suites are excluded on purpose: the closure-bound `$this` of a Pest
+    # test is not something PHPStan can resolve without a dedicated extension,
+    # and the resulting noise would hide real findings in app/. Test quality is
+    # covered by gates G7 to G10 instead.
+
+    tmpDir: .phpstan.cache
+
+    # Array value types and generic class types are already required at level 8
+    # in PHPStan 2, so no extra switch is needed: an untyped array is how a
+    # null score or a missing attendance row slips through a service boundary.
+
+    reportUnmatchedIgnoredErrors: true
+
+    ignoreErrors: []

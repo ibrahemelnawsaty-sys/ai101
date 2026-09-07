@@ -1,0 +1,636 @@
+
+<!-- الشبكة العصبية الحيّة خلف الصفحة -->
+<div class="net" id="netLayer" aria-hidden="true"><canvas id="netCanvas"></canvas></div>
+<div class="grain" aria-hidden="true"></div>
+<canvas class="tracer" id="tracer" aria-hidden="true"></canvas>
+<div class="cur" id="cur" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></div>
+
+<!-- لوحة القياس: دقّة النموذج -->
+<div class="hud" id="hud" aria-hidden="true">
+  <div class="hud__ring">
+    <svg viewBox="0 0 34 34" width="34" height="34">
+      <defs><linearGradient id="hudGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7845B5"/><stop offset="1" stop-color="#01AAAD"/></linearGradient></defs>
+      <circle class="hud__bg" cx="17" cy="17" r="14"/>
+      <circle class="hud__fg" id="hudFg" cx="17" cy="17" r="14"/>
+    </svg>
+    <div class="hud__pct u-num" id="hudPct">0</div>
+  </div>
+  <div>دقّة النموذج · <b id="hudLabel">يبدأ التدريب</b></div>
+</div>
+
+<!-- ============================================================
+     مسار الأثر
+     ============================================================ -->
+<nav class="trace" aria-label="مسار الصفحة">
+  <div class="trace__rail">
+    <div class="trace__fill" id="traceFill"></div>
+    <div class="trace__stops">
+      <a class="trace__stop" href="#about"    data-label="عن المعسكر"><svg><use href="#i-chevup"/></svg></a>
+      <a class="trace__stop" href="#lab"      data-label="جرّب التدريب"><svg><use href="#i-chevup"/></svg></a>
+      <a class="trace__stop" href="#goals"    data-label="الأهداف"><svg><use href="#i-chevup"/></svg></a>
+      <a class="trace__stop" href="#learn"    data-label="المحاور"><svg><use href="#i-chevup"/></svg></a>
+      <a class="trace__stop" href="#timeline" data-label="الخط الزمني"><svg><use href="#i-chevup"/></svg></a>
+      <a class="trace__stop" href="#faq"      data-label="الأسئلة"><svg><use href="#i-chevup"/></svg></a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     الفصل الأول — الواجهة العامة
+     ============================================================ -->
+<div class="act is-live" id="act-public">
+
+<header class="nav">
+  <div class="nav__in">
+    <a class="logo" href="#top" aria-label="مركز أثر للتدريب">
+      <svg viewBox="0 0 242.186 102.814" fill="#FFFFFF" role="img" aria-label="مركز أثر"><use href="#athar-wordmark"/></svg>
+    </a>
+    <nav class="nav__links" aria-label="أقسام الصفحة">
+      <a href="#about">عن البرنامج</a>
+      <a href="#lab">جرّب التدريب</a>
+      <a href="#learn">المحاور</a>
+      <a href="#certs">الشهادات</a>
+      <a href="#faq">الأسئلة الشائعة</a>
+    </nav>
+    <div class="nav__cta">
+      <button class="btn btn--ghost btn--sm" data-goto="login">تسجيل الدخول</button>
+      <button class="btn btn--pri btn--sm mag" data-goto="register"><span class="mag__t">سجّل الآن</span></button>
+    </div>
+  </div>
+</header>
+
+<!-- البنر -->
+<section class="hero" id="top">
+  <div class="bp" id="bpGrid" aria-hidden="true"></div>
+  <div class="hero__glow" aria-hidden="true"></div>
+  <div class="hero__glow hero__glow--2" aria-hidden="true"></div>
+  <div class="hero__in">
+    <span class="eyebrow"><svg><use href="#i-chevup"/></svg> مركز أثر للتدريب · الدفعة الأولى · <span class="newdot"><i></i> التسجيل مفتوح</span></span>
+
+    <h1>
+      <span class="mega">
+        <span class="mega__ghost" aria-hidden="true">البرنامج التأسيسي</span>
+        <span class="mega__real" data-decode>البرنامج التأسيسي</span>
+      </span>
+      <span class="grad" data-wipe data-delay="560">في الذكاء الاصطناعي</span>
+    </h1>
+
+    <p class="hero__sub">
+      أربعة أسابيع، <span class="hl">اثنتا عشرة جلسة مباشرة</span>، ومشروع ختامي وشهادتان معتمدتان.
+      تبدأ من الصفر وتخرج بعملٍ في ملفك المهني. <span class="hl hl--v">من هنا يبدأ الأثر.</span>
+    </p>
+
+    <ul class="hero__chips">
+      <li class="chip"><svg><use href="#i-cal"/></svg> <span class="u-num">4</span> أسابيع</li>
+      <li class="chip"><svg><use href="#i-clock"/></svg> <span class="u-num">30</span> ساعة تدريبية</li>
+      <li class="chip"><svg><use href="#i-globe"/></svg> عن بُعد</li>
+      <li class="chip"><svg><use href="#i-money"/></svg> مجاني بالكامل</li>
+    </ul>
+
+    <div class="hero__acts">
+      <button class="btn btn--pri btn--lg mag" data-goto="register"><span class="mag__t">سجّل الآن <svg style="width:15px;height:15px"><use href="#i-chev"/></svg></span></button>
+      <a class="btn btn--sec btn--lg mag" href="#lab"><span class="mag__t">جرّب تدريب نموذج الآن</span></a>
+    </div>
+
+    <div class="cd">
+      <div class="cd__hd"><i class="cd__dot" aria-hidden="true"></i> يغلق التسجيل خلال</div>
+      <div class="cd__grid">
+        <div class="cd__cell"><div class="cd__n" id="cdD">18</div><div class="cd__l">يوم</div></div>
+        <div class="cd__cell"><div class="cd__n" id="cdH">07</div><div class="cd__l">ساعة</div></div>
+        <div class="cd__cell"><div class="cd__n" id="cdM">42</div><div class="cd__l">دقيقة</div></div>
+        <div class="cd__cell"><div class="cd__n" id="cdS">15</div><div class="cd__l">ثانية</div></div>
+      </div>
+      <div class="seats">
+        <div class="seats__row"><span>المقاعد المتبقية</span><span><b class="u-num">12</b> من <b class="u-num">60</b></span></div>
+        <div class="bar"><div class="bar__fill" data-fill="80"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- شريط المحاور المتحرّك -->
+<div class="tick" aria-hidden="true">
+  <div class="tick__track">
+    <div class="tick__set">
+      <span class="tick__i">التعلّم المُوجَّه<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">تنظيف البيانات<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">النماذج اللغوية<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">مقاييس التقييم<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">صياغة التوجيه<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">الإفراط في المطابقة<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">التحيّز في البيانات<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">حدود الثقة<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">بناء نموذج أولي<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">الاستخدام المسؤول<svg><use href="#i-chevup"/></svg></span>
+    </div>
+    <div class="tick__set">
+      <span class="tick__i">التعلّم المُوجَّه<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">تنظيف البيانات<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">النماذج اللغوية<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">مقاييس التقييم<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">صياغة التوجيه<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">الإفراط في المطابقة<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">التحيّز في البيانات<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">حدود الثقة<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">بناء نموذج أولي<svg><use href="#i-chevup"/></svg></span>
+      <span class="tick__i">الاستخدام المسؤول<svg><use href="#i-chevup"/></svg></span>
+    </div>
+  </div>
+</div>
+
+<!-- شريط الثقة -->
+<section class="trust">
+  <div class="wrap">
+    <div class="trust__grid">
+      <div class="trust__i rv"><div class="trust__n"><span class="odo" data-odo="240"></span><span class="suf">+</span></div><div class="trust__l">متدرب في برامج أثر السابقة</div></div>
+      <div class="trust__i rv"><div class="trust__n"><span class="odo" data-odo="30"></span></div><div class="trust__l">ساعة تدريبية مباشرة</div></div>
+      <div class="trust__i rv"><div class="trust__n"><span class="odo" data-odo="12"></span></div><div class="trust__l">جلسة تدريبية مباشرة</div></div>
+      <div class="trust__i rv"><div class="trust__n"><span class="odo" data-odo="60"></span></div><div class="trust__l">مقعدًا فقط في الدفعة</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- عن المعسكر -->
+<section class="sec" id="about">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:center;gap:56px">
+      <div class="rv">
+        <span class="kicker"><svg><use href="#i-chevup"/></svg> عن المعسكر</span>
+        <h2 style="font-size:clamp(28px,4.4vw,50px);margin-block-start:var(--s4);letter-spacing:-.02em;line-height:1.15">
+          تأسيس حقيقي، لا <span class="hl">جولة سريعة</span> على المصطلحات
+        </h2>
+        <p class="lead">
+          هذا معسكر عملي يبني الأساس الذي تُبنى عليه بقية المسارات: كيف تفكّر النماذج،
+          وكيف تُصاغ المشكلة، وكيف تُقاس النتيجة. كل أسبوع يُقفل بمهمة أدائية
+          <span class="hl">تُقيَّم بملاحظة مكتوبة من مدربك</span>، لا بدرجة مجرّدة.
+        </p>
+        <p class="lead">
+          <span class="hl hl--v">لا يُشترط أي خلفية برمجية.</span> ما يُشترط هو الانتظام: ثلاث جلسات
+          مباشرة أسبوعيًا، وتسليم في موعده. من أتمّ ذلك خرج بمشروع في ملفه، وشهادتين تُثبتانه.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-block-start:var(--s6)">
+          <span class="dtag">بدون خلفية برمجية</span>
+          <span class="dtag">جلسات مباشرة</span>
+          <span class="dtag">تسجيلات متاحة</span>
+          <span class="dtag">مشروع في ملفك</span>
+        </div>
+      </div>
+      <div class="rv">
+        <div class="grid g2" style="gap:14px">
+          <div class="card card--dark tiltc"><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-video"/></svg></div><h3><span class="u-num">12</span> جلسة</h3><p>مباشرة عبر زوم بتوقيت الرياض، مع تسجيل يُرفع بعد كل جلسة.</p></div></div>
+          <div class="card card--dark tiltc"><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-file"/></svg></div><h3><span class="u-num">4</span> مهام أدائية</h3><p>واحدة كل أسبوع، تُقيَّم بملاحظة مكتوبة لا بدرجة فقط.</p></div></div>
+          <div class="card card--dark tiltc"><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-badge"/></svg></div><h3>مشروع ختامي</h3><p>يُفتح في الأسبوع الأخير، ويحمل نصف الدرجة الكلية.</p></div></div>
+          <div class="card card--dark tiltc"><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-users"/></svg></div><h3>دفعة واحدة</h3><p><span class="u-num">60</span> مقعدًا فقط، لتبقى المتابعة الفردية ممكنة.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     المختبر — علّم النموذج بيدك
+     ============================================================ -->
+<section class="sec" id="lab" style="padding-block-start:var(--s12)">
+  <div class="wrap">
+    <div class="sec__hd rv" style="text-align:center;margin-inline:auto;max-inline-size:56ch">
+      <span class="kicker" style="justify-content:center"><svg><use href="#i-chevup"/></svg> الأسبوع الأول في نصف دقيقة</span>
+      <h2 style="font-size:clamp(26px,4vw,44px);letter-spacing:-.02em">علّم النموذج بيدك — الآن</h2>
+      <p class="lead">
+        انقر داخل اللوحة لتضع أمثلة. النموذج <span class="hl">يرسم حدّ القرار بينها فورًا</span>
+        ويحسب دقّته. هذا بالضبط ما ستفعله في الأسبوع الأول، لكن ببيانات حقيقية.
+      </p>
+    </div>
+
+    <div class="lab rv">
+      <div class="lab__grid">
+        <div class="lab__stage" id="labStage">
+          <canvas id="labCanvas"></canvas>
+          <div class="lab__hint" id="labHint">انقر داخل اللوحة لإضافة أمثلة — بدّل الفئة من اليمين</div>
+        </div>
+        <div class="lab__side">
+          <div>
+            <div style="font-size:12px;font-weight:700;letter-spacing:.09em;color:#6D6580;margin-block-end:11px">الفئة التي تضعها الآن</div>
+            <div class="lab__team">
+              <button class="lab__b" data-cls="a" aria-pressed="true"><i style="background:#B191D9"></i> الفئة الأولى <span style="margin-inline-start:auto;font-size:12px;color:#6D6580" class="u-num" id="cntA">0</span></button>
+              <button class="lab__b" data-cls="b" aria-pressed="false"><i style="background:#01AAAD"></i> الفئة الثانية <span style="margin-inline-start:auto;font-size:12px;color:#6D6580" class="u-num" id="cntB">0</span></button>
+            </div>
+          </div>
+
+          <div class="lab__stat">
+            <div class="lab__row"><span>دقّة النموذج</span><b class="u-num" id="labAcc">—</b></div>
+            <div class="lab__acc"><div class="lab__accf" id="labAccF"></div></div>
+            <div class="lab__row" style="margin-block-start:4px"><span>عدد الأمثلة</span><b class="u-num" id="labN">0</b></div>
+            <div class="lab__row"><span>دورات التدريب</span><b class="u-num" id="labEp">0</b></div>
+          </div>
+
+          <p style="font-size:12.5px;color:#6D6580;line-height:1.8">
+            هذا مصنّف خطّي بسيط يُدرَّب في متصفحك — بلا خادم وبلا مكتبة.
+            جرّب أن تضع الفئتين متداخلتين وشاهد الدقّة تنخفض: هذه أول درس في حدود النماذج.
+          </p>
+
+          <div style="display:flex;gap:9px;flex-wrap:wrap;margin-block-start:auto">
+            <button class="btn btn--sec btn--sm mag" id="labSeed"><span class="mag__t">مثال جاهز</span></button>
+            <button class="btn btn--ghost btn--sm" id="labClear">امسح الكل</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- الأهداف -->
+<section class="sec sec--pale" id="goals">
+  <div class="wrap">
+    <div class="sec__hd rv">
+      <span class="kicker"><svg><use href="#i-chevup"/></svg> أهداف المعسكر</span>
+      <h2>ما الذي ستقدر عليه بعد أربعة أسابيع</h2>
+      <p class="lead">ستة مخرجات محدّدة وقابلة للقياس — <span class="hl">لا وعود عامة</span>.</p>
+    </div>
+    <div class="grid g3">
+      <div class="card goal tiltc rv"><span class="goal__n u-num">01</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-spark"/></svg></div><h3>تفهم كيف «تتعلّم» الآلة</h3><p>الفرق بين القاعدة المكتوبة والنموذج المدرَّب، ومتى يصلح كل منهما.</p></div></div>
+      <div class="card goal tiltc rv"><span class="goal__n u-num">02</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-route"/></svg></div><h3>تصوغ المشكلة صياغةً قابلة للحل</h3><p>تحويل طلب غامض من صاحب العمل إلى مسألة لها مدخل ومخرج ومقياس.</p></div></div>
+      <div class="card goal tiltc rv"><span class="goal__n u-num">03</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-chart"/></svg></div><h3>تقرأ النتيجة ولا تصدّقها فورًا</h3><p>مقاييس الدقة، وأين تخدعك، وكيف تكتشف نموذجًا يبدو ناجحًا وهو فاشل.</p></div></div>
+      <div class="card goal tiltc rv"><span class="goal__n u-num">04</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-file"/></svg></div><h3>تبني نموذجًا أوليًا بنفسك</h3><p>من البيانات الخام إلى مخرج يعمل، بأدوات لا تتطلب خبرة برمجية عميقة.</p></div></div>
+      <div class="card goal tiltc rv"><span class="goal__n u-num">05</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-shield"/></svg></div><h3>تعرف حدود الأداة وأخلاقياتها</h3><p>الخصوصية، والتحيّز، والاستخدام المسؤول في السياق السعودي والنظامي.</p></div></div>
+      <div class="card goal tiltc rv"><span class="goal__n u-num">06</span><div class="tiltc__in"><div class="card__ic"><svg><use href="#i-badge"/></svg></div><h3>تُخرج مشروعًا تعرضه</h3><p>عمل مكتمل موثّق يصلح أن يكون أول سطر في ملفك المهني.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- الفئات المستهدفة -->
+<section class="sec sec--tint">
+  <div class="wrap">
+    <div class="grid g2" style="gap:56px;align-items:start">
+      <div class="rv">
+        <span class="kicker"><svg><use href="#i-chevup"/></svg> لمن هذا البرنامج</span>
+        <h2 style="font-size:clamp(26px,3.8vw,42px);margin-block-start:var(--s4);letter-spacing:-.02em">إن وجدت نفسك في أحد هذه الأوصاف، فمكانك معنا</h2>
+        <p class="lead">مفتوح لكل من تجاوز الثامنة عشرة، <span class="hl">ولا يشترط تخصصًا بعينه</span>.</p>
+      </div>
+      <div class="who rv">
+        <div class="who__i"><span class="who__ck"><svg><use href="#i-check"/></svg></span><div><b>طالب جامعي أو خريج حديث</b><span>تريد أساسًا صحيحًا قبل التخصص، ومشروعًا تضعه في سيرتك.</span></div></div>
+        <div class="who__i"><span class="who__ck"><svg><use href="#i-check"/></svg></span><div><b>موظف في مجال غير تقني</b><span>ترى الذكاء الاصطناعي يقترب من عملك وتريد أن تفهمه قبل أن يفاجئك.</span></div></div>
+        <div class="who__i"><span class="who__ck"><svg><use href="#i-check"/></svg></span><div><b>مطوّر يريد التوسّع</b><span>تُتقن البرمجة وتنقصك الأسس التي تجعل اختياراتك مبنية على فهم لا على تجربة.</span></div></div>
+        <div class="who__i"><span class="who__ck"><svg><use href="#i-check"/></svg></span><div><b>رائد أعمال أو صاحب فكرة</b><span>تريد أن تعرف ما تستطيع هذه التقنية فعله فعلًا قبل أن تبني عليه قرارًا.</span></div></div>
+        <div class="who__i"><span class="who__ck"><svg><use href="#i-check"/></svg></span><div><b>معلّم أو مدرّب</b><span>تحتاج أن تشرحها لغيرك، فتحتاج أولًا أن تفهمها فهمًا يصمد أمام السؤال.</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- المحاور — رصّة مُمرَّرة -->
+<section id="learn" style="position:relative">
+  <div class="wrap" style="padding-block-start:var(--s24)">
+    <div class="sec__hd rv" style="text-align:center;margin-inline:auto;max-inline-size:52ch;margin-block-end:var(--s8)">
+      <span class="kicker" style="justify-content:center"><svg><use href="#i-chevup"/></svg> المحتوى</span>
+      <h2 style="font-size:clamp(26px,4vw,44px);letter-spacing:-.02em">أربعة أسابيع، أربع محطات</h2>
+      <p class="lead">مرّر لتتقدّم بين الأسابيع.</p>
+    </div>
+  </div>
+
+  <div class="deck" id="deck">
+    <div class="deck__stick">
+      <div class="deck__cards" id="deckCards">
+        <article class="deck__c" data-i="0">
+          <span class="deck__no u-num">01</span>
+          <h3>الأساس: ما هو الذكاء الاصطناعي فعلًا</h3>
+          <div class="dt">الأحد <span class="u-num">4</span> — الخميس <span class="u-num">8</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">3</span> جلسات مباشرة</div>
+          <div class="deck__tags">
+            <span class="dtag">تاريخ المجال ومحطاته</span><span class="dtag">التعلّم الآلي مقابل القواعد</span>
+            <span class="dtag">أنواع التعلّم الثلاثة</span><span class="dtag">البيانات: الوقود والقيد</span><span class="dtag">مصطلحات لا غنى عنها</span>
+          </div>
+        </article>
+        <article class="deck__c" data-i="1">
+          <span class="deck__no u-num">02</span>
+          <h3>البيانات ودورة حياة النموذج</h3>
+          <div class="dt">الأحد <span class="u-num">11</span> — الخميس <span class="u-num">15</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">3</span> جلسات مباشرة</div>
+          <div class="deck__tags">
+            <span class="dtag">جمع البيانات وتنظيفها</span><span class="dtag">التقسيم: تدريب واختبار</span>
+            <span class="dtag">التدريب والضبط</span><span class="dtag">مقاييس التقييم</span><span class="dtag">الإفراط في المطابقة</span>
+          </div>
+        </article>
+        <article class="deck__c" data-i="2">
+          <span class="deck__no u-num">03</span>
+          <h3>النماذج اللغوية والتطبيق العملي</h3>
+          <div class="dt">الأحد <span class="u-num">18</span> — الخميس <span class="u-num">22</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">3</span> جلسات مباشرة</div>
+          <div class="deck__tags">
+            <span class="dtag">كيف تعمل النماذج اللغوية</span><span class="dtag">صياغة التوجيه</span>
+            <span class="dtag">الهلوسة وحدود الثقة</span><span class="dtag">أدوات عملية</span><span class="dtag">بناء نموذج أولي</span>
+          </div>
+        </article>
+        <article class="deck__c" data-i="3">
+          <span class="deck__no u-num">04</span>
+          <h3>الأثر والمسؤولية والمشروع</h3>
+          <div class="dt">الأحد <span class="u-num">25</span> — الخميس <span class="u-num">29</span> أكتوبر <span class="u-num">2026</span> · <span class="u-num">3</span> جلسات مباشرة</div>
+          <div class="deck__tags">
+            <span class="dtag">التحيّز في البيانات</span><span class="dtag">الخصوصية وحماية البيانات</span>
+            <span class="dtag">الاستخدام المسؤول</span><span class="dtag">مسارات التخصص</span><span class="dtag">إطلاق المشروع الختامي</span>
+          </div>
+        </article>
+      </div>
+      <div class="deck__prog" id="deckProg"><i class="on"></i><i></i><i></i><i></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- الخط الزمني -->
+<section class="sec sec--pale" id="timeline">
+  <div class="wrap">
+    <div class="sec__hd rv">
+      <span class="kicker"><svg><use href="#i-chevup"/></svg> الخط الزمني</span>
+      <h2>رحلتك من التسجيل إلى الشهادة</h2>
+      <p class="lead">كل التواريخ بتوقيت الرياض، والجلسات من <span class="u-num">7:00</span> إلى <span class="u-num">9:30</span> مساءً.</p>
+    </div>
+    <div class="tl" id="tlBox">
+      <div class="tl__line"><div class="tl__fill" id="tlFill"></div></div>
+      <div class="tl__row">
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>التسجيل</b><span>حتى <span class="u-num">25</span> سبتمبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>اللقاء التعريفي</b><span>الأحد <span class="u-num">27</span> سبتمبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>الأسبوعان <span class="u-num">1</span>–<span class="u-num">2</span></b><span><span class="u-num">4</span>–<span class="u-num">15</span> أكتوبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>الأسبوعان <span class="u-num">3</span>–<span class="u-num">4</span></b><span><span class="u-num">18</span>–<span class="u-num">29</span> أكتوبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>المشروع الختامي</b><span><span class="u-num">1</span>–<span class="u-num">5</span> نوفمبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>الحفل الختامي</b><span>الأحد <span class="u-num">8</span> نوفمبر</span></div>
+        <div class="tl__i"><div class="tl__dot"><svg><use href="#i-check"/></svg></div><b>الشهادات</b><span><span class="u-num">12</span> نوفمبر</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- الشهادات -->
+<section class="sec" id="certs">
+  <div class="wrap">
+    <div class="sec__hd rv">
+      <span class="kicker"><svg><use href="#i-chevup"/></svg> الشهادات</span>
+      <h2>شهادتان عند الإتمام</h2>
+      <p class="lead">تُصدَران بعد استيفاء نسبة حضور <span class="u-num">75%</span> ودرجة نجاح <span class="u-num">60</span> من <span class="u-num">100</span> <span class="hl">معًا</span>.</p>
+    </div>
+    <div class="grid g2">
+
+      <div class="flip rv" tabindex="0">
+        <div class="flip__in">
+          <div class="flip__f">
+            <div class="cert__seal"><svg><use href="#i-badge"/></svg></div>
+            <h3 style="color:#fff;font-size:21px">شهادة إتمام من مركز أثر للتدريب</h3>
+            <p style="color:#A79FB8;font-size:14.5px;margin-block-start:10px;line-height:1.8">
+              تحمل اسمك الرباعي بالعربية والإنجليزية، واسم البرنامج والدفعة، ورقمًا تسلسليًا فريدًا،
+              ورابط تحقق عام تشاركه مع جهة العمل فتتأكد من صحتها في ثانية.
+            </p>
+            <div class="flip__hint"><svg><use href="#i-eye"/></svg> مرّر لترى ما يظهر لجهة العمل</div>
+          </div>
+          <div class="flip__b">
+            <span class="simtag" style="align-self:flex-start;margin-block-end:14px">/certificate/verify</span>
+            <div class="flip__row"><span>الاسم</span><b>محمد القحطاني</b></div>
+            <div class="flip__row"><span>البرنامج</span><b>البرنامج التأسيسي في الذكاء الاصطناعي</b></div>
+            <div class="flip__row"><span>الرقم التسلسلي</span><b class="u-num">ATH-AI101-2026-0042</b></div>
+            <div class="flip__row"><span>الحالة</span><b style="color:var(--ok)">سارية · مُتحقَّق منها</b></div>
+            <p style="font-size:12px;color:#6D6580;margin-block-start:14px;line-height:1.75">
+              صفحة عامة لا تكشف البريد ولا الجوال ولا الدرجات ولا أي معرّف داخلي.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flip rv" tabindex="0">
+        <div class="flip__in">
+          <div class="flip__f" style="border-color:rgba(1,170,173,.28)">
+            <div class="cert__seal" style="background:linear-gradient(135deg,var(--teal-500),var(--teal-700))"><svg><use href="#i-shield"/></svg></div>
+            <h3 style="color:#fff;font-size:21px">شهادة المؤسسة العامة للتدريب التقني والمهني</h3>
+            <p style="color:#A79FB8;font-size:14.5px;margin-block-start:10px;line-height:1.8">
+              شهادة معتمدة من الجهة الوطنية المنظِّمة للتدريب التقني في المملكة، تُصدر للمتدربين
+              المستوفين لشروط الاجتياز وفق آلية المؤسسة.
+            </p>
+            <div class="flip__hint"><svg><use href="#i-eye"/></svg> مرّر لترى شروط الاستحقاق</div>
+          </div>
+          <div class="flip__b">
+            <span class="simtag" style="align-self:flex-start;margin-block-end:14px">TVTC</span>
+            <div class="flip__row"><span>نسبة الحضور</span><b><span class="u-num">75%</span> فأعلى</b></div>
+            <div class="flip__row"><span>الدرجة النهائية</span><b><span class="u-num">60</span> من <span class="u-num">100</span> فأعلى</b></div>
+            <div class="flip__row"><span>الحفل الختامي</span><b>حضور إلزامي</b></div>
+            <div class="flip__row"><span>موعد التسليم</span><b>بعد الحفل الختامي</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ محاكي شروط الشهادة ============ -->
+    <div class="sec__hd rv" style="margin-block:var(--s24) var(--s8);text-align:center;margin-inline:auto;max-inline-size:56ch">
+      <span class="kicker" style="justify-content:center"><svg><use href="#i-chevup"/></svg> قبل أن تسجّل</span>
+      <h2 style="font-size:clamp(26px,4vw,44px);letter-spacing:-.02em">هل ستحصل على الشهادة؟</h2>
+      <p class="lead">
+        حرّك المؤشرات بصدق. الحساب يجري <span class="hl">بقواعد المنصة نفسها</span> — لا تقدير ولا تقريب.
+      </p>
+    </div>
+
+    <div class="sim rv">
+      <div class="sim__grid">
+        <div class="sim__in">
+          <div class="sl">
+            <div class="sl__hd">
+              <label for="sA">كم جلسة ستحضر؟</label>
+              <b><span class="u-num" id="vA">11</span><small> / 12</small></b>
+            </div>
+            <div class="sl__track">
+              <div class="sl__rail"></div>
+              <div class="sl__fill" id="fA"></div>
+              <input type="range" id="sA" min="0" max="12" step="1" value="11"
+                     aria-label="عدد الجلسات التي ستحضرها من اثنتي عشرة جلسة">
+            </div>
+            <div class="sl__scale"><span class="u-num">12</span><span class="u-num">0</span></div>
+          </div>
+
+          <div class="sl">
+            <div class="sl__hd">
+              <label for="sB">كم مهمة أدائية ستسلّم؟</label>
+              <b><span class="u-num" id="vB">4</span><small> / 4</small></b>
+            </div>
+            <div class="sl__track">
+              <div class="sl__rail"></div>
+              <div class="sl__fill" id="fB"></div>
+              <input type="range" id="sB" min="0" max="4" step="1" value="4"
+                     aria-label="عدد المهام الأدائية التي ستسلّمها من أربع مهام">
+            </div>
+            <div class="sl__scale"><span class="u-num">4</span><span class="u-num">0</span></div>
+          </div>
+
+          <div class="sl">
+            <div class="sl__hd">
+              <label for="sC">تقديرك لدرجة مشروعك الختامي</label>
+              <b><span class="u-num" id="vC">38</span><small> / 50</small></b>
+            </div>
+            <div class="sl__track">
+              <div class="sl__rail"></div>
+              <div class="sl__fill" id="fC"></div>
+              <input type="range" id="sC" min="0" max="50" step="1" value="38"
+                     aria-label="درجتك المتوقعة في المشروع الختامي من خمسين">
+            </div>
+            <div class="sl__scale"><span class="u-num">50</span><span class="u-num">0</span></div>
+          </div>
+
+          <p style="font-size:12.5px;color:#6D6580;line-height:1.85;margin-block-start:2px">
+            المهام الأدائية مجموعها <span class="u-num">50</span> درجة والمشروع الختامي <span class="u-num">50</span>،
+            والمجموع <span class="u-num">100</span>. الشهادة تشترط <b style="color:#9C93AE">الشرطين معًا</b>،
+            فاجتياز أحدهما وحده لا يكفي.
+          </p>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <span class="simtag">BR-11</span><span class="simtag">BR-26</span><span class="simtag">pass_score 60</span><span class="simtag">min_attendance 75</span>
+          </div>
+        </div>
+
+        <div class="sim__out">
+          <div class="gate" id="gateA">
+            <div class="gate__hd">
+              <span class="gate__ic" id="icA"><svg><use href="#i-check"/></svg></span>
+              <span>الشرط الأول — نسبة الحضور</span>
+            </div>
+            <div class="gate__val"><span class="u-num" id="pctA">92</span><small>%</small></div>
+            <div class="gate__bar"><div class="gate__barf" id="barA"></div><div class="gate__min" style="inset-inline-start:75%"></div></div>
+            <div class="gate__note" id="noteA">الحد الأدنى <span class="u-num">75%</span></div>
+          </div>
+
+          <div class="gate" id="gateB">
+            <div class="gate__hd">
+              <span class="gate__ic" id="icB"><svg><use href="#i-check"/></svg></span>
+              <span>الشرط الثاني — الدرجة النهائية</span>
+            </div>
+            <div class="gate__val"><span class="u-num" id="pctB">88</span><small> / 100</small></div>
+            <div class="gate__bar"><div class="gate__barf" id="barB"></div><div class="gate__min" style="inset-inline-start:60%"></div></div>
+            <div class="gate__note" id="noteB">حد النجاح <span class="u-num">60</span></div>
+          </div>
+
+          <div class="verdict" id="verdict">
+            <div class="verdict__t">
+              <span class="vic" id="vicIc"><svg><use href="#i-check"/></svg></span>
+              <span id="vTitle">تستوفي شروط الشهادة</span>
+            </div>
+            <div class="verdict__d" id="vDesc">تصلك الشهادتان تلقائيًا بعد الحفل الختامي.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- المدربون -->
+<section class="sec sec--pale">
+  <div class="wrap">
+    <div class="sec__hd rv" style="text-align:center;margin-inline:auto">
+      <span class="kicker" style="justify-content:center"><svg><use href="#i-chevup"/></svg> فريق التدريب</span>
+      <h2>من يدرّبك</h2>
+      <p class="lead">مختصون يعملون في المجال، <span class="hl">لا يشرحونه من كتاب فقط</span>.</p>
+      <div style="margin-block-start:var(--s4)"><span class="demo-note"><svg><use href="#i-info"/></svg> بيانات المدربين تُدار من لوحة المدير — المعروض نموذج للعرض</span></div>
+    </div>
+    <div class="grid g3">
+      <div class="card trainer tiltc rv"><div class="tiltc__in"><div class="trainer__av">ن م</div><b>د. نورة المطيري</b><span>مسار التأسيس والبيانات</span><p>باحثة في تعلّم الآلة، تعمل على تطبيقات معالجة اللغة العربية منذ سبع سنوات.</p></div></div>
+      <div class="card trainer tiltc rv"><div class="tiltc__in"><div class="trainer__av">س ق</div><b>سعد القحطاني</b><span>مسار التطبيق العملي</span><p>مهندس ذكاء اصطناعي، بنى أنظمة إنتاجية في قطاعَي التقنية المالية والصحة.</p></div></div>
+      <div class="card trainer tiltc rv"><div class="tiltc__in"><div class="trainer__av">ر ع</div><b>ريم العنزي</b><span>مسار الأخلاقيات والحوكمة</span><p>مستشارة حوكمة بيانات، تعمل على مواءمة المشاريع مع نظام حماية البيانات الشخصية.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- الأسئلة الشائعة -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec__hd rv" style="text-align:center;margin-inline:auto">
+      <span class="kicker" style="justify-content:center"><svg><use href="#i-chevup"/></svg> الأسئلة الشائعة</span>
+      <h2>سؤال قبل أن تسجّل؟</h2>
+      <p class="lead">إن لم تجد جوابك، راسلنا على <span style="direction:ltr;display:inline-block">contact@athar-dev.edu.sa</span></p>
+    </div>
+    <div class="faq">
+      <details class="faq__i" open>
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> هل البرنامج مجاني فعلًا؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">نعم، مجاني بالكامل ولا يُطلب منك أي مبلغ في أي مرحلة. المقاعد محدودة بستين مقعدًا لأن المتابعة الفردية جزء من البرنامج، لا لأن هناك رسومًا.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> هل أحتاج خلفية برمجية؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">لا. الأسبوع الأول يبدأ من الصفر ولا يفترض أي معرفة سابقة. الأدوات العملية في الأسبوع الثالث اختيرت تحديدًا لتعمل دون كتابة كود معقّد.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> ماذا لو فاتتني جلسة؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">تسجيل كل جلسة يُرفع في تبويب المحاضرات المباشرة بعد انتهائها. لكن الحضور المباشر يُحتسب في نسبة الحضور، والشهادة تشترط <span class="u-num">75%</span> على الأقل — أي أنك تستطيع تفويت ثلاث جلسات من اثنتي عشرة كحد أقصى.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> كيف تُحسب الدرجة؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">المهام الأدائية الأربع مجموعها <span class="u-num">50</span> درجة، والمشروع الختامي <span class="u-num">50</span> درجة، والمجموع <span class="u-num">100</span>. حد النجاح <span class="u-num">60</span>. كل درجة تصلك مصحوبة بملاحظة مكتوبة من المدرب — الملاحظة إلزامية، لا اختيارية.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> متى تكون الجلسات؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">ثلاث جلسات أسبوعيًا: الأحد والثلاثاء والخميس، من <span class="u-num">7:00</span> إلى <span class="u-num">9:30</span> مساءً بتوقيت الرياض. الجدول الكامل يظهر في لوحتك فور تفعيل حسابك، ويمكنك إضافته إلى تقويمك بضغطة.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> كيف يُسجَّل الحضور؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">بنفسك من تبويب الحضور. يُفتح زر التسجيل قبل بداية الجلسة بنصف ساعة ويبقى مفتوحًا حتى نهايتها. التسجيل خلال أول نصف ساعة يُحتسب حاضرًا، وبعدها يُقبل ويُحتسب متأخرًا.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> هل الشهادة معترف بها؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">تحصل على شهادتين: شهادة إتمام من مركز أثر للتدريب برقم تسلسلي وصفحة تحقق عامة، وشهادة من المؤسسة العامة للتدريب التقني والمهني وهي الجهة الوطنية المنظِّمة للتدريب التقني في المملكة.</div></div></div>
+      </details>
+      <details class="faq__i">
+        <summary class="faq__q"><svg><use href="#i-chev"/></svg> ماذا لو امتلأت المقاعد؟</summary>
+        <div class="faq__wrap"><div><div class="faq__a">عند إغلاق التسجيل يتحوّل العدّاد إلى نموذج قصير تترك فيه بريدك، فتصلك رسالة أول ما تُفتح الدفعة القادمة قبل الإعلان العام.</div></div></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- الدعوة الأخيرة -->
+<section class="sec" style="padding-block-start:0">
+  <div class="wrap">
+    <div class="final rv">
+      <div class="final__in">
+        <span class="eyebrow"><svg><use href="#i-chevup"/></svg> الدفعة الأولى · <span class="newdot"><i></i> التسجيل مفتوح</span></span>
+        <h2 style="margin-block-start:var(--s6);letter-spacing:-.02em">تبقّى <span class="u-num">12</span> مقعدًا</h2>
+        <p>التسجيل أقل من ثلاث دقائق، ويصلك رابط التفعيل فورًا. مكانك يُحجز بإتمام التفعيل لا بإرسال النموذج.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-block-start:var(--s8)">
+          <button class="btn btn--pri btn--lg mag" data-goto="register"><span class="mag__t">سجّل الآن — مجانًا</span></button>
+          <a class="btn btn--sec btn--lg mag" href="#faq"><span class="mag__t">لديّ سؤال أولًا</span></a>
+        </div>
+        <div style="margin-block-start:var(--s6);max-inline-size:340px;margin-inline:auto">
+          <div class="bar"><div class="bar__fill" data-fill="80"></div></div>
+          <div style="font-size:13px;color:#C9BFDE;margin-block-start:9px"><span class="u-num">48</span> من <span class="u-num">60</span> مقعدًا محجوزة</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- التذييل -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__grid">
+      <div>
+        <span class="logo"><svg viewBox="0 0 242.186 102.814" fill="#FFFFFF" role="img" aria-label="مركز أثر"><use href="#athar-wordmark"/></svg></span>
+        <p style="margin-block-start:16px;max-inline-size:44ch;line-height:1.9">
+          مركز أثر للتدريب — جهة تدريبية سعودية تجمع بين التسويق والتدريب، تعمل على صناعة علامات
+          مؤثرة وتطوير جيل مبدع بمهارات واقعية.
+        </p>
+        <p style="margin-block-start:14px;color:var(--teal-300);font-weight:600;font-size:17px">من هنا يبدأ الأثر</p>
+      </div>
+      <div>
+        <h4>روابط سريعة</h4>
+        <ul>
+          <li><a href="#about">عن البرنامج</a></li>
+          <li><a href="#lab">جرّب التدريب</a></li>
+          <li><a href="#learn">المحاور</a></li>
+          <li><a href="#certs">الشهادات</a></li>
+          <li><a href="#faq">الأسئلة الشائعة</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>تواصل معنا</h4>
+        <ul>
+          <li><a href="mailto:contact@athar-dev.edu.sa" style="direction:ltr;display:inline-block">contact@athar-dev.edu.sa</a></li>
+          <li><a href="#" style="direction:ltr;display:inline-block">+966 58 209 0332</a></li>
+          <li><a href="#">الشروط والأحكام</a></li>
+          <li><a href="#">سياسة الخصوصية</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot__bot">
+      <span>© <span class="u-num">2026</span> مركز أثر للتدريب. جميع الحقوق محفوظة.</span>
+      <span style="direction:ltr">ai.athar-dev.edu.sa</span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa" href="#" aria-label="تواصل معنا عبر واتساب"><svg><use href="#i-wa"/></svg></a>
+
+</div><!-- /act-public -->

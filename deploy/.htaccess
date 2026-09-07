@@ -1,0 +1,258 @@
+# =============================================================================
+# Athar Platform - web root .htaccess (Hostinger shared hosting, Apache/LiteSpeed)
+# =============================================================================
+#
+# Install to whichever directory is actually served over HTTP:
+#   Option A (preferred): $HOME/athar-app/public/.htaccess
+#   Option B (shim):      $HOME/public_html/.htaccess
+# See deploy/README.md section 9.
+#
+# @see CONSTITUTION.md Article 24 (security headers, HTTPS), Article 10 (shared hosting)
+# @see PRD section 12.3, 12.5
+#
+# ---------------------------------------------------------------------------
+# READ BEFORE DEPLOYING
+# ---------------------------------------------------------------------------
+# Security headers must be set in ONE place only. If the application ships a
+# SecurityHeaders middleware, comment out the whole "SECURITY HEADERS" block
+# below. Two sources emitting the same header produces duplicated values, and
+# browsers apply the most restrictive Content-Security-Policy of the set, which
+# is very hard to diagnose after the fact.
+#
+# Verify with:  curl -sSI https://ai.wareed.vip/ | sort
+# Each header must appear exactly once.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1. Directory listing and server fingerprinting
+# -----------------------------------------------------------------------------
+
+Options -Indexes -MultiViews
+ServerSignature Off
+
+# Default document. Nothing else may act as one.
+DirectoryIndex index.php
+
+
+# -----------------------------------------------------------------------------
+# 2. Force HTTPS
+# -----------------------------------------------------------------------------
+# LiteSpeed terminates TLS upstream, so HTTPS is not always set on the request;
+# X-Forwarded-Proto is the reliable signal. Both conditions are checked.
+# The application must also trust the proxy - see deploy/README.md section 10.2.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+
+# -----------------------------------------------------------------------------
+# 3. SECURITY HEADERS
+# -----------------------------------------------------------------------------
+
+<IfModule mod_headers.c>
+
+    # --- HSTS ---------------------------------------------------------------
+    # Enable ONLY after HTTPS is confirmed working on every hostname this
+    # account serves. Within max-age this cannot be undone for visitors who
+    # already received it. Start at 300 seconds, raise to 31536000 after a
+    # week of clean operation, and only then consider adding "preload".
+    Header always set Strict-Transport-Security "max-age=300; includeSubDomains" env=HTTPS
+
+    # --- MIME sniffing ------------------------------------------------------
+    # Required by the file-serving design: an uploaded submission must never be
+    # re-interpreted as HTML or JavaScript by the browser.
+    Header always set X-Content-Type-Options "nosniff"
+
+    # --- Clickjacking -------------------------------------------------------
+    # The platform is never embedded in a third-party frame.
+    Header always set X-Frame-Options "DENY"
+
+    # --- Referrer -----------------------------------------------------------
+    # Certificate and card verification URLs contain a verification code; it
+    # must not leak to third parties through the Referer header.
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # --- Permissions --------------------------------------------------------
+    # The platform requests no device capabilities at all.
+    Header always set Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
+
+    # --- Cross-origin isolation --------------------------------------------
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+
+    # --- Content Security Policy -------------------------------------------
+    #
+    # 'unsafe-eval' in script-src is required by the STANDARD Alpine.js build,
+    # which evaluates x-data / x-on expressions with the Function constructor.
+    # It is a real weakening of the policy and must not be treated as normal.
+    #
+    # To remove it, switch to the CSP-safe Alpine build (@alpinejs/csp) and
+    # rewrite component expressions as methods on a registered Alpine.data()
+    # object. When that is done, delete 'unsafe-eval' from the line below and
+    # re-run the smoke test - every interactive component must still work.
+    #
+    # 'unsafe-inline' in style-src covers Blade's inline style attributes used
+    # for progress-bar widths. Removing it requires a nonce on every inline
+    # style, which the middleware layer would have to generate per request.
+    #
+    # No external script, style, font or image origin is allowed: fonts are
+    # self-hosted (Article 19) and there is no third-party analytics.
+    #
+    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+
+    # --- Never cache an authenticated HTML response ------------------------
+    # Hashed Vite assets under /build/ are exempted further down.
+    <FilesMatch "\.(php)$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, private"
+        Header always set Pragma "no-cache"
+    </FilesMatch>
+
+    # --- Downloads are downloads -------------------------------------------
+    # Defence in depth. Files served through the application already carry
+    # Content-Disposition: attachment from the controller.
+    <FilesMatch "\.(pdf|csv|xlsx|xls|docx|pptx|zip|txt|md)$">
+        Header always set Content-Disposition "attachment"
+        Header always set X-Content-Type-Options "nosniff"
+    </FilesMatch>
+
+    # --- Remove identifying headers ----------------------------------------
+    Header always unset X-Powered-By
+    Header always unset X-AspNet-Version
+    Header always unset Server
+
+</IfModule>
+
+<IfModule mod_php.c>
+    php_flag expose_php Off
+</IfModule>
+
+
+# -----------------------------------------------------------------------------
+# 4. Block dotfiles and files that must never be served
+# -----------------------------------------------------------------------------
+# In the correct layout none of these exist in the web root at all; this is the
+# second line of defence in case a deploy step goes wrong.
+
+# Any path segment beginning with a dot: .env, .git, .htpasswd, .DS_Store, ...
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "(?i)^(\.env.*|composer\.(json|lock)|package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|artisan|phpunit\.xml.*|pint\.json|phpstan\.neon.*|vite\.config\.(js|ts)|tailwind\.config\.(js|ts)|postcss\.config\.(js|cjs|mjs)|README\.md|CHANGELOG\.md|CONSTITUTION\.md|PROJECT-CONTRACT\.md|CLAUDE\.md|.*\.(sql|sqlite|db|log|bak|old|orig|save|swp|swo|dist|ini|sh|yml|yaml|lock))$">
+    Require all denied
+</FilesMatch>
+
+# Explicitly deny well-known application directories, should they ever be
+# copied into the web root by mistake.
+#
+# "storage" is deliberately NOT in this list: if the project ever creates a
+# public storage link (deploy/README.md section 9.1) the link lives at
+# /storage and blocking it would break those assets. Participant uploads are
+# not reachable at that path in any case - they live in storage/app/private,
+# outside the web root, and are served only through an authorised controller.
+RedirectMatch 404 (?i)^/(app|bootstrap|config|database|lang|resources|routes|tests|vendor|deploy|docs|node_modules)(/|$)
+
+
+# -----------------------------------------------------------------------------
+# 5. Request body ceiling
+# -----------------------------------------------------------------------------
+# PRD section 12.5: a server-level cap on request size, independent of PHP's
+# post_max_size. 30 MB = 25 MB file + form overhead.
+# If the host returns 500 on every request after adding this, the plan does not
+# allow AllowOverride Limit - comment it out and rely on post_max_size alone.
+
+LimitRequestBody 31457280
+
+
+# -----------------------------------------------------------------------------
+# 6. Laravel front controller
+# -----------------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pass the Authorization header through (some CGI/FastCGI setups strip it).
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect trailing slashes if not a folder.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send everything that is not a real file or directory to index.php.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+
+# -----------------------------------------------------------------------------
+# 7. Static asset caching
+# -----------------------------------------------------------------------------
+# Vite output under /build/ is content-hashed, so it is safe to cache forever.
+# Everything else gets a conservative TTL.
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType text/javascript           "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType image/svg+xml             "access plus 1 month"
+    ExpiresByType image/webp                "access plus 1 month"
+    ExpiresByType image/png                 "access plus 1 month"
+    ExpiresByType image/jpeg                "access plus 1 month"
+    ExpiresByType image/x-icon              "access plus 1 month"
+    ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff2|svg|png|jpe?g|webp|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header unset Pragma
+    </FilesMatch>
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
+
+# -----------------------------------------------------------------------------
+# 8. Compression
+# -----------------------------------------------------------------------------
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript text/javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+    # woff2 is already compressed - do not double-compress it.
+</IfModule>
+
+
+# -----------------------------------------------------------------------------
+# 9. Character set
+# -----------------------------------------------------------------------------
+# Arabic content is UTF-8 everywhere. A wrong default charset renders the whole
+# platform as mojibake.
+
+AddDefaultCharset UTF-8
+AddType text/css;charset=UTF-8 .css
+AddType text/javascript;charset=UTF-8 .js
+AddType application/json;charset=UTF-8 .json
+AddType font/woff2 .woff2
+AddType image/svg+xml .svg
+AddType image/webp .webp

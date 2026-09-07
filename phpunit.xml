@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="random"
+         failOnRisky="true"
+         failOnWarning="true"
+         beStrictAboutOutputDuringTests="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+
+    <!--
+        G8 (Constitution, Article 26): 100% line coverage of the critical services.
+        Nothing else is included, so the gate measures exactly what it claims to measure.
+    -->
+    <source>
+        <include>
+            <directory>app/Services</directory>
+        </include>
+    </source>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <!--
+            APP_DEBUG must stay false: the mandatory "error" state of every screen
+            (Constitution, Article 17) is the rendered Arabic error view, not a stack
+            trace. With debug on, the framework renders the debug page instead and the
+            error-state assertions would test nothing.
+        -->
+        <env name="APP_DEBUG" value="false"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="APP_TIMEZONE" value="UTC"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+
+        <!--
+            Identity (BR-36). config/athar.php deliberately gives the Arabic-bearing
+            entries no default, because Arabic inside a .php file is forbidden (gate
+            G5) — they come from .env. A checkout has no .env, so the test environment
+            supplies its own Latin placeholders here; otherwise BR-36 would fail on a
+            missing environment file rather than on a defect. The values are
+            deliberately not the real Arabic ones: nothing in the suite may assert a
+            literal name, only that the name is read from configuration.
+        -->
+        <env name="ATHAR_PROGRAM_NAME" value="Athar Foundational AI Programme"/>
+        <env name="ATHAR_PLATFORM_NAME" value="Athar Training Platform"/>
+        <env name="ATHAR_TAGLINE" value="Where the impact begins"/>
+
+        <!--
+            Sessions.
+
+            The array driver is the default here because almost nothing in the suite
+            cares where a session row lives. BR-29 is the exception: it asserts that
+            changing a password DELETES the other sessions of that account, which only
+            means anything against the `database` driver. That one test therefore turns
+            the driver on for itself (config(['session.driver' => 'database'])) and
+            writes its fixture row into `user_sessions` — the framework table named in
+            config/session.php. `sessions` is a DOMAIN table on this platform (the
+            training sessions of PRD §7.3) and must never be used for session rows.
+
+            None of these entries carry force="true", so an outer environment variable
+            still wins:  SESSION_DRIVER=database vendor/bin/pest
+        -->
+        <env name="SESSION_DRIVER" value="array"/>
+
+        <!--
+            Database.
+
+            Two supported ways to run this suite, and the difference is declared
+            rather than hidden:
+
+              1. Default — SQLite in memory. No database server, no fixture files, a
+                 fresh schema per test. This is what makes `vendor/bin/pest` work on a
+                 laptop and in CI without provisioning anything.
+
+              2. MySQL 8 — the production engine (Constitution, Article 9):
+
+                     DB_CONNECTION=mysql DB_DATABASE=athar_testing vendor/bin/pest
+
+            SQLite cannot prove everything. Three schema guarantees exist only on
+            MySQL, because the migrations add them with `ALTER TABLE ... CHECK` guarded
+            by the driver name, and because SQLite has no equivalent of strict mode:
+
+                  - evaluations_score_range_check   (BR-12)
+                  - evaluations_feedback_length_check (BR-13)
+                  - sessions_time_order_check      (PRD §7.7)
+
+            Every test that asserts one of those is tagged `->group('mysql')` and skips
+            itself on SQLite with an explicit reason, so a green SQLite run never reads
+            as proof that the production constraint exists. To run exactly that set
+            against the real engine, add the Pest group option "group=mysql" (with the
+            usual two leading dashes) to the MySQL command above.
+
+            No force="true" here either, so the environment overrides both values.
+        -->
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_FOREIGN_KEYS" value="true"/>
+    </php>
+</phpunit>

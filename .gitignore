@@ -1,0 +1,55 @@
+# Secrets - art. 13, rule 10. Nothing resembling a credential is committed.
+.env
+.env.*
+!.env.example
+auth.json
+
+# Dependencies and build output
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+
+# Runtime state.
+# The directories themselves are tracked through their own .gitignore files,
+# so a fresh clone has a writable storage tree without any mkdir step.
+/storage/*.key
+/storage/pail
+
+# Tooling caches
+/.phpunit.cache
+.phpunit.result.cache
+/.phpstan.cache
+/.pint.cache
+
+# Release archives produced by deploy/
+/deploy/build
+*.tar.gz
+*.zip
+
+# Editors and operating systems
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python scratch that landed in this tree by accident: a 423 MB virtualenv and
+# the training-day slide folder that contains nothing but another one.
+.venv/
+/15-شرائح/
+
+# Local SQLite scratch file. The application runs on MySQL (art. 9); this file
+# is a leftover and is never the source of truth.
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# Editor and tooling backups
+*.bak
+
+# Sample dataset from the Python training day - not part of this application.
+/مبيعات_متجر_أثر.csv

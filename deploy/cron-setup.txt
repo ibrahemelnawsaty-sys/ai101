@@ -1,0 +1,118 @@
+===============================================================================
+ ATHAR PLATFORM - cPanel / hPanel CRON ENTRIES
+ Reference copy. Explanation and verification: deploy/cron.md
+===============================================================================
+
+ BEFORE YOU PASTE ANYTHING, REPLACE THESE TWO PLACEHOLDERS IN EVERY LINE:
+
+   /usr/bin/php        ->  the ABSOLUTE path of the PHP 8.2+ CLI binary
+                           find it with:  readlink -f "$(command -v php)"
+                           on Hostinger it is usually one of:
+                               /opt/alt/php82/usr/bin/php
+                               /opt/alt/php83/usr/bin/php
+                               /usr/local/bin/php
+                               /usr/bin/php
+                           verify with:   <path> -v      (must print 8.2 or 8.3)
+                                          <path> -m      (must list pdo_mysql, mbstring, openssl)
+
+   /home/u123456789    ->  the real account home
+                           find it with:  echo $HOME
+
+ THEN PROVE THE COMBINATION WORKS BEFORE CREATING ANY CRON ENTRY:
+
+   /usr/bin/php /home/u123456789/athar-app/artisan about
+   /usr/bin/php /home/u123456789/athar-app/artisan schedule:list
+
+ If either command errors, fix that first. A cron entry built on a broken
+ command fails silently once a minute, forever.
+
+===============================================================================
+ SCHEDULE FIELDS (hPanel asks for these separately)
+===============================================================================
+
+   minute  hour  day-of-month  month  day-of-week
+      *     *         *          *         *          = every minute
+
+===============================================================================
+ ENTRY 1 OF 4 - LARAVEL SCHEDULER          schedule: * * * * *   (every minute)
+===============================================================================
+ The single entry point for every scheduled task in the application, including
+ the BR-08 absent sweep and the BR-09 incomplete-attendance sweep.
+ Article 10: one cron entry, one minute, all tasks pass through it.
+
+* * * * * /usr/bin/php /home/u123456789/athar-app/artisan schedule:run >> /home/u123456789/athar-app/storage/logs/cron-schedule.log 2>&1
+
+===============================================================================
+ ENTRY 2 OF 4 - QUEUE WORKER               schedule: * * * * *   (every minute)
+===============================================================================
+ Drains the database queue and EXITS. Never a daemon (Article 10).
+ --stop-when-empty  exit as soon as the queue is empty
+ --max-time=55      exit after 55s regardless, before the next minute starts
+ --tries=3          three attempts, then the job lands in failed_jobs
+ --backoff=30       wait 30s before retrying a failed job
+ --timeout=50       per-job ceiling, must stay below --max-time
+ --memory=180       restart threshold in MB, below the 256M php limit
+ DO NOT REMOVE --stop-when-empty OR --max-time.
+
+* * * * * /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
+
+ --- optional variant, only if the account's process allowance is being hit ---
+ --- requires flock; check with:  command -v flock                          ---
+
+# * * * * * /usr/bin/flock -n /home/u123456789/athar-app/storage/framework/queue.lock /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
+
+===============================================================================
+ ENTRY 3 OF 4 - DAILY DATABASE BACKUP      schedule: 15 0 * * *  (00:15 UTC)
+===============================================================================
+ 00:15 UTC = 03:15 Asia/Riyadh. Riyadh is a constant UTC+3 with no daylight
+ saving, so this never needs a seasonal adjustment.
+ CONFIRM THE CRON TIMEZONE FIRST:   date ; date -u
+ If cron runs in Riyadh time rather than UTC, use  15 3 * * *  instead.
+ Retention (30 days) is handled inside the script. See deploy/backup.md.
+
+15 0 * * * /bin/sh /home/u123456789/athar-app/deploy/backup-db.sh >> /home/u123456789/backups/backup-db.log 2>&1
+
+===============================================================================
+ ENTRY 4 OF 4 - WEEKLY FILE BACKUP         schedule: 45 0 * * 5  (Fri 00:45 UTC)
+===============================================================================
+ Friday 00:45 UTC = Friday 03:45 Asia/Riyadh - the weekend in Saudi Arabia,
+ the lowest-traffic window. Retention (8 weeks) is handled inside the script.
+
+45 0 * * 5 /bin/sh /home/u123456789/athar-app/deploy/backup-files.sh >> /home/u123456789/backups/backup-files.log 2>&1
+
+===============================================================================
+ OPTIONAL - CRON LOG HOUSEKEEPING          schedule: 30 1 1 * *  (monthly)
+===============================================================================
+ cron-schedule.log and cron-queue.log are append-only shell logs and are NOT
+ rotated by Laravel's daily log channel. Without this they grow without bound
+ and eventually consume the account's inode/disk allowance.
+ This truncates them to their last 2000 lines once a month.
+
+30 1 1 * * /usr/bin/find /home/u123456789/athar-app/storage/logs -name 'cron-*.log' -size +5M -exec sh -c 'tail -n 2000 "$1" > "$1.tmp" && mv "$1.tmp" "$1"' _ {} \; >/dev/null 2>&1
+
+===============================================================================
+ WHAT MUST NEVER BE ADDED
+===============================================================================
+ - queue:work without --stop-when-empty and --max-time   (that is a daemon)
+ - queue:listen                                          (slower, heavier)
+ - schedule:work                                         (a foreground daemon)
+ - a second schedule:run entry                           (one entry, one minute)
+ - any entry without  >> <logfile> 2>&1                  (floods the mailbox)
+ - any entry using a relative path                       (cron has no PATH)
+
+===============================================================================
+ VERIFICATION, TWO MINUTES AFTER SAVING THE ENTRIES
+===============================================================================
+ ls -l --time-style=full-iso /home/u123456789/athar-app/storage/logs/cron-*.log
+     -> both files exist and their mtime is within the last minute or two.
+        EMPTY FILES ARE NORMAL AND EXPECTED on an idle system; the mtime, not
+        the contents, is the proof that cron ran.
+
+ /usr/bin/php /home/u123456789/athar-app/artisan schedule:list
+     -> wait 90 seconds, run it again; the next-run times must have advanced.
+
+ /usr/bin/php /home/u123456789/athar-app/artisan queue:failed
+     -> must be empty.
+
+ Full troubleshooting table: deploy/cron.md section 7.
+===============================================================================

@@ -1,0 +1,867 @@
+
+<script>
+(function () {
+  "use strict";
+
+  var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var FINE   = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
+  var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+
+  /* ==========================================================
+     مبدّل الفصول
+     ========================================================== */
+  function showAct(id) {
+    $$(".act").forEach(function (a) { a.classList.toggle("is-live", a.id === id); });
+    $$(".gal__b").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.act === id)); });
+    var pub = id === "act-public";
+    ["#netLayer", ".trace", ".wa", "#hud"].forEach(function (s) {
+      var el = $(s); if (el) el.style.display = pub ? "" : "none";
+    });
+    window.scrollTo({ top: 0, behavior: REDUCE ? "auto" : "smooth" });
+    runReveals();
+  }
+  $$(".gal__b").forEach(function (b) { b.addEventListener("click", function () { showAct(b.dataset.act); }); });
+  $$("[data-goto]").forEach(function (b) {
+    b.addEventListener("click", function () { showAct("act-screens"); showScr(b.dataset.goto); });
+  });
+
+  function showScr(key) {
+    $$(".scr").forEach(function (s) { s.classList.toggle("is-live", s.id === "scr-" + key); });
+    $$(".rail__b").forEach(function (b) {
+      if (b.dataset.scr === key) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
+    });
+    var root = $("#scr-" + key);
+    animateBars(root); animateCounts(root);
+    if (key === "card") drawQR();
+  }
+  $$(".rail__b").forEach(function (b) { b.addEventListener("click", function () { showScr(b.dataset.scr); }); });
+
+  /* ==========================================================
+     مؤشر الأثر + خط يتبع الحركة
+     ========================================================== */
+  var PX = innerWidth / 2, PY = innerHeight / 2, hasPointer = false;
+  if (FINE && !REDUCE) {
+    var cur = $("#cur"), tracer = $("#tracer"), tctx = tracer.getContext("2d");
+    var trail = [], lastAng = 0;
+
+    function sizeTracer() {
+      var d = Math.min(devicePixelRatio || 1, 2);
+      tracer.width = innerWidth * d; tracer.height = innerHeight * d;
+      tracer.style.width = innerWidth + "px"; tracer.style.height = innerHeight + "px";
+      tctx.setTransform(d, 0, 0, d, 0, 0);
+    }
+    sizeTracer();
+    addEventListener("resize", sizeTracer);
+
+    document.addEventListener("pointermove", function (e) {
+      if (e.pointerType !== "mouse") return;
+      var dx = e.clientX - PX, dy = e.clientY - PY;
+      PX = e.clientX; PY = e.clientY; hasPointer = true;
+      if (dx * dx + dy * dy > 4) lastAng = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+      cur.classList.add("on");
+      cur.style.transform = "translate(" + PX + "px," + PY + "px) rotate(" + lastAng.toFixed(1) + "deg)";
+      trail.push({ x: PX, y: PY, t: performance.now() });
+      if (trail.length > 42) trail.shift();
+      var t = e.target;
+      cur.classList.toggle("grab", !!(t.closest && t.closest("a,button,summary,input,textarea,select,.lab__stage")));
+      var bp = $("#bpGrid");
+      if (bp) {
+        var r = bp.getBoundingClientRect();
+        bp.style.setProperty("--sx", ((PX - r.left) / r.width * 100).toFixed(1) + "%");
+        bp.style.setProperty("--sy", ((PY - r.top) / r.height * 100).toFixed(1) + "%");
+      }
+    }, { passive: true });
+    document.addEventListener("pointerleave", function () { cur.classList.remove("on"); });
+
+    (function drawTrail() {
+      var now = performance.now();
+      tctx.clearRect(0, 0, innerWidth, innerHeight);
+      while (trail.length && now - trail[0].t > 520) trail.shift();
+      if (trail.length > 1) {
+        for (var i = 1; i < trail.length; i++) {
+          var a = trail[i - 1], b = trail[i];
+          var life = 1 - (now - b.t) / 520;
+          if (life <= 0) continue;
+          var p = i / trail.length;
+          tctx.strokeStyle = p > .55
+            ? "rgba(1,170,173," + (life * .55).toFixed(3) + ")"
+            : "rgba(177,145,217," + (life * .4).toFixed(3) + ")";
+          tctx.lineWidth = 2.4 * life * p;
+          tctx.lineCap = "round";
+          tctx.beginPath(); tctx.moveTo(a.x, a.y); tctx.lineTo(b.x, b.y); tctx.stroke();
+        }
+      }
+      requestAnimationFrame(drawTrail);
+    })();
+  }
+
+  /* ==========================================================
+     الشبكة العصبية — فوضى في الأعلى، انتظام في الأسفل
+     ========================================================== */
+  var netProgress = 0;
+  if (!REDUCE) (function neural() {
+    var cv = $("#netCanvas"); if (!cv) return;
+    var ctx = cv.getContext("2d"), W = 0, H = 0, dpr = Math.min(devicePixelRatio || 1, 2);
+    var nodes = [], edges = [], pulses = [], running = true;
+    var LAYERS = [5, 8, 8, 6, 3];
+
+    function build() {
+      var r = cv.getBoundingClientRect();
+      W = r.width; H = r.height;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      nodes = []; edges = [];
+      var padX = W * 0.07, usable = W * 0.86;
+      var idx = 0, layerStart = [];
+      for (var L = 0; L < LAYERS.length; L++) {
+        layerStart.push(idx);
+        for (var k = 0; k < LAYERS[L]; k++) {
+          /* الهدف المنظّم: شبكة طبقية (RTL: الطبقة 0 على اليمين) */
+          var tx = padX + usable * (1 - L / (LAYERS.length - 1));
+          var ty = H * (0.5 + (k - (LAYERS[L] - 1) / 2) * (0.86 / Math.max(LAYERS[L], 5)));
+          nodes.push({
+            /* الفوضى الأولى: اهتزاز حول الموضع لا عشوائية مطلقة */
+            cx: tx + (Math.random() - 0.5) * W * 0.42,
+            cy: ty + (Math.random() - 0.5) * H * 0.62,
+            tx: tx, ty: ty,
+            x: 0, y: 0, L: L,
+            ph: Math.random() * Math.PI * 2,
+            e: 0
+          });
+          idx++;
+        }
+      }
+      for (var L2 = 0; L2 < LAYERS.length - 1; L2++) {
+        for (var a = 0; a < LAYERS[L2]; a++) {
+          for (var b = 0; b < LAYERS[L2 + 1]; b++) {
+            if (Math.random() < 0.42) continue;
+            edges.push({ a: layerStart[L2] + a, b: layerStart[L2 + 1] + b, w: 0.25 + Math.random() * 0.75 });
+          }
+        }
+      }
+    }
+
+    /* موجة تنتشر من موضع النقر وتُشعل ما تمرّ به */
+    var bursts = [];
+    document.addEventListener("pointerdown", function (ev) {
+      if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      var t = ev.target;
+      if (t.closest && t.closest("a,button,input,textarea,select,summary,.lab__stage,.rail,.gal,.frame")) return;
+      if (bursts.length > 3) return;
+      bursts.push({ x: ev.clientX, y: ev.clientY, r: 0 });
+    }, { passive: true });
+
+    function spawnPulse() {
+      if (edges.length === 0 || pulses.length > 22) return;
+      pulses.push({ e: edges[(Math.random() * edges.length) | 0], t: 0, s: 0.006 + Math.random() * 0.012 });
+    }
+
+    var t0 = 0;
+    function frame(ts) {
+      if (!running) return;
+      var dt = Math.min((ts - t0) / 16.7 || 1, 3); t0 = ts;
+      ctx.clearRect(0, 0, W, H);
+
+      var P = netProgress;                       /* 0 فوضى → 1 منتظم */
+      var ease = P * P * (3 - 2 * P);
+
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        n.ph += 0.012 * dt;
+        var driftX = Math.sin(n.ph) * (16 + 26 * (1 - ease));
+        var driftY = Math.cos(n.ph * 0.83) * (12 + 22 * (1 - ease));
+        n.x = n.cx + (n.tx - n.cx) * ease + driftX;
+        n.y = n.cy + (n.ty - n.cy) * ease + driftY;
+
+        if (hasPointer) {
+          var dx = n.x - PX, dy = n.y - PY, d2 = dx * dx + dy * dy;
+          if (d2 < 62000) {
+            var d = Math.sqrt(d2) || 1;
+            n.e = Math.min(1, n.e + 0.075 * dt);
+            /* جاذبية: تنجذب العقدة نحو المؤشر بقوة تخفّ مع البُعد */
+            var pull = (1 - d / 249) * 26;
+            n.x -= dx / d * pull;
+            n.y -= dy / d * pull;
+          }
+        }
+        n.e *= Math.pow(0.955, dt);
+      }
+
+      /* الحواف */
+      for (var j = 0; j < edges.length; j++) {
+        var e = edges[j], A = nodes[e.a], B = nodes[e.b];
+        var glow = Math.max(A.e, B.e);
+        var len = Math.hypot(B.x - A.x, B.y - A.y);
+        var lenFade = clamp(1 - (len - W * 0.16) / (W * 0.20), 0.02, 1);
+        var alpha = ((0.028 + 0.105 * ease) * e.w + glow * 0.30) * lenFade;
+        ctx.strokeStyle = "rgba(" + (ease > 0.55 ? "1,170,173," : "177,145,217,") + alpha.toFixed(3) + ")";
+        ctx.lineWidth = 0.6 + glow * 1.4;
+        ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+      }
+
+      /* النبضات */
+      for (var p = pulses.length - 1; p >= 0; p--) {
+        var pu = pulses[p]; pu.t += pu.s * dt;
+        if (pu.t >= 1) { pulses.splice(p, 1); continue; }
+        var na = nodes[pu.e.a], nb = nodes[pu.e.b];
+        var px = na.x + (nb.x - na.x) * pu.t, py = na.y + (nb.y - na.y) * pu.t;
+        var fade = Math.sin(pu.t * Math.PI);
+        ctx.fillStyle = "rgba(1,170,173," + (0.75 * fade).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(px, py, 2.1, 0, 6.284); ctx.fill();
+        ctx.fillStyle = "rgba(1,170,173," + (0.16 * fade).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(px, py, 7, 0, 6.284); ctx.fill();
+      }
+
+      /* العُقد */
+      for (var q = 0; q < nodes.length; q++) {
+        var m = nodes[q];
+        var rr = 1.9 + m.e * 3.4 + ease * 0.7;
+        if (m.e > 0.04) {
+          ctx.fillStyle = "rgba(1,170,173," + (m.e * 0.14).toFixed(3) + ")";
+          ctx.beginPath(); ctx.arc(m.x, m.y, rr * 4.6, 0, 6.284); ctx.fill();
+        }
+        ctx.fillStyle = m.e > 0.3
+          ? "rgba(91,201,203," + (0.55 + m.e * 0.45).toFixed(3) + ")"
+          : "rgba(177,145,217," + (0.24 + ease * 0.24).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(m.x, m.y, rr, 0, 6.284); ctx.fill();
+      }
+
+      /* الموجات */
+      for (var bi = bursts.length - 1; bi >= 0; bi--) {
+        var bu = bursts[bi];
+        bu.r += 13 * dt;
+        var fadeB = 1 - bu.r / 620;
+        if (fadeB <= 0) { bursts.splice(bi, 1); continue; }
+        ctx.strokeStyle = "rgba(1,170,173," + (fadeB * 0.42).toFixed(3) + ")";
+        ctx.lineWidth = 2.2 * fadeB;
+        ctx.beginPath(); ctx.arc(bu.x, bu.y, bu.r, 0, 6.284); ctx.stroke();
+        ctx.strokeStyle = "rgba(177,145,217," + (fadeB * 0.22).toFixed(3) + ")";
+        ctx.lineWidth = 1.2 * fadeB;
+        ctx.beginPath(); ctx.arc(bu.x, bu.y, bu.r * 0.66, 0, 6.284); ctx.stroke();
+        /* أشعل ما تلامسه الموجة */
+        for (var ni = 0; ni < nodes.length; ni++) {
+          var nn = nodes[ni];
+          var dd = Math.abs(Math.hypot(nn.x - bu.x, nn.y - bu.y) - bu.r);
+          if (dd < 26) nn.e = Math.min(1, nn.e + 0.5);
+        }
+      }
+
+      if (Math.random() < 0.05 + ease * 0.14) spawnPulse();
+      requestAnimationFrame(frame);
+    }
+
+    build();
+    addEventListener("resize", build);
+    requestAnimationFrame(frame);
+    document.addEventListener("visibilitychange", function () {
+      running = !document.hidden;
+      if (running) { t0 = performance.now(); requestAnimationFrame(frame); }
+    });
+  })();
+
+  /* ==========================================================
+     كشف العنوان — قناع يمسح من اليمين + ارتفاع الكلمات
+     ملاحظة حاسمة: الحروف العربية متصلة، فيُمنع تقسيم النص
+     إلى حروف داخل عناصر منفصلة لأنه يكسر شكل الكلمة.
+     التقسيم هنا على مستوى الكلمة فقط.
+     ========================================================== */
+  (function reveal() {
+    $$("[data-decode]").forEach(function (el) {
+      if (REDUCE) return;
+      var words = el.textContent.split(/(\s+)/);
+      el.textContent = "";
+      var spans = [];
+      words.forEach(function (w) {
+        if (!w.trim()) { el.appendChild(document.createTextNode(w)); return; }
+        var s = document.createElement("span");
+        s.className = "wd";
+        s.textContent = w;
+        el.appendChild(s);
+        spans.push(s);
+      });
+      var delay = parseInt(el.dataset.delay || "0", 10);
+      setTimeout(function () {
+        spans.forEach(function (s, i) {
+          setTimeout(function () { s.classList.add("lit"); }, i * 95);
+        });
+      }, delay + 140);
+    });
+
+    /* كشف كامل بقصّ من اليمين — للعناصر ذات التدرّج اللوني */
+    $$("[data-wipe]").forEach(function (el) {
+      if (REDUCE) return;
+      el.classList.add("wipe-t");
+      var d = parseInt(el.dataset.delay || "0", 10);
+      setTimeout(function () { el.classList.add("lit"); }, d + 140);
+    });
+  })();
+
+  /* ==========================================================
+     هايلايت متحرّك بقلم المِبراز
+     ========================================================== */
+  (function highlights() {
+    var items = $$(".hl, .hlbox");
+    items.forEach(function (el) {
+      var r = $("rect", el);
+      if (r) {
+        requestAnimationFrame(function () {
+          try {
+            var len = r.getTotalLength ? r.getTotalLength() : 600;
+            el.style.setProperty("--len", (len || 600).toFixed(0));
+          } catch (err) { el.style.setProperty("--len", "600"); }
+        });
+      }
+    });
+    if (REDUCE || !("IntersectionObserver" in window)) {
+      items.forEach(function (el) { el.classList.add("lit"); });
+      return;
+    }
+    var ob = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        setTimeout(function () { e.target.classList.add("lit"); }, 180);
+        ob.unobserve(e.target);
+      });
+    }, { threshold: 0.6 });
+    items.forEach(function (el) { ob.observe(el); });
+  })();
+
+  /* ==========================================================
+     أزرار مغناطيسية + موجة عند النقر
+     ========================================================== */
+  if (FINE && !REDUCE) $$(".mag").forEach(function (b) {
+    var inner = $(".mag__t", b);
+    b.addEventListener("pointermove", function (e) {
+      var r = b.getBoundingClientRect();
+      var dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+      var dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+      b.style.transform = "translate(" + (dx * 14).toFixed(1) + "px," + (dy * 9).toFixed(1) + "px)";
+      if (inner) inner.style.transform = "translate(" + (dx * 7).toFixed(1) + "px," + (dy * 4).toFixed(1) + "px)";
+    });
+    b.addEventListener("pointerleave", function () {
+      b.style.transform = ""; if (inner) inner.style.transform = "";
+    });
+  });
+  $$(".btn").forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      if (REDUCE) return;
+      var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height);
+      var i = document.createElement("span");
+      i.className = "rip";
+      i.style.width = i.style.height = s + "px";
+      i.style.left = (e.clientX - r.left - s / 2) + "px";
+      i.style.top = (e.clientY - r.top - s / 2) + "px";
+      if (getComputedStyle(b).position === "static") b.style.position = "relative";
+      b.style.overflow = "hidden";
+      b.appendChild(i);
+      setTimeout(function () { i.remove(); }, 640);
+    });
+  });
+
+  /* ==========================================================
+     عدّاد أسطواني
+     ========================================================== */
+  function buildOdo(el) {
+    if (el.dataset.built) return;
+    el.dataset.built = "1";
+    var digits = String(el.dataset.odo).split("");
+    el.innerHTML = "";
+    var rolls = digits.map(function (d) {
+      var c = document.createElement("span"); c.className = "odo__c";
+      var r = document.createElement("span"); r.className = "odo__r";
+      for (var i = 0; i <= 9; i++) { var s = document.createElement("span"); s.textContent = String(i); r.appendChild(s); }
+      c.appendChild(r); el.appendChild(c);
+      return { r: r, d: parseInt(d, 10) };
+    });
+    if (REDUCE) { rolls.forEach(function (o) { o.r.style.transform = "translateY(-" + (o.d * 1.12) + "em)"; }); return; }
+    rolls.forEach(function (o, i) {
+      o.r.style.transitionDelay = (i * 90) + "ms";
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { o.r.style.transform = "translateY(-" + (o.d * 1.12) + "em)"; });
+      });
+    });
+  }
+
+  /* ==========================================================
+     أشرطة التقدم والعدّادات
+     ========================================================== */
+  function animateBars(root) {
+    if (!root) return;
+    $$("[data-fill]", root).forEach(function (el) {
+      var pct = el.dataset.fill + "%", vert = el.classList.contains("jn__f");
+      if (REDUCE) { if (vert) el.style.height = pct; else el.style.width = pct; return; }
+      if (vert) el.style.height = "0"; else el.style.width = "0";
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { if (vert) el.style.height = pct; else el.style.width = pct; });
+      });
+    });
+  }
+  function animateCounts(root) {
+    if (!root) return;
+    $$("[data-count]", root).forEach(function (el) {
+      var target = parseInt(el.dataset.count, 10);
+      if (REDUCE || isNaN(target) || !el.firstChild) return;
+      var start = null, dur = 900;
+      el.firstChild.nodeValue = "0";
+      requestAnimationFrame(function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        el.firstChild.nodeValue = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(step);
+      });
+    });
+  }
+
+  /* ==========================================================
+     الظهور التدريجي
+     ========================================================== */
+  var io = null;
+  function runReveals() {
+    var items = $$(".rv").filter(function (el) { return !el.classList.contains("in"); });
+    function light(el, i) {
+      setTimeout(function () {
+        el.classList.add("in");
+        animateBars(el); animateCounts(el);
+        $$(".odo", el).forEach(buildOdo);
+      }, REDUCE ? 0 : Math.min(i, 6) * 65);
+    }
+    if (REDUCE || !("IntersectionObserver" in window)) {
+      items.forEach(function (el) { light(el, 0); });
+      return;
+    }
+    if (!io) {
+      io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var el = e.target;
+          var sibs = Array.prototype.slice.call(el.parentNode.children).filter(function (c) { return c.classList.contains("rv"); });
+          light(el, Math.max(0, sibs.indexOf(el)));
+          io.unobserve(el);
+        });
+      }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    }
+    items.forEach(function (el) {
+      if (el.getBoundingClientRect().top < innerHeight * 0.95) light(el, 0);
+      else io.observe(el);
+    });
+  }
+
+  /* ==========================================================
+     التمرير: مسار الأثر · دقّة النموذج · الرصّة · الخط الزمني
+     ========================================================== */
+  var traceFill = $("#traceFill"), stops = $$(".trace__stop");
+  var hudFg = $("#hudFg"), hudPct = $("#hudPct"), hudLabel = $("#hudLabel");
+  var deck = $("#deck"), deckCards = $$(".deck__c"), deckProg = $$("#deckProg i");
+  var ticking = false;
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      ticking = false;
+      var max = document.documentElement.scrollHeight - innerHeight;
+      var p = max > 0 ? clamp(scrollY / max, 0, 1) : 0;
+      netProgress = p;
+
+      if (traceFill) traceFill.style.height = (p * 100).toFixed(1) + "%";
+      stops.forEach(function (s, i) { s.classList.toggle("is-on", p >= (i + 0.5) / stops.length * 0.92); });
+
+      /* دقّة النموذج */
+      if (hudFg) {
+        var acc = Math.round(p * 100);
+        hudFg.style.strokeDashoffset = (88 - 88 * p).toFixed(1);
+        hudPct.textContent = acc;
+        hudLabel.textContent = acc < 12 ? "يبدأ التدريب"
+          : acc < 45 ? "يتعلّم الأنماط"
+          : acc < 78 ? "يضبط الأوزان"
+          : acc < 97 ? "يقترب من الاستقرار" : "النموذج جاهز";
+      }
+
+      /* رصّة الأسابيع */
+      if (deck && deckCards.length && innerWidth >= 900 && !REDUCE) {
+        var r = deck.getBoundingClientRect();
+        var span = deck.offsetHeight - innerHeight;
+        var dp = span > 0 ? clamp(-r.top / span, 0, 1) : 0;
+        var pos = dp * (deckCards.length - 1);
+        var active = Math.round(pos);
+        deckCards.forEach(function (c, i) {
+          var d = i - pos, t, op;
+          c.style.zIndex = String(50 - i);   /* الأقدم فوق: ينزلق كاشفًا ما تحته */
+          if (d >= 0) {
+            /* لم يصل بعد: يقف خلف الرصّة، ويصير كاملًا سريعًا حين يحين دوره */
+            op = Math.max(clamp((1 - d) * 3, 0, 1), d < 2.2 ? 0.12 : 0);
+            t = "translate3d(0," + (d * 22).toFixed(1) + "px,0) scale(" + (1 - d * 0.045).toFixed(3) + ")";
+          } else {
+            /* مضى: يخرج للأعلى بميل ويختفي بسرعة حتى لا يتراكب */
+            op = clamp(1 + d * 3.0, 0, 1);
+            t = "translate3d(0," + (d * 130).toFixed(1) + "px,0) rotateX(" + (-d * 14).toFixed(1) +
+                "deg) scale(" + (1 + d * 0.05).toFixed(3) + ")";
+          }
+          c.style.opacity = op.toFixed(3);
+          c.style.transform = t;
+        });
+        deckProg.forEach(function (i2, k) { i2.classList.toggle("on", k <= active); });
+      }
+
+      /* الخط الزمني بمذنَّب */
+      var tl = $("#tlFill");
+      if (tl && !tl.dataset.done) {
+        var box = $("#tlBox");
+        if (box && box.getBoundingClientRect().top < innerHeight * 0.78) {
+          tl.dataset.done = "1";
+          box.classList.add("lit");
+          tl.style.width = "100%";
+          $$("#tlBox .tl__i").forEach(function (el, i) {
+            setTimeout(function () { el.classList.add("on"); }, REDUCE ? 0 : 260 + i * 165);
+          });
+          setTimeout(function () { box.classList.remove("lit"); }, REDUCE ? 0 : 2100);
+        }
+      }
+    });
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", onScroll, { passive: true });
+
+  /* ==========================================================
+     ميلان البطاقات + بقعة الضوء
+     ========================================================== */
+  if (FINE && !REDUCE) $$(".tiltc").forEach(function (c) {
+    c.addEventListener("pointermove", function (e) {
+      var r = c.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      c.style.setProperty("--cx", (px * 100).toFixed(1) + "%");
+      c.style.setProperty("--cy", (py * 100).toFixed(1) + "%");
+      c.style.transform = "perspective(900px) rotateY(" + ((px - .5) * 9).toFixed(2) +
+        "deg) rotateX(" + ((.5 - py) * 9).toFixed(2) + "deg) translateY(-4px)";
+    });
+    c.addEventListener("pointerleave", function () { c.style.transform = ""; });
+  });
+
+  /* ==========================================================
+     المختبر: مصنّف خطّي يُدرَّب في المتصفح
+     ========================================================== */
+  (function lab() {
+    var stage = $("#labStage"), cv = $("#labCanvas");
+    if (!stage || !cv) return;
+    var ctx = cv.getContext("2d"), W = 0, H = 0, dpr = Math.min(devicePixelRatio || 1, 2);
+    var pts = [], cls = "a", w = [0, 0], bias = 0, epochs = 0, anim = null;
+    var hint = $("#labHint");
+
+    function size() {
+      var r = stage.getBoundingClientRect();
+      W = r.width; H = r.height;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    /* تدريب: انحدار متدرّج على خسارة المفصلة */
+    function train() {
+      var A = pts.filter(function (p) { return p.c === "a"; });
+      var B = pts.filter(function (p) { return p.c === "b"; });
+      if (!A.length || !B.length) { w = [0, 0]; bias = 0; epochs = 0; return; }
+      w = [0, 0]; bias = 0; epochs = 0;
+      var lr = 0.06;
+      for (var it = 0; it < 340; it++) {
+        var gw = [0, 0], gb = 0;
+        for (var i = 0; i < pts.length; i++) {
+          var p = pts[i], y = p.c === "a" ? 1 : -1;
+          var nx = p.x / W * 2 - 1, ny = p.y / H * 2 - 1;
+          var m = y * (w[0] * nx + w[1] * ny + bias);
+          if (m < 1) { gw[0] -= y * nx; gw[1] -= y * ny; gb -= y; }
+        }
+        var n = pts.length;
+        w[0] -= lr * (gw[0] / n + 0.012 * w[0]);
+        w[1] -= lr * (gw[1] / n + 0.012 * w[1]);
+        bias -= lr * (gb / n);
+        epochs++;
+      }
+    }
+
+    function accuracy() {
+      if (!pts.length) return null;
+      var ok = 0;
+      for (var i = 0; i < pts.length; i++) {
+        var p = pts[i], nx = p.x / W * 2 - 1, ny = p.y / H * 2 - 1;
+        var s = w[0] * nx + w[1] * ny + bias;
+        if ((s >= 0 ? "a" : "b") === p.c) ok++;
+      }
+      return ok / pts.length;
+    }
+
+    function updateStats() {
+      var A = pts.filter(function (p) { return p.c === "a"; }).length;
+      var B = pts.length - A;
+      $("#cntA").textContent = A; $("#cntB").textContent = B;
+      $("#labN").textContent = pts.length;
+      $("#labEp").textContent = epochs;
+      var acc = accuracy();
+      var pct = acc === null ? null : Math.round(acc * 100);
+      $("#labAcc").textContent = pct === null ? "—" : pct + "%";
+      $("#labAccF").style.width = (pct === null ? 0 : pct) + "%";
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      /* شبكة خافتة */
+      ctx.strokeStyle = "rgba(177,145,217,.07)"; ctx.lineWidth = 1;
+      for (var gx = 0; gx < W; gx += 44) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+      for (var gy = 0; gy < H; gy += 44) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+
+      /* مناطق القرار */
+      if (pts.length && (w[0] || w[1])) {
+        var step = 12;
+        for (var y = 0; y < H; y += step) {
+          for (var x = 0; x < W; x += step) {
+            var nx = x / W * 2 - 1, ny = y / H * 2 - 1;
+            var s = w[0] * nx + w[1] * ny + bias;
+            var conf = clamp(Math.abs(s) * 1.5, 0, 1);
+            ctx.fillStyle = s >= 0
+              ? "rgba(120,69,181," + (0.09 + conf * 0.26).toFixed(3) + ")"
+              : "rgba(1,170,173," + (0.07 + conf * 0.22).toFixed(3) + ")";
+            ctx.fillRect(x, y, step, step);
+          }
+        }
+        /* حدّ القرار */
+        if (Math.abs(w[1]) > 1e-6 || Math.abs(w[0]) > 1e-6) {
+          var seg = [];
+          for (var i = 0; i <= 60; i++) {
+            var xx = i / 60 * W, nxx = xx / W * 2 - 1;
+            var nyy = -(w[0] * nxx + bias) / (w[1] || 1e-6);
+            var yy = (nyy + 1) / 2 * H;
+            if (yy > -H && yy < 2 * H) seg.push([xx, yy]);
+          }
+          if (seg.length > 1) {
+            ctx.save();
+            ctx.shadowColor = "rgba(91,201,203,.85)"; ctx.shadowBlur = 14;
+            ctx.strokeStyle = "#5BC9CB"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(seg[0][0], seg[0][1]);
+            for (var k = 1; k < seg.length; k++) ctx.lineTo(seg[k][0], seg[k][1]);
+            ctx.stroke(); ctx.restore();
+          }
+        }
+      }
+
+      /* النقاط */
+      for (var q = 0; q < pts.length; q++) {
+        var p = pts[q];
+        var grow = clamp((performance.now() - p.born) / 260, 0, 1);
+        var r = 7 * (REDUCE ? 1 : (1 - Math.pow(1 - grow, 3)));
+        var col = p.c === "a" ? "177,145,217" : "1,170,173";
+        ctx.fillStyle = "rgba(" + col + ",.18)";
+        ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.3, 0, 6.284); ctx.fill();
+        ctx.fillStyle = "rgb(" + col + ")";
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.284); ctx.fill();
+        ctx.strokeStyle = "rgba(10,7,19,.75)"; ctx.lineWidth = 1.6; ctx.stroke();
+      }
+    }
+
+    function loop() {
+      draw();
+      var young = pts.some(function (p) { return performance.now() - p.born < 320; });
+      if (young && !REDUCE) anim = requestAnimationFrame(loop);
+      else anim = null;
+    }
+
+    function add(x, y) {
+      pts.push({ x: x, y: y, c: cls, born: performance.now() });
+      if (hint) hint.style.opacity = "0";
+      train(); updateStats();
+      if (!anim) loop(); else draw();
+    }
+
+    stage.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      var r = stage.getBoundingClientRect();
+      add(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    $$(".lab__b").forEach(function (b) {
+      b.addEventListener("click", function () {
+        cls = b.dataset.cls;
+        $$(".lab__b").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      });
+    });
+
+    $("#labClear").addEventListener("click", function () {
+      pts = []; w = [0, 0]; bias = 0; epochs = 0;
+      if (hint) hint.style.opacity = "1";
+      updateStats(); draw();
+    });
+
+    $("#labSeed").addEventListener("click", function () {
+      pts = [];
+      var s = 7717;
+      function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+      for (var i = 0; i < 11; i++) pts.push({ x: W * (0.60 + rnd() * 0.28), y: H * (0.14 + rnd() * 0.5), c: "a", born: performance.now() - 400 });
+      for (var j = 0; j < 11; j++) pts.push({ x: W * (0.10 + rnd() * 0.28), y: H * (0.40 + rnd() * 0.5), c: "b", born: performance.now() - 400 });
+      if (hint) hint.style.opacity = "0";
+      train(); updateStats(); draw();
+    });
+
+    size();
+    addEventListener("resize", size);
+    updateStats();
+  })();
+
+  /* ==========================================================
+     العدّاد التنازلي
+     ========================================================== */
+  var deadline = new Date(2026, 8, 25, 23, 59, 59).getTime();
+  function tickCountdown() {
+    var d = Math.max(0, deadline - Date.now());
+    var el;
+    if ((el = $("#cdD"))) el.textContent = pad(Math.floor(d / 86400000));
+    if ((el = $("#cdH"))) el.textContent = pad(Math.floor(d / 3600000) % 24);
+    if ((el = $("#cdM"))) el.textContent = pad(Math.floor(d / 60000) % 60);
+    if ((el = $("#cdS"))) el.textContent = pad(Math.floor(d / 1000) % 60);
+  }
+  tickCountdown(); setInterval(tickCountdown, 1000);
+
+  var sessLeft = 4360, impLeft = 1781;
+  setInterval(function () {
+    var e = $("#nextSess");
+    if (e) { sessLeft = Math.max(0, sessLeft - 1);
+      e.textContent = pad(Math.floor(sessLeft / 3600)) + ":" + pad(Math.floor(sessLeft / 60) % 60) + ":" + pad(sessLeft % 60); }
+    var i = $("#impTimer");
+    if (i) { impLeft = Math.max(0, impLeft - 1);
+      i.textContent = pad(Math.floor(impLeft / 60)) + ":" + pad(impLeft % 60); }
+  }, 1000);
+
+  /* ==========================================================
+     البطاقة الرقمية — ميلان ≤ 8°
+     ========================================================== */
+  (function idTilt() {
+    var scene = $("#idScene"), card = $("#idCard");
+    if (!scene || !card || REDUCE || !FINE) return;
+    scene.addEventListener("pointermove", function (e) {
+      var r = card.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      card.style.transform = "rotateY(" + ((px - .5) * 16).toFixed(2) + "deg) rotateX(" + ((.5 - py) * 16).toFixed(2) + "deg)";
+      var sh = $(".idcard__sheen", card);
+      if (sh) { sh.style.setProperty("--mx", (px * 100) + "%"); sh.style.setProperty("--my", (py * 100) + "%"); }
+    });
+    scene.addEventListener("pointerleave", function () { card.style.transform = ""; });
+  })();
+
+  /* ==========================================================
+     رمز QR للعرض (الحقيقي يُولَّد على الخادم)
+     ========================================================== */
+  var qrDrawn = false;
+  function drawQR() {
+    var box = $("#qrBox"); if (!box || qrDrawn) return;
+    qrDrawn = true;
+    var N = 25, cells = [], s = 20260927;
+    function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
+      var finder = (x < 7 && y < 7) || (x >= N - 7 && y < 7) || (x < 7 && y >= N - 7);
+      var inFrame = finder && (
+        x === 0 || x === 6 || y === 0 || y === 6 || x === N - 7 || x === N - 1 || y === N - 7 || y === N - 1 ||
+        (x >= 2 && x <= 4 && y >= 2 && y <= 4) || (x >= N - 5 && x <= N - 3 && y >= 2 && y <= 4) ||
+        (x >= 2 && x <= 4 && y >= N - 5 && y <= N - 3));
+      if (finder ? inFrame : rnd() > 0.52) cells.push('<rect x="' + x + '" y="' + y + '" width="1" height="1"/>');
+    }
+    box.innerHTML = '<svg viewBox="0 0 ' + N + ' ' + N + '" shape-rendering="crispEdges" role="img" aria-label="رمز التحقق من البطاقة">' +
+      '<rect width="' + N + '" height="' + N + '" fill="#fff"/><g fill="#111114">' + cells.join("") + "</g></svg>";
+  }
+
+  /* ==========================================================
+     محاكاة تسجيل الحضور
+     ========================================================== */
+  (function checkin() {
+    var btn = $("#ckBtn"), lbl = $("#ckLabel"), msg = $("#ckMsg"), timer = $("#ckTimer"), demo = $("#ckDemo");
+    if (!btn) return;
+    var left = 872;
+    function fmt(n) { return pad(Math.floor(n / 3600)) + ":" + pad(Math.floor(n / 60) % 60) + ":" + pad(n % 60); }
+    setInterval(function () {
+      if (btn.dataset.state !== "wait") return;
+      left = Math.max(0, left - 1);
+      if (timer) timer.textContent = fmt(left);
+    }, 1000);
+
+    function open() {
+      if (btn.dataset.state !== "wait") return;
+      btn.dataset.state = "open";
+      lbl.innerHTML = "تسجيل الحضور";
+      msg.innerHTML = 'النافذة مفتوحة الآن — أنت قبل بداية الجلسة، فسيُحتسب حضورك <b style="color:var(--ok)">حاضرًا</b>.';
+    }
+    function done() {
+      if (btn.dataset.state !== "open") return;
+      btn.dataset.state = "done";
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="ck-path" d="M20 6L9 17l-5-5"/></svg><span>تم تسجيل حضورك</span>';
+      msg.innerHTML = 'تم تسجيل حضورك الساعة <b class="u-num">6:58 مساءً</b> بتوقيت الرياض · الحالة: <b>حاضر</b>';
+      var pb = $("#scr-attend .pbar__f"); if (pb) pb.style.width = "100%";
+    }
+    btn.addEventListener("click", done);
+    if (demo) demo.addEventListener("click", function () {
+      if (btn.dataset.state === "wait") { open(); demo.textContent = "الآن اضغط زر تسجيل الحضور"; }
+      else if (btn.dataset.state === "open") { done(); demo.textContent = "أعد المحاكاة"; }
+      else {
+        btn.dataset.state = "wait";
+        btn.innerHTML = '<span id="ckLabel">يُفتح بعد <span class="u-num" id="ckTimer">00:14:32</span></span>';
+        lbl = $("#ckLabel"); timer = $("#ckTimer"); left = 872;
+        msg.innerHTML = 'تُفتح نافذة التسجيل قبل بداية الجلسة بـ <span class="u-num">30</span> دقيقة وتُغلق بانتهائها';
+        demo.textContent = "شغّل المحاكاة — افتح النافذة";
+      }
+    });
+  })();
+
+  /* ==========================================================
+     رفع المهمة + احتفال ثانيتين
+     ========================================================== */
+  (function upload() {
+    var drop = $("#dropZone"), box = $("#upBox"), bar = $("#upBar"), pct = $("#upPct"),
+        size = $("#upSize"), state = $("#upState"), btn = $("#submitBtn"), cf = $("#cfBox");
+    if (!btn) return;
+    var busy = false;
+    if (drop) {
+      ["dragenter", "dragover"].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("hot"); }); });
+      ["dragleave", "drop"].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("hot"); }); });
+      drop.addEventListener("click", run);
+    }
+    btn.addEventListener("click", run);
+
+    function run() {
+      if (busy) return;
+      busy = true; box.hidden = false;
+      var p = 0, total = 3.4;
+      var iv = setInterval(function () {
+        p = Math.min(100, p + (4 + Math.random() * 9));
+        bar.style.width = p + "%";
+        pct.textContent = Math.round(p) + "%";
+        size.textContent = (total * p / 100).toFixed(1) + " / " + total.toFixed(1) + " MB";
+        if (p >= 100) { clearInterval(iv); state.textContent = "اكتمل الرفع"; bar.style.background = "var(--ok)"; setTimeout(finish, 320); }
+      }, REDUCE ? 10 : 130);
+    }
+    function finish() {
+      state.innerHTML = 'سُلّمت الخميس <span class="u-num">22</span> أكتوبر · <span class="u-num">8:14</span> مساءً';
+      btn.textContent = "تم التسليم"; btn.style.background = "var(--ok)";
+      if (REDUCE || !cf) { busy = false; return; }
+      var colors = ["#7845B5", "#01AAAD", "#B191D9", "#017E80"];
+      for (var i = 0; i < 48; i++) {
+        var s = document.createElement("i");
+        s.style.left = (12 + Math.random() * 76) + "%";
+        s.style.top = (14 + Math.random() * 12) + "%";
+        s.style.background = colors[i % colors.length];
+        s.style.animationDelay = (Math.random() * 0.35).toFixed(2) + "s";
+        cf.appendChild(s);
+      }
+      setTimeout(function () { cf.innerHTML = ""; busy = false; }, 2000);
+    }
+  })();
+
+  /* ==========================================================
+     الإقلاع
+     ========================================================== */
+  runReveals();
+  onScroll();
+  animateBars($("#scr-home")); animateCounts($("#scr-home"));
+  animateBars($(".hero"));
+  $$(".final .bar__fill").forEach(function () {});
+})();
+</script>

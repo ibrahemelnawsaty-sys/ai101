@@ -1,0 +1,372 @@
+
+<style>
+/* ============================================================
+   «أثر حيّ» — طبقة الحركة والتفاعل
+   الصفحة نموذج يتدرّب: فوضى في الأعلى، انتظام في الأسفل.
+   كل ما هنا مُلغى بالكامل عند prefers-reduced-motion.
+   ============================================================ */
+
+:root{
+  --ink:#0A0713;
+  --ink-2:#120C1F;
+  --ink-3:#1A1229;
+  --line:rgba(177,145,217,.14);
+  --sx:50%; --sy:30%;
+}
+
+body{background:var(--ink)}
+
+/* ---------- مؤشر مخصّص: شيفرون الأثر ---------- */
+.cur{
+  position:fixed;inset-block-start:0;inset-inline-start:0;z-index:9999;
+  inline-size:26px;block-size:26px;margin:-13px 0 0 -13px;
+  pointer-events:none;opacity:0;
+  transition:opacity 260ms ease,transform 120ms ease-out;
+  will-change:transform;display:none;
+}
+.cur svg{inline-size:100%;block-size:100%;color:var(--teal-300)}
+.cur.on{opacity:1}
+.cur.grab svg{color:var(--violet-300)}
+@media(hover:hover) and (pointer:fine){.cur{display:block}}
+
+/* ---------- أثر المؤشر (canvas) ---------- */
+.tracer{position:fixed;inset:0;z-index:9998;pointer-events:none;display:none}
+@media(hover:hover) and (pointer:fine){.tracer{display:block}}
+
+/* ---------- الشبكة الحيّة خلف الصفحة ---------- */
+.net{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.78}
+.net canvas{inline-size:100%;block-size:100%;display:block}
+.act{position:relative;z-index:2}
+.gal,.trace,.wa{z-index:900}
+
+/* ---------- شبكة مخطّطات يكشفها المؤشر ---------- */
+.bp{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(340px circle at var(--sx) var(--sy),#000 0%,rgba(0,0,0,.35) 45%,transparent 78%);
+  mask-image:radial-gradient(340px circle at var(--sx) var(--sy),#000 0%,rgba(0,0,0,.35) 45%,transparent 78%);
+}
+
+/* ---------- لوحة القياس: دقّة النموذج ترتفع مع التمرير ---------- */
+.hud{
+  position:fixed;inset-block-end:88px;inset-inline-end:20px;z-index:880;
+  display:none;align-items:center;gap:11px;
+  padding:9px 9px 9px 15px;border-radius:var(--r-full);
+  background:rgba(10,7,19,.82);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(177,145,217,.22);
+  box-shadow:0 16px 44px -18px rgba(0,0,0,.9);
+  font-size:12px;color:#9C93AE;white-space:nowrap;
+}
+@media(min-width:1024px){.hud{display:flex}}
+.hud b{color:#fff;font-weight:600;font-size:13px}
+.hud__ring{position:relative;inline-size:34px;block-size:34px;flex:none}
+.hud__ring svg{transform:rotate(90deg)}
+.hud__ring circle{fill:none;stroke-width:3;stroke-linecap:round}
+.hud__bg{stroke:rgba(255,255,255,.1)}
+.hud__fg{stroke:url(#hudGrad);stroke-dasharray:88;stroke-dashoffset:88;transition:stroke-dashoffset 140ms linear}
+.hud__pct{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:10px;font-weight:700;color:#fff;
+}
+
+/* ============================================================
+   البنر — الطبقات
+   ============================================================ */
+.hero{
+  padding-block:clamp(56px,7vw,84px) clamp(48px,6vw,80px);
+  min-block-size:auto;
+}
+.hero__in{max-inline-size:var(--maxw)}
+
+/* عنوان بطبقة صدى محدَّدة الحواف */
+.mega{position:relative;display:block}
+.mega__ghost{
+  position:absolute;inset-block-start:-.06em;inset-inline-start:-.02em;
+  inline-size:100%;color:transparent;
+  -webkit-text-stroke:1px rgba(177,145,217,.20);
+  pointer-events:none;user-select:none;z-index:0;
+  transform:translateZ(0) scale(1.045);transform-origin:right top;
+}
+.mega__real{position:relative;z-index:1}
+
+.hero h1{
+  font-size:clamp(38px,7.6vw,88px);
+  line-height:1.06;letter-spacing:-.025em;
+  max-inline-size:14ch;margin-block:var(--s6) 0;
+}
+.hero h1 .grad{
+  background:linear-gradient(100deg,var(--violet-300) 8%,var(--teal-300) 92%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* كشف العنوان بقناع يمسح من اليمين — يحفظ اتصال الحروف العربية */
+.wipe-t{
+  display:inline-block;
+  clip-path:inset(-.2em 0 -.2em 100%);
+  transition:clip-path 1150ms cubic-bezier(.3,.85,.25,1);
+}
+.wipe-t.lit{clip-path:inset(-.2em -.1em -.2em -.1em)}
+/* كلمات ترتفع — الفصل على مستوى الكلمة آمن في العربية */
+.wd{display:inline-block;opacity:0;filter:blur(9px);
+    transform:translateY(.36em) rotateX(-34deg);transform-origin:bottom center;
+    transition:opacity 680ms cubic-bezier(.22,.75,.28,1),
+               transform 680ms cubic-bezier(.22,.75,.28,1),
+               filter 680ms cubic-bezier(.22,.75,.28,1)}
+.wd.lit{opacity:1;transform:none;filter:blur(0)}
+
+/* ---------- هايلايت متحرّك بقلم مِبراز ---------- */
+.hl{position:relative;z-index:0;white-space:normal}
+.hl::before{
+  content:"";position:absolute;z-index:-1;
+  inset-block:6% 4%;inset-inline-end:-.22em;
+  inline-size:0;border-radius:3px;
+  background:linear-gradient(100deg,rgba(1,170,173,.42),rgba(1,170,173,.24));
+  transform:skewX(-9deg);
+  transition:inline-size 620ms cubic-bezier(.22,.75,.28,1);
+}
+.hl.lit::before{inline-size:calc(100% + .44em)}
+.hl--v::before{background:linear-gradient(100deg,rgba(120,69,181,.55),rgba(120,69,181,.3))}
+.sec--pale .hl::before,.sec--tint .hl::before{
+  background:linear-gradient(100deg,rgba(1,170,173,.30),rgba(1,170,173,.16));
+}
+.sec--pale .hl--v::before,.sec--tint .hl--v::before{
+  background:linear-gradient(100deg,rgba(120,69,181,.24),rgba(120,69,181,.12));
+}
+
+/* هايلايت بإطار مرسوم */
+.hlbox{position:relative;display:inline-block;padding:0 .18em;white-space:nowrap}
+.hlbox svg{
+  position:absolute;inset:-.34em -.3em;inline-size:calc(100% + .6em);block-size:calc(100% + .68em);
+  overflow:visible;pointer-events:none;
+}
+.hlbox rect{
+  fill:none;stroke:var(--teal-500);stroke-width:2;rx:8;
+  stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);
+  transition:stroke-dashoffset 900ms cubic-bezier(.22,.75,.28,1);
+}
+.hlbox.lit rect{stroke-dashoffset:0}
+
+/* ---------- أزرار مغناطيسية ---------- */
+.mag{will-change:transform;transition:transform 220ms cubic-bezier(.22,.75,.28,1),background var(--t-fast),box-shadow var(--t-fast)}
+.mag__t{display:inline-flex;align-items:center;gap:8px;will-change:transform;transition:transform 220ms cubic-bezier(.22,.75,.28,1)}
+.rip{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:rgba(255,255,255,.4);transform:scale(0);opacity:.8;
+  animation:rip 620ms cubic-bezier(.22,.75,.28,1) forwards;
+}
+@keyframes rip{to{transform:scale(2.6);opacity:0}}
+
+/* ---------- شريط الموضوعات المتحرّك ---------- */
+.tick{
+  overflow:hidden;border-block:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.02);padding-block:16px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.tick__track{display:flex;inline-size:max-content;animation:marq 42s linear infinite}
+.tick:hover .tick__track{animation-play-state:paused}
+@keyframes marq{to{transform:translateX(-50%)}}
+.tick__set{display:flex;align-items:center;gap:34px;padding-inline-end:34px}
+.tick__i{
+  display:inline-flex;align-items:center;gap:11px;
+  font-size:19px;font-weight:600;color:#6D6580;white-space:nowrap;
+  transition:color var(--t-base);
+}
+.tick__i svg{inline-size:12px;block-size:12px;color:var(--violet-500);opacity:.7}
+.tick__i:nth-child(3n+1){color:#B6ADC9}
+.tick__i:nth-child(5n+2){color:var(--teal-300)}
+
+/* ---------- عدّاد أسطواني ---------- */
+.odo{display:inline-flex;direction:ltr;overflow:hidden;block-size:1.12em;vertical-align:-.1em}
+.odo__c{display:inline-block;overflow:hidden;block-size:1.12em}
+.odo__r{display:flex;flex-direction:column;transition:transform 1.05s cubic-bezier(.22,.75,.28,1)}
+.odo__r span{block-size:1.12em;line-height:1.12}
+
+/* ---------- بطاقات بميلان وبقعة ضوء ---------- */
+.tiltc{
+  position:relative;overflow:hidden;
+  transform-style:preserve-3d;
+  transition:transform 260ms cubic-bezier(.22,.75,.28,1),border-color var(--t-base),box-shadow var(--t-base);
+}
+.tiltc::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(240px circle at var(--cx,50%) var(--cy,50%),rgba(177,145,217,.22),transparent 62%);
+  transition:opacity var(--t-base);
+}
+.tiltc:hover::after{opacity:1}
+.sec--pale .tiltc::after,.sec--tint .tiltc::after{
+  background:radial-gradient(240px circle at var(--cx,50%) var(--cy,50%),rgba(120,69,181,.11),transparent 62%);
+}
+.tiltc__in{transform:translateZ(26px)}
+
+/* ---------- المختبر التفاعلي: علّم النموذج ---------- */
+.lab{
+  border-radius:var(--r-xl);overflow:hidden;
+  background:linear-gradient(160deg,var(--ink-3),var(--ink-2) 55%,var(--ink));
+  border:1px solid rgba(177,145,217,.2);
+  box-shadow:0 40px 110px -46px rgba(120,69,181,.7);
+}
+.lab__grid{display:grid;grid-template-columns:1fr}
+.lab__grid>*{min-inline-size:0}
+@media(min-width:960px){.lab__grid{grid-template-columns:1fr 320px}}
+/* aspect-ratio مع min-block-size يضخّم العرض ويقصّ اللوحة على الجوال */
+.lab__stage{position:relative;aspect-ratio:4/3;cursor:crosshair;touch-action:none}
+@media(min-width:960px){.lab__stage{aspect-ratio:16/10;min-block-size:340px}}
+.lab__stage canvas{position:absolute;inset:0;inline-size:100%;block-size:100%}
+.lab__hint{
+  position:absolute;inset-block-end:14px;inset-inline:14px;
+  text-align:center;font-size:13px;color:#8E85A3;pointer-events:none;
+  transition:opacity 400ms;
+}
+.lab__side{
+  padding:24px;border-inline-start:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;gap:16px;
+}
+@media(max-width:959px){.lab__side{border-inline-start:0;border-block-start:1px solid rgba(255,255,255,.08)}}
+.lab__team{display:grid;gap:9px}
+.lab__b{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 14px;border-radius:var(--r-md);min-block-size:48px;
+  border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);
+  font-size:14px;font-weight:600;color:#B6ADC9;text-align:start;
+  transition:border-color var(--t-base),background var(--t-base),color var(--t-base),transform var(--t-fast);
+}
+.lab__b:hover{transform:translateX(-3px)}
+.lab__b i{inline-size:14px;block-size:14px;border-radius:4px;flex:none}
+.lab__b[aria-pressed="true"]{color:#fff;background:rgba(255,255,255,.07)}
+.lab__b[data-cls="a"][aria-pressed="true"]{border-color:var(--violet-500);box-shadow:0 0 0 3px rgba(120,69,181,.2)}
+.lab__b[data-cls="b"][aria-pressed="true"]{border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(1,170,173,.18)}
+.lab__stat{display:grid;gap:10px;padding-block-start:14px;border-block-start:1px solid rgba(255,255,255,.08)}
+.lab__row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px;color:#8E85A3}
+.lab__row b{flex:none}
+.lab__row b{color:#fff;font-size:16px;font-weight:700}
+.lab__acc{block-size:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+.lab__accf{block-size:100%;inline-size:0;border-radius:3px;background:linear-gradient(90deg,var(--violet-500),var(--teal-500));transition:inline-size 380ms var(--e-out)}
+
+/* ---------- رصّة الأسابيع المُمرَّرة ---------- */
+.deck{position:relative}
+@media(min-width:900px){
+  .deck{block-size:340vh}
+  .deck__stick{position:sticky;inset-block-start:0;block-size:100vh;display:grid;place-items:center;overflow:hidden}
+  .deck__cards{position:relative;inline-size:min(880px,88vw);block-size:390px;transform-style:preserve-3d;perspective:1400px}
+  .deck__c{
+    position:absolute;inset:0;
+    border-radius:var(--r-xl);padding:34px 38px;
+    background:linear-gradient(150deg,#241C36,#0F0B1A);
+    border:1px solid rgba(177,145,217,.24);
+    box-shadow:0 40px 100px -40px rgba(0,0,0,.9);
+    will-change:transform,opacity;backface-visibility:hidden;
+  }
+  .deck__prog{
+    position:absolute;inset-block-end:34px;inset-inline:0;
+    display:flex;gap:7px;justify-content:center;
+  }
+  .deck__prog i{inline-size:34px;block-size:3px;border-radius:2px;background:rgba(255,255,255,.14);transition:background var(--t-base)}
+  .deck__prog i.on{background:var(--teal-500)}
+}
+@media(max-width:899px){
+  .deck__stick{display:block}
+  .deck__cards{display:grid;gap:16px}
+  .deck__c{
+    border-radius:var(--r-lg);padding:24px;
+    background:linear-gradient(150deg,#241C36,#0F0B1A);
+    border:1px solid rgba(177,145,217,.2);
+  }
+  .deck__prog{display:none}
+}
+.deck__no{
+  font-size:clamp(64px,11vw,132px);font-weight:700;line-height:.86;
+  color:transparent;-webkit-text-stroke:1.5px rgba(177,145,217,.55);
+  letter-spacing:-.04em;
+}
+.deck__c h3{font-size:clamp(21px,2.6vw,30px);margin-block-start:10px;color:#fff}
+.deck__c .dt{font-size:13.5px;color:#8E85A3;margin-block-start:7px}
+.deck__tags{display:flex;flex-wrap:wrap;gap:8px;margin-block-start:20px}
+.dtag{
+  padding:7px 14px;border-radius:var(--r-full);font-size:13px;font-weight:500;
+  background:rgba(120,69,181,.16);color:#C9B6E4;border:1px solid rgba(177,145,217,.22);
+}
+
+/* ---------- الخط الزمني بمذنَّب ---------- */
+.tl__fill{position:relative;overflow:visible}
+.tl__fill::after{
+  content:"";position:absolute;inset-block:-4px;inset-inline-start:-6px;
+  inline-size:12px;border-radius:50%;
+  background:var(--teal-300);box-shadow:0 0 18px 5px rgba(1,170,173,.75);
+  opacity:0;transition:opacity 400ms;
+}
+.tl.lit .tl__fill::after{opacity:1}
+
+/* ---------- كشف الأقسام بمسح شيفرون ---------- */
+.wipe{clip-path:inset(0 0 0 0)}
+
+/* ---------- دعوة أخيرة نابضة ---------- */
+.final{background:linear-gradient(140deg,#2C1A4A,#1A1029 55%,#0A0713)}
+.final::after{
+  content:"";position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;
+  background:conic-gradient(from var(--a,0deg),transparent 0deg,rgba(1,170,173,.5) 40deg,transparent 90deg,transparent 270deg,rgba(120,69,181,.5) 320deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000,#000) content-box,linear-gradient(#000,#000);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1.5px;
+  animation:spin 7s linear infinite;
+}
+@keyframes spin{to{--a:360deg}}
+@property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
+
+/* ---------- بطاقات الأهداف: أرقام هيكلية ---------- */
+.goal{position:relative;overflow:hidden}
+.goal__n{
+  position:absolute;inset-block-start:-10px;inset-inline-start:12px;
+  font-size:74px;font-weight:700;line-height:1;
+  color:transparent;-webkit-text-stroke:1.5px rgba(120,69,181,.16);
+  pointer-events:none;user-select:none;
+  transition:transform 420ms var(--e-out),-webkit-text-stroke-color 420ms;
+}
+.goal:hover .goal__n{transform:translateY(4px) scale(1.06);-webkit-text-stroke-color:rgba(1,170,173,.3)}
+
+/* ---------- صفوف الفئات: تمدّد عند المرور ---------- */
+.who__i{position:relative;overflow:hidden}
+.who__i::before{
+  content:"";position:absolute;inset-block:0;inset-inline-end:0;inline-size:0;
+  background:linear-gradient(-90deg,rgba(1,170,173,.10),transparent);
+  transition:inline-size 420ms var(--e-out);
+}
+.who__i:hover::before{inline-size:100%}
+.who__i>*{position:relative}
+
+/* ---------- الأسئلة: فتح انسيابي ---------- */
+.faq__i{transition:border-color var(--t-base),background var(--t-base)}
+.faq__wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 380ms var(--e-out)}
+.faq__i[open] .faq__wrap{grid-template-rows:1fr}
+.faq__wrap>div{overflow:hidden}
+
+/* ---------- شارة «جديد» نابضة ---------- */
+.newdot{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:11.5px;font-weight:700;color:var(--teal-300);
+}
+.newdot i{
+  inline-size:7px;block-size:7px;border-radius:50%;background:var(--teal-500);
+  box-shadow:0 0 0 0 rgba(1,170,173,.6);animation:ping2 2s infinite;
+}
+@keyframes ping2{0%{box-shadow:0 0 0 0 rgba(1,170,173,.55)}70%{box-shadow:0 0 0 10px rgba(1,170,173,0)}100%{box-shadow:0 0 0 0 rgba(1,170,173,0)}}
+
+/* ---------- تقليل الحركة ---------- */
+@media(prefers-reduced-motion:reduce){
+  .cur,.tracer,.net{display:none !important}
+  .bp{-webkit-mask-image:none;mask-image:none;opacity:.35}
+  .tick__track{animation:none}
+  .final::after{animation:none}
+  .hl::before{inline-size:calc(100% + .44em)}
+  .wipe-t{clip-path:none !important}
+  .wd{opacity:1 !important;transform:none !important;filter:none !important}
+  .hlbox rect{stroke-dashoffset:0}
+  .deck{block-size:auto !important}
+  .deck__stick{position:static !important;block-size:auto !important;display:block !important}
+  .deck__cards{position:static !important;display:grid !important;gap:16px;block-size:auto !important;inline-size:auto !important}
+  .deck__c{position:static !important;transform:none !important;opacity:1 !important}
+  .deck__prog{display:none}
+}
+</style>

@@ -1,0 +1,440 @@
+# Inventory of view-model properties dereferenced by the Blade layer.
+# Generated mechanically from resources/views/**/*.blade.php.
+# Any property listed here MUST be readable on the value the controller passes,
+# or the screen fatals / renders blank.
+
+$editing   (5 files, 41 properties)
+  properties: allowLate, capacity, certificatesText, checkedInTimeValue, checkedOutTimeValue, dateValue, description, dueAtValue, endTimeValue, endsAtValue, exists, hours, id, isMandatory, maxFileMb, maxFiles, maxScore, meetingPasscode, meetingUrl, minAttendanceRate, name, objectivesText, participantId, participantName, passScore, programId, registrationClosesAtValue, requiresApproval, sessionId, showGithubField, slug, startTimeValue, startsAtValue, status, summary, targetAudienceText, title, topic, trainerId, type, weekId
+  files: resources/views/admin/cohorts.blade.php, resources/views/admin/programs.blade.php, resources/views/trainer/assignments.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/sessions.blade.php
+
+$row   (4 files, 30 properties)
+  properties: assignmentsCount, attendancePercent, attendanceVariant, averageAttendance, averageScore, cells, cohortName, completionRate, downloadUrl, email, fileLabel, hasScore, hasSubmission, id, isGraded, maxScore, name, participantId, participantName, participants, programName, ratePercent, score, scoreMax, stateIcon, stateLabel, stateVariant, submissionRate, submittedAt, submittedCount
+  files: resources/views/admin/reports.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
+
+$selected   (2 files, 26 properties)
+  properties: attendancePercent, attendanceVariant, attendedSessions, currentStepTitle, email, enrolledAt, feedback, files, fullNameAr, fullNameEn, githubUrl, id, isGraded, journeyPercent, maxScore, name, note, participantName, passScore, phone, score, scoreMax, submissions, submittedAt, totalSessions, version
+  files: resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
+
+$summary   (4 files, 24 properties)
+  properties: absentCount, assignmentsTotal, attendanceVariant, averageAttendance, averageScore, completionRate, earnedScore, excusedCount, incompleteCount, isNearMinimum, lateCount, mandatoryCompleted, mandatoryTotal, minimumRatePercent, participants, pendingCount, presentCount, ratePercent, rateVariant, registrations, scoreMax, submissionRate, submissionRateVariant, totalSessions
+  files: resources/views/admin/reports.blade.php, resources/views/participant/assignments/index.blade.php, resources/views/participant/attendance.blade.php, resources/views/trainer/reports.blade.php
+
+$user   (2 files, 24 properties)
+  properties: auditEntries, awaitingVerification, canBeAdministered, canBePreviewed, canChangeRole, canChangeStatus, email, enrollments, fullNameAr, fullNameEn, id, isSelf, isSuspended, lastLoginAt, name, phone, registeredAt, role, roleLabel, roleVariant, statusIcon, statusLabel, statusVariant, toggleStatusValue
+  files: resources/views/admin/users/index.blade.php, resources/views/admin/users/show.blade.php
+
+$assignment   (3 files, 24 properties)
+  properties: attachments, cohortSize, description, dueAt, headline, id, isGraded, isMandatory, isSubmitted, maxFileBytes, maxFileSizeLabel, maxFiles, maxScore, remainingLabel, requirements, score, statusIcon, statusLabel, statusVariant, submittedCount, title, urgencyIcon, urgencyVariant, weekTitle
+  files: resources/views/participant/assignments/index.blade.php, resources/views/participant/assignments/show.blade.php, resources/views/trainer/assignments.blade.php
+
+$certificate   (2 files, 18 properties)
+  properties: cohortName, finalScore, grandTotal, holderName, holderNameAr, holderNameEn, id, isRevoked, issuedAt, linkedInShareUrl, programName, serialNumber, statusIcon, statusLabel, statusVariant, trainingHours, verifyCode, verifyUrl
+  files: resources/views/admin/certificates.blade.php, resources/views/participant/certificate.blade.php
+
+$item   (2 files, 18 properties)
+  properties: dueAt, feedback, gradedAt, graderName, id, isGraded, isLocked, isMandatory, maxScore, remainingLabel, revisionReason, score, statusIcon, statusLabel, statusVariant, title, urgencyIcon, urgencyVariant
+  files: resources/views/participant/dashboard.blade.php, resources/views/participant/grades.blade.php
+
+$settings   (2 files, 17 properties)
+  properties: aboutBody, centreName, contactEmail, countdownEnabled, emailTemplates, faq, heroSubtitle, heroTitle, isRegistrationOpen, maxFileMb, maxFiles, notificationDefaults, programName, seatsOverride, seatsRemaining, timezone, whatsapp
+  files: resources/views/admin/landing.blade.php, resources/views/admin/settings.blade.php
+
+$card   (1 files, 17 properties)
+  properties: cohortName, expiresAt, fullNameAr, fullNameEn, isMissing, issuedAt, number, photoUrl, programName, qrSvg, roleLabel, scanCount, statusIcon, statusLabel, statusVariant, verifyUrl, verifyUrlMasked
+  files: resources/views/participant/card.blade.php
+
+$entry   (4 files, 16 properties)
+  properties: actionLabel, actorName, answer, at, checkedInAt, checkedOutAt, entityId, entityLabel, id, ipAddress, participantId, participantName, question, statusIcon, statusLabel, statusVariant
+  files: resources/views/admin/audit.blade.php, resources/views/admin/landing.blade.php, resources/views/admin/users/show.blade.php, resources/views/trainer/attendance.blade.php
+
+$stats   (3 files, 16 properties)
+  properties: activeCount, activeUsers, atRisk, attendanceVariant, averageAttendance, averageAttendanceVariant, averageScore, awaitingGrading, certificatesIssued, late, missing, scoreMax, submitted, total, totalRegistered, ungradedSubmissions
+  files: resources/views/admin/dashboard.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
+
+$submission   (3 files, 16 properties)
+  properties: assignmentTitle, feedback, files, gradedAt, graderName, hasSubmission, id, isGraded, isLate, maxScore, score, stateIcon, stateLabel, stateVariant, submittedAt, version
+  files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/trainer/participants.blade.php
+
+$window   (1 files, 16 properties)
+  properties: canCheckIn, canCheckOut, checkInOpensAt, checkInState, checkOutOpensAt, checkOutState, checkedInAt, checkedOutAt, endsAt, explanation, hasNoSession, isCancelled, isToday, sessionId, sessionTitle, startsAt
+  files: resources/views/participant/attendance.blade.php
+
+$session   (4 files, 16 properties)
+  properties: cancellationReason, date, endsAt, hasMeetingUrl, id, isCancelled, isNext, replacementStartsAt, startsAt, statusIcon, statusLabel, statusVariant, topic, trainerName, type, typeLabel
+  files: resources/views/participant/live.blade.php, resources/views/participant/schedule.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/sessions.blade.php
+
+$resource   (4 files, 15 properties)
+  properties: addedAt, description, downloadCount, id, isArchived, isNew, isPreviewable, sizeLabel, stateLabel, stateVariant, title, type, typeIcon, typeLabel, weekTitle
+  files: resources/views/participant/dashboard.blade.php, resources/views/participant/resources.blade.php, resources/views/participant/schedule.blade.php, resources/views/trainer/resources.blade.php
+
+$person   (3 files, 13 properties)
+  properties: attendanceMet, attendancePercent, attendanceVariant, id, minimumRatePercent, name, participantName, ratePercent, rateVariant, reasons, score, scoreMax, scoreMet
+  files: resources/views/admin/certificates.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/reports.blade.php
+
+$cohort   (1 files, 12 properties)
+  properties: capacity, endsAt, id, name, programName, seatsTaken, seatsVariant, startsAt, statusIcon, statusLabel, statusVariant, trainerNames
+  files: resources/views/admin/cohorts.blade.php
+
+$reviewing   (1 files, 11 properties)
+  properties: capacity, cohortName, email, fullNameAr, fullNameEn, hasFreeSeat, id, name, phone, requestedAt, seatsTaken
+  files: resources/views/admin/registrations.blade.php
+
+$p   (1 files, 11 properties)
+  properties: currentPag, firstIte, hasMorePage, hasPage, lastIte, lastPag, nextPageUr, onFirstPag, previousPageUr, tota, ur
+  files: resources/views/components/ui/pagination.blade.php
+
+$week   (2 files, 11 properties)
+  properties: assignments, attendanceIcon, attendanceVariant, attendedCount, endsOn, isCurrent, paddedIndex, sessionCount, sessions, startsOn, title
+  files: resources/views/participant/assignments/index.blade.php, resources/views/participant/schedule.blade.php
+
+$step   (1 files, 11 properties)
+  properties: actionLabel, actionRoute, details, index, isCurrent, isLocked, statusClass, statusIcon, statusLabel, summary, title
+  files: resources/views/participant/journey.blade.php
+
+$profile   (1 files, 11 properties)
+  properties: email, familyNameAr, familyNameEn, fatherNameAr, firstNameAr, firstNameEn, fullNameAr, fullNameEn, grandfatherNameAr, phone, photoUrl
+  files: resources/views/participant/profile.blade.php
+
+$opened   (1 files, 10 properties)
+  properties: actionLabel, actorName, afterText, at, beforeText, entityId, entityLabel, id, ipAddress, userAgent
+  files: resources/views/admin/audit.blade.php
+
+$request   (2 files, 10 properties)
+  properties: cohortName, decidedByLabel, email, id, isPending, name, requestedAt, stateIcon, stateLabel, stateVariant
+  files: resources/views/admin/dashboard.blade.php, resources/views/admin/registrations.blade.php
+
+$enrollment   (1 files, 10 properties)
+  properties: attendancePercent, cohortName, hasAttendance, hasScore, programName, roleLabel, score, scoreMax, statusLabel, statusVariant
+  files: resources/views/admin/users/show.blade.php
+
+$project   (1 files, 10 properties)
+  properties: attachments, criteria, description, dueAt, maxFileBytes, maxFileSizeLabel, maxFiles, maxScore, requirements, title
+  files: resources/views/participant/final-project.blade.php
+
+$total   (1 files, 10 properties)
+  properties: assignmentsScore, assignmentsTotal, finalScore, grandTotal, passScore, passes, projectGraded, projectScore, projectTotal, remainingPoints
+  files: resources/views/participant/grades.blade.php
+
+$featured   (1 files, 10 properties)
+  properties: endsAt, id, isMissing, joinOpensBeforeMinutes, joinWindowOpen, startsAt, statusLabel, statusVariant, topic, trainerName
+  files: resources/views/participant/live.blade.php
+
+$program   (1 files, 9 properties)
+  properties: cohortsCount, hours, id, isArchived, name, slug, statusIcon, statusLabel, statusVariant
+  files: resources/views/admin/programs.blade.php
+
+$activeThread   (1 files, 9 properties)
+  properties: avatarVariant, canPost, id, isLocked, messages, readOnlyReason, subtitle, title, type
+  files: resources/views/participant/messages.blade.php
+
+$roster   (1 files, 9 properties)
+  properties: endsAt, entries, hasNoSession, isLive, presentCount, sessionId, sessionTitle, startsAt, totalCount
+  files: resources/views/trainer/attendance.blade.php
+
+$counts   (2 files, 8 properties)
+  properties: admins, eligible, issued, notEligible, participants, pending, revoked, trainers
+  files: resources/views/admin/certificates.blade.php, resources/views/admin/users/index.blade.php
+
+$record   (1 files, 8 properties)
+  properties: checkedInAt, checkedOutAt, note, sessionDate, sessionTitle, statusIcon, statusLabel, statusVariant
+  files: resources/views/participant/attendance.blade.php
+
+$eligibility   (1 files, 8 properties)
+  properties: attendanceRatePercent, finalScore, isEligible, meetsAttendance, meetsScore, minimumRatePercent, passScore, reasons
+  files: resources/views/participant/certificate.blade.php
+
+$nextSession   (1 files, 8 properties)
+  properties: endsAt, id, isMissing, joinOpensBeforeMinutes, joinWindowOpen, startsAt, title, trainerName
+  files: resources/views/participant/dashboard.blade.php
+
+$preference   (2 files, 7 properties)
+  properties: description, email, emailEditable, key, label, platform, platformEditable
+  files: resources/views/admin/settings.blade.php, resources/views/participant/profile.blade.php
+
+$notification   (1 files, 7 properties)
+  properties: body, createdAt, icon, isRead, targetUrl, title, type
+  files: resources/views/participant/notifications.blade.php
+
+$candidate   (2 files, 6 properties)
+  properties: attendancePercent, cohortName, id, name, score, scoreMax
+  files: resources/views/admin/certificates.blade.php, resources/views/admin/dashboard.blade.php
+
+$attendance   (1 files, 6 properties)
+  properties: attendedSessions, meetsMinimum, minimumRatePercent, ratePercent, rateVariant, totalSessions
+  files: resources/views/participant/dashboard.blade.php
+
+$gradeSummary   (1 files, 6 properties)
+  properties: finalScore, grandTotal, hasAnyEvaluation, passScore, projectGraded, recordedMaximum
+  files: resources/views/participant/dashboard.blade.php
+
+$thread   (1 files, 6 properties)
+  properties: avatarVariant, icon, id, previewLine, title, unreadCount
+  files: resources/views/participant/messages.blade.php
+
+$selectedSession   (1 files, 6 properties)
+  properties: description, endsAt, id, resources, startsAt, topic
+  files: resources/views/participant/schedule.blade.php
+
+$point   (3 files, 5 properties)
+  properties: label, max, percent, value, variant
+  files: resources/views/admin/reports.blade.php, resources/views/participant/grades.blade.php, resources/views/trainer/reports.blade.php
+
+$detail   (1 files, 5 properties)
+  properties: icon, occursAt, statusLabel, title, variant
+  files: resources/views/participant/journey.blade.php
+
+$assigning   (1 files, 4 properties)
+  properties: id, name, programName, trainers
+  files: resources/views/admin/cohorts.blade.php
+
+$group   (2 files, 4 properties)
+  properties: cohortName, count, items, title
+  files: resources/views/admin/dashboard.blade.php, resources/views/participant/resources.blade.php
+
+$welcome   (1 files, 4 properties)
+  properties: firstName, journeyPercent, partOfDay, statusLine
+  files: resources/views/participant/dashboard.blade.php
+
+$journey   (1 files, 4 properties)
+  properties: completedSteps, currentStepTitle, percent, totalSteps
+  files: resources/views/participant/dashboard.blade.php
+
+$grade   (1 files, 4 properties)
+  properties: itemTitle, maxScore, recordedAt, score
+  files: resources/views/participant/dashboard.blade.php
+
+$evaluation   (1 files, 4 properties)
+  properties: feedback, graderName, recordedAt, score
+  files: resources/views/participant/final-project.blade.php
+
+$recording   (1 files, 4 properties)
+  properties: durationMinutes, id, startsAt, topic
+  files: resources/views/participant/live.blade.php
+
+$device   (1 files, 4 properties)
+  properties: deviceLabel, ipAddress, isCurrent, lastActiveAt
+  files: resources/views/participant/profile.blade.php
+
+$calendar   (1 files, 4 properties)
+  properties: days, nextWeekIndex, previousWeekIndex, rangeLabel
+  files: resources/views/participant/schedule.blade.php
+
+$day   (1 files, 4 properties)
+  properties: date, isToday, sessions, weekdayLabel
+  files: resources/views/participant/schedule.blade.php
+
+$overriding   (1 files, 3 properties)
+  properties: id, name, reasons
+  files: resources/views/admin/certificates.blade.php
+
+$revoking   (1 files, 3 properties)
+  properties: holderName, id, serialNumber
+  files: resources/views/admin/certificates.blade.php
+
+$trainer   (1 files, 3 properties)
+  properties: email, id, name
+  files: resources/views/admin/cohorts.blade.php
+
+$template   (1 files, 3 properties)
+  properties: key, label, subject
+  files: resources/views/admin/settings.blade.php
+
+$attachment   (3 files, 3 properties)
+  properties: downloadUrl, name, sizeLabel
+  files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/participant/messages.blade.php
+
+$file   (3 files, 3 properties)
+  properties: downloadUrl, name, sizeLabel
+  files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/trainer/submissions.blade.php
+
+$version   (1 files, 3 properties)
+  properties: fileCount, number, submittedAt
+  files: resources/views/participant/assignments/show.blade.php
+
+$progress   (1 files, 3 properties)
+  properties: completedSteps, percent, totalSteps
+  files: resources/views/participant/journey.blade.php
+
+$cell   (1 files, 3 properties)
+  properties: shortCode, statusLabel, variant
+  files: resources/views/trainer/attendance.blade.php
+
+$cancelling   (1 files, 3 properties)
+  properties: id, startsAt, topic
+  files: resources/views/trainer/sessions.blade.php
+
+$archiving   (1 files, 2 properties)
+  properties: id, name
+  files: resources/views/admin/programs.blade.php
+
+$tvtc   (1 files, 2 properties)
+  properties: isAvailable, issuedAt
+  files: resources/views/participant/certificate.blade.php
+
+$announcement   (1 files, 2 properties)
+  properties: sentAt, title
+  files: resources/views/participant/dashboard.blade.php
+
+$criterion   (1 files, 2 properties)
+  properties: maxScore, title
+  files: resources/views/participant/final-project.blade.php
+
+$totalsWarning   (2 files, 2 properties)
+  properties: current, expected
+  files: resources/views/trainer/assignments.blade.php, resources/views/trainer/submissions.blade.php
+
+$matrix   (1 files, 2 properties)
+  properties: rows, sessions
+  files: resources/views/trainer/attendance.blade.php
+
+$entries   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/audit.blade.php
+
+$eligible   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/certificates.blade.php
+
+$notEligible   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/certificates.blade.php
+
+$issued   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/certificates.blade.php
+
+$cohorts   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/cohorts.blade.php
+
+$pendingRegistrations   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/dashboard.blade.php
+
+$ungraded   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/dashboard.blade.php
+
+$readyForCertificate   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/dashboard.blade.php
+
+$programs   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/programs.blade.php
+
+$requests   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/registrations.blade.php
+
+$registrationsOverTime   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/reports.blade.php
+
+$attendanceByCohort   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/reports.blade.php
+
+$cohortRows   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/reports.blade.php
+
+$users   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/admin/users/index.blade.php
+
+$serverNow   (1 files, 1 properties)
+  properties: toIso8601Strin
+  files: resources/views/components/ui/countdown-timer.blade.php
+
+$weeks   (2 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/assignments/index.blade.php, resources/views/participant/schedule.blade.php
+
+$versions   (1 files, 1 properties)
+  properties: isNotEmpt
+  files: resources/views/participant/assignments/show.blade.php
+
+$records   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/attendance.blade.php
+
+$dueAssignments   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/dashboard.blade.php
+
+$latestGrades   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/dashboard.blade.php
+
+$announcements   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/dashboard.blade.php
+
+$newResources   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/dashboard.blade.php
+
+$items   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/grades.blade.php
+
+$trend   (1 files, 1 properties)
+  properties: isNotEmpt
+  files: resources/views/participant/grades.blade.php
+
+$steps   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/journey.blade.php
+
+$upcoming   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/live.blade.php
+
+$recordings   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/live.blade.php
+
+$threads   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/messages.blade.php
+
+$notifications   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/notifications.blade.php
+
+$sessions   (2 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/profile.blade.php, resources/views/trainer/sessions.blade.php
+
+$preferences   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/profile.blade.php
+
+$groups   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/participant/resources.blade.php
+
+$assignments   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/assignments.blade.php
+
+$atRisk   (2 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/attendance.blade.php, resources/views/trainer/reports.blade.php
+
+$rows   (2 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
+
+$attendanceBySession   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/reports.blade.php
+
+$submissionsByAssignment   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/reports.blade.php
+
+$resources   (1 files, 1 properties)
+  properties: isEmpt
+  files: resources/views/trainer/resources.blade.php
