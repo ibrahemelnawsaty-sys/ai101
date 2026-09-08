@@ -14,11 +14,18 @@
 <!DOCTYPE html>
 {{-- data-server-now anchors every countdown to Clock::now(); the browser
      clock is never trusted (BR-07, Article 11). --}}
-<html lang="ar" dir="rtl" data-server-now="{{ \App\Services\Time\Clock::now()->toIso8601ZuluString() }}">
+<html lang="ar"
+      dir="rtl"
+      {{-- The auth screens are a light shell, exactly as tokens.css section 16
+           already states. Without this attribute every text role resolved from
+           the dark root while .authcard painted itself white, and the whole
+           screen came out white on white. --}}
+      data-surface="light"
+      data-server-now="{{ \App\Services\Time\Clock::now()->toIso8601ZuluString() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="color-scheme" content="dark">
+    <meta name="color-scheme" content="light">
     {{-- Filled from --surface-page by app.js; empty until then, never a literal. --}}
     <meta name="theme-color" content="">
     <meta name="robots" content="noindex, nofollow">
