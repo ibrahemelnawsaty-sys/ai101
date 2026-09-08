@@ -398,7 +398,12 @@ border: var(--bw-hairline) dashed var(--border-2);
    ========================================================================== */
 
 .about__grid { display: grid; gap: var(--s8); grid-template-columns: 1fr; align-items: start; }
-@media (min-width: 960px) { .about__grid { grid-template-columns: 1.1fr 0.9fr; } }
+@media (min-width: 960px) {
+  .about__grid { grid-template-columns: 1.1fr 0.9fr; }
+  /* Nothing to put in the right column: give the prose the full width but keep
+     its measure, rather than stretching it across a two-column track. */
+  .about__grid--solo { grid-template-columns: minmax(0, 68ch); }
+}
 .about__cards { display: grid; gap: var(--s4); }
 
 .audience__grid { display: grid; gap: var(--s6); grid-template-columns: 1fr; align-items: start; }
@@ -590,6 +595,19 @@ block-size: var(--s22);
 .trainer b { display: block; font-size: var(--fs-h4); color: var(--n-900); }
 .trainer span { display: block; font-size: var(--fs-sm); color: var(--violet-700); font-weight: var(--fw-semi); margin-block-start: var(--s1); }
 .trainer p { font-size: var(--fs-sm); color: var(--n-600); margin-block-start: var(--s2); margin-inline: auto; }
+
+/* Programme directory card banner. Tokens only: no literal length, radius or
+   colour anywhere in this rule (art. 6, art. 13 rule 4). aspect-ratio rather
+   than a fixed height so a wide banner and a square one both crop predictably
+   instead of one of them stretching. */
+.card__banner {
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  margin-block-end: var(--s4);
+  background: var(--surface-2);
+}
 
 .cert__seal {
 inline-size: var(--s14);
@@ -879,6 +897,10 @@ border: var(--bw-hairline) solid var(--v300-a28);
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* A pill that carries a sentence rather than an identifier follows the page
+   direction; the LTR pin above exists for certificate serials only. */
+.simtag--rule { direction: inherit; }
 
 /* Sliders.  The rail is RTL like the rest of the page, so the fill grows from
    the right and the native thumb travels the same way. */

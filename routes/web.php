@@ -58,6 +58,8 @@ use App\Http\Controllers\Public\CardVerificationController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LegalController;
+use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\ProgramDirectoryController;
 use App\Http\Controllers\Public\WaitlistController;
 use App\Http\Controllers\Trainer\AssignmentController as TrainerAssignmentController;
 use App\Http\Controllers\Trainer\AttendanceController as TrainerAttendanceController;
@@ -82,6 +84,13 @@ Route::middleware('throttle:public')->group(function (): void {
 
     Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
     Route::get('/privacy', [LegalController::class, 'privacy'])->name('privacy');
+
+    // D-39 — the standing public pages. `about` and `contact` are copy; the
+    // directory is a scoped query. All three are GET-only and read-only, so the
+    // public throttle above is the whole of their protection.
+    Route::get('/about', [PageController::class, 'about'])->name('about');
+    Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+    Route::get('/programs', [ProgramDirectoryController::class, 'index'])->name('programs');
 
     // BR-25 — both verification pages show the few facts the rule allows and
     // nothing else, to a visitor with no session at all.

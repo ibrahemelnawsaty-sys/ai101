@@ -25,6 +25,8 @@
             <nav aria-labelledby="foot-links">
                 <h4 id="foot-links">{{ __('landing.footer.quick_links') }}</h4>
                 <ul>
+                    <li><a href="{{ route('about') }}">{{ __('pages.about.title') }}</a></li>
+                    <li><a href="{{ route('programs') }}">{{ __('pages.programs.title') }}</a></li>
                     <li><a href="{{ route('home') }}#about">{{ __('landing.nav.about') }}</a></li>
                     <li><a href="{{ route('home') }}#lab">{{ __('landing.nav.lab') }}</a></li>
                     <li><a href="{{ route('home') }}#learn">{{ __('landing.nav.learn') }}</a></li>
@@ -42,6 +44,7 @@
                             +{{ config('athar.whatsapp') }}
                         </a>
                     </li>
+                    <li><a href="{{ route('contact') }}">{{ __('pages.contact.title') }}</a></li>
                     <li><a href="{{ route('terms') }}">{{ __('landing.footer.terms') }}</a></li>
                     <li><a href="{{ route('privacy') }}">{{ __('landing.footer.privacy') }}</a></li>
                 </ul>
