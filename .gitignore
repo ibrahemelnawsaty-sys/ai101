@@ -7,9 +7,15 @@ auth.json
 # Dependencies and build output
 /vendor
 /node_modules
-/public/build
 /public/hot
 /public/storage
+
+# public/build is COMMITTED on purpose - see D-38.
+# There is no Node runtime on the shared host, so the compiled assets have to
+# arrive some other way. Every manual transfer of them failed silently at least
+# once during the first deploy: the page renders, the CSS is a release behind,
+# and nothing anywhere reports an error. Committing them makes `git pull` the
+# whole deployment. Reverse this line the day a build step runs on the host.
 
 # Runtime state.
 # The directories themselves are tracked through their own .gitignore files,

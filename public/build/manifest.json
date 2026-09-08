@@ -1,0 +1,45 @@
+{
+  "_alpine-Czm6yrXi.js": {
+    "file": "assets/alpine-Czm6yrXi.js",
+    "name": "alpine"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-BWEKZ8DV.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/public.css": {
+    "file": "assets/public-DaygCSXE.css",
+    "src": "resources/css/public.css",
+    "isEntry": true
+  },
+  "resources/js/auth.js": {
+    "file": "assets/auth-6OFLlz7v.js",
+    "name": "auth",
+    "src": "resources/js/auth.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/dashboard.js",
+      "_alpine-Czm6yrXi.js"
+    ]
+  },
+  "resources/js/dashboard.js": {
+    "file": "assets/dashboard-DoP4_uK4.js",
+    "name": "dashboard",
+    "src": "resources/js/dashboard.js",
+    "isEntry": true,
+    "imports": [
+      "_alpine-Czm6yrXi.js"
+    ]
+  },
+  "resources/js/public.js": {
+    "file": "assets/public-CND_IEaV.js",
+    "name": "public",
+    "src": "resources/js/public.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/dashboard.js",
+      "_alpine-Czm6yrXi.js"
+    ]
+  }
+}

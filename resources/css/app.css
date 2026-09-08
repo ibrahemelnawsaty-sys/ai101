@@ -86,7 +86,7 @@
   font-display: swap;
   src: local("Reem Kufi"),
        local("ReemKufi-Regular"),
-       url("/fonts/reem-kufi-variable.woff2") format("woff2-variations");
+       url("/fonts/reem-kufi-variable.woff2") format("woff2");
 }
 
 @tailwind base;
