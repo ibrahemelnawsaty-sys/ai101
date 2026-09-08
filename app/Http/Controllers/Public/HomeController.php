@@ -110,14 +110,19 @@ final class HomeController extends Controller
                 'title_lead' => $program?->getAttribute('name_ar'),
                 'title_gradient' => $program?->getAttribute('name_en'),
                 'subtitle' => $setting?->getAttribute('hero_text') ?? $program?->getAttribute('description'),
-                'chips' => [],
+                'chips' => $this->heroChips($cohort, $weeks),
             ],
-            'ticker' => [],
-            'trust' => [],
+            'ticker' => $this->tickerTopics($weeks),
+            'trust' => $this->trustStats($cohort, $weeks),
             'about' => [
                 'kicker' => __('landing.headings.about.kicker'),
                 'title' => $program?->getAttribute('name_ar'),
                 'paragraphs' => array_filter([$program?->getAttribute('description')]),
+                // Nothing in the schema backs either of these, and the sentences
+                // that do exist are already spent on the goals, audience and
+                // certificate sections. Inventing copy here would be worse than
+                // an absent row, so both stay empty and the template drops to a
+                // single column instead of holding an empty half-grid.
                 'tags' => [],
                 'cards' => [],
             ],
@@ -248,6 +253,109 @@ final class HomeController extends Controller
     }
 
     /**
+     * The hero chips, the marquee and the trust bar all used to return an empty
+     * array, so three designed bands rendered as nothing at all.
+     *
+     * There is no table behind them — `landing_settings` carries hero copy, the
+     * FAQ and two switches, and nothing else — so rather than invent marketing
+     * copy or add a column, each is derived from figures the cohort already
+     * holds. The numbers move when the admin moves the cohort, never from here,
+     * which is what BR-31 actually asks for.
+     *
+     * @param  list<array<string, mixed>>  $weeks
+     * @return list<array{icon: string, label: string}>
+     */
+    private function heroChips(?Cohort $cohort, array $weeks): array
+    {
+        if ($cohort === null) {
+            return [];
+        }
+
+        $chips = [];
+
+        $weekCount = count($weeks);
+
+        if ($weekCount > 0) {
+            $chips[] = ['icon' => 'cal', 'label' => trans_choice('landing.facts.chip_weeks', $weekCount, ['count' => $weekCount])];
+        }
+
+        $sessions = (int) ($cohort->getAttribute('sessions_count') ?? 0);
+
+        if ($sessions > 0) {
+            $chips[] = ['icon' => 'video', 'label' => trans_choice('landing.facts.chip_sessions', $sessions, ['count' => $sessions])];
+        }
+
+        $certificates = count($this->jsonCards($cohort->program?->getAttribute('certificates')));
+
+        if ($certificates > 0) {
+            $chips[] = ['icon' => 'badge', 'label' => trans_choice('landing.facts.chip_certificates', $certificates, ['count' => $certificates])];
+        }
+
+        return $chips;
+    }
+
+    /**
+     * The marquee is decorative and `aria-hidden`, so it carries the week titles
+     * rather than a second copy of anything a screen reader needs.
+     *
+     * @param  list<array<string, mixed>>  $weeks
+     * @return list<string>
+     */
+    private function tickerTopics(array $weeks): array
+    {
+        $topics = [];
+
+        foreach ($weeks as $week) {
+            $title = $week['title'] ?? null;
+
+            if (is_string($title) && $title !== '') {
+                $topics[] = $title;
+            }
+        }
+
+        return $topics;
+    }
+
+    /**
+     * Four figures the centre can stand behind, every one of them already true
+     * of the cohort. A band that cannot be filled honestly is left empty and
+     * hidden rather than padded.
+     *
+     * @param  list<array<string, mixed>>  $weeks
+     * @return list<array{value: int, suffix: string|null, label: string}>
+     */
+    private function trustStats(?Cohort $cohort, array $weeks): array
+    {
+        if ($cohort === null) {
+            return [];
+        }
+
+        $stats = [];
+
+        $weekCount = count($weeks);
+
+        if ($weekCount > 0) {
+            $stats[] = ['value' => $weekCount, 'suffix' => null, 'label' => __('landing.facts.trust_weeks')];
+        }
+
+        $sessions = (int) ($cohort->getAttribute('sessions_count') ?? 0);
+
+        if ($sessions > 0) {
+            $stats[] = ['value' => $sessions, 'suffix' => null, 'label' => __('landing.facts.trust_sessions')];
+        }
+
+        $stats[] = ['value' => ScoreCalculator::GRAND_TOTAL, 'suffix' => null, 'label' => __('landing.facts.trust_points')];
+
+        $minAttendance = (int) $cohort->min_attendance_rate;
+
+        if ($minAttendance > 0) {
+            $stats[] = ['value' => $minAttendance, 'suffix' => '%', 'label' => __('landing.facts.trust_attendance')];
+        }
+
+        return $stats;
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function weekItems(?Cohort $cohort, RiyadhFormatter $formatter): array
@@ -328,7 +436,12 @@ final class HomeController extends Controller
      * are. An entry that is already an array keeps whatever it carries, so the
      * day the admin screen starts storing richer objects nothing here changes.
      *
-     * @return list<array{title: string|null, body: string|null}>
+     * `icon` is carried alongside title and body because the goals section
+     * renders one (see the block comment above it in home.blade.php). It is
+     * named here rather than splatting the whole stored object through, so the
+     * contract between this method and the view is something you can read.
+     *
+     * @return list<array{title: string|null, body: string|null, icon: string|null}>
      */
     private function jsonCards(mixed $value): array
     {
@@ -340,7 +453,7 @@ final class HomeController extends Controller
 
         foreach ($value as $item) {
             if (is_string($item) && $item !== '') {
-                $items[] = ['title' => $item, 'body' => null];
+                $items[] = ['title' => $item, 'body' => null, 'icon' => null];
 
                 continue;
             }
@@ -350,10 +463,13 @@ final class HomeController extends Controller
                 $body = $item['body'] ?? null;
 
                 if (is_string($title) || is_string($body)) {
+                    $icon = $item['icon'] ?? null;
+
                     $items[] = [
                         'title' => is_string($title) ? $title : null,
                         'body' => is_string($body) ? $body : null,
-                    ] + $item;
+                        'icon' => is_string($icon) ? $icon : null,
+                    ];
                 }
             }
         }

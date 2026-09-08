@@ -171,89 +171,6 @@
                 <span class="mag__t">{{ __('landing.hero.try_lab') }}</span>
             </x-ui.button>
         </div>
-
-        {{-- ---------------------------------------------------------
-             Countdown and remaining seats.
-             Server time is the sole reference (BR-07): the server prints its own instant
-             and the deadline, the browser measures the skew once and counts down from that.
-             The open/closed state itself is rendered by the server, never by the browser clock.
-             --------------------------------------------------------- --}}
-        <div class="cd" id="countdown">
-
-            {{--
-                The Alpine `countdown` component (resources/js/app.js) ticks on the
-                server-corrected clock: `<html data-server-now>` fixes the offset once,
-                so moving the system clock changes nothing. `finished` only swaps the
-                display; whether registration is actually open was decided in PHP and
-                is carried by `$cohort['is_registration_open']`.
-            --}}
-            @if (data_get($cohort, 'is_registration_open'))
-                <div class="cd__live"
-                     x-data="countdown({ target: '{{ data_get($cohort, 'registration_closes_at_iso') }}' })"
-                     x-cloak>
-                    <div class="cd__hd"><i class="cd__dot" aria-hidden="true"></i> {{ __('landing.hero.countdown_title') }}</div>
-                    <div class="cd__grid" aria-live="off">
-                        <div class="cd__cell"><div class="cd__n u-num" x-text="days">--</div><div class="cd__l">{{ __('landing.hero.days') }}</div></div>
-                        <div class="cd__cell"><div class="cd__n u-num" x-text="hours">--</div><div class="cd__l">{{ __('landing.hero.hours') }}</div></div>
-                        <div class="cd__cell"><div class="cd__n u-num" x-text="minutes">--</div><div class="cd__l">{{ __('landing.hero.minutes') }}</div></div>
-                        <div class="cd__cell"><div class="cd__n u-num" x-text="seconds">--</div><div class="cd__l">{{ __('landing.hero.seconds') }}</div></div>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Registration closed: collect an e-mail for the next cohort (PRD 9.1.2) --}}
-            @unless (data_get($cohort, 'is_registration_open'))
-            <div class="cd__closed" id="cdClosed">
-                <div class="cd__hd cd__hd--closed">
-                    <svg aria-hidden="true"><use href="#i-info"/></svg>
-                    {{ __('landing.hero.registration_closed_title') }}
-                </div>
-                <p class="cd__closed-body">{{ __('landing.hero.registration_closed_body') }}</p>
-
-                <form class="cd__wait" method="POST" action="{{ route('waitlist.store') }}">
-                    @csrf
-                    <x-ui.input
-                        type="email"
-                        name="email"
-                        ltr
-                        autocomplete="email"
-                        required
-                        :label="__('landing.hero.waitlist_email')"
-                        :placeholder="__('landing.hero.waitlist_email_placeholder')"
-                        :error="$errors->first('email')"/>
-                    <x-ui.button variant="primary" type="submit">
-                        {{ __('landing.hero.waitlist_submit') }}
-                    </x-ui.button>
-                </form>
-
-                @if (session('waitlist_done'))
-                    <p class="cd__wait-done" role="status">{{ __('landing.hero.waitlist_done') }}</p>
-                @endif
-            </div>
-            @endunless
-
-            @if (! is_null(data_get($cohort, 'seats_total')))
-                <div class="seats">
-                    <div class="seats__row">
-                        <span>{{ __('landing.hero.seats_label') }}</span>
-                        <span>
-                            <b class="u-num">{{ data_get($cohort, 'seats_remaining') }}</b>
-                            {{ __('landing.hero.seats_of') }}
-                            <b class="u-num">{{ data_get($cohort, 'seats_total') }}</b>
-                        </span>
-                    </div>
-                    {{-- RTL bar: fills from the right; app.js grows inline-size in an RTL flow --}}
-                    <div class="bar"
-                         role="progressbar"
-                         aria-label="{{ __('landing.hero.seats_progress') }}"
-                         aria-valuemin="0"
-                         aria-valuemax="100"
-                         aria-valuenow="{{ data_get($cohort, 'seats_taken_percent', 0) }}">
-                        <div class="bar__fill" data-fill="{{ data_get($cohort, 'seats_taken_percent', 0) }}"></div>
-                    </div>
-                </div>
-            @endif
-        </div>
     </div>
 </section>
 
@@ -279,25 +196,29 @@
      Trust bar
      $landing['trust'] = [{value:int, suffix:?string, label:string}]
      ============================================================ --}}
-<section class="trust">
-    <div class="wrap">
-        @forelse (data_get($landing, 'trust', []) as $stat)
-            @if ($loop->first)<div class="trust__grid">@endif
-            <div class="trust__i rv">
-                <div class="trust__n">
-                    <span class="odo u-num" data-count="{{ data_get($stat, 'value') }}"></span>
-                    @if (filled(data_get($stat, 'suffix')))
-                        <span class="suf">{{ data_get($stat, 'suffix') }}</span>
-                    @endif
-                </div>
-                <div class="trust__l">{{ data_get($stat, 'label') }}</div>
+{{-- A marketing band with nothing in it is worse than no band: it used to tell
+     visitors "no programme indicators have been added yet", which reads as a
+     half-built site. Admins see the empty state in the landing editor instead
+     (BR-31), which is where it belongs. --}}
+@if (filled(data_get($landing, 'trust', [])))
+    <section class="trust">
+        <div class="wrap">
+            <div class="trust__grid">
+                @foreach (data_get($landing, 'trust', []) as $stat)
+                    <div class="trust__i rv">
+                        <div class="trust__n">
+                            <span class="odo u-num" data-count="{{ data_get($stat, 'value') }}"></span>
+                            @if (filled(data_get($stat, 'suffix')))
+                                <span class="suf">{{ data_get($stat, 'suffix') }}</span>
+                            @endif
+                        </div>
+                        <div class="trust__l">{{ data_get($stat, 'label') }}</div>
+                    </div>
+                @endforeach
             </div>
-            @if ($loop->last)</div>@endif
-        @empty
-            <p class="sec__empty">{{ __('landing.states.empty_trust') }}</p>
-        @endforelse
-    </div>
-</section>
+        </div>
+    </section>
+@endif
 
 {{-- ============================================================
      About the programme
@@ -305,7 +226,9 @@
      ============================================================ --}}
 <section class="sec" id="about">
     <div class="wrap">
-        <div class="grid g2 about__grid">
+        {{-- With no cards the right column is dead space, and a half-empty grid
+             reads as a page that failed to load. Drop to one column instead. --}}
+        <div class="grid g2 about__grid @if (blank(data_get($landing, 'about.cards', []))) about__grid--solo @endif">
             <div class="rv">
                 <span class="kicker"><svg aria-hidden="true"><use href="#i-chevup"/></svg> {{ data_get($landing, 'about.kicker') }}</span>
                 <h2 class="h2--display">{{ data_get($landing, 'about.title') }}</h2>
@@ -323,6 +246,7 @@
                 @endif
             </div>
 
+            @if (filled(data_get($landing, 'about.cards', [])))
             <div class="rv">
                 <div class="grid g2 about__cards">
                     @foreach (data_get($landing, 'about.cards', []) as $card)
@@ -336,6 +260,7 @@
                     @endforeach
                 </div>
             </div>
+            @endif
         </div>
     </div>
 </section>
@@ -348,7 +273,7 @@
     <div class="wrap">
         <div class="sec__hd sec__hd--center rv">
             <span class="kicker"><svg aria-hidden="true"><use href="#i-chevup"/></svg> {{ __('landing.lab.kicker') }}</span>
-            <h2 class="h2--display">{{ __('landing.lab.title') }}</h2>
+            <h2 class="h2--display"><span class="hl">{{ __('landing.lab.title') }}</span></h2>
             <p class="lead">{{ __('landing.lab.lead') }}</p>
         </div>
 
@@ -469,7 +394,7 @@
     <div class="wrap learn__hd-wrap">
         <div class="sec__hd sec__hd--center rv">
             <span class="kicker"><svg aria-hidden="true"><use href="#i-chevup"/></svg> {{ data_get($landing, 'weeks.kicker') }}</span>
-            <h2 class="h2--display">{{ data_get($landing, 'weeks.title') }}</h2>
+            <h2 class="h2--display"><span class="hl hl--v">{{ data_get($landing, 'weeks.title') }}</span></h2>
             <p class="lead">{{ __('landing.sections.deck_hint') }}</p>
         </div>
     </div>
@@ -618,7 +543,7 @@
              ------------------------------------------------------ --}}
         <div class="sec__hd sec__hd--center sec__hd--sim rv">
             <span class="kicker"><svg aria-hidden="true"><use href="#i-chevup"/></svg> {{ __('landing.sim.kicker') }}</span>
-            <h2 class="h2--display">{{ __('landing.sim.title') }}</h2>
+            <h2 class="h2--display"><span class="hl">{{ __('landing.sim.title') }}</span></h2>
             <p class="lead">{{ __('landing.sim.lead') }}</p>
         </div>
 
@@ -720,11 +645,12 @@
 
                     <p class="sim__note">{{ __('landing.sim.explainer') }}</p>
 
+                    {{-- The two thresholds, stated the way a visitor reads them. These pills
+                         used to print the requirement ids and the config key names verbatim,
+                         which is developer shorthand no visitor can parse. --}}
                     <div class="sim__tags">
-                        <span class="simtag">BR-11</span>
-                        <span class="simtag">BR-26</span>
-                        <span class="simtag">pass_score <span class="u-num">{{ data_get($cohort, 'pass_score', 0) }}</span></span>
-                        <span class="simtag">min_attendance <span class="u-num">{{ data_get($cohort, 'min_attendance_rate', 0) }}</span></span>
+                        <span class="simtag simtag--rule">{{ __('landing.sim.tag_attendance') }} <span class="u-num">{{ data_get($cohort, 'min_attendance_rate', 0) }}</span>%</span>
+                        <span class="simtag simtag--rule">{{ __('landing.sim.tag_score') }} <span class="u-num">{{ data_get($cohort, 'pass_score', 0) }}</span></span>
                     </div>
                 </div>
 

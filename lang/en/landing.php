@@ -76,6 +76,18 @@ return [
     ],
 
     /* Certificate simulator — applies BR-11 and BR-26 with server-supplied values. */
+    // Figures derived from the cohort itself: the hero chips and the trust bar.
+    // Only the labels live here; every value comes from the database (BR-31).
+    'facts' => [
+        'chip_weeks' => '{1} one week|[2,*] :count weeks',
+        'chip_sessions' => '{1} one live session|[2,*] :count live sessions',
+        'chip_certificates' => '{1} one accredited certificate|[2,*] :count accredited certificates',
+        'trust_weeks' => 'weeks of intensive training',
+        'trust_sessions' => 'live sessions with the trainer',
+        'trust_points' => 'points across assignments and project',
+        'trust_attendance' => 'attendance required for the certificate',
+    ],
+
     'sim' => [
         'kicker' => 'Before you register',
         'title' => 'Will you earn the certificate?',
@@ -90,6 +102,8 @@ return [
         'gate_score' => 'Second condition — final score',
         'min_attendance' => 'Minimum',
         'pass_score' => 'Pass mark',
+        'tag_attendance' => 'Attendance at least',
+        'tag_score' => 'Score at least',
         'explainer' => 'The assignments and the final project split the total score between them. The certificate requires both conditions, so passing one alone is not enough.',
 
         // Read by JavaScript from a JSON island — no Arabic inside any JS file

@@ -1106,7 +1106,7 @@ border-radius: var(--r-xs);
     transition: inline-size 620ms var(--e-out);
   }
   .hl.is-lit::before { inline-size: calc(100% + 0.44em); }
-  .hl--v::before { background: linear-gradient(100deg, var(--violet-a55), var(--violet-a30)); }
+  .hl--v::before { background: linear-gradient(100deg, var(--violet-a55), var(--violet-a32)); }
   .surface-light .hl::before,
   [data-surface="light"] .hl::before { background: linear-gradient(100deg, var(--teal-a30), var(--teal-a16)); }
   .surface-light .hl--v::before,

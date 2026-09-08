@@ -992,3 +992,103 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .note__hint { display: block; font-size: var(--fs-xs); color: var(--text-faint); margin-block-start: var(--s1); }
 .ui-card__body { display: block; }
 .cap { font-size: var(--fs-xs); color: var(--text-faint); }
+
+/* ==========================================================================
+   PRINTABLE TIMETABLE  ·  participant/schedule-print
+   --------------------------------------------------------------------------
+   The view shipped with thirteen `sheet__*` classes and not one rule behind
+   them, so the sheet rendered as raw browser defaults on screen and on paper.
+
+   It is deliberately paper-coloured even inside the dark bare shell: the whole
+   point of the screen view is to show what will come out of the printer.
+   @see PRD §9.8.2 · CONSTITUTION art. 15, art. 16
+   ========================================================================== */
+
+.sheet {
+  max-inline-size: 190mm;
+  margin-inline: auto;
+  padding: var(--s8);
+  background: var(--white);
+  color: var(--black);
+  border-radius: var(--r-lg);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s6);
+  padding-block-end: var(--s5);
+  margin-block-end: var(--s6);
+  border-block-end: var(--bw-hairline) solid var(--ink-600);
+}
+
+.sheet__logo { color: var(--black); flex: none; }
+.sheet__meta { display: grid; gap: var(--s1); }
+.sheet__title { font-size: var(--fs-h3); font-weight: var(--fw-bold); line-height: var(--lh-flat); }
+.sheet__cohort { font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.sheet__printed { font-size: var(--fs-xs); color: var(--ink-600); }
+
+.sheet__table { inline-size: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.sheet__caption { text-align: start; font-size: var(--fs-xs); color: var(--ink-600); padding-block-end: var(--s3); }
+
+.sheet__table th,
+.sheet__table td {
+  text-align: start;
+  padding: var(--s3) var(--s2);
+  border-block-end: var(--bw-hairline) solid var(--ink-500);
+  vertical-align: top;
+}
+
+.sheet__table th {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-xs);
+  border-block-end-width: var(--bw-strong);
+  white-space: nowrap;
+}
+
+/* Dates and times never wrap: a split timestamp is unreadable on paper. */
+.sheet__date,
+.sheet__time { white-space: nowrap; }
+
+/* A cancelled session stays on the sheet so two printouts can be compared.
+   The strike-through is not the only signal — the status column says so in
+   words, because colour and decoration alone never carry meaning (art. 16). */
+.sheet__row--cancelled td { color: var(--ink-600); text-decoration: line-through; }
+.sheet__row--cancelled .sheet__reason { text-decoration: none; }
+
+.sheet__reason {
+  display: block;
+  font-size: var(--fs-2xs);
+  color: var(--ink-600);
+  margin-block-start: var(--s1);
+  text-decoration: none;
+}
+
+.sheet__foot {
+  margin-block-start: var(--s6);
+  padding-block-start: var(--s4);
+  border-block-start: var(--bw-hairline) solid var(--ink-600);
+  display: grid;
+  gap: var(--s1);
+  font-size: var(--fs-2xs);
+  color: var(--ink-600);
+}
+
+@media print {
+  /* The bare shell is a verification chrome; none of it belongs on a timetable. */
+  .page--bare > .bare > .bare__top,
+  .page--bare > .bare > .bare__foot { display: none; }
+
+  .sheet {
+    max-inline-size: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  /* Repeat the header on page two and never break a session across a page. */
+  .sheet__table thead { display: table-header-group; }
+  .sheet__row { break-inside: avoid; page-break-inside: avoid; }
+  .sheet__foot { break-inside: avoid; }
+}

@@ -162,7 +162,9 @@ final class MakeDemoAccounts extends Command
      * because Arabic names in app/ are refused by gate G5. Same reason the
      * seeders keep their content in JSON.
      *
-     * @return list<array<string, string>>
+     * @return list<array{role: UserRole, email: string, phone: string, gender: string,
+     *     first_name_ar: string, second_name_ar: string, third_name_ar: string, last_name_ar: string,
+     *     first_name_en: string, second_name_en: string, third_name_en: string, last_name_en: string}>
      */
     private function roster(string $domain): array
     {
@@ -183,15 +185,28 @@ final class MakeDemoAccounts extends Command
                 continue;
             }
 
-            $role = UserRole::tryFrom((string) ($person['local_part_role'] ?? $person['role'] ?? ''));
+            $role = UserRole::tryFrom((string) ($person['role'] ?? ''));
 
             if ($role === null) {
                 continue;
             }
 
-            $person['role'] = $role;
-            $person['email'] = ((string) $person['local_part']).'@'.$domain;
-            $people[] = $person;
+            // Rebuilt field by field rather than mutated, so the shape the rest
+            // of this class relies on is stated once and cannot drift with the file.
+            $people[] = [
+                'role' => $role,
+                'email' => ((string) ($person['local_part'] ?? '')).'@'.$domain,
+                'phone' => (string) ($person['phone'] ?? ''),
+                'gender' => (string) ($person['gender'] ?? 'male'),
+                'first_name_ar' => (string) ($person['first_name_ar'] ?? ''),
+                'second_name_ar' => (string) ($person['second_name_ar'] ?? ''),
+                'third_name_ar' => (string) ($person['third_name_ar'] ?? ''),
+                'last_name_ar' => (string) ($person['last_name_ar'] ?? ''),
+                'first_name_en' => (string) ($person['first_name_en'] ?? ''),
+                'second_name_en' => (string) ($person['second_name_en'] ?? ''),
+                'third_name_en' => (string) ($person['third_name_en'] ?? ''),
+                'last_name_en' => (string) ($person['last_name_en'] ?? ''),
+            ];
         }
 
         return $people;
