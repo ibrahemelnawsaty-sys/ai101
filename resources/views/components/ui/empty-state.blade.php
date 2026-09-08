@@ -56,7 +56,13 @@
 
     {{ $slot }}
 
+    {{-- An explicit `action` slot always wins; the two props are the shorthand
+         that thirty-four views already use. One or the other, never both. --}}
     @isset($action)
         <div class="ui-empty__actions">{{ $action }}</div>
+    @elseif ($actionLabel !== null && $actionHref !== null)
+        <div class="ui-empty__actions">
+            <x-ui.button variant="secondary" :href="$actionHref">{{ $actionLabel }}</x-ui.button>
+        </div>
     @endisset
 </div>

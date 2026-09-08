@@ -29,6 +29,14 @@ final class EmptyState extends UiComponent
         public ?string $title = null,
         public ?string $description = null,
         public ?string $icon = null,
+        // Seventy call sites in thirty-four views have been passing these two
+        // since the component was written. It never declared them, so Blade
+        // spilled them onto the root element as stray HTML attributes —
+        // <div class="ui-empty" action-label="اعرض جدول البرنامج"> — and no
+        // button was ever rendered. Every empty and error state in the platform
+        // was missing the "what to do next" that Article 17 requires of it.
+        public ?string $actionLabel = null,
+        public ?string $actionHref = null,
     ) {
         $this->variant = self::oneOf($variant, ['default', 'error', 'success', 'locked'], 'default');
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');
