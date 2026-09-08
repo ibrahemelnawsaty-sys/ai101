@@ -158,10 +158,10 @@
                         @csrf
                         @method('PUT')
 
-                        <x-ui.textarea name="rejection_reason" rows="3" required minlength="10"
+                        <x-ui.textarea name="reject_reason" rows="3" required minlength="10"
                             :label="__('admin.registrations.reject_reason')"
                             :hint="__('admin.registrations.reject_reason_hint')"
-                            :value="old('rejection_reason')" />
+                            :value="old('reject_reason')" />
 
                         <div class="row__acts">
                             <x-ui.button variant="danger" type="submit">{{ __('admin.registrations.reject') }}</x-ui.button>

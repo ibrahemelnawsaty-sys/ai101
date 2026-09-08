@@ -221,7 +221,11 @@ final class UserController extends Controller
 
         $subject->setAttribute('role', $role->value);
 
-        $this->audit->log('user.role_changed', $subject, $before, ['role' => $role->value]);
+        $this->audit->log('user.role_changed', $subject, $before, [
+            'role' => $role->value,
+            // Without this the row records that a role changed and never why.
+            'reason' => $request->validated('reason'),
+        ]);
 
         $subject->save();
 

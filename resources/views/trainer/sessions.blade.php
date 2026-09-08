@@ -181,13 +181,16 @@
                     <p><b>{{ $cancelling->topic }}</b> ·
                         <span class="u-num">{{ \App\Support\Dates::dateTime($cancelling->startsAt) }}</span></p>
 
-                    <x-ui.textarea name="cancellation_reason" rows="3" required minlength="10"
+                    <x-ui.textarea name="cancel_reason" rows="3" required minlength="10"
                         :label="__('trainer.sessions.cancel_reason')"
                         :hint="__('trainer.sessions.cancel_reason_hint', ['min' => 10])" />
 
-                    <x-ui.input name="replacement_at" type="datetime-local" dir="ltr"
-                        :label="__('trainer.sessions.replacement_at')"
-                        :hint="__('trainer.sessions.replacement_hint')" />
+                    {{-- The "replacement session" field was removed in D-42. It was sent
+                         by this form, validated by nothing, read by no controller and
+                         stored in no column: the trainer filled it in and it vanished
+                         without a word. A field that silently discards what a user typed
+                         is worse than no field (art. 7). Restore it the day the feature
+                         exists end to end. --}}
 
                     <div class="row__acts">
                         <x-ui.button variant="danger" type="submit">{{ __('trainer.sessions.confirm_cancel') }}</x-ui.button>

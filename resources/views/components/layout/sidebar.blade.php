@@ -113,7 +113,7 @@
                 <form method="POST" action="{{ $switchUrl }}">
                     @csrf
                     <label class="sr" for="cohort-switch">{{ __('nav.chrome.switch_cohort') }}</label>
-                    <select id="cohort-switch" name="cohort" class="side__switch" onchange="this.form.submit()">
+                    <select id="cohort-switch" name="cohort_id" class="side__switch" onchange="this.form.submit()">
                         @foreach ($cohorts as $option)
                             <option value="{{ $option['id'] }}" @selected($option['is_current'] ?? false)>
                                 {{ $option['name'] }}

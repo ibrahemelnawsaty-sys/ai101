@@ -340,13 +340,13 @@
                          RegisterRequest; the two documents open in a new tab so the
                          half-filled wizard is never lost. --}}
                     <x-ui.checkbox
-                        name="terms"
+                        name="terms_accepted"
                         value="1"
                         required
                         class="check--terms"
-                        :checked="(bool) old('terms')"
-                        :error="$errors->first('terms')"
-                        x-model="data.terms">
+                        :checked="(bool) old('terms_accepted')"
+                        :error="$errors->first('terms_accepted')"
+                        x-model="data.terms_accepted">
                         {{ __('auth.register.terms_accept_before') }}
                         <a href="{{ route('terms') }}" target="_blank" rel="noopener">{{ __('auth.register.terms_link') }}</a>
                         {{ __('auth.register.terms_accept_and') }}

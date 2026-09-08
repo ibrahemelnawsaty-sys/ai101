@@ -35,6 +35,12 @@ final class ChangeUserRoleRequest extends FormRequest
     {
         return [
             'role' => ['required', Rule::enum(UserRole::class)],
+
+            // Raising an account to administrator is the highest-privilege
+            // write on this platform. The screen has always demanded a reason;
+            // the server never asked for one, so it never reached audit_logs.
+            // Article 8 wants the record to say WHY, not only what changed.
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
         ];
     }
 

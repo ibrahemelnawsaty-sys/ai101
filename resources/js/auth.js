@@ -94,7 +94,7 @@ function registerWizard(options = {}) {
         strength: 0,
         rules: { length: false, upper: false, lower: false, digit: false, symbol: false },
 
-        data: { terms: false },
+        data: { terms_accepted: false },
 
         metLabel: copy.met || '',
         unmetLabel: copy.unmet || '',
