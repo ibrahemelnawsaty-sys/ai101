@@ -65,7 +65,7 @@ final class UpdateProfileRequest extends FormRequest
         $rules = [
             'phone' => array_merge(
                 $this->phoneRules(),
-                [Rule::unique('profiles', 'phone')->ignore($userId, 'user_id')]
+                [Rule::unique('profiles', 'phone')->ignore($userId, 'user_id')],
             ),
             'avatar' => array_merge(['nullable'], $this->fileRules(2048)),
             'bio' => ['nullable', 'string', 'max:500'],

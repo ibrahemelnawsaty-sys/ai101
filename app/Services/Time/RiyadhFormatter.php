@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Time;
 
-use DateTimeInterface;
-
 /**
  * Renders instants for display: Riyadh timezone, Latin digits, Arabic wording
  * that lives in lang/ar/app.php and never inside this file.
@@ -50,7 +48,7 @@ final class RiyadhFormatter
     /**
      * Weekday, day, month, year: app.days.* + j + app.months.* + Y.
      */
-    public function date(DateTimeInterface $t): string
+    public function date(\DateTimeInterface $t): string
     {
         $riyadh = Clock::toRiyadh($t);
 
@@ -63,7 +61,7 @@ final class RiyadhFormatter
     /**
      * Day, month, year: j + app.months.* + Y - without the day name.
      */
-    public function shortDate(DateTimeInterface $t): string
+    public function shortDate(\DateTimeInterface $t): string
     {
         $riyadh = Clock::toRiyadh($t);
 
@@ -74,7 +72,7 @@ final class RiyadhFormatter
      * Twelve-hour clock plus meridiem word: g:i + app.meridiem.am|pm.
      * No leading zero on the hour.
      */
-    public function time(DateTimeInterface $t): string
+    public function time(\DateTimeInterface $t): string
     {
         $riyadh = Clock::toRiyadh($t);
         $meridiem = (int) $riyadh->format('G') < 12 ? 'am' : 'pm';
@@ -85,7 +83,7 @@ final class RiyadhFormatter
     /**
      * Full date and time, joined by the pattern defined in lang/ar/app.php.
      */
-    public function dateTime(DateTimeInterface $t): string
+    public function dateTime(\DateTimeInterface $t): string
     {
         return (string) __('app.date_time', [
             'date' => $this->date($t),
@@ -97,7 +95,7 @@ final class RiyadhFormatter
      * Two twelve-hour times joined by the app.time_range pattern in
      * lang/ar/app.php, each rendered by time() above.
      */
-    public function timeRange(DateTimeInterface $from, DateTimeInterface $to): string
+    public function timeRange(\DateTimeInterface $from, \DateTimeInterface $to): string
     {
         return (string) __('app.time_range', [
             'from' => $this->time($from),
@@ -105,14 +103,14 @@ final class RiyadhFormatter
         ]);
     }
 
-    public function dayName(DateTimeInterface $t): string
+    public function dayName(\DateTimeInterface $t): string
     {
         $index = (int) Clock::toRiyadh($t)->format('w');
 
         return (string) __('app.days.'.self::DAY_KEYS[$index]);
     }
 
-    public function monthName(DateTimeInterface $t): string
+    public function monthName(\DateTimeInterface $t): string
     {
         $index = (int) Clock::toRiyadh($t)->format('n') - 1;
 
@@ -122,7 +120,7 @@ final class RiyadhFormatter
     /**
      * Machine readable instant for `datetime` attributes and ICS exports.
      */
-    public function iso(DateTimeInterface $t): string
+    public function iso(\DateTimeInterface $t): string
     {
         return Clock::toUtc($t)->format('Y-m-d\TH:i:s\Z');
     }
@@ -131,7 +129,7 @@ final class RiyadhFormatter
      * HH:MM:SS - the countdown used by the attendance card (PRD 9.9.8).
      * Never negative: an elapsed target renders as 00:00:00.
      */
-    public function countdown(DateTimeInterface $target, ?DateTimeInterface $from = null): string
+    public function countdown(\DateTimeInterface $target, ?\DateTimeInterface $from = null): string
     {
         $start = $from === null ? Clock::now() : Clock::toUtc($from);
         $seconds = Clock::toUtc($target)->getTimestamp() - $start->getTimestamp();

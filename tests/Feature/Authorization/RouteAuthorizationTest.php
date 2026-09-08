@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Route;
 
 uses()->group('authz');
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -230,7 +230,7 @@ function authorizationMatrix(object $test): array
     ];
 }
 
-it('كل مسار محمي يرفض كل دور غير مصرّح له برمز 403', function () {
+it('كل مسار محمي يرفض كل دور غير مصرّح له برمز 403', function (): void {
     $failures = [];
 
     foreach (authorizationMatrix($this) as $name => [$verb, $parameters, $allowed]) {
@@ -253,7 +253,7 @@ it('كل مسار محمي يرفض كل دور غير مصرّح له برمز 
     expect($failures)->toBe([]);
 });
 
-it('كل مسار محمي يرفض الزائر غير المسجل', function () {
+it('كل مسار محمي يرفض الزائر غير المسجل', function (): void {
     $failures = [];
 
     foreach (authorizationMatrix($this) as $name => [$verb, $parameters]) {
@@ -271,7 +271,7 @@ it('كل مسار محمي يرفض الزائر غير المسجل', function 
     expect($failures)->toBe([]);
 });
 
-it('كل دور مصرّح له يصل فعلًا إلى مساره — الضبط المضاد', function () {
+it('كل دور مصرّح له يصل فعلًا إلى مساره — الضبط المضاد', function (): void {
     // Without this, a route that returns 403 to everyone would pass the test above.
     $failures = [];
 
@@ -291,7 +291,7 @@ it('كل دور مصرّح له يصل فعلًا إلى مساره — الضب
     expect($failures)->toBe([]);
 });
 
-it('لا يوجد مسار محمي بلا سطر في مصفوفة التفويض', function () {
+it('لا يوجد مسار محمي بلا سطر في مصفوفة التفويض', function (): void {
     $covered = array_keys(authorizationMatrix($this));
 
     $protected = collect(Route::getRoutes()->getRoutes())
@@ -299,7 +299,7 @@ it('لا يوجد مسار محمي بلا سطر في مصفوفة التفوي
         ->filter()
         ->filter(fn (string $name): bool => str_starts_with($name, 'admin.')
             || str_starts_with($name, 'trainer.')
-            || str_starts_with($name, 'participant.')
+            || str_starts_with($name, 'participant.'),
         )
         ->reject(fn (string $name): bool => in_array($name, $covered, true))
         // The impersonation stop route is deliberately reachable by whoever is
@@ -311,7 +311,7 @@ it('لا يوجد مسار محمي بلا سطر في مصفوفة التفوي
     expect($protected)->toBe([]);
 });
 
-it('كل مسار مغيّر للحالة محمي بوسيط المصادقة', function () {
+it('كل مسار مغيّر للحالة محمي بوسيط المصادقة', function (): void {
     $unguarded = collect(Route::getRoutes()->getRoutes())
         ->filter(fn ($route): bool => (bool) array_intersect($route->methods(), ['POST', 'PUT', 'PATCH', 'DELETE']))
         ->reject(fn ($route): bool => in_array($route->getName(), [
@@ -341,10 +341,8 @@ it('كل مسار مغيّر للحالة محمي بوسيط المصادقة',
     expect($unguarded)->toBe([]);
 });
 
-it('المسارات العامة تبقى مفتوحة للزوار', function () {
+it('المسارات العامة تبقى مفتوحة للزوار', function (): void {
     foreach (['home', 'terms', 'privacy'] as $name) {
         $this->get(route($name))->assertOk();
     }
 });
-
-

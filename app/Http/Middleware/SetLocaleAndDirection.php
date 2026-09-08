@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\View;
@@ -19,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class SetLocaleAndDirection
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, \Closure $next): Response
     {
         /** @var list<string> $supported */
         $supported = (array) config('athar.locales.supported', ['ar', 'en']);

@@ -30,11 +30,11 @@ use App\Services\Grading\ScoreCalculator;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The submissions board and the grading form (PRD §9.11.3, §9.15).
@@ -112,7 +112,7 @@ final class SubmissionController extends Controller
             ->withQueryString();
 
         $rows = $page->through(
-            static fn (Submission $row): SubmissionRow => SubmissionRow::from($row)
+            static fn (Submission $row): SubmissionRow => SubmissionRow::from($row),
         );
 
         return view('trainer.submissions', [
@@ -241,9 +241,9 @@ final class SubmissionController extends Controller
      * distinct pairs, because BR-19 keeps every version rather than replacing
      * it and three versions of one assignment are still one thing handed in.
      *
-     * @param  Collection<int, Assignment>  $assignments
+     * @param  EloquentCollection<int, Assignment>  $assignments
      */
-    private function stats(Cohort $cohort, Collection $assignments): SubmissionStats
+    private function stats(Cohort $cohort, EloquentCollection $assignments): SubmissionStats
     {
         $assignmentIds = $assignments->modelKeys();
 

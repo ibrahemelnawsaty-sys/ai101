@@ -45,7 +45,7 @@ final class ErrorPage extends Component
     public ?string $retryAfter;
 
     /**
-     * @param  array<int, array{label?: string, href?: string}>|null  $links  explicit links; null asks for the code's own suggestions
+     * @param  array<int, mixed>|null  $links  explicit links; null asks for the code's own suggestions
      */
     public function __construct(
         public string $code = '',
@@ -63,15 +63,40 @@ final class ErrorPage extends Component
         $this->href = $href ?? ErrorNavigation::actionHref($code);
         $this->links = $links === null
             ? ErrorNavigation::suggestions($code)
-            : array_values(array_filter(
-                $links,
-                static fn (mixed $link): bool => is_array($link) && ! empty($link['href']) && ! empty($link['label'])
-            ));
+            : self::linkList($links);
 
         $this->homeUrl = ErrorNavigation::home();
         $this->platform = (string) config('athar.platform_name');
         $this->email = (string) config('athar.email');
         $this->retryAfter = ErrorNavigation::retryAfter($exception);
+    }
+
+    /**
+     * Explicit links reduced to the pairs the shell can actually draw.
+     *
+     * The rows are unchecked at the boundary - the caller passes whatever it
+     * holds - so one missing a label or a target is dropped rather than drawn
+     * as an empty anchor on a page whose whole job is to still render (art. 7).
+     *
+     * @param  array<int, mixed>  $links
+     * @return list<array{label: string, href: string}>
+     */
+    private static function linkList(array $links): array
+    {
+        $drawable = [];
+
+        foreach ($links as $link) {
+            if (! is_array($link) || empty($link['href']) || empty($link['label'])) {
+                continue;
+            }
+
+            $drawable[] = [
+                'label' => (string) $link['label'],
+                'href' => (string) $link['href'],
+            ];
+        }
+
+        return $drawable;
     }
 
     public function render(): View

@@ -21,7 +21,28 @@ use App\Support\ViewModel;
  * other way round shows a clean sheet for a participant who has done nothing,
  * which is the opposite of what a trainer needs to see.
  *
+ * The published surface is declared below so a reader outside Blade - the
+ * profile presenter folds these rows into one "is anything graded yet" answer -
+ * gets the same shape the template sees, instead of an unchecked magic read.
+ *
  * @see BR-19, BR-22, BR-23 · PRD §4.2, §9.11.3 · CONSTITUTION art. 5, art. 18
+ *
+ * @property-read string|null $id
+ * @property-read string $assignmentTitle
+ * @property-read bool $hasSubmission
+ * @property-read mixed $submittedAt
+ * @property-read bool $isLate
+ * @property-read int $version
+ * @property-read bool $isGraded
+ * @property-read string $score
+ * @property-read string $maxScore
+ * @property-read mixed $feedback
+ * @property-read mixed $gradedAt
+ * @property-read string $graderName
+ * @property-read array<int, mixed> $files
+ * @property-read string $stateLabel
+ * @property-read string $stateVariant
+ * @property-read string $stateIcon
  */
 final class ParticipantSubmission extends ViewModel
 {

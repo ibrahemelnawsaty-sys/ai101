@@ -75,7 +75,7 @@ final class GradeController extends Controller
             ->get();
 
         $projectGraded = $items->contains(
-            static fn (Evaluation $item): bool => $item->getAttribute('entity_type') === EvaluationEntity::FinalProject
+            static fn (Evaluation $item): bool => $item->getAttribute('entity_type') === EvaluationEntity::FinalProject,
         );
 
         // Grouped by the week the mark belongs to, which is what the sheet's
@@ -83,7 +83,7 @@ final class GradeController extends Controller
         $grouped = $items
             ->groupBy(static fn (Evaluation $item): string => EvaluatedItemTitle::groupOf($item))
             ->map(static fn (Collection $group): Collection => $group->map(
-                static fn (Evaluation $item): GradeItemPresenter => GradeItemPresenter::graded($item)
+                static fn (Evaluation $item): GradeItemPresenter => GradeItemPresenter::graded($item),
             )->values());
 
         return view('participant.grades', [

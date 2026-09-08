@@ -10,7 +10,6 @@ use App\Models\Cohort;
 use App\Services\Time\Clock;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 /**
  * Certificate serial numbers and verification codes.
@@ -144,7 +143,7 @@ final class SerialNumberGenerator
     {
         try {
             $random = strtoupper(bin2hex(random_bytes(self::VERIFY_RANDOM_BYTES)));
-        } catch (Throwable) {
+        } catch (\Throwable) {
             throw CertificateException::serialGenerationFailed();
         }
 

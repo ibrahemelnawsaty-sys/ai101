@@ -7,17 +7,16 @@ namespace App\Models;
 use App\Enums\EnrollmentRole;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use DateTimeInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use RuntimeException;
 
 /**
  * A platform account: administrator, trainer or participant.
@@ -26,11 +25,20 @@ use RuntimeException;
  * serialised. Email verification and password reset both run through the
  * `email_tokens` table, not through Laravel's signed-URL notifications.
  *
+ * A `datetime` cast is asymmetric: it reads back as CarbonImmutable but accepts
+ * any DateTimeInterface or date string on write, which is what
+ * markEmailAsVerifiedAt() hands it.
+ *
+ * @property-read CarbonImmutable|null $email_verified_at
+ * @property-write \DateTimeInterface|string|null $email_verified_at
+ *
  * @see BR-22, BR-23, BR-28, BR-29, BR-30, BR-32 · PRD §7.1, §4.1 · PROJECT-CONTRACT §4
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
     use HasUuids;
     use SoftDeletes;
 
@@ -122,8 +130,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function markEmailAsVerified(): bool
     {
-        throw new RuntimeException(
-            'Use markEmailAsVerifiedAt() with an instant from App\Services\Time\Clock (BR-07).'
+        throw new \RuntimeException(
+            'Use markEmailAsVerifiedAt() with an instant from App\Services\Time\Clock (BR-07).',
         );
     }
 
@@ -131,7 +139,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * Verification is driven by the EmailToken flow with an explicit server instant,
      * so no framework clock is consulted here (BR-07).
      */
-    public function markEmailAsVerifiedAt(DateTimeInterface $at): bool
+    public function markEmailAsVerifiedAt(\DateTimeInterface $at): bool
     {
         $this->email_verified_at = $at;
 
@@ -142,10 +150,10 @@ class User extends Authenticatable implements MustVerifyEmail
      * Laravel's built-in verification mail is deliberately unavailable: the platform
      * issues single-use tokens from the `email_tokens` table instead.
      */
-    public function sendEmailVerificationNotification()
+    public function sendEmailVerificationNotification(): void
     {
-        throw new RuntimeException(
-            'Email verification is issued through App\Models\EmailToken, not Laravel notifications.'
+        throw new \RuntimeException(
+            'Email verification is issued through App\Models\EmailToken, not Laravel notifications.',
         );
     }
 
@@ -154,10 +162,10 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @param  string  $token
      */
-    public function sendPasswordResetNotification($token)
+    public function sendPasswordResetNotification($token): void
     {
-        throw new RuntimeException(
-            'Password resets are issued through App\Models\EmailToken, not Laravel notifications.'
+        throw new \RuntimeException(
+            'Password resets are issued through App\Models\EmailToken, not Laravel notifications.',
         );
     }
 
@@ -204,7 +212,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * Temporary lock after repeated failed logins. The instant is supplied by the
      * caller, which must read it from App\Services\Time\Clock (BR-07).
      */
-    public function isLockedAt(DateTimeInterface $at): bool
+    public function isLockedAt(\DateTimeInterface $at): bool
     {
         return $this->locked_until !== null
             && $this->locked_until->getTimestamp() > $at->getTimestamp();
@@ -242,16 +250,25 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return HasOne<Profile, $this>
+     */
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
     }
 
+    /**
+     * @return HasMany<Enrollment, $this>
+     */
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
     }
 
+    /**
+     * @return BelongsToMany<Cohort, $this>
+     */
     public function cohorts(): BelongsToMany
     {
         return $this->belongsToMany(Cohort::class, 'enrollments')
@@ -259,66 +276,105 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    /**
+     * @return HasMany<Attendance, $this>
+     */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
 
+    /**
+     * @return HasMany<Attendance, $this>
+     */
     public function editedAttendances(): HasMany
     {
         return $this->hasMany(Attendance::class, 'edited_by');
     }
 
+    /**
+     * @return HasMany<Submission, $this>
+     */
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
     }
 
+    /**
+     * @return HasMany<ProjectSubmission, $this>
+     */
     public function projectSubmissions(): HasMany
     {
         return $this->hasMany(ProjectSubmission::class);
     }
 
+    /**
+     * @return HasMany<Evaluation, $this>
+     */
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
     }
 
+    /**
+     * @return HasMany<Evaluation, $this>
+     */
     public function evaluationsGiven(): HasMany
     {
         return $this->hasMany(Evaluation::class, 'evaluated_by');
     }
 
+    /**
+     * @return HasMany<Session, $this>
+     */
     public function trainedSessions(): HasMany
     {
         return $this->hasMany(Session::class, 'trainer_id');
     }
 
+    /**
+     * @return HasMany<Assignment, $this>
+     */
     public function createdAssignments(): HasMany
     {
         return $this->hasMany(Assignment::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<\App\Models\Resource, $this>
+     */
     public function uploadedResources(): HasMany
     {
         return $this->hasMany(Resource::class, 'uploaded_by');
     }
 
+    /**
+     * @return HasMany<FinalProject, $this>
+     */
     public function unlockedFinalProjects(): HasMany
     {
         return $this->hasMany(FinalProject::class, 'unlocked_by');
     }
 
+    /**
+     * @return HasMany<UserJourneyState, $this>
+     */
     public function journeyStates(): HasMany
     {
         return $this->hasMany(UserJourneyState::class);
     }
 
+    /**
+     * @return HasMany<ThreadParticipant, $this>
+     */
     public function threadParticipations(): HasMany
     {
         return $this->hasMany(ThreadParticipant::class);
     }
 
+    /**
+     * @return BelongsToMany<Thread, $this>
+     */
     public function threads(): BelongsToMany
     {
         return $this->belongsToMany(Thread::class, 'thread_participants')
@@ -326,56 +382,89 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    /**
+     * @return HasMany<Message, $this>
+     */
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    /**
+     * @return HasMany<Thread, $this>
+     */
     public function createdThreads(): HasMany
     {
         return $this->hasMany(Thread::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<Notification, $this>
+     */
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class);
     }
 
+    /**
+     * @return HasMany<NotificationPreference, $this>
+     */
     public function notificationPreferences(): HasMany
     {
         return $this->hasMany(NotificationPreference::class);
     }
 
+    /**
+     * @return HasMany<Certificate, $this>
+     */
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * @return HasMany<Certificate, $this>
+     */
     public function issuedCertificates(): HasMany
     {
         return $this->hasMany(Certificate::class, 'issued_by');
     }
 
+    /**
+     * @return HasMany<DigitalCard, $this>
+     */
     public function digitalCards(): HasMany
     {
         return $this->hasMany(DigitalCard::class);
     }
 
+    /**
+     * @return HasMany<EmailToken, $this>
+     */
     public function emailTokens(): HasMany
     {
         return $this->hasMany(EmailToken::class);
     }
 
+    /**
+     * @return HasMany<AuditLog, $this>
+     */
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'actor_id');
     }
 
+    /**
+     * @return HasMany<ImpersonationSession, $this>
+     */
     public function impersonationsPerformed(): HasMany
     {
         return $this->hasMany(ImpersonationSession::class, 'admin_id');
     }
 
+    /**
+     * @return HasMany<ImpersonationSession, $this>
+     */
     public function impersonationsReceived(): HasMany
     {
         return $this->hasMany(ImpersonationSession::class, 'target_id');
@@ -404,7 +493,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return $query->whereIn(
             'id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 
@@ -426,7 +515,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'id',
                 Enrollment::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('user_id')
+                    ->select('user_id'),
             );
         }
 
@@ -448,7 +537,7 @@ class User extends Authenticatable implements MustVerifyEmail
             Enrollment::query()
                 ->where('cohort_id', $cohortId)
                 ->where('role_in_cohort', EnrollmentRole::Trainer->value)
-                ->select('user_id')
+                ->select('user_id'),
         );
     }
 

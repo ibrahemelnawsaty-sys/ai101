@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -23,7 +23,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Cohort extends Model
 {
+    /** @use HasFactory<\Database\Factories\CohortFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -55,7 +57,10 @@ class Cohort extends Model
     ];
 
     /**
-     * @var array<string, int>
+     * `requires_approval` is a boolean column, so the default map is not
+     * uniformly integer-valued.
+     *
+     * @var array<string, int|bool>
      */
     protected $attributes = [
         'seats_taken' => 0,
@@ -93,16 +98,25 @@ class Cohort extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Program, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
     }
 
+    /**
+     * @return HasMany<Enrollment, $this>
+     */
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
     }
 
+    /**
+     * @return BelongsToMany<User, $this>
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'enrollments')
@@ -110,61 +124,97 @@ class Cohort extends Model
             ->withTimestamps();
     }
 
+    /**
+     * @return BelongsToMany<User, $this>
+     */
     public function participants(): BelongsToMany
     {
         return $this->users()->wherePivot('role_in_cohort', EnrollmentRole::Participant->value);
     }
 
+    /**
+     * @return BelongsToMany<User, $this>
+     */
     public function trainers(): BelongsToMany
     {
         return $this->users()->wherePivot('role_in_cohort', EnrollmentRole::Trainer->value);
     }
 
+    /**
+     * @return HasMany<Week, $this>
+     */
     public function weeks(): HasMany
     {
         return $this->hasMany(Week::class);
     }
 
+    /**
+     * @return HasMany<Session, $this>
+     */
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
     }
 
+    /**
+     * @return HasMany<Assignment, $this>
+     */
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
     }
 
+    /**
+     * @return HasOne<FinalProject, $this>
+     */
     public function finalProject(): HasOne
     {
         return $this->hasOne(FinalProject::class);
     }
 
+    /**
+     * @return HasMany<\App\Models\Resource, $this>
+     */
     public function resources(): HasMany
     {
         return $this->hasMany(Resource::class);
     }
 
+    /**
+     * @return HasMany<JourneyStep, $this>
+     */
     public function journeySteps(): HasMany
     {
         return $this->hasMany(JourneyStep::class);
     }
 
+    /**
+     * @return HasMany<Thread, $this>
+     */
     public function threads(): HasMany
     {
         return $this->hasMany(Thread::class);
     }
 
+    /**
+     * @return HasMany<Certificate, $this>
+     */
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * @return HasMany<DigitalCard, $this>
+     */
     public function digitalCards(): HasMany
     {
         return $this->hasMany(DigitalCard::class);
     }
 
+    /**
+     * @return HasOne<LandingSetting, $this>
+     */
     public function landingSetting(): HasOne
     {
         return $this->hasOne(LandingSetting::class);
@@ -182,7 +232,7 @@ class Cohort extends Model
 
         return $query->whereIn(
             'id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

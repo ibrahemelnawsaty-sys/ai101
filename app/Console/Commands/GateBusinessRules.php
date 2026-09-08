@@ -81,7 +81,7 @@ final class GateBusinessRules extends GateCommand
                     'tests/Feature/BusinessRules',
                     0,
                     'BR-UNTESTED',
-                    $identifier.' appears in no test name; an untested rule is an unimplemented rule'
+                    $identifier.' appears in no test name; an untested rule is an unimplemented rule',
                 );
             }
         }
@@ -91,7 +91,7 @@ final class GateBusinessRules extends GateCommand
                 $stray['file'],
                 $stray['line'],
                 'BR-OUT-OF-RANGE',
-                $stray['id'].' is outside the documented range '.self::identifier(self::FIRST_RULE).'..'.self::identifier(self::LAST_RULE)
+                $stray['id'].' is outside the documented range '.self::identifier(self::FIRST_RULE).'..'.self::identifier(self::LAST_RULE),
             );
         }
 
@@ -100,7 +100,7 @@ final class GateBusinessRules extends GateCommand
         return $this->renderReport(
             'G10',
             'BUSINESS RULES - one named test per rule',
-            'every rule from '.self::identifier(self::FIRST_RULE).' to '.self::identifier(self::LAST_RULE).' named by at least one test'
+            'every rule from '.self::identifier(self::FIRST_RULE).' to '.self::identifier(self::LAST_RULE).' named by at least one test',
         );
     }
 
@@ -120,7 +120,7 @@ final class GateBusinessRules extends GateCommand
         $this->line(sprintf(
             '  coverage      : %d / %d rule(s) named by a test',
             $total - count($missing),
-            $total
+            $total,
         ));
 
         if ($coverage !== []) {

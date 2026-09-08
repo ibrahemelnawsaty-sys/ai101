@@ -29,7 +29,7 @@ final class UpdateLandingRequest extends FormRequest
 
         return $setting instanceof LandingSetting
             ? $user->can('update', $setting)
-            : $user->can('update', new LandingSetting());
+            : $user->can('update', new LandingSetting);
     }
 
     protected function prepareForValidation(): void

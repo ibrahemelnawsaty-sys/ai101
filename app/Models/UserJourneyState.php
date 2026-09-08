@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\JourneyStepStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class UserJourneyState extends Model
 {
+    /** @use HasFactory<\Database\Factories\UserJourneyStateFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'user_journey_states';
@@ -48,11 +50,17 @@ class UserJourneyState extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<JourneyStep, $this>
+     */
     public function journeyStep(): BelongsTo
     {
         return $this->belongsTo(JourneyStep::class);
@@ -77,7 +85,7 @@ class UserJourneyState extends Model
 
         return $query->whereIn(
             'journey_step_id',
-            JourneyStep::query()->where('cohort_id', $cohortId)->select('id')
+            JourneyStep::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -98,7 +106,7 @@ class UserJourneyState extends Model
                 'journey_step_id',
                 JourneyStep::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('id')
+                    ->select('id'),
             );
         }
 

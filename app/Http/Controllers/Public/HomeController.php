@@ -116,7 +116,7 @@ final class HomeController extends Controller
             'about' => [
                 'kicker' => null,
                 'title' => $program?->getAttribute('name_ar'),
-                'paragraphs' => array_values(array_filter([$program?->getAttribute('description')])),
+                'paragraphs' => array_filter([$program?->getAttribute('description')]),
                 'tags' => [],
                 'cards' => [],
             ],
@@ -251,14 +251,17 @@ final class HomeController extends Controller
             return [];
         }
 
-        return $cohort->weeks
-            ->map(static fn ($week): array => [
-                'index' => (int) $week->getAttribute('index'),
-                'title' => $week->getAttribute('title'),
-                'objectives' => $week->getAttribute('objectives'),
-            ])
-            ->values()
-            ->all();
+        // array_values, not Collection::values(): the latter is a list at run
+        // time but all() still types as array<int, ...>.
+        return array_values(
+            $cohort->weeks
+                ->map(static fn ($week): array => [
+                    'index' => (int) $week->getAttribute('index'),
+                    'title' => $week->getAttribute('title'),
+                    'objectives' => $week->getAttribute('objectives'),
+                ])
+                ->all(),
+        );
     }
 
     /**

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -33,7 +32,7 @@ final class SecurityHeaders
 {
     private const HSTS_SECONDS = 31536000;
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, \Closure $next): Response
     {
         $nonce = Str::random(24);
 
@@ -59,7 +58,7 @@ final class SecurityHeaders
         if ($request->isSecure()) {
             $headers->set(
                 'Strict-Transport-Security',
-                'max-age='.self::HSTS_SECONDS.'; includeSubDomains; preload'
+                'max-age='.self::HSTS_SECONDS.'; includeSubDomains; preload',
             );
         }
 

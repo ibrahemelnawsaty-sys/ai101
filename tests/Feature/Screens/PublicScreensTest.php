@@ -16,7 +16,7 @@ use App\Models\DigitalCard;
 use App\Models\LandingSetting;
 use App\Models\Profile;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-09-20 12:00:00'));
 
     $this->cohort = makeCohort(['capacity' => 30]);
@@ -29,7 +29,7 @@ beforeEach(function () {
     ]);
 });
 
-it('صفحة الهبوط: الحالة العادية بمحتوى من قاعدة البيانات', function () {
+it('صفحة الهبوط: الحالة العادية بمحتوى من قاعدة البيانات', function (): void {
     LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'hero_text' => 'CANARY-HERO-TEXT',
@@ -43,11 +43,11 @@ it('صفحة الهبوط: الحالة العادية بمحتوى من قاع�
         ->and($body)->toContain('dir="rtl"');
 });
 
-it('صفحة الهبوط: حالة التحميل هيكل بشكل المحتوى', function () {
+it('صفحة الهبوط: حالة التحميل هيكل بشكل المحتوى', function (): void {
     expect(renderSkeleton('landing'))->toBeScreenState('loading');
 });
 
-it('صفحة الهبوط: التسجيل مغلق يظهر بحالته الخاصة لا بحالة فارغة عامة', function () {
+it('صفحة الهبوط: التسجيل مغلق يظهر بحالته الخاصة لا بحالة فارغة عامة', function (): void {
     LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'hero_text' => 'CANARY-HERO-TEXT',
@@ -59,7 +59,7 @@ it('صفحة الهبوط: التسجيل مغلق يظهر بحالته الخ�
     expect($body)->toContain('data-registration="closed"');
 });
 
-it('صفحة الهبوط: لا تكشف أي بيانات شخصية لأي مسجل', function () {
+it('صفحة الهبوط: لا تكشف أي بيانات شخصية لأي مسجل', function (): void {
     LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'is_registration_open' => true,
@@ -72,7 +72,7 @@ it('صفحة الهبوط: لا تكشف أي بيانات شخصية لأي م�
     }
 });
 
-it('صفحة التحقق من البطاقة: الحالة العادية ببطاقة سارية', function () {
+it('صفحة التحقق من البطاقة: الحالة العادية ببطاقة سارية', function (): void {
     $card = DigitalCard::factory()->create([
         'user_id' => $this->participant->id,
         'cohort_id' => $this->cohort->id,
@@ -85,7 +85,7 @@ it('صفحة التحقق من البطاقة: الحالة العادية بب�
     expect($body)->toBeScreenState('normal');
 });
 
-it('صفحة التحقق من البطاقة: حالة الخطأ برمز غير صالح لا تكشف شيئًا', function () {
+it('صفحة التحقق من البطاقة: حالة الخطأ برمز غير صالح لا تكشف شيئًا', function (): void {
     $response = $this->get(route('card.verify', 'not-a-real-token'));
 
     expect($response->status())->toBeIn([200, 404]);
@@ -97,7 +97,7 @@ it('صفحة التحقق من البطاقة: حالة الخطأ برمز غي
         ->and($body)->not->toContain('vendor/laravel');
 });
 
-it('صفحة التحقق من الشهادة: الحالة العادية بشهادة سارية', function () {
+it('صفحة التحقق من الشهادة: الحالة العادية بشهادة سارية', function (): void {
     $certificate = issueCertificateFor($this->participant, $this->cohort);
 
     $body = $this->get(route('certificate.verify', $certificate->verify_code))->assertOk()->getContent();
@@ -105,14 +105,14 @@ it('صفحة التحقق من الشهادة: الحالة العادية بش�
     expect($body)->toBeScreenState('normal');
 });
 
-it('صفحة التحقق من الشهادة: حالة الخطأ برمز غير موجود', function () {
+it('صفحة التحقق من الشهادة: حالة الخطأ برمز غير موجود', function (): void {
     $response = $this->get(route('certificate.verify', 'no-such-verify-code'));
 
     expect($response->status())->toBeIn([200, 404])
         ->and($response->getContent())->not->toContain('Exception');
 });
 
-it('الصفحات النظامية متاحة وتحمل الاتجاه واللغة الصحيحين', function () {
+it('الصفحات النظامية متاحة وتحمل الاتجاه واللغة الصحيحين', function (): void {
     foreach (['terms', 'privacy'] as $name) {
         $body = $this->get(route($name))->assertOk()->getContent();
 
@@ -121,13 +121,13 @@ it('الصفحات النظامية متاحة وتحمل الاتجاه وال�
     }
 });
 
-it('صفحة الدخول تُعرض للزائر وتحوّل المسجل إلى لوحته', function () {
+it('صفحة الدخول تُعرض للزائر وتحوّل المسجل إلى لوحته', function (): void {
     $this->get(route('login'))->assertOk();
 
     $this->actingAs($this->participant)->get(route('login'))->assertRedirect(route('dashboard'));
 });
 
-it('صفحات الخطأ العامة عربية ولا تكشف أثر التنفيذ', function () {
+it('صفحات الخطأ العامة عربية ولا تكشف أثر التنفيذ', function (): void {
     foreach (['403', '404', '500'] as $code) {
         expect(view()->exists('errors.'.$code))
             ->toBeTrue("Missing Arabic error screen for HTTP {$code}");

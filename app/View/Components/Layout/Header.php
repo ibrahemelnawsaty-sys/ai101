@@ -53,7 +53,9 @@ final class Header extends UiComponent
     public array $badges;
 
     /**
-     * @param  array<string, int>  $badges
+     * `$badges` and `$unread` stay `mixed`: Blade passes a template attribute
+     * through untouched, so `badges="3"` arrives as a string. counts() is what
+     * turns whatever came in into the array<string, int> the bar reads.
      */
     public function __construct(
         string $title = '',
@@ -61,7 +63,7 @@ final class Header extends UiComponent
         mixed $badges = [],
         mixed $unread = 0,
     ) {
-        $this->badges = is_array($badges) ? $badges : [];
+        $this->badges = self::counts($badges);
         $this->heading = trim($title);
         $this->sub = trim($subtitle);
 

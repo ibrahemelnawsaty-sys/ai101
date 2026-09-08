@@ -8,7 +8,6 @@ use App\Http\Middleware\Concerns\LogsDenials;
 use App\Models\Cohort;
 use App\Services\Audit\AuditLogger;
 use App\Services\Permissions\RoleResolver;
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,7 +37,7 @@ final class EnsureCohortScope
         private readonly AuditLogger $audit,
     ) {}
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, \Closure $next): Response
     {
         $user = $request->user();
 

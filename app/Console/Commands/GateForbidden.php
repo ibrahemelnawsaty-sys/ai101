@@ -148,7 +148,7 @@ final class GateForbidden extends GateCommand
                     $file,
                     self::lineAt($code, $match['offset']),
                     'A13-01-DEBUG',
-                    'debug output '.trim($match['text']).' must not reach the repository'
+                    'debug output '.trim($match['text']).' must not reach the repository',
                 );
             }
         }
@@ -158,7 +158,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-01-CONSOLE',
-                'browser console output '.trim($match['text']).' must not reach the repository'
+                'browser console output '.trim($match['text']).' must not reach the repository',
             );
         }
     }
@@ -214,7 +214,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-06-SCOPE',
-                trim($match['text']).' reads a table directly; prove the query is restricted to the actor scope'
+                trim($match['text']).' reads a table directly; prove the query is restricted to the actor scope',
             );
         }
     }
@@ -239,7 +239,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-07-REQUEST',
-                'action typed against the generic Request; a state changing endpoint needs a FormRequest and a Policy'
+                'action typed against the generic Request; a state changing endpoint needs a FormRequest and a Policy',
             );
         }
     }
@@ -259,7 +259,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-08-UNGUARD',
-                trim($match['text']).' disables mass assignment protection'
+                trim($match['text']).' disables mass assignment protection',
             );
         }
     }
@@ -291,7 +291,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-09-RAW-SQL',
-                trim($match['text']).') carries a variable in the statement; bind the parameter instead'
+                trim($match['text']).') carries a variable in the statement; bind the parameter instead',
             );
         }
     }
@@ -309,7 +309,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($contents, $match['offset']),
                 'A13-10-PRIVATE-KEY',
-                'a private key block is committed to the repository'
+                'a private key block is committed to the repository',
             );
         }
 
@@ -327,7 +327,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($contents, $match['offset']),
                 'A13-10-SECRET',
-                'literal value assigned to "'.$name.'"; secrets belong in .env outside the web root'
+                'literal value assigned to "'.$name.'"; secrets belong in .env outside the web root',
             );
         }
     }
@@ -369,7 +369,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-11-HARD-DELETE',
-                trim($match['text']).' destroys records; users, attendance, evaluations and certificates are never hard deleted'
+                trim($match['text']).' destroys records; users, attendance, evaluations and certificates are never hard deleted',
             );
         }
     }
@@ -394,7 +394,7 @@ final class GateForbidden extends GateCommand
                     $file,
                     self::lineAt($contents, $match['offset']),
                     'A13-12-NO-VERIFY',
-                    'the git hooks must never be bypassed'
+                    'the git hooks must never be bypassed',
                 );
             }
         }
@@ -421,7 +421,7 @@ final class GateForbidden extends GateCommand
                 'A13-13-BLADE-PHP',
                 $hasLogic
                     ? 'a @php island carries business logic; move it to a controller, a service or a view model'
-                    : 'a @php island in a template; prefer passing the value in from the controller'
+                    : 'a @php island in a template; prefer passing the value in from the controller',
             );
         }
     }
@@ -445,7 +445,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-14-ENV',
-                'env() outside config/ returns null once config:cache has run; read it from config()'
+                'env() outside config/ returns null once config:cache has run; read it from config()',
             );
         }
     }
@@ -461,7 +461,7 @@ final class GateForbidden extends GateCommand
                 $file,
                 self::lineAt($code, $match['offset']),
                 'A13-15-DROP-COLUMN',
-                'dropping a column needs a documented backup and a human sign off before merge'
+                'dropping a column needs a documented backup and a human sign off before merge',
             );
         }
     }

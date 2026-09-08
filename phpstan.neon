@@ -5,6 +5,15 @@ parameters:
     # Constitution art. 9 and gate G2: level 8, zero errors.
     level: 8
 
+    # Models declare their casts in the `casts()` method with a
+    # `@return array<string, string>` docblock, so Larastan's default
+    # (read the declared return type) sees no constant array and treats every
+    # cast column as its raw database type: `role` and `status` come back as
+    # `string` instead of UserRole/UserStatus. Parsing the method body is what
+    # matches runtime, and without it PHPStan reports correct enum comparisons
+    # as "always false".
+    parseModelCastsMethod: true
+
     paths:
         - app
         - config

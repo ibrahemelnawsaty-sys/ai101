@@ -88,6 +88,6 @@ final class StoreEvaluationRequest extends FormRequest
             ? $submission->assignment
             : $submission->assignment()->first();
 
-        return (float) ($assignment?->max_score ?? 0);
+        return (float) ($assignment->max_score ?? 0);
     }
 }

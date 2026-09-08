@@ -130,7 +130,7 @@ final class GateTokens extends GateCommand
     {
         return array_values(array_filter(
             $this->collectFiles($directories, $kinds),
-            static fn (string $file): bool => ! self::isGateSource($file)
+            static fn (string $file): bool => ! self::isGateSource($file),
         ));
     }
 
@@ -173,7 +173,7 @@ final class GateTokens extends GateCommand
                 $severity,
                 self::lineAt($code, $match['offset']),
                 'TOKENS-HEX',
-                'literal colour '.$match['text'].'; use var(--token) from '.self::TOKENS_FILE
+                'literal colour '.$match['text'].'; use var(--token) from '.self::TOKENS_FILE,
             );
         }
 
@@ -182,7 +182,7 @@ final class GateTokens extends GateCommand
                 $severity,
                 self::lineAt($code, $match['offset']),
                 'TOKENS-COLOUR-FN',
-                'literal colour function '.trim($match['text']).'; use var(--token)'
+                'literal colour function '.trim($match['text']).'; use var(--token)',
             );
         }
 
@@ -203,7 +203,7 @@ final class GateTokens extends GateCommand
                     'TOKENS-PX',
                     'raw length '.$match['text'].($tolerated
                         ? ' (hairline or zero) should still come from a token'
-                        : '; spacing and sizing come from tokens')
+                        : '; spacing and sizing come from tokens'),
                 );
             }
 
@@ -218,7 +218,7 @@ final class GateTokens extends GateCommand
                     self::FAIL,
                     self::lineAt($code, $match['offset']),
                     'TOKENS-FONT',
-                    'literal '.strtolower($match['groups'][1] ?? 'font').' value; use var(--token)'
+                    'literal '.strtolower($match['groups'][1] ?? 'font').' value; use var(--token)',
                 );
             }
         }
@@ -315,7 +315,7 @@ final class GateTokens extends GateCommand
                 self::FAIL,
                 self::lineAt($code, $match['offset']),
                 'YELLOW-NAME',
-                'colour name "'.strtolower($match['text']).'" belongs to the forbidden yellow and gold family'
+                'colour name "'.strtolower($match['text']).'" belongs to the forbidden yellow and gold family',
             );
         }
 
@@ -324,7 +324,7 @@ final class GateTokens extends GateCommand
                 self::WARN,
                 self::lineAt($code, $match['offset']),
                 'YELLOW-UNVERIFIABLE',
-                trim($match['text']).' cannot be converted here; prove by hand that it is not in the yellow family'
+                trim($match['text']).' cannot be converted here; prove by hand that it is not in the yellow family',
             );
         }
 
@@ -351,8 +351,8 @@ final class GateTokens extends GateCommand
                 $literal,
                 $hsl[0],
                 $hsl[1],
-                $hsl[2]
-            )
+                $hsl[2],
+            ),
         );
 
         return $found;

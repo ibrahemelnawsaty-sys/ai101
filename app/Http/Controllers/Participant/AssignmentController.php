@@ -92,7 +92,7 @@ final class AssignmentController extends Controller
         }
 
         $byWeek = $assignments->groupBy(
-            static fn (Assignment $item): string => (string) ($item->getAttribute('week_id') ?? '')
+            static fn (Assignment $item): string => (string) ($item->getAttribute('week_id') ?? ''),
         );
 
         $present = fn (Collection $group): Collection => $group->map(
@@ -101,7 +101,7 @@ final class AssignmentController extends Controller
                 $item->submissions->first(),
                 $evaluations[(string) $item->getKey()] ?? null,
                 $now,
-            )
+            ),
         )->values();
 
         $groups = $cohort->weeks()
@@ -151,7 +151,7 @@ final class AssignmentController extends Controller
      * account's submissions and from nobody else's (BR-22). Reading it in one
      * query is what keeps the weekly list free of an N+1 (art. 19).
      *
-     * @param  \Illuminate\Support\Collection<int, Assignment>  $assignments
+     * @param  Collection<int, Assignment>  $assignments
      * @return array<string, Evaluation>
      */
     private function evaluationsByAssignment(User $user, $assignments): array
@@ -234,7 +234,7 @@ final class AssignmentController extends Controller
                     (float) $assignment->getAttribute('max_score'),
                 ),
             'versions' => $versions->map(
-                static fn (Submission $item): SubmissionVersionPresenter => SubmissionVersionPresenter::from($item)
+                static fn (Submission $item): SubmissionVersionPresenter => SubmissionVersionPresenter::from($item),
             ),
             'canSubmit' => $canSubmit,
             // A disabled area must say why (PRD §9.9.4's rule, applied here too).
@@ -292,5 +292,4 @@ final class AssignmentController extends Controller
             ->route('assignments.show', $assignment)
             ->with('status', __('assignments.submitted'));
     }
-
 }

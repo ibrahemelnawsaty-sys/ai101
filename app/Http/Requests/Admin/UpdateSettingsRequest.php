@@ -23,7 +23,7 @@ final class UpdateSettingsRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->can('update', new LandingSetting());
+        return $user !== null && $user->can('update', new LandingSetting);
     }
 
     /**

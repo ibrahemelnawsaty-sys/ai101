@@ -16,7 +16,6 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Route;
-use Throwable;
 
 /**
  * The digital participant card (PRD §9.6).
@@ -120,7 +119,7 @@ final class CardPresenter extends ViewModel
                 ->margin(0)
                 ->build()
                 ->getString();
-        } catch (Throwable) {
+        } catch (\Throwable) {
             return '';
         }
     }

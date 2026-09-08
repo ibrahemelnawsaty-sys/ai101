@@ -24,7 +24,6 @@ use App\Models\FinalProject;
 use App\Models\User;
 use App\Models\Week;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 final class AssignmentSeeder extends Seeder
 {
@@ -61,9 +60,9 @@ final class AssignmentSeeder extends Seeder
         $total = array_sum(array_map(static fn (array $row): int => (int) $row['max_score'], $rows));
 
         if ($total !== self::ASSIGNMENTS_TOTAL) {
-            throw new RuntimeException(
+            throw new \RuntimeException(
                 'BR-11 violated by the seed data: the assignments total '
-                .$total.' marks instead of '.self::ASSIGNMENTS_TOTAL.'.'
+                .$total.' marks instead of '.self::ASSIGNMENTS_TOTAL.'.',
             );
         }
 

@@ -150,7 +150,7 @@ final class DashboardController extends Controller
                     ->where('cohort_id', $cohort->getKey())
                     ->where('role_in_cohort', EnrollmentRole::Participant->value)
                     ->where('status', EnrollmentStatus::Active->value)
-                    ->select('user_id')
+                    ->select('user_id'),
             )
             ->whereNotIn('id', $holders)
             ->limit(100)

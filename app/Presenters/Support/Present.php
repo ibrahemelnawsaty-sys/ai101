@@ -7,7 +7,6 @@ namespace App\Presenters\Support;
 use App\Services\Time\Clock;
 use App\Services\Time\RiyadhFormatter;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 
 /**
  * The one place a presentation decision is taken.
@@ -98,7 +97,7 @@ final class Present
      * Seconds left until an instant, or null when there is no instant at all.
      * Never negative: a passed deadline reads zero and hasPassed() says the rest.
      */
-    public static function secondsUntil(?DateTimeInterface $target, CarbonImmutable $at): ?int
+    public static function secondsUntil(?\DateTimeInterface $target, CarbonImmutable $at): ?int
     {
         if ($target === null) {
             return null;
@@ -107,7 +106,7 @@ final class Present
         return max(0, Clock::toUtc($target)->getTimestamp() - $at->getTimestamp());
     }
 
-    public static function hasPassed(?DateTimeInterface $target, CarbonImmutable $at): bool
+    public static function hasPassed(?\DateTimeInterface $target, CarbonImmutable $at): bool
     {
         return $target !== null && $at->getTimestamp() > Clock::toUtc($target)->getTimestamp();
     }
@@ -116,7 +115,7 @@ final class Present
      * neutral | warning | error — PRD §9.11.1. A deadline that has already
      * passed is `error`; no deadline at all is `neutral`.
      */
-    public static function urgencyVariant(?DateTimeInterface $dueAt, CarbonImmutable $at): string
+    public static function urgencyVariant(?\DateTimeInterface $dueAt, CarbonImmutable $at): string
     {
         if ($dueAt === null) {
             return 'neutral';
@@ -143,7 +142,7 @@ final class Present
     /**
      * "3 hours left" / "deadline passed" / "no deadline", in the reader's language.
      */
-    public static function remainingLabel(?DateTimeInterface $dueAt, CarbonImmutable $at): string
+    public static function remainingLabel(?\DateTimeInterface $dueAt, CarbonImmutable $at): string
     {
         if ($dueAt === null) {
             return (string) __('app.remaining.none');
@@ -177,7 +176,7 @@ final class Present
     }
 
     /** The HH:MM:SS countdown wording of PRD §9.9.8. */
-    public static function countdown(?DateTimeInterface $target, CarbonImmutable $at): string
+    public static function countdown(?\DateTimeInterface $target, CarbonImmutable $at): string
     {
         $formatter = app(RiyadhFormatter::class);
 
@@ -242,9 +241,9 @@ final class Present
         return round(max(0.0, min(100.0, $number)), 1);
     }
 
-    public static function toDateTime(mixed $value): ?DateTimeInterface
+    public static function toDateTime(mixed $value): ?\DateTimeInterface
     {
-        return $value instanceof DateTimeInterface ? $value : null;
+        return $value instanceof \DateTimeInterface ? $value : null;
     }
 
     public static function text(mixed $value): ?string

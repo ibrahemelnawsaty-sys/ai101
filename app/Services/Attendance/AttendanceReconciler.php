@@ -88,10 +88,6 @@ final class AttendanceReconciler
                 &$touchedCohorts,
             ): void {
                 foreach ($sessions as $session) {
-                    if (! $session instanceof Session) {
-                        continue;
-                    }
-
                     if (! $this->window->hasEnded($session, $now)) {
                         continue;
                     }
@@ -221,10 +217,6 @@ final class AttendanceReconciler
             $count = 0;
 
             foreach ($records as $record) {
-                if (! $record instanceof Attendance) {
-                    continue;
-                }
-
                 $before = $this->audit->snapshot($record, ['id', 'session_id', 'user_id', 'status', 'check_in_at', 'check_out_at']);
                 $record->setAttribute('status', AttendanceStatus::Incomplete);
 
@@ -336,10 +328,6 @@ final class AttendanceReconciler
         $ids = [];
 
         foreach ($sessions as $session) {
-            if (! $session instanceof Session) {
-                continue;
-            }
-
             if ($this->window->hasEnded($session, $at)) {
                 $ids[] = (string) $session->getKey();
             }
@@ -377,14 +365,16 @@ final class AttendanceReconciler
             return [];
         }
 
-        return Enrollment::query()
+        // array_values: Collection::all() types as array<int, string>, so the
+        // list<string> this method promises has to be restored explicitly.
+        return array_values(Enrollment::query()
             ->where('cohort_id', $cohortId)
             ->where('role_in_cohort', EnrollmentRole::Participant)
             ->whereIn('status', [EnrollmentStatus::Active, EnrollmentStatus::Completed])
             ->pluck('user_id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -439,7 +429,8 @@ final class AttendanceReconciler
             return [];
         }
 
-        return Enrollment::query()
+        // array_values: see activeParticipantIds().
+        return array_values(Enrollment::query()
             ->where('cohort_id', $cohortId)
             ->where('role_in_cohort', EnrollmentRole::Trainer)
             ->whereIn('status', [EnrollmentStatus::Active, EnrollmentStatus::Completed])
@@ -447,7 +438,7 @@ final class AttendanceReconciler
             ->map(static fn (mixed $id): string => (string) $id)
             ->unique()
             ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -459,7 +450,7 @@ final class AttendanceReconciler
         array $replacements,
         CarbonImmutable $now,
     ): void {
-        $notification = new Notification();
+        $notification = new Notification;
         $notification->setAttribute('user_id', $trainerId);
         $notification->setAttribute('type', self::NOTIFICATION_TYPE_INCOMPLETE);
         $notification->setAttribute(

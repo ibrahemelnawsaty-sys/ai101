@@ -24,7 +24,7 @@ use App\Models\LandingSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-09-20 12:00:00'));
 
     // The landing page is about the cohort that is OPEN for registration, or
@@ -42,7 +42,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيانات وتتغير من لوحة الإدارة', function () {
+it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيانات وتتغير من لوحة الإدارة', function (): void {
     $settings = LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'hero_text' => 'CANARY-HERO-BEFORE',
@@ -68,7 +68,7 @@ it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيا�
         ->assertDontSee('CANARY-HERO-BEFORE', escape: false);
 });
 
-it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة لا من الكود', function () {
+it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة لا من الكود', function (): void {
     // The FAQ is a JSON column with its own three endpoints (PRD §9.1,
     // PROJECT-CONTRACT §4) — it does not ride inside the settings form, and an
     // entry is addressed by the key stored beside it.
@@ -90,7 +90,7 @@ it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة
         ->assertDontSee('CANARY-Q-ONE', escape: false);
 });
 
-it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه فعلًا على الخادم', function () {
+it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه فعلًا على الخادم', function (): void {
     $settings = LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'is_registration_open' => false,
@@ -108,7 +108,7 @@ it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه �
     expect(User::query()->where('email', 'late.applicant@example.test')->count())->toBe(0);
 });
 
-it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صفحة الهبوط', function () {
+it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صفحة الهبوط', function (): void {
     $settings = LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'hero_text' => 'CANARY-HERO-BEFORE',
@@ -130,7 +130,7 @@ it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صف
 |--------------------------------------------------------------------------
 */
 
-it('BR-32: حذف آخر مدير نظام فعّال مرفوض', function () {
+it('BR-32: حذف آخر مدير نظام فعّال مرفوض', function (): void {
     $activeAdmins = static fn (): int => User::query()
         ->where('role', 'admin')
         ->where('status', 'active')
@@ -155,7 +155,7 @@ it('BR-32: حذف آخر مدير نظام فعّال مرفوض', function () {
     expect($activeAdmins())->toBe(1);
 });
 
-it('BR-32: المدير لا يحذف حسابه هو', function () {
+it('BR-32: المدير لا يحذف حسابه هو', function (): void {
     makeAdmin();
 
     // PRD §4.3, authorisation rules: «مدير النظام لا يستطيع حذف حسابه الخاص».
@@ -164,7 +164,7 @@ it('BR-32: المدير لا يحذف حسابه هو', function () {
     expect($this->admin->fresh()->deleted_at)->toBeNull();
 });
 
-it('BR-32: تعطيل آخر مدير نظام فعّال مرفوض', function () {
+it('BR-32: تعطيل آخر مدير نظام فعّال مرفوض', function (): void {
     // UserPolicy::suspend() refuses before the controller is reached: 403 (PRD §4.3).
     $this->actingAs($this->admin)->patch(route('admin.users.status', $this->admin), [
         'status' => 'suspended',
@@ -173,7 +173,7 @@ it('BR-32: تعطيل آخر مدير نظام فعّال مرفوض', function 
     expect($this->admin->fresh()->status->value)->toBe('active');
 });
 
-it('BR-32: تنزيل دور آخر مدير نظام إلى مدرب مرفوض', function () {
+it('BR-32: تنزيل دور آخر مدير نظام إلى مدرب مرفوض', function (): void {
     // Two authorisation guards forbid this and either alone is enough (PRD §4.3):
     // an admin never changes their own role, and the last active admin is never
     // demoted. Both live in UserPolicy, so the answer is 403.
@@ -184,7 +184,7 @@ it('BR-32: تنزيل دور آخر مدير نظام إلى مدرب مرفوض
     expect($this->admin->fresh()->role->value)->toBe('admin');
 });
 
-it('BR-32: مع وجود مديرين اثنين يمكن تعطيل أحدهما', function () {
+it('BR-32: مع وجود مديرين اثنين يمكن تعطيل أحدهما', function (): void {
     $second = makeAdmin();
 
     assertAccepted($this->actingAs($this->admin)->patch(route('admin.users.status', $second), [
@@ -194,7 +194,7 @@ it('BR-32: مع وجود مديرين اثنين يمكن تعطيل أحدهم�
     expect(User::query()->where('role', 'admin')->where('status', 'active')->count())->toBe(1);
 });
 
-it('BR-32: حذف المستخدم حذف ناعم لا فعلي', function () {
+it('BR-32: حذف المستخدم حذف ناعم لا فعلي', function (): void {
     $participant = makeParticipant($this->cohort);
 
     assertAccepted($this->actingAs($this->admin)->delete(route('admin.users.destroy', $participant)));
@@ -209,7 +209,7 @@ it('BR-32: حذف المستخدم حذف ناعم لا فعلي', function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-36: اسم البرنامج ونطاق المنصة يُقرآن من الإعدادات', function () {
+it('BR-36: اسم البرنامج ونطاق المنصة يُقرآن من الإعدادات', function (): void {
     // The keys are the ones config/athar.php actually publishes: `program_name`
     // and `email` are flat, `program.code` is nested because the serial number
     // parser needs the code on its own (PRD §9.17).
@@ -219,13 +219,13 @@ it('BR-36: اسم البرنامج ونطاق المنصة يُقرآن من ا�
         ->and(config('athar.email'))->not->toBeEmpty();
 });
 
-it('BR-36: تغيير اسم البرنامج في الإعدادات يغيّره في الواجهة', function () {
+it('BR-36: تغيير اسم البرنامج في الإعدادات يغيّره في الواجهة', function (): void {
     config(['athar.program_name' => 'CANARY-PROGRAMME-NAME']);
 
     $this->get(route('home'))->assertOk()->assertSee('CANARY-PROGRAMME-NAME', escape: false);
 });
 
-it('BR-36: النطاق واسم البرنامج غير مكتوبين حرفيًا في أي ملف مصدر خارج الإعدادات', function () {
+it('BR-36: النطاق واسم البرنامج غير مكتوبين حرفيًا في أي ملف مصدر خارج الإعدادات', function (): void {
     $roots = array_filter([
         base_path('app'),
         base_path('resources/views'),
@@ -267,7 +267,7 @@ it('BR-36: النطاق واسم البرنامج غير مكتوبين حرفي
     expect($offenders)->toBeEmpty();
 });
 
-it('BR-36: كل رابط مطلق يُبنى من APP_URL', function () {
+it('BR-36: كل رابط مطلق يُبنى من APP_URL', function (): void {
     config(['app.url' => 'https://canary.example.test']);
 
     expect(url('/dashboard'))->toStartWith('https://canary.example.test');

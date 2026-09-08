@@ -66,7 +66,7 @@ final class UpdateUserRequest extends FormRequest
         $rules = [
             'phone' => array_merge(
                 $this->phoneRules(),
-                [Rule::unique('profiles', 'phone')->ignore($subjectId, 'user_id')]
+                [Rule::unique('profiles', 'phone')->ignore($subjectId, 'user_id')],
             ),
             'gender' => ['required', Rule::enum(Gender::class)],
             'city' => ['nullable', 'string', 'max:80'],

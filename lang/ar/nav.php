@@ -75,7 +75,6 @@ return [
         'profile' => 'حسابي',
     ],
 
-
     'current_cohort' => 'دفعتك الحالية',
     'switch_cohort' => 'انتقل إلى دفعة أخرى',
 

@@ -18,7 +18,6 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Time\Clock;
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -237,7 +236,7 @@ final class EvaluationRecorder
             $participantId,
             $at,
         ): Evaluation {
-            $evaluation = new Evaluation();
+            $evaluation = new Evaluation;
             $evaluation->setAttribute($evaluation->getKeyName(), (string) Str::uuid());
             $evaluation->setAttribute('entity_type', $entityType);
             $evaluation->setAttribute('entity_id', $submission->getKey());
@@ -426,7 +425,7 @@ final class EvaluationRecorder
         string $type,
         float $maxScore,
         ?string $reason,
-        DateTimeInterface $at,
+        \DateTimeInterface $at,
     ): void {
         $participantId = (string) $evaluation->getAttribute('user_id');
 
@@ -437,7 +436,7 @@ final class EvaluationRecorder
             'reason' => $reason ?? '',
         ];
 
-        $notification = new Notification();
+        $notification = new Notification;
         $notification->setAttribute('user_id', $participantId);
         $notification->setAttribute('type', $type);
         $notification->setAttribute('title', (string) __('notifications.types.'.$type.'.title', $replacements));

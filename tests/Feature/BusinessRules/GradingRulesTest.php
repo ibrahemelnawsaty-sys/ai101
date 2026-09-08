@@ -29,7 +29,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-21 12:00:00'));
 
     $this->cohort = makeCohort(['pass_score' => 60]);
@@ -48,13 +48,13 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-11: مجموع درجات المهام خمسون ودرجة المشروع خمسون والمجموع الكلي مئة', function () {
+it('BR-11: مجموع درجات المهام خمسون ودرجة المشروع خمسون والمجموع الكلي مئة', function (): void {
     expect(ScoreCalculator::ASSIGNMENTS_TOTAL + ScoreCalculator::PROJECT_TOTAL)
         ->toBe(ScoreCalculator::GRAND_TOTAL)
         ->and(ScoreCalculator::GRAND_TOTAL)->toBe(100);
 });
 
-it('BR-11: صفحة الدرجات تعرض المجموع من مئة موزّعًا خمسين وخمسين', function () {
+it('BR-11: صفحة الدرجات تعرض المجموع من مئة موزّعًا خمسين وخمسين', function (): void {
     makeEvaluation('assignment', $this->submission->id, $this->participant, 8);
 
     $response = $this->actingAs($this->participant)->get(route('grades'));
@@ -72,7 +72,7 @@ it('BR-11: صفحة الدرجات تعرض المجموع من مئة موزّ�
 |--------------------------------------------------------------------------
 */
 
-it('BR-12: رصد درجة أكبر من الدرجة القصوى مرفوض على الخادم', function () {
+it('BR-12: رصد درجة أكبر من الدرجة القصوى مرفوض على الخادم', function (): void {
     assertRefused($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 10.01,
         'feedback' => $this->goodFeedback,
@@ -81,7 +81,7 @@ it('BR-12: رصد درجة أكبر من الدرجة القصوى مرفوض ع
     expect(Evaluation::query()->count())->toBe(0);
 });
 
-it('BR-12: الدرجة القصوى بالضبط مقبولة', function () {
+it('BR-12: الدرجة القصوى بالضبط مقبولة', function (): void {
     assertAccepted($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 10,
         'feedback' => $this->goodFeedback,
@@ -90,7 +90,7 @@ it('BR-12: الدرجة القصوى بالضبط مقبولة', function () {
     expect((float) Evaluation::query()->sole()->score)->toBe(10.0);
 });
 
-it('BR-12: الدرجة السالبة مرفوضة على الخادم', function () {
+it('BR-12: الدرجة السالبة مرفوضة على الخادم', function (): void {
     assertRefused($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => -0.01,
         'feedback' => $this->goodFeedback,
@@ -99,7 +99,7 @@ it('BR-12: الدرجة السالبة مرفوضة على الخادم', functi
     expect(Evaluation::query()->count())->toBe(0);
 });
 
-it('BR-12: الصفر درجة مشروعة', function () {
+it('BR-12: الصفر درجة مشروعة', function (): void {
     assertAccepted($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 0,
         'feedback' => $this->goodFeedback,
@@ -123,7 +123,7 @@ it('BR-12: الصفر درجة مشروعة', function () {
  *
  * @see phpunit.xml · config/database.php · PRD §7.7
  */
-it('BR-12: قاعدة البيانات نفسها ترفض درجة سالبة', function () {
+it('BR-12: قاعدة البيانات نفسها ترفض درجة سالبة', function (): void {
     // The server-side guard is bypassed on purpose. PRD §7.7 requires the constraint
     // to exist in the schema, not only in the FormRequest.
     expect(fn () => DB::table('evaluations')->insert([
@@ -142,7 +142,7 @@ it('BR-12: قاعدة البيانات نفسها ترفض درجة سالبة',
     expect(Evaluation::query()->count())->toBe(0);
 })->group('mysql')->skip(fn (): bool => usingSqlite(), MYSQL_ONLY_REASON);
 
-it('BR-12: الدرجات العشرية مدعومة بمنزلتين', function () {
+it('BR-12: الدرجات العشرية مدعومة بمنزلتين', function (): void {
     assertAccepted($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 8.75,
         'feedback' => $this->goodFeedback,
@@ -157,7 +157,7 @@ it('BR-12: الدرجات العشرية مدعومة بمنزلتين', functio
 |--------------------------------------------------------------------------
 */
 
-it('BR-13: رصد درجة بلا ملاحظة مرفوض', function () {
+it('BR-13: رصد درجة بلا ملاحظة مرفوض', function (): void {
     assertRefused($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 8,
     ]));
@@ -165,7 +165,7 @@ it('BR-13: رصد درجة بلا ملاحظة مرفوض', function () {
     expect(Evaluation::query()->count())->toBe(0);
 });
 
-it('BR-13: ملاحظة أقصر من عشرة أحرف مرفوضة', function () {
+it('BR-13: ملاحظة أقصر من عشرة أحرف مرفوضة', function (): void {
     assertRefused($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 8,
         'feedback' => str_repeat('n', 9),
@@ -174,7 +174,7 @@ it('BR-13: ملاحظة أقصر من عشرة أحرف مرفوضة', function 
     expect(Evaluation::query()->count())->toBe(0);
 });
 
-it('BR-13: ملاحظة بعشرة أحرف بالضبط مقبولة', function () {
+it('BR-13: ملاحظة بعشرة أحرف بالضبط مقبولة', function (): void {
     assertAccepted($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 8,
         'feedback' => str_repeat('n', 10),
@@ -183,7 +183,7 @@ it('BR-13: ملاحظة بعشرة أحرف بالضبط مقبولة', function
     expect(Evaluation::query()->count())->toBe(1);
 });
 
-it('BR-13: ملاحظة من مسافات فقط لا تُعد ملاحظة', function () {
+it('BR-13: ملاحظة من مسافات فقط لا تُعد ملاحظة', function (): void {
     assertRefused($this->actingAs($this->trainer)->post(route('trainer.submissions.grade', $this->submission), [
         'score' => 8,
         'feedback' => str_repeat(' ', 20),
@@ -198,7 +198,7 @@ it('BR-13: ملاحظة من مسافات فقط لا تُعد ملاحظة', fu
 |--------------------------------------------------------------------------
 */
 
-it('BR-14: تعديل درجة مرصودة بلا سبب مرفوض', function () {
+it('BR-14: تعديل درجة مرصودة بلا سبب مرفوض', function (): void {
     $evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 6, [
         'evaluated_by' => $this->trainer->id,
     ]);
@@ -211,7 +211,7 @@ it('BR-14: تعديل درجة مرصودة بلا سبب مرفوض', function 
     expect((float) $evaluation->fresh()->score)->toBe(6.0);
 });
 
-it('BR-14: تعديل درجة مرصودة بسبب مكتوب يُقبل ويُسجَّل في سجل التدقيق', function () {
+it('BR-14: تعديل درجة مرصودة بسبب مكتوب يُقبل ويُسجَّل في سجل التدقيق', function (): void {
     $evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 6, [
         'evaluated_by' => $this->trainer->id,
     ]);
@@ -234,7 +234,7 @@ it('BR-14: تعديل درجة مرصودة بسبب مكتوب يُقبل وي�
         ->count())->toBe(1);
 });
 
-it('BR-14: تعديل الدرجة يُشعر المتدرب', function () {
+it('BR-14: تعديل الدرجة يُشعر المتدرب', function (): void {
     $evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 6, [
         'evaluated_by' => $this->trainer->id,
     ]);
@@ -250,7 +250,7 @@ it('BR-14: تعديل الدرجة يُشعر المتدرب', function () {
     expect(Notification::query()->where('user_id', $this->participant->id)->count())->toBeGreaterThan(0);
 });
 
-it('BR-14: المجموع الكلي يتحدث فور تعديل الدرجة', function () {
+it('BR-14: المجموع الكلي يتحدث فور تعديل الدرجة', function (): void {
     $evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 6, [
         'evaluated_by' => $this->trainer->id,
     ]);
@@ -266,7 +266,7 @@ it('BR-14: المجموع الكلي يتحدث فور تعديل الدرجة',
     expect(scoreCalculator()->finalScore($this->participant->fresh(), $this->cohort->fresh()))->toBe(9.0);
 });
 
-it('BR-14: التعديل لا يتجاوز الدرجة القصوى', function () {
+it('BR-14: التعديل لا يتجاوز الدرجة القصوى', function (): void {
     $evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 6, [
         'evaluated_by' => $this->trainer->id,
     ]);

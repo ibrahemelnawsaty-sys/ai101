@@ -49,7 +49,7 @@ final class SessionRow extends ViewModel
             'date' => $session->getAttribute('date'),
             'startsAt' => $window->startsAt($session),
             'endsAt' => $window->endsAt($session),
-            'type' => $type?->value ?? '',
+            'type' => $type->value ?? '',
             'typeLabel' => $type?->label() ?? '—',
             'trainerName' => (string) (
                 $trainerProfile?->getAttribute('full_name_ar')

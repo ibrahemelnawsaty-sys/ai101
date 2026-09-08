@@ -41,7 +41,7 @@ final class ActiveThreadPresenter extends ViewModel
             'title' => ThreadPresenter::titleOf($thread, $type),
             'subtitle' => self::subtitle($thread, $type),
             'avatarVariant' => ThreadPresenter::avatarVariant($type),
-            'type' => $type?->value ?? ThreadType::Group->value,
+            'type' => $type->value ?? ThreadType::Group->value,
             'isLocked' => $isLocked,
             'canPost' => ! $isAnnouncement && ! $isLocked && ! $isImpersonating,
             'readOnlyReason' => self::readOnlyReason($isAnnouncement, $isLocked, $isImpersonating),

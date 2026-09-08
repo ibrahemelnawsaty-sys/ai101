@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Trainer;
 
 use App\Enums\AssignmentStatus;
+use App\Enums\EnrollmentRole;
+use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreAssignmentRequest;
 use App\Http\Requests\Trainer\UpdateAssignmentRequest;
-use App\Enums\EnrollmentRole;
-use App\Enums\EnrollmentStatus;
 use App\Models\Assignment;
 use App\Models\Enrollment;
 use App\Models\User;

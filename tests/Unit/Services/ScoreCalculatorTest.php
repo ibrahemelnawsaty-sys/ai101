@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 use App\Services\Grading\ScoreCalculator;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-25 12:00:00'));
 
     $this->cohort = makeCohort(['pass_score' => 60]);
@@ -19,48 +19,47 @@ beforeEach(function () {
     $this->calculator = scoreCalculator();
 });
 
-
-it('BR-11: يعلن ثوابت التوزيع كما نص عليها العقد', function () {
+it('BR-11: يعلن ثوابت التوزيع كما نص عليها العقد', function (): void {
     expect(ScoreCalculator::ASSIGNMENTS_TOTAL)->toBe(50)
         ->and(ScoreCalculator::PROJECT_TOTAL)->toBe(50)
         ->and(ScoreCalculator::GRAND_TOTAL)->toBe(100);
 });
 
-it('يبدأ المتدرب من صفر قبل رصد أي درجة', function () {
+it('يبدأ المتدرب من صفر قبل رصد أي درجة', function (): void {
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(0.0)
         ->and($this->calculator->projectScore($this->participant, $this->cohort))->toBe(0.0)
         ->and($this->calculator->finalScore($this->participant, $this->cohort))->toBe(0.0);
 });
 
-it('يجمع درجات المهام المرصودة', function () {
+it('يجمع درجات المهام المرصودة', function (): void {
     gradeAssignment($this->cohort, $this->participant, 30, 25);
     gradeAssignment($this->cohort, $this->participant, 20, 15);
 
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(40.0);
 });
 
-it('يدعم الدرجات العشرية', function () {
+it('يدعم الدرجات العشرية', function (): void {
     gradeAssignment($this->cohort, $this->participant, 10, 8.5);
     gradeAssignment($this->cohort, $this->participant, 10, 1.25);
 
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(9.75);
 });
 
-it('لا يحتسب تسليمًا لم يُقيَّم بعد', function () {
+it('لا يحتسب تسليمًا لم يُقيَّم بعد', function (): void {
     $assignment = makeAssignment($this->cohort, ['max_score' => 20]);
     makeSubmission($assignment, $this->participant);
 
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(0.0);
 });
 
-it('لا يخصم من المتدرب مهمة اختيارية لم يسلّمها', function () {
+it('لا يخصم من المتدرب مهمة اختيارية لم يسلّمها', function (): void {
     gradeAssignment($this->cohort, $this->participant, 30, 30);
     makeAssignment($this->cohort, ['max_score' => 20, 'is_mandatory' => false]);
 
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(30.0);
 });
 
-it('BR-11: مجموع درجات المهام لا يتجاوز خمسين حتى لو أخطأ المدرب في التوزيع', function () {
+it('BR-11: مجموع درجات المهام لا يتجاوز خمسين حتى لو أخطأ المدرب في التوزيع', function (): void {
     // The trainer allocated 60 marks across the assignments and awarded 55 of them.
     // PRD §9.15.1 keeps the warning in the trainer dashboard but caps the trainee.
     gradeAssignment($this->cohort, $this->participant, 30, 30);
@@ -69,7 +68,7 @@ it('BR-11: مجموع درجات المهام لا يتجاوز خمسين حت�
     expect($this->calculator->assignmentsScore($this->participant, $this->cohort))->toBe(50.0);
 });
 
-it('BR-22: لا تتسرب درجة متدرب إلى حساب متدرب آخر', function () {
+it('BR-22: لا تتسرب درجة متدرب إلى حساب متدرب آخر', function (): void {
     $other = makeParticipant($this->cohort);
 
     gradeAssignment($this->cohort, $other, 30, 30);
@@ -78,7 +77,7 @@ it('BR-22: لا تتسرب درجة متدرب إلى حساب متدرب آخر
         ->and($this->calculator->assignmentsScore($other, $this->cohort))->toBe(30.0);
 });
 
-it('يفصل درجات المتدرب بين دفعتين مختلفتين', function () {
+it('يفصل درجات المتدرب بين دفعتين مختلفتين', function (): void {
     $otherCohort = makeCohort(['pass_score' => 60]);
     enroll($this->participant, $otherCohort);
 
@@ -95,7 +94,7 @@ it('يفصل درجات المتدرب بين دفعتين مختلفتين', fu
 |--------------------------------------------------------------------------
 */
 
-it('BR-11: يحتسب درجة المشروع النهائي من خمسين', function () {
+it('BR-11: يحتسب درجة المشروع النهائي من خمسين', function (): void {
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
     $submission = makeProjectSubmission($project, $this->participant);
 
@@ -104,7 +103,7 @@ it('BR-11: يحتسب درجة المشروع النهائي من خمسين', f
     expect($this->calculator->projectScore($this->participant, $this->cohort))->toBe(42.5);
 });
 
-it('BR-12: درجة المشروع لا تتجاوز خمسين', function () {
+it('BR-12: درجة المشروع لا تتجاوز خمسين', function (): void {
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
     $submission = makeProjectSubmission($project, $this->participant);
 
@@ -115,7 +114,7 @@ it('BR-12: درجة المشروع لا تتجاوز خمسين', function () {
         ->toBeLessThanOrEqual((float) ScoreCalculator::PROJECT_TOTAL);
 });
 
-it('لا يخلط تقييم المشروع بتقييمات المهام', function () {
+it('لا يخلط تقييم المشروع بتقييمات المهام', function (): void {
     gradeAssignment($this->cohort, $this->participant, 30, 20);
 
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
@@ -132,7 +131,7 @@ it('لا يخلط تقييم المشروع بتقييمات المهام', func
 |--------------------------------------------------------------------------
 */
 
-it('BR-11: المجموع الكلي هو المهام زائد المشروع ولا يتجاوز مئة', function () {
+it('BR-11: المجموع الكلي هو المهام زائد المشروع ولا يتجاوز مئة', function (): void {
     gradeAssignment($this->cohort, $this->participant, 50, 45);
 
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
@@ -144,7 +143,7 @@ it('BR-11: المجموع الكلي هو المهام زائد المشروع �
         ->toBeLessThanOrEqual((float) ScoreCalculator::GRAND_TOTAL);
 });
 
-it('درجة النجاح تُقرأ من الدفعة لا من الكود', function () {
+it('درجة النجاح تُقرأ من الدفعة لا من الكود', function (): void {
     $strict = makeCohort(['pass_score' => 80]);
     $participant = makeParticipant($strict);
 
@@ -158,7 +157,7 @@ it('درجة النجاح تُقرأ من الدفعة لا من الكود', fu
         ->and($this->calculator->passes($participant, $strict))->toBeFalse();
 });
 
-it('حد النجاح يُختبر عند ±0.01 من درجة النجاح', function (float $awarded, bool $passes) {
+it('حد النجاح يُختبر عند ±0.01 من درجة النجاح', function (float $awarded, bool $passes): void {
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
     $submission = makeProjectSubmission($project, $this->participant);
 
@@ -173,6 +172,6 @@ it('حد النجاح يُختبر عند ±0.01 من درجة النجاح', fu
     'أعلى من درجة النجاح بمقدار 0.01' => [60.01, true],
 ]);
 
-it('صفر مطلق لا يجتاز', function () {
+it('صفر مطلق لا يجتاز', function (): void {
     expect($this->calculator->passes($this->participant, $this->cohort))->toBeFalse();
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Presenters\Concerns;
 
 use App\Services\Time\Clock;
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -25,19 +24,19 @@ trait PresentsFormValues
     /** `2026-10-12` in Riyadh, or an empty string when absent. */
     protected static function dateInput(mixed $at): string
     {
-        return $at instanceof DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d') : '';
+        return $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d') : '';
     }
 
     /** `19:00` in Riyadh, or an empty string when absent. */
     protected static function timeInput(mixed $at): string
     {
-        return $at instanceof DateTimeInterface ? Clock::toRiyadh($at)->format('H:i') : '';
+        return $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('H:i') : '';
     }
 
     /** `2026-10-12T19:00` in Riyadh, or an empty string when absent. */
     protected static function dateTimeInput(mixed $at): string
     {
-        return $at instanceof DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d\TH:i') : '';
+        return $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d\TH:i') : '';
     }
 
     /**
@@ -48,7 +47,7 @@ trait PresentsFormValues
      */
     protected static function wallTimeInput(mixed $value): string
     {
-        if ($value instanceof DateTimeInterface) {
+        if ($value instanceof \DateTimeInterface) {
             return $value->format('H:i');
         }
 

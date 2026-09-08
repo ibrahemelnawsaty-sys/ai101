@@ -82,7 +82,7 @@ final class MessageController extends Controller
                 fn (Thread $thread): ThreadPresenter => ThreadPresenter::from(
                     $thread,
                     $this->unreadCount($thread, $participation->get((string) $thread->getKey())),
-                )
+                ),
             ),
             'activeThread' => $active === null
                 ? null
@@ -113,7 +113,7 @@ final class MessageController extends Controller
                 $user,
                 $now,
                 $readAt,
-            )
+            ),
         );
     }
 
@@ -230,7 +230,7 @@ final class MessageController extends Controller
 
         if (is_string($requested) && $requested !== '') {
             $match = $threads->first(
-                static fn (Thread $thread): bool => (string) $thread->getKey() === $requested
+                static fn (Thread $thread): bool => (string) $thread->getKey() === $requested,
             );
 
             // A thread the account is not in is simply not in this collection,

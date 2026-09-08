@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
     )
-    ->withMiddleware(function (Middleware $middleware) {
+    ->withMiddleware(function (Middleware $middleware): void {
         // Route middleware aliases fixed by PROJECT-CONTRACT.md section 10.
         $middleware->alias([
             'role' => App\Http\Middleware\EnsureRole::class,
@@ -59,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // proxy ranges are confirmed they must be listed explicitly via
         // trustProxies(); until then the direct remote address is used.
     })
-    ->withSchedule(function (Schedule $schedule) {
+    ->withSchedule(function (Schedule $schedule): void {
         // Shared hosting has no supervisor and no long-lived daemon
         // (Article 10). A single cPanel cron entry calls `schedule:run` every
         // minute and every background job flows through it.
@@ -81,7 +81,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('queue:prune-failed --hours=336')->weeklyOn(1, '03:10');
         $schedule->command('queue:prune-batches --hours=336')->weeklyOn(1, '03:20');
     })
-    ->withExceptions(function (Exceptions $exceptions) {
+    ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash([
             'current_password',
             'password',

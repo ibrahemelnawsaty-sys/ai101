@@ -80,7 +80,7 @@ final class ResourceController extends Controller
         $weeks = $cohort->weeks()->orderBy('index')->get();
 
         $byWeek = $paginator->getCollection()->groupBy(
-            static fn (Resource $item): string => (string) ($item->getAttribute('week_id') ?? '')
+            static fn (Resource $item): string => (string) ($item->getAttribute('week_id') ?? ''),
         );
 
         $groups = new Collection;
@@ -91,7 +91,7 @@ final class ResourceController extends Controller
             $groups->push(ResourceGroupPresenter::from(
                 (string) $week->getAttribute('title'),
                 $items->map(
-                    static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now)
+                    static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now),
                 )->values(),
             ));
         }
@@ -104,7 +104,7 @@ final class ResourceController extends Controller
             $groups->push(ResourceGroupPresenter::from(
                 (string) __('resources.general_group'),
                 $general->map(
-                    static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now)
+                    static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now),
                 )->values(),
             ));
         }

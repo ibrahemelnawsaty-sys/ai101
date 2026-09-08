@@ -7,8 +7,6 @@ namespace App\Exceptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use RuntimeException;
-use Throwable;
 
 /**
  * Base class for every business-rule failure raised by the service layer.
@@ -18,7 +16,7 @@ use Throwable;
  *
  * @see CONSTITUTION art. 7 (fail safe) · art. 15 (all text in lang files)
  */
-abstract class DomainException extends RuntimeException
+abstract class DomainException extends \RuntimeException
 {
     /**
      * @param  array<string, string|int|float>  $replacements
@@ -27,7 +25,7 @@ abstract class DomainException extends RuntimeException
         private readonly string $langKey,
         private readonly array $replacements = [],
         private readonly int $status = 422,
-        ?Throwable $previous = null,
+        ?\Throwable $previous = null,
     ) {
         // The technical message is the key itself: logs stay language neutral.
         parent::__construct($langKey, 0, $previous);

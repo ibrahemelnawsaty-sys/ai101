@@ -69,7 +69,6 @@ return [
     'error_title' => 'Your assignments could not be shown',
     'error_body' => 'Something went wrong while fetching them. Try again shortly — your submissions are safe and unaffected.',
 
-
     'state' => [
         'not_submitted' => 'Not submitted',
         'submitted' => 'Submitted',

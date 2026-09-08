@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\ProgramStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -19,7 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Program extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProgramFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'programs';
@@ -64,6 +66,9 @@ class Program extends Model
         ];
     }
 
+    /**
+     * @return HasMany<Cohort, $this>
+     */
     public function cohorts(): HasMany
     {
         return $this->hasMany(Cohort::class);
@@ -93,9 +98,9 @@ class Program extends Model
             Cohort::query()
                 ->whereIn(
                     'id',
-                    Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+                    Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
                 )
-                ->select('program_id')
+                ->select('program_id'),
         );
     }
 
@@ -109,7 +114,7 @@ class Program extends Model
 
         return $query->whereIn(
             'id',
-            Cohort::query()->whereKey($cohortId)->select('program_id')
+            Cohort::query()->whereKey($cohortId)->select('program_id'),
         );
     }
 
@@ -129,7 +134,7 @@ class Program extends Model
             'id',
             Cohort::query()
                 ->whereIn('id', $user->accessibleCohortIds())
-                ->select('program_id')
+                ->select('program_id'),
         );
     }
 }

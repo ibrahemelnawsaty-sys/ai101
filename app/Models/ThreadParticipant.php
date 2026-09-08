@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ThreadParticipant extends Model
 {
+    /** @use HasFactory<\Database\Factories\ThreadParticipantFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'thread_participants';
@@ -55,11 +57,17 @@ class ThreadParticipant extends Model
         'is_muted' => false,
     ];
 
+    /**
+     * @return BelongsTo<Thread, $this>
+     */
     public function thread(): BelongsTo
     {
         return $this->belongsTo(Thread::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -84,7 +92,7 @@ class ThreadParticipant extends Model
 
         return $query->whereIn(
             'thread_id',
-            Thread::query()->where('cohort_id', $cohortId)->select('id')
+            Thread::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -102,7 +110,7 @@ class ThreadParticipant extends Model
 
         return $query->whereIn(
             'thread_id',
-            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id')
+            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id'),
         );
     }
 }

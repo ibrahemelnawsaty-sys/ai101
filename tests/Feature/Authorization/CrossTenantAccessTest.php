@@ -30,7 +30,7 @@ use App\Models\Attendance;
 
 uses()->group('authz');
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -55,7 +55,7 @@ function assertNoHorizontalAccess(object $test, object $actor, string $url, stri
         ->and($response->getContent())->not->toContain($canary);
 }
 
-it('المتدرب لا يفتح تسليم زميله في الدفعة نفسها', function () {
+it('المتدرب لا يفتح تسليم زميله في الدفعة نفسها', function (): void {
     $assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $peerSubmission = makeSubmission($assignment, $this->peer, ['note' => 'CANARY-PEER-NOTE']);
 
@@ -64,7 +64,7 @@ it('المتدرب لا يفتح تسليم زميله في الدفعة نفس�
     .'`submissions.show` and PROJECT-CONTRACT.md §10 does not name one. Un-skip when '
     .'the contract grants the screen.');
 
-it('المتدرب لا يفتح تسليم متدرب في دفعة أخرى', function () {
+it('المتدرب لا يفتح تسليم متدرب في دفعة أخرى', function (): void {
     $assignment = makeAssignment($this->foreignCohort, ['max_score' => 10]);
     $foreignSubmission = makeSubmission($assignment, $this->foreignParticipant, ['note' => 'CANARY-FOREIGN-NOTE']);
 
@@ -73,7 +73,7 @@ it('المتدرب لا يفتح تسليم متدرب في دفعة أخرى', 
     .'cohort half of this guarantee is still covered by the foreign-assignment case '
     .'further down this file.');
 
-it('المتدرب لا يفتح تقييم زميله', function () {
+it('المتدرب لا يفتح تقييم زميله', function (): void {
     $assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $peerSubmission = makeSubmission($assignment, $this->peer);
     $evaluation = makeEvaluation('assignment', $peerSubmission->id, $this->peer, 9, [
@@ -85,7 +85,7 @@ it('المتدرب لا يفتح تقييم زميله', function () {
     .'through `grades`, which is scoped to the signed-in account and has no id in its '
     .'URL at all. PROJECT-CONTRACT.md §10 names no `evaluations.show`.');
 
-it('المتدرب لا يفتح محادثة زميله', function () {
+it('المتدرب لا يفتح محادثة زميله', function (): void {
     $thread = makeThreadFor($this->peer, $this->cohort, ['title' => 'CANARY-PEER-THREAD']);
 
     // `messages.poll` is the per-thread endpoint: it asks ThreadPolicy::view() for the
@@ -93,7 +93,7 @@ it('المتدرب لا يفتح محادثة زميله', function () {
     assertNoHorizontalAccess($this, $this->participant, route('messages.poll', $thread), 'CANARY-PEER-THREAD');
 });
 
-it('المتدرب لا يحمّل شهادة زميله', function () {
+it('المتدرب لا يحمّل شهادة زميله', function (): void {
     issueCertificateFor($this->peer, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-0777']);
 
     // The route is `certificate.download` and it takes NO id: the controller resolves
@@ -108,18 +108,18 @@ it('المتدرب لا يحمّل شهادة زميله', function () {
         ->and($response->getContent())->not->toContain('ATHAR-AI101-2026-0777');
 });
 
-it('المتدرب لا يفتح مهمة في دفعة ليس ملتحقًا بها', function () {
+it('المتدرب لا يفتح مهمة في دفعة ليس ملتحقًا بها', function (): void {
     $foreignAssignment = makeAssignment($this->foreignCohort, ['title' => 'CANARY-FOREIGN-ASSIGNMENT']);
 
     assertNoHorizontalAccess(
         $this,
         $this->participant,
         route('assignments.show', $foreignAssignment),
-        'CANARY-FOREIGN-ASSIGNMENT'
+        'CANARY-FOREIGN-ASSIGNMENT',
     );
 });
 
-it('المتدرب لا يسجل حضوره في جلسة دفعة أخرى', function () {
+it('المتدرب لا يسجل حضوره في جلسة دفعة أخرى', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $foreignSession = sessionInCohort($this->foreignCohort, $start, $start->addHours(3));
 
@@ -132,7 +132,7 @@ it('المتدرب لا يسجل حضوره في جلسة دفعة أخرى', fu
     expect(Attendance::query()->count())->toBe(0);
 });
 
-it('المتدرب لا يسجل حضوره نيابة عن زميله بإرسال معرّفه', function () {
+it('المتدرب لا يسجل حضوره نيابة عن زميله بإرسال معرّفه', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3));
 
@@ -146,16 +146,16 @@ it('المتدرب لا يسجل حضوره نيابة عن زميله بإرس�
         ->and(Attendance::query()->where('user_id', $this->participant->id)->count())->toBe(1);
 });
 
-it('المدرب لا يفتح دفعة غير مسندة إليه', function () {
+it('المدرب لا يفتح دفعة غير مسندة إليه', function (): void {
     assertNoHorizontalAccess(
         $this,
         $this->trainer,
         route('trainer.participants', ['cohort' => $this->foreignCohort->id]),
-        (string) $this->foreignCohort->id
+        (string) $this->foreignCohort->id,
     );
 });
 
-it('المدرب لا يفتح تسليمًا في دفعة أخرى', function () {
+it('المدرب لا يفتح تسليمًا في دفعة أخرى', function (): void {
     $foreignAssignment = makeAssignment($this->foreignCohort, ['max_score' => 10]);
     $foreignSubmission = makeSubmission($foreignAssignment, $this->foreignParticipant, [
         'note' => 'CANARY-OTHER-COHORT-NOTE',
@@ -168,20 +168,20 @@ it('المدرب لا يفتح تسليمًا في دفعة أخرى', function 
             'cohort' => $this->foreignCohort->id,
             'submission' => $foreignSubmission->id,
         ]),
-        'CANARY-OTHER-COHORT-NOTE'
+        'CANARY-OTHER-COHORT-NOTE',
     );
 });
 
-it('المدرب لا يرى تقرير حضور دفعة أخرى', function () {
+it('المدرب لا يرى تقرير حضور دفعة أخرى', function (): void {
     assertNoHorizontalAccess(
         $this,
         $this->trainer,
         route('trainer.attendance', ['cohort' => $this->foreignCohort->id]),
-        (string) $this->foreignParticipant->id
+        (string) $this->foreignParticipant->id,
     );
 });
 
-it('المدرب لا يفعّل مشروع دفعة أخرى', function () {
+it('المدرب لا يفعّل مشروع دفعة أخرى', function (): void {
     $foreignProject = makeFinalProject($this->foreignCohort);
 
     $this->actingAs($this->trainer)
@@ -191,7 +191,7 @@ it('المدرب لا يفعّل مشروع دفعة أخرى', function () {
     expect($foreignProject->fresh()->is_unlocked)->toBeFalse();
 });
 
-it('معرّف غير موجود لا يكشف وجود الموارد من عدمه', function () {
+it('معرّف غير موجود لا يكشف وجود الموارد من عدمه', function (): void {
     $missingId = '00000000-0000-4000-8000-000000000000';
 
     $response = $this->actingAs($this->participant)->get(route('assignments.show', $missingId));
@@ -199,7 +199,7 @@ it('معرّف غير موجود لا يكشف وجود الموارد من عد
     expect($response->status())->toBeIn([403, 404]);
 });
 
-it('المدرب يصل إلى موارد دفعته هو — الضبط المضاد', function () {
+it('المدرب يصل إلى موارد دفعته هو — الضبط المضاد', function (): void {
     $assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $submission = makeSubmission($assignment, $this->participant, ['note' => 'CANARY-OWN-COHORT-NOTE']);
 

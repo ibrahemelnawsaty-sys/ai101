@@ -34,7 +34,10 @@ final class Toast extends UiComponent
     public int $duration;
 
     /**
-     * @param  array<int, array<string, mixed>>  $messages
+     * `$messages` and `$duration` stay `mixed`: Blade passes a template
+     * attribute through untouched, so `duration="3000"` arrives as a string and
+     * a flashed message bag can hold anything. rows() is the boundary that
+     * drops what is not a message instead of rendering it half-formed.
      */
     public function __construct(
         public string $variant = 'info',
@@ -45,11 +48,7 @@ final class Toast extends UiComponent
     ) {
         $this->duration = (int) $duration;
 
-        foreach (is_array($messages) ? $messages : [] as $index => $message) {
-            if (! is_array($message)) {
-                continue;
-            }
-
+        foreach (self::rows($messages) as $index => $message) {
             $this->initial[] = [
                 'id' => 's'.$index,
                 'variant' => (string) ($message['variant'] ?? $variant),

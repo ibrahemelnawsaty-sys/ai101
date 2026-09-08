@@ -6,8 +6,6 @@ namespace App\Services\Time;
 
 use App\Exceptions\TimeException;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
-use DateTimeZone;
 
 /**
  * The single source of time for the entire platform.
@@ -53,7 +51,7 @@ final class Clock
     /**
      * Convert any instant to Asia/Riyadh for display.
      */
-    public static function toRiyadh(DateTimeInterface $t): CarbonImmutable
+    public static function toRiyadh(\DateTimeInterface $t): CarbonImmutable
     {
         return CarbonImmutable::instance($t)->setTimezone(self::displayTimezone());
     }
@@ -61,7 +59,7 @@ final class Clock
     /**
      * Convert any instant to UTC for storage or comparison.
      */
-    public static function toUtc(DateTimeInterface $t): CarbonImmutable
+    public static function toUtc(\DateTimeInterface $t): CarbonImmutable
     {
         return CarbonImmutable::instance($t)->setTimezone(self::storageTimezone());
     }
@@ -69,7 +67,7 @@ final class Clock
     /**
      * Freeze time for tests. Passing null restores the real clock.
      */
-    public static function fake(?DateTimeInterface $at): void
+    public static function fake(?\DateTimeInterface $at): void
     {
         self::$frozenAt = $at === null
             ? null
@@ -94,8 +92,8 @@ final class Clock
      * both expressed in Asia/Riyadh. This is how sessions are stored: a `date`
      * column plus `start_time` / `end_time` columns in Riyadh wall time.
      *
-     * @param  DateTimeInterface|string|null  $date
-     * @param  DateTimeInterface|string|null  $time
+     * @param  \DateTimeInterface|string|null  $date
+     * @param  \DateTimeInterface|string|null  $time
      *
      * @throws TimeException when either component cannot be read — refusing is
      *                       safer than guessing (CONSTITUTION art. 7).
@@ -131,14 +129,14 @@ final class Clock
         return self::composeRiyadh($matches[1], $matches[2]);
     }
 
-    public static function storageTimezone(): DateTimeZone
+    public static function storageTimezone(): \DateTimeZone
     {
-        return new DateTimeZone(self::STORAGE_TIMEZONE);
+        return new \DateTimeZone(self::STORAGE_TIMEZONE);
     }
 
-    public static function displayTimezone(): DateTimeZone
+    public static function displayTimezone(): \DateTimeZone
     {
-        return new DateTimeZone(self::DISPLAY_TIMEZONE);
+        return new \DateTimeZone(self::DISPLAY_TIMEZONE);
     }
 
     /**
@@ -146,7 +144,7 @@ final class Clock
      */
     private static function normalizeDate(mixed $date): string
     {
-        if ($date instanceof DateTimeInterface) {
+        if ($date instanceof \DateTimeInterface) {
             return $date->format('Y-m-d');
         }
 
@@ -162,7 +160,7 @@ final class Clock
      */
     private static function normalizeTime(mixed $time): string
     {
-        if ($time instanceof DateTimeInterface) {
+        if ($time instanceof \DateTimeInterface) {
             return $time->format('H:i:s');
         }
 

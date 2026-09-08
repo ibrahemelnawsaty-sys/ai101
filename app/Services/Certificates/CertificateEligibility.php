@@ -185,7 +185,7 @@ final class CertificateEligibility
      * countable sessions, same counted statuses, same rounding.
      *
      * @param  array<int, string>  $userIds
-     * @return array<string, float>  user id => rate, every id present
+     * @return array<string, float> user id => rate, every id present
      */
     public function attendanceRates(array $userIds, Cohort $cohort, ?CarbonImmutable $at = null): array
     {
@@ -377,10 +377,6 @@ final class CertificateEligibility
         $ids = [];
 
         foreach ($sessions as $session) {
-            if (! $session instanceof Session) {
-                continue;
-            }
-
             if ($this->window->hasEnded($session, $at)) {
                 $ids[] = (string) $session->getKey();
             }

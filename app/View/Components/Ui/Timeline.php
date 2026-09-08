@@ -34,7 +34,9 @@ final class Timeline extends UiComponent
     public array $statusIcon;
 
     /**
-     * @param  array<int, array<string, mixed>>  $items
+     * `$items` and `$percent` stay `mixed`: Blade passes a template attribute
+     * through untouched, so `percent="40"` arrives as a string. rows() is the
+     * boundary that turns the steps into the shape the track renders.
      */
     public function __construct(
         public string $variant = 'default',
@@ -44,7 +46,7 @@ final class Timeline extends UiComponent
         mixed $percent = null,
         ?string $label = null,
     ) {
-        $this->steps = is_array($items) ? array_values($items) : [];
+        $this->steps = self::rows($items);
         $this->total = count($this->steps);
 
         $done = 0;

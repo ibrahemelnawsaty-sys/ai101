@@ -30,7 +30,6 @@ namespace Database\Seeders;
 use App\Services\Time\Clock;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use RuntimeException;
 
 final class SeedContent
 {
@@ -71,14 +70,14 @@ final class SeedContent
         $raw = file_get_contents($path);
 
         if ($raw === false) {
-            throw new RuntimeException("Unable to read the seed content file at {$path}.");
+            throw new \RuntimeException("Unable to read the seed content file at {$path}.");
         }
 
         /** @var array<string, mixed>|null $decoded */
         $decoded = json_decode($raw, true);
 
         if (! is_array($decoded)) {
-            throw new RuntimeException("The seed content file at {$path} is not valid JSON.");
+            throw new \RuntimeException("The seed content file at {$path} is not valid JSON.");
         }
 
         return self::$content = $decoded;
@@ -94,7 +93,7 @@ final class SeedContent
         $all = self::all();
 
         if (! isset($all[$key]) || ! is_array($all[$key])) {
-            throw new RuntimeException("The seed content has no section named '{$key}'.");
+            throw new \RuntimeException("The seed content has no section named '{$key}'.");
         }
 
         return $all[$key];
@@ -162,8 +161,11 @@ final class SeedContent
 
         $day = CarbonImmutable::createFromFormat('Y-m-d', substr($date, 0, 10), 'Asia/Riyadh');
 
-        if ($day === false) {
-            throw new RuntimeException("Unable to read the session date '{$date}'.");
+        // Carbon 3 returns null — never false — when the string does not match the
+        // format, so a `=== false` test never fires and startOfDay() below would be
+        // reached on null.
+        if (! $day instanceof CarbonImmutable) {
+            throw new \RuntimeException("Unable to read the session date '{$date}'.");
         }
 
         return $day->startOfDay();

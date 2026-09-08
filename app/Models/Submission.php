@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\EvaluationEntity;
 use App\Enums\SubmissionStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Submission extends Model
 {
+    /** @use HasFactory<\Database\Factories\SubmissionFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'submissions';
@@ -68,11 +70,17 @@ class Submission extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Assignment, $this>
+     */
     public function assignment(): BelongsTo
     {
         return $this->belongsTo(Assignment::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -81,6 +89,8 @@ class Submission extends Model
     /**
      * Evaluations recorded against this submission. `entity_type` is part of the
      * key, so the constraint is carried on the relation itself.
+     *
+     * @return HasMany<Evaluation, $this>
      */
     public function evaluations(): HasMany
     {
@@ -91,6 +101,8 @@ class Submission extends Model
     /**
      * The most recent mark. The entity_type constraint is applied to the
      * one-of-many sub-query as well, so a revision never resolves across types.
+     *
+     * @return HasOne<Evaluation, $this>
      */
     public function latestEvaluation(): HasOne
     {
@@ -99,7 +111,7 @@ class Submission extends Model
             ->ofMany(
                 ['evaluated_at' => 'max'],
                 static fn (Builder $query): Builder => $query
-                    ->where('entity_type', EvaluationEntity::Assignment->value)
+                    ->where('entity_type', EvaluationEntity::Assignment->value),
             );
     }
 
@@ -124,7 +136,7 @@ class Submission extends Model
 
         return $query->whereIn(
             'assignment_id',
-            Assignment::query()->where('cohort_id', $cohortId)->select('id')
+            Assignment::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -156,7 +168,7 @@ class Submission extends Model
                 'assignment_id',
                 Assignment::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('id')
+                    ->select('id'),
             );
         }
 

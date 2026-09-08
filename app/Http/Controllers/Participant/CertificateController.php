@@ -132,7 +132,7 @@ final class CertificateController extends Controller
 
         return Storage::disk('generated')->download(
             $path,
-            (string) $certificate->getAttribute('serial_number').'.pdf'
+            (string) $certificate->getAttribute('serial_number').'.pdf',
         );
     }
 

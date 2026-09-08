@@ -161,7 +161,6 @@ return [
     'delete_confirm' => 'Delete this item? This action cannot be undone.',
     'leave_unsaved' => 'You have unsaved changes. Leave the page anyway?',
 
-
     'remaining' => [
         'none' => 'No deadline',
         'passed' => 'Deadline passed',

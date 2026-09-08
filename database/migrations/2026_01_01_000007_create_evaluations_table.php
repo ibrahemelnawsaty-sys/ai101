@@ -52,12 +52,12 @@ return new class extends Migration
         if ($this->supportsCheckConstraints()) {
             DB::statement(
                 'ALTER TABLE `evaluations` ADD CONSTRAINT `evaluations_score_range_check` '
-                .'CHECK (`score` >= 0 AND `score` <= `max_score`)'
+                .'CHECK (`score` >= 0 AND `score` <= `max_score`)',
             );
 
             DB::statement(
                 'ALTER TABLE `evaluations` ADD CONSTRAINT `evaluations_feedback_length_check` '
-                .'CHECK (CHAR_LENGTH(`feedback`) >= 10)'
+                .'CHECK (CHAR_LENGTH(`feedback`) >= 10)',
             );
         }
     }

@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,7 +29,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Session extends Model
 {
+    /** @use HasFactory<\Database\Factories\SessionFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'sessions';
@@ -87,26 +89,41 @@ class Session extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<Week, $this>
+     */
     public function week(): BelongsTo
     {
         return $this->belongsTo(Week::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'trainer_id');
     }
 
+    /**
+     * @return HasMany<Attendance, $this>
+     */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
 
+    /**
+     * @return HasMany<\App\Models\Resource, $this>
+     */
     public function resources(): HasMany
     {
         return $this->hasMany(Resource::class);
@@ -135,7 +152,7 @@ class Session extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

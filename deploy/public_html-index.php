@@ -15,7 +15,6 @@
  * @see CONSTITUTION.md Article 10 (shared hosting: the app lives outside the web root)
  * @see PROJECT-CONTRACT.md section 11
  */
-
 define('LARAVEL_START', microtime(true));
 
 /*
@@ -37,7 +36,7 @@ define('LARAVEL_START', microtime(true));
 |
 */
 
-define('ATHAR_APP_BASE', dirname(__DIR__) . '/athar-app');
+define('ATHAR_APP_BASE', dirname(__DIR__).'/athar-app');
 
 /*
 |--------------------------------------------------------------------------
@@ -50,11 +49,11 @@ define('ATHAR_APP_BASE', dirname(__DIR__) . '/athar-app');
 |
 */
 
-if (! is_file(ATHAR_APP_BASE . '/vendor/autoload.php')) {
+if (! is_file(ATHAR_APP_BASE.'/vendor/autoload.php')) {
     http_response_code(503);
     header('Content-Type: text/plain; charset=UTF-8');
     header('Retry-After: 120');
-    error_log('[athar] shim: application not found at ' . ATHAR_APP_BASE);
+    error_log('[athar] shim: application not found at '.ATHAR_APP_BASE);
 
     exit('Service Unavailable');
 }
@@ -69,7 +68,7 @@ if (! is_file(ATHAR_APP_BASE . '/vendor/autoload.php')) {
 |
 */
 
-if (is_file($maintenance = ATHAR_APP_BASE . '/storage/framework/maintenance.php')) {
+if (is_file($maintenance = ATHAR_APP_BASE.'/storage/framework/maintenance.php')) {
     require $maintenance;
 }
 
@@ -79,7 +78,7 @@ if (is_file($maintenance = ATHAR_APP_BASE . '/storage/framework/maintenance.php'
 |--------------------------------------------------------------------------
 */
 
-require ATHAR_APP_BASE . '/vendor/autoload.php';
+require ATHAR_APP_BASE.'/vendor/autoload.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -94,9 +93,9 @@ require ATHAR_APP_BASE . '/vendor/autoload.php';
 |
 */
 
-/** @var \Illuminate\Foundation\Application $app */
-$app = require_once ATHAR_APP_BASE . '/bootstrap/app.php';
+/** @var Illuminate\Foundation\Application $app */
+$app = require_once ATHAR_APP_BASE.'/bootstrap/app.php';
 
 $app->usePublicPath(__DIR__);
 
-$app->handleRequest(\Illuminate\Http\Request::capture());
+$app->handleRequest(Illuminate\Http\Request::capture());

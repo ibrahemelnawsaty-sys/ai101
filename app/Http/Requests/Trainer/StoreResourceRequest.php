@@ -36,7 +36,7 @@ final class StoreResourceRequest extends FormRequest
             return false;
         }
 
-        $draft = new Resource();
+        $draft = new Resource;
         $draft->setAttribute('cohort_id', $cohortId);
 
         return $user->can('create', $draft);

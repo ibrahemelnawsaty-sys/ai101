@@ -77,11 +77,10 @@ final class EvaluationPolicy
      */
     private function cohortIdOf(Evaluation $evaluation): ?string
     {
+        // `evaluations.entity_id` is char(36) NOT NULL (PROJECT-CONTRACT §4),
+        // so a loaded evaluation always carries one; there is no null case to
+        // guard here.
         $entityId = $evaluation->entity_id;
-
-        if ($entityId === null) {
-            return null;
-        }
 
         if ($evaluation->entity_type === EvaluationEntity::FinalProject) {
             $finalProjectId = ProjectSubmission::query()

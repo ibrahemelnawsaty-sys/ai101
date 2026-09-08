@@ -121,7 +121,9 @@ final class FinalProjectController extends Controller
         }
 
         return $submissions->first(
-            static fn (ProjectSubmissionRow $row): bool => $row->id === $id
+            // ArrayAccess, not ->id: the ViewModel publishes through __get, so
+            // only the declared offsetGet() has a type the analyser can read.
+            static fn (ProjectSubmissionRow $row): bool => (string) $row['id'] === $id,
         );
     }
 
@@ -182,7 +184,7 @@ final class FinalProjectController extends Controller
             ->pluck('user_id');
 
         foreach ($participantIds as $participantId) {
-            $notification = new Notification();
+            $notification = new Notification;
             $notification->setAttribute('user_id', (string) $participantId);
             $notification->setAttribute('type', self::NOTIFICATION_TYPE_UNLOCKED);
             $notification->setAttribute('title', $title);

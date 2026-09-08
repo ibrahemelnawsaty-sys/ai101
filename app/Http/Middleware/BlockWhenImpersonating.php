@@ -7,7 +7,6 @@ namespace App\Http\Middleware;
 use App\Http\Middleware\Concerns\LogsDenials;
 use App\Services\Audit\AuditLogger;
 use App\Support\ImpersonationContext;
-use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,7 +26,7 @@ final class BlockWhenImpersonating
 
     public function __construct(private readonly AuditLogger $audit) {}
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, \Closure $next): Response
     {
         if (ImpersonationContext::isActive()) {
             $this->logDenial($this->audit, $request, 'impersonation.write_attempt', 'user', ImpersonationContext::targetId());

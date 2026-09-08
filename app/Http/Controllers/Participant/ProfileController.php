@@ -97,7 +97,7 @@ final class ProfileController extends Controller
 
         $at = Clock::now();
 
-        DB::transaction(function () use ($user, $request, $at): void {
+        DB::transaction(function () use ($user, $request): void {
             $user->setAttribute('password_hash', (string) $request->validated('password'));
 
             $this->audit->log('account.password_changed', $user, null, null, $user);
@@ -123,7 +123,7 @@ final class ProfileController extends Controller
                 [
                     'in_app_enabled' => (bool) $enabled,
                     'email_enabled' => (bool) $enabled,
-                ]
+                ],
             );
         }
 
@@ -152,7 +152,7 @@ final class ProfileController extends Controller
      * The account's live sessions, for the "signed in on" list. Only the facts
      * the person needs to recognise a device: never the session payload.
      *
-     * @return \Illuminate\Support\Collection<int, object>
+     * @return \Illuminate\Support\Collection<int, \stdClass>
      */
     private function activeSessions(User $user, Request $request)
     {

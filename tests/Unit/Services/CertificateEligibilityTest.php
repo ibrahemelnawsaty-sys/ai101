@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 use App\Support\AttendanceCounting;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-11-20 12:00:00'));
 
     $this->cohort = makeCohort(['pass_score' => 60, 'min_attendance_rate' => 75]);
@@ -26,29 +26,29 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('نسبة الحضور صفر قبل انعقاد أي جلسة', function () {
+it('نسبة الحضور صفر قبل انعقاد أي جلسة', function (): void {
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(0.0);
 });
 
-it('نسبة الحضور مئة بالمئة لمن حضر كل الجلسات', function () {
+it('نسبة الحضور مئة بالمئة لمن حضر كل الجلسات', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 8);
 
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(100.0);
 });
 
-it('BR-02, BR-03: الحضور المتأخر يُحتسب حضورًا في النسبة', function () {
+it('BR-02, BR-03: الحضور المتأخر يُحتسب حضورًا في النسبة', function (): void {
     attendSessions($this->cohort, $this->participant, 4, 4, 'late');
 
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(100.0);
 });
 
-it('الغياب يخفض النسبة بمقدار حصته', function () {
+it('الغياب يخفض النسبة بمقدار حصته', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 6);
 
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(75.0);
 });
 
-it('BR-22: نسبة الحضور لا تتأثر بسجلات متدرب آخر', function () {
+it('BR-22: نسبة الحضور لا تتأثر بسجلات متدرب آخر', function (): void {
     $other = makeParticipant($this->cohort);
     $day = riyadhAt('2026-10-05 18:00:00');
 
@@ -65,7 +65,7 @@ it('BR-22: نسبة الحضور لا تتأثر بسجلات متدرب آخر'
         ->and($this->eligibility->attendanceRate($other, $this->cohort))->toBe(0.0);
 });
 
-it('BR-26: حد نسبة الحضور يُقرأ من الدفعة ويُختبر عند الحد بالضبط', function () {
+it('BR-26: حد نسبة الحضور يُقرأ من الدفعة ويُختبر عند الحد بالضبط', function (): void {
     // 3 of 5 sessions is exactly 60%.
     attendSessions($this->cohort, $this->participant, 5, 3);
     $this->cohort->update(['min_attendance_rate' => 60]);
@@ -84,7 +84,7 @@ it('BR-26: حد نسبة الحضور يُقرأ من الدفعة ويُختب�
 |--------------------------------------------------------------------------
 */
 
-it('BR-26: حد الدرجة يُقرأ من الدفعة ويُختبر عند الحد بالضبط', function () {
+it('BR-26: حد الدرجة يُقرأ من الدفعة ويُختبر عند الحد بالضبط', function (): void {
     awardFinalScore($this->cohort, $this->participant, 60.0);
 
     expect($this->eligibility->meetsScore($this->participant, $this->cohort))->toBeTrue();
@@ -100,7 +100,7 @@ it('BR-26: حد الدرجة يُقرأ من الدفعة ويُختبر عند 
 |--------------------------------------------------------------------------
 */
 
-it('BR-26: حضور كامل ودرجة راسبة لا يمنحان الشهادة', function () {
+it('BR-26: حضور كامل ودرجة راسبة لا يمنحان الشهادة', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 8);
     awardFinalScore($this->cohort, $this->participant, 30.0);
 
@@ -109,7 +109,7 @@ it('BR-26: حضور كامل ودرجة راسبة لا يمنحان الشها�
         ->and($this->eligibility->isEligible($this->participant, $this->cohort))->toBeFalse();
 });
 
-it('BR-26: درجة كاملة وحضور ناقص لا يمنحان الشهادة', function () {
+it('BR-26: درجة كاملة وحضور ناقص لا يمنحان الشهادة', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 2);
     awardFinalScore($this->cohort, $this->participant, 100.0);
 
@@ -118,7 +118,7 @@ it('BR-26: درجة كاملة وحضور ناقص لا يمنحان الشها�
         ->and($this->eligibility->isEligible($this->participant, $this->cohort))->toBeFalse();
 });
 
-it('BR-26: الشرطان معًا يمنحان الشهادة', function () {
+it('BR-26: الشرطان معًا يمنحان الشهادة', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 6);
     awardFinalScore($this->cohort, $this->participant, 60.0);
 
@@ -126,7 +126,7 @@ it('BR-26: الشرطان معًا يمنحان الشهادة', function () {
         ->and($this->eligibility->reasons($this->participant, $this->cohort))->toBeEmpty();
 });
 
-it('BR-26: سقوط الشرطين معًا يُنتج سببين لا سببًا واحدًا', function () {
+it('BR-26: سقوط الشرطين معًا يُنتج سببين لا سببًا واحدًا', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 2);
     awardFinalScore($this->cohort, $this->participant, 20.0);
 
@@ -138,7 +138,7 @@ it('BR-26: سقوط الشرطين معًا يُنتج سببين لا سببً�
         ->and(array_keys($reasons))->toContain('score');
 });
 
-it('سبب عدم الاستحقاق نص مترجم بأرقام لاتينية لا مفتاح ترجمة خام', function () {
+it('سبب عدم الاستحقاق نص مترجم بأرقام لاتينية لا مفتاح ترجمة خام', function (): void {
     attendSessions($this->cohort, $this->participant, 8, 2);
     awardFinalScore($this->cohort, $this->participant, 90.0);
 
@@ -175,7 +175,7 @@ it('سبب عدم الاستحقاق نص مترجم بأرقام لاتينية
  * change slipping through. A skipped test pinned nothing.
  */
 
-it('BR-26, D-26: الغياب بعذر يُحتسب حضورًا — القراءة المعلَّقة، لا حكمًا نهائيًّا', function () {
+it('BR-26, D-26: الغياب بعذر يُحتسب حضورًا — القراءة المعلَّقة، لا حكمًا نهائيًّا', function (): void {
     $day = riyadhAt('2026-10-05 18:00:00');
 
     for ($i = 0; $i < 4; $i++) {
@@ -188,7 +188,7 @@ it('BR-26, D-26: الغياب بعذر يُحتسب حضورًا — القرا�
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(100.0);
 });
 
-it('BR-26, D-26: الحضور غير المكتمل لا يُحتسب — القراءة المعلَّقة، لا حكمًا نهائيًّا', function () {
+it('BR-26, D-26: الحضور غير المكتمل لا يُحتسب — القراءة المعلَّقة، لا حكمًا نهائيًّا', function (): void {
     $day = riyadhAt('2026-10-05 18:00:00');
 
     for ($i = 0; $i < 4; $i++) {
@@ -201,7 +201,7 @@ it('BR-26, D-26: الحضور غير المكتمل لا يُحتسب — الق
     expect($this->eligibility->attendanceRate($this->participant, $this->cohort))->toBe(50.0);
 });
 
-it('BR-26, D-26: مجموعة الاحتساب مصدرها الوحيد AttendanceCounting ويغلبها الإعداد', function () {
+it('BR-26, D-26: مجموعة الاحتساب مصدرها الوحيد AttendanceCounting ويغلبها الإعداد', function (): void {
     expect(AttendanceCounting::countedAsAttendedValues())
         ->toBe(['present', 'late', 'excused']);
 

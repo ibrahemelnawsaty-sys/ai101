@@ -182,7 +182,7 @@ final class LoginController extends Controller
         $request->session()->put('auth.account_state', $state);
         $request->session()->put(
             ResendVerificationRequest::PENDING_EMAIL_KEY,
-            (string) $request->validated('email')
+            (string) $request->validated('email'),
         );
         $request->session()->forget('auth.locked_for_seconds');
 

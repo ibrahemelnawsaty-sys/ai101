@@ -32,7 +32,7 @@ use App\Models\Submission;
 const PROJECT_BRIEF_CANARY = 'CANARY-BRIEF-8Xq2';
 const PROJECT_REQUIREMENTS_CANARY = 'CANARY-REQS-4Lp9';
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-19 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -52,7 +52,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-15: تبويب المشروع الختامي مقفل حتى يفعّله المدرب والقفل مفروض على الخادم', function () {
+it('BR-15: تبويب المشروع الختامي مقفل حتى يفعّله المدرب والقفل مفروض على الخادم', function (): void {
     $response = $this->actingAs($this->participant)->get(route('finalProject'));
 
     expect($response->status())->toBeIn([200, 403]);
@@ -71,7 +71,7 @@ it('BR-15: تبويب المشروع الختامي مقفل حتى يفعّله
     expect(ProjectSubmission::query()->count())->toBe(0);
 });
 
-it('BR-16: محتوى المشروع الختامي لا يُرسل للمتصفح قبل التفعيل', function () {
+it('BR-16: محتوى المشروع الختامي لا يُرسل للمتصفح قبل التفعيل', function (): void {
     $response = $this->actingAs($this->participant)->get(route('finalProject'));
 
     $body = $response->getContent();
@@ -80,7 +80,7 @@ it('BR-16: محتوى المشروع الختامي لا يُرسل للمتصف
         ->and($body)->not->toContain(PROJECT_REQUIREMENTS_CANARY);
 });
 
-it('BR-16: لوحة التحكم كاملة لا تسرب دليل المشروع قبل التفعيل', function () {
+it('BR-16: لوحة التحكم كاملة لا تسرب دليل المشروع قبل التفعيل', function (): void {
     foreach ([route('dashboard'), route('participant.journey'), route('assignments.index')] as $url) {
         $body = $this->actingAs($this->participant)->get($url)->getContent();
 
@@ -89,7 +89,7 @@ it('BR-16: لوحة التحكم كاملة لا تسرب دليل المشرو�
     }
 });
 
-it('BR-15: المدرب يفعّل التبويب فيصل المحتوى ويُسجَّل التفعيل في سجل التدقيق', function () {
+it('BR-15: المدرب يفعّل التبويب فيصل المحتوى ويُسجَّل التفعيل في سجل التدقيق', function (): void {
     assertAccepted($this->actingAs($this->trainer)->put(route('trainer.finalProject.unlock', $this->project)));
 
     $fresh = $this->project->fresh();
@@ -110,7 +110,7 @@ it('BR-15: المدرب يفعّل التبويب فيصل المحتوى ويُ
         ->assertSee(PROJECT_BRIEF_CANARY, escape: false);
 });
 
-it('BR-15: المتدرب لا يستطيع تفعيل تبويب المشروع بنفسه', function () {
+it('BR-15: المتدرب لا يستطيع تفعيل تبويب المشروع بنفسه', function (): void {
     $this->actingAs($this->participant)
         ->put(route('trainer.finalProject.unlock', $this->project))
         ->assertForbidden();
@@ -118,7 +118,7 @@ it('BR-15: المتدرب لا يستطيع تفعيل تبويب المشروع
     expect($this->project->fresh()->is_unlocked)->toBeFalse();
 });
 
-it('BR-15: التفعيل يُشعر كل متدربي الدفعة', function () {
+it('BR-15: التفعيل يُشعر كل متدربي الدفعة', function (): void {
     $second = makeParticipant($this->cohort);
     Notification::query()->delete();
 
@@ -135,7 +135,7 @@ it('BR-15: التفعيل يُشعر كل متدربي الدفعة', function (
 |--------------------------------------------------------------------------
 */
 
-it('BR-17: المدرب هو من يحدد المهمة وإجباريتها ودرجتها وموعدها', function () {
+it('BR-17: المدرب هو من يحدد المهمة وإجباريتها ودرجتها وموعدها', function (): void {
     $week = makeWeek($this->cohort, 1);
 
     assertAccepted($this->actingAs($this->trainer)->post(route('trainer.assignments.store'), [
@@ -157,7 +157,7 @@ it('BR-17: المدرب هو من يحدد المهمة وإجباريتها و�
         ->and($assignment->created_by)->toBe($this->trainer->id);
 });
 
-it('BR-17: المتدرب لا ينشئ مهمة', function () {
+it('BR-17: المتدرب لا ينشئ مهمة', function (): void {
     $this->actingAs($this->participant)
         ->post(route('trainer.assignments.store'), [
             'cohort_id' => $this->cohort->id,
@@ -170,7 +170,7 @@ it('BR-17: المتدرب لا ينشئ مهمة', function () {
     expect(Assignment::query()->count())->toBe(0);
 });
 
-it('BR-17: مهمة بحالة مسودة لا تظهر للمتدرب', function () {
+it('BR-17: مهمة بحالة مسودة لا تظهر للمتدرب', function (): void {
     $draft = makeAssignment($this->cohort, ['status' => 'draft', 'title' => 'CANARY-DRAFT-TITLE']);
 
     $body = $this->actingAs($this->participant)->get(route('assignments.index'))->getContent();
@@ -188,7 +188,7 @@ it('BR-17: مهمة بحالة مسودة لا تظهر للمتدرب', functio
 |--------------------------------------------------------------------------
 */
 
-it('BR-18: التسليم في الثانية الأخيرة قبل الموعد ليس متأخرًا', function () {
+it('BR-18: التسليم في الثانية الأخيرة قبل الموعد ليس متأخرًا', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
 
@@ -202,7 +202,7 @@ it('BR-18: التسليم في الثانية الأخيرة قبل الموعد
     expect(Submission::query()->sole()->is_late)->toBeFalse();
 });
 
-it('BR-18: التسليم عند الموعد بالضبط ليس متأخرًا', function () {
+it('BR-18: التسليم عند الموعد بالضبط ليس متأخرًا', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
 
@@ -216,7 +216,7 @@ it('BR-18: التسليم عند الموعد بالضبط ليس متأخرًا
     expect(Submission::query()->sole()->is_late)->toBeFalse();
 });
 
-it('BR-18: التسليم بعد الموعد بثانية يُرفض حين لا تسمح المهمة بالتأخير', function () {
+it('BR-18: التسليم بعد الموعد بثانية يُرفض حين لا تسمح المهمة بالتأخير', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
 
@@ -230,7 +230,7 @@ it('BR-18: التسليم بعد الموعد بثانية يُرفض حين ل�
     expect(Submission::query()->count())->toBe(0);
 });
 
-it('BR-18: التسليم بعد الموعد بثانية يُوسم متأخرًا حين تسمح المهمة بالتأخير', function () {
+it('BR-18: التسليم بعد الموعد بثانية يُوسم متأخرًا حين تسمح المهمة بالتأخير', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => true]);
 
@@ -250,7 +250,7 @@ it('BR-18: التسليم بعد الموعد بثانية يُوسم متأخر
 |--------------------------------------------------------------------------
 */
 
-it('BR-19: إعادة التسليم قبل الموعد تحفظ الإصدار السابق ولا تحذفه', function () {
+it('BR-19: إعادة التسليم قبل الموعد تحفظ الإصدار السابق ولا تحذفه', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
 
@@ -278,7 +278,7 @@ it('BR-19: إعادة التسليم قبل الموعد تحفظ الإصدار
         ->and($versions[0]->note)->toContain('First attempt');
 });
 
-it('BR-19: رقم الإصدار يزيد ولا يعود للخلف أبدًا', function () {
+it('BR-19: رقم الإصدار يزيد ولا يعود للخلف أبدًا', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
 
@@ -300,7 +300,7 @@ it('BR-19: رقم الإصدار يزيد ولا يعود للخلف أبدًا'
     expect($seen)->toBe([1, 2, 3]);
 });
 
-it('BR-19: إعادة تسليم متدرب لا تمس إصدارات متدرب آخر', function () {
+it('BR-19: إعادة تسليم متدرب لا تمس إصدارات متدرب آخر', function (): void {
     $due = riyadhAt('2026-10-20 23:59:00');
     $assignment = makeAssignment($this->cohort, ['due_at' => $due, 'allow_late' => false]);
     $other = makeParticipant($this->cohort);

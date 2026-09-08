@@ -34,7 +34,9 @@ final class Radio extends UiComponent
     public bool $required;
 
     /**
-     * @param  array<int, array<string, mixed>>  $options
+     * `$options` stays `mixed`: Blade passes a template attribute through
+     * untouched, so an option list written without a colon arrives as a string.
+     * rows() is the boundary that turns it into the shape the group renders.
      */
     public function __construct(
         public string $variant = 'default',
@@ -54,7 +56,7 @@ final class Radio extends UiComponent
         $this->message = self::errorFor($name, $error);
         $this->baseId = self::fieldId('r', $name, $id);
 
-        $this->items = is_array($options) ? array_values($options) : [];
+        $this->items = self::rows($options);
         $this->current = (string) ($value ?? ($name !== null && $name !== '' ? old($name, '') : ''));
 
         $this->errorId = $this->message !== null ? $this->baseId.'-error' : null;

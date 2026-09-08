@@ -33,7 +33,7 @@ final class SettingController extends Controller
 
     public function edit(): View
     {
-        $this->authorize('update', new LandingSetting());
+        $this->authorize('update', new LandingSetting);
 
         return view('admin.settings', [
             'contextLabel' => null,
@@ -88,7 +88,7 @@ final class SettingController extends Controller
      */
     public function template(string $template): View
     {
-        $this->authorize('update', new LandingSetting());
+        $this->authorize('update', new LandingSetting);
 
         $body = __('emails.'.$template);
 
@@ -104,5 +104,4 @@ final class SettingController extends Controller
             'errorState' => null,
         ]);
     }
-
 }

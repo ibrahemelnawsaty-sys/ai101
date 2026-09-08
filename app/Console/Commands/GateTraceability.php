@@ -103,7 +103,7 @@ final class GateTraceability extends GateCommand
                 self::MATRIX_FILE,
                 0,
                 'TRACE-NO-MATRIX',
-                'the traceability matrix is missing; no requirement can be proven tracked'
+                'the traceability matrix is missing; no requirement can be proven tracked',
             );
 
             return $this->renderReport('G12', 'TRACEABILITY - every identifier has a row', 'the matrix must exist and cover every cited identifier');
@@ -119,7 +119,7 @@ final class GateTraceability extends GateCommand
         return $this->renderReport(
             'G12',
             'TRACEABILITY - every identifier has a row',
-            'zero requirement identifiers cited in code without a row in '.self::MATRIX_FILE
+            'zero requirement identifiers cited in code without a row in '.self::MATRIX_FILE,
         );
     }
 
@@ -262,7 +262,7 @@ final class GateTraceability extends GateCommand
             $file,
             1,
             'TRACE-NO-HEADER-ID',
-            'feature file names no requirement identifier in its header comment'
+            'feature file names no requirement identifier in its header comment',
         );
     }
 
@@ -282,7 +282,7 @@ final class GateTraceability extends GateCommand
                 $origin['file'],
                 $origin['line'],
                 'TRACE-NO-ROW',
-                $identifier.' has no row in '.self::MATRIX_FILE.'; update the matrix in this same commit'
+                $identifier.' has no row in '.self::MATRIX_FILE.'; update the matrix in this same commit',
             );
         }
     }
@@ -298,7 +298,7 @@ final class GateTraceability extends GateCommand
                     self::DECISIONS_FILE,
                     0,
                     'TRACE-NO-DECISIONS',
-                    'the decisions log could not be read, so decision references are unverified'
+                    'the decisions log could not be read, so decision references are unverified',
                 );
             }
 
@@ -314,7 +314,7 @@ final class GateTraceability extends GateCommand
                 $origin['file'],
                 $origin['line'],
                 'TRACE-NO-DECISION',
-                $identifier.' is cited but has no entry in '.self::DECISIONS_FILE
+                $identifier.' is cited but has no entry in '.self::DECISIONS_FILE,
             );
         }
     }

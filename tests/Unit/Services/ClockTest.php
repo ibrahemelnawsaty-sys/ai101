@@ -12,25 +12,25 @@ declare(strict_types=1);
 use App\Services\Time\Clock;
 use Carbon\CarbonImmutable;
 
-afterEach(function () {
+afterEach(function (): void {
     Clock::reset();
 });
 
-it('BR-07: يعيد الوقت بتوقيت UTC دائمًا', function () {
+it('BR-07: يعيد الوقت بتوقيت UTC دائمًا', function (): void {
     freezeAt(riyadhAt('2026-10-12 18:00:00'));
 
     expect(Clock::now()->getTimezone()->getName())->toBe('UTC')
         ->and(Clock::now()->format('Y-m-d H:i:s'))->toBe('2026-10-12 15:00:00');
 });
 
-it('BR-07: يعيد وقت العرض بتوقيت الرياض', function () {
+it('BR-07: يعيد وقت العرض بتوقيت الرياض', function (): void {
     freezeAt(riyadhAt('2026-10-12 18:00:00'));
 
     expect(Clock::riyadh()->getTimezone()->getName())->toBe('Asia/Riyadh')
         ->and(Clock::riyadh()->format('Y-m-d H:i:s'))->toBe('2026-10-12 18:00:00');
 });
 
-it('BR-07: الرياض تسبق UTC بثلاث ساعات في كل شهور السنة — لا توقيت صيفي', function () {
+it('BR-07: الرياض تسبق UTC بثلاث ساعات في كل شهور السنة — لا توقيت صيفي', function (): void {
     foreach (['2026-01-15 12:00:00', '2026-04-15 12:00:00', '2026-07-15 12:00:00', '2026-10-15 12:00:00'] as $wallClock) {
         freezeAt(riyadhAt($wallClock));
 
@@ -39,7 +39,7 @@ it('BR-07: الرياض تسبق UTC بثلاث ساعات في كل شهور ا
     }
 });
 
-it('يحوّل أي لحظة إلى توقيت الرياض دون تغيير اللحظة نفسها', function () {
+it('يحوّل أي لحظة إلى توقيت الرياض دون تغيير اللحظة نفسها', function (): void {
     $instant = CarbonImmutable::parse('2026-10-12 15:00:00', 'UTC');
 
     $converted = Clock::toRiyadh($instant);
@@ -49,13 +49,13 @@ it('يحوّل أي لحظة إلى توقيت الرياض دون تغيير ا
         ->and($converted->equalTo($instant))->toBeTrue();
 });
 
-it('يحوّل لحظة قادمة بمنطقة زمنية ثالثة إلى الرياض بشكل صحيح', function () {
+it('يحوّل لحظة قادمة بمنطقة زمنية ثالثة إلى الرياض بشكل صحيح', function (): void {
     $tokyo = CarbonImmutable::parse('2026-10-13 00:00:00', 'Asia/Tokyo');
 
     expect(Clock::toRiyadh($tokyo)->format('Y-m-d H:i:s'))->toBe('2026-10-12 18:00:00');
 });
 
-it('يعيد النوع غير القابل للتعديل في كل الحالات', function () {
+it('يعيد النوع غير القابل للتعديل في كل الحالات', function (): void {
     freezeAt(riyadhAt('2026-10-12 18:00:00'));
 
     expect(Clock::now())->toBeInstanceOf(CarbonImmutable::class)
@@ -63,7 +63,7 @@ it('يعيد النوع غير القابل للتعديل في كل الحال�
         ->and(Clock::toRiyadh(Clock::now()))->toBeInstanceOf(CarbonImmutable::class);
 });
 
-it('التجميد يثبّت اللحظة فلا تتقدّم بين نداءين', function () {
+it('التجميد يثبّت اللحظة فلا تتقدّم بين نداءين', function (): void {
     freezeAt(riyadhAt('2026-10-12 18:00:00'));
 
     $first = Clock::now();
@@ -73,7 +73,7 @@ it('التجميد يثبّت اللحظة فلا تتقدّم بين نداءي
     expect($first->equalTo($second))->toBeTrue();
 });
 
-it('إعادة الضبط تحرر الساعة فتعود إلى وقت النظام', function () {
+it('إعادة الضبط تحرر الساعة فتعود إلى وقت النظام', function (): void {
     // Midnight on 1 January in Riyadh is 21:00 on 31 December in UTC, so the
     // two clocks disagree about the year at this instant. That disagreement is
     // the whole point of the class, so the test pins both sides of it rather
@@ -87,7 +87,7 @@ it('إعادة الضبط تحرر الساعة فتعود إلى وقت الن�
     expect(Clock::now()->year)->toBeGreaterThan(2020);
 });
 
-it('تمرير قيمة فارغة إلى التزييف يعادل إعادة الضبط', function () {
+it('تمرير قيمة فارغة إلى التزييف يعادل إعادة الضبط', function (): void {
     freezeAt(riyadhAt('2020-01-01 00:00:00'));
 
     Clock::fake(null);
@@ -95,7 +95,7 @@ it('تمرير قيمة فارغة إلى التزييف يعادل إعادة �
     expect(Clock::now()->year)->toBeGreaterThan(2020);
 });
 
-it('يقبل تزييف الساعة بأي نوع يحقق DateTimeInterface', function () {
+it('يقبل تزييف الساعة بأي نوع يحقق DateTimeInterface', function (): void {
     Clock::fake(new DateTimeImmutable('2026-10-12 15:00:00', new DateTimeZone('UTC')));
 
     expect(Clock::now()->format('Y-m-d H:i:s'))->toBe('2026-10-12 15:00:00');

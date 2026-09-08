@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use DateTimeInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,11 +16,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * from serialisation; the public verify page reached through it shows no sensitive
  * personal data (BR-25).
  *
+ * A `datetime` cast is asymmetric: it reads back as CarbonImmutable but accepts
+ * any DateTimeInterface or date string on write, which is what markRevokedAt()
+ * hands it, so `revoked_at` is the one column spelled out here.
+ *
+ * @property-read CarbonImmutable|null $revoked_at
+ * @property-write \DateTimeInterface|string|null $revoked_at
+ *
  * @see BR-22, BR-25 · PRD §7.6, §9.6 · PROJECT-CONTRACT §4
  */
 class DigitalCard extends Model
 {
+    /** @use HasFactory<\Database\Factories\DigitalCardFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'digital_cards';
@@ -63,18 +72,24 @@ class DigitalCard extends Model
     /**
      * Revocation instant is supplied by the caller from Clock::now() (BR-07).
      */
-    public function markRevokedAt(DateTimeInterface $at): bool
+    public function markRevokedAt(\DateTimeInterface $at): bool
     {
         $this->revoked_at = $at;
 
         return $this->save();
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);

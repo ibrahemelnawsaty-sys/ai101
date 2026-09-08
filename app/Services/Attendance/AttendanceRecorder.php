@@ -80,7 +80,7 @@ final class AttendanceRecorder
 
         try {
             return DB::transaction(function () use ($user, $session, $at, $status, $ipAddress, $userAgent): Attendance {
-                $attendance = new Attendance();
+                $attendance = new Attendance;
 
                 // The key is assigned up front so the audit entry can name the
                 // row before it exists (CONSTITUTION art. 8).

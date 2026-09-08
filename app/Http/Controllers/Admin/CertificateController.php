@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CohortStatus;
+use App\Enums\EnrollmentRole;
+use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BulkIssueCertificateRequest;
 use App\Http\Requests\Admin\IssueCertificateRequest;
 use App\Http\Requests\Admin\OverrideCertificateRequest;
 use App\Http\Requests\Admin\RevokeCertificateRequest;
-use App\Enums\CohortStatus;
-use App\Enums\EnrollmentRole;
-use App\Enums\EnrollmentStatus;
 use App\Models\Certificate;
 use App\Models\Cohort;
 use App\Models\Enrollment;
@@ -117,7 +117,7 @@ final class CertificateController extends Controller
 
         if (is_string($requested) && $requested !== '') {
             $match = $cohorts->first(
-                static fn (Cohort $cohort): bool => (string) $cohort->getKey() === $requested
+                static fn (Cohort $cohort): bool => (string) $cohort->getKey() === $requested,
             );
 
             if ($match instanceof Cohort) {
@@ -155,7 +155,7 @@ final class CertificateController extends Controller
                     ->where('cohort_id', $cohort->getKey())
                     ->where('role_in_cohort', EnrollmentRole::Participant->value)
                     ->where('status', EnrollmentStatus::Active->value)
-                    ->select('user_id')
+                    ->select('user_id'),
             )
             ->limit(self::CANDIDATE_LIMIT)
             ->get();

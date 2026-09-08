@@ -6,7 +6,6 @@ namespace App\Support;
 
 use App\Services\Time\Clock;
 use App\Services\Time\RiyadhFormatter;
-use DateTimeInterface;
 
 /**
  * Static reading-room for dates, used from Blade.
@@ -33,19 +32,19 @@ final class Dates
     public const ABSENT = '—';
 
     /** Weekday, day, month, year: app.days.* + j + app.months.* + Y. */
-    public static function longDate(?DateTimeInterface $at): string
+    public static function longDate(?\DateTimeInterface $at): string
     {
         return $at === null ? self::ABSENT : self::formatter()->date($at);
     }
 
     /** Day, month, year: j + app.months.* + Y, no weekday. */
-    public static function shortDate(?DateTimeInterface $at): string
+    public static function shortDate(?\DateTimeInterface $at): string
     {
         return $at === null ? self::ABSENT : self::formatter()->shortDate($at);
     }
 
     /** Twelve-hour clock plus meridiem word: g:i + app.meridiem.am|pm. */
-    public static function time(?DateTimeInterface $at): string
+    public static function time(?\DateTimeInterface $at): string
     {
         return $at === null ? self::ABSENT : self::formatter()->time($at);
     }
@@ -55,19 +54,19 @@ final class Dates
      * everywhere, which reads better beside `timeRange12` and makes the
      * twelve-hour rule of art. 15 visible at the call site.
      */
-    public static function time12(?DateTimeInterface $at): string
+    public static function time12(?\DateTimeInterface $at): string
     {
         return self::time($at);
     }
 
     /** Long date and twelve-hour time joined by app.date_time. */
-    public static function dateTime(?DateTimeInterface $at): string
+    public static function dateTime(?\DateTimeInterface $at): string
     {
         return $at === null ? self::ABSENT : self::formatter()->dateTime($at);
     }
 
     /** Two twelve-hour times joined by app.time_range. */
-    public static function timeRange(?DateTimeInterface $from, ?DateTimeInterface $to): string
+    public static function timeRange(?\DateTimeInterface $from, ?\DateTimeInterface $to): string
     {
         if ($from === null || $to === null) {
             return self::ABSENT;
@@ -77,7 +76,7 @@ final class Dates
     }
 
     /** Alias of timeRange(), named for the twelve-hour clock it prints. */
-    public static function timeRange12(?DateTimeInterface $from, ?DateTimeInterface $to): string
+    public static function timeRange12(?\DateTimeInterface $from, ?\DateTimeInterface $to): string
     {
         return self::timeRange($from, $to);
     }
@@ -88,7 +87,7 @@ final class Dates
      * Falls back to two full short dates when the range crosses a month, since
      * a cross-month range has to name both months.
      */
-    public static function shortRange(?DateTimeInterface $from, ?DateTimeInterface $to): string
+    public static function shortRange(?\DateTimeInterface $from, ?\DateTimeInterface $to): string
     {
         if ($from === null || $to === null) {
             return self::ABSENT;
@@ -116,7 +115,7 @@ final class Dates
      * date, because a month count makes a reader do arithmetic to answer a
      * question the date itself answers.
      */
-    public static function relative(?DateTimeInterface $at): string
+    public static function relative(?\DateTimeInterface $at): string
     {
         if ($at === null) {
             return self::ABSENT;
@@ -164,7 +163,7 @@ final class Dates
      * Machine readable UTC, for `<time datetime>` and ICS exports. Returns an
      * empty string when absent so the attribute can simply be omitted.
      */
-    public static function isoUtc(?DateTimeInterface $at): string
+    public static function isoUtc(?\DateTimeInterface $at): string
     {
         return $at === null ? '' : self::formatter()->iso($at);
     }

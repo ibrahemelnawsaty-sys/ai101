@@ -94,11 +94,13 @@ final class ParticipantController extends Controller
         /** @var Collection<int, Enrollment> $enrollments */
         $enrollments = $page->getCollection();
 
-        $userIds = $enrollments
+        // array_values, not Collection::values(): the latter is a list at run
+        // time but all() still types as array<int, string>, and both
+        // attendanceRates() and submittedCounts() ask for a list.
+        $userIds = array_values($enrollments
             ->map(static fn (Enrollment $row): string => (string) $row->getAttribute('user_id'))
             ->filter(static fn (string $id): bool => $id !== '')
-            ->values()
-            ->all();
+            ->all());
 
         // One rate query for the whole page, from the service that owns the
         // counting rule (art. 6, art. 19).
@@ -233,7 +235,7 @@ final class ParticipantController extends Controller
                 Assignment::query()
                     ->where('cohort_id', $cohort->getKey())
                     ->where('status', AssignmentStatus::Published->value)
-                    ->select('id')
+                    ->select('id'),
             )
             ->selectRaw('user_id, COUNT(DISTINCT assignment_id) as aggregate')
             ->groupBy('user_id')
@@ -345,7 +347,7 @@ final class ParticipantController extends Controller
                 (string) ($enrollment->user?->profile?->getAttribute('full_name_ar') ?? ''),
                 (string) ($enrollment->user?->getAttribute('email') ?? ''),
                 (string) ($enrollment->user?->profile?->getAttribute('phone') ?? ''),
-                (string) ($enrollment->getAttribute('status')?->value ?? ''),
+                (string) ($enrollment->getAttribute('status')->value ?? ''),
             ])
             ->values()
             ->all();

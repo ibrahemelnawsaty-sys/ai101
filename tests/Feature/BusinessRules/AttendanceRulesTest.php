@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->cohort = makeCohort();
     $this->participant = makeParticipant($this->cohort);
     $this->trainer = makeTrainer($this->cohort);
@@ -47,7 +47,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-01: نافذة تسجيل الحضور تبدأ قبل بداية الجلسة بثلاثين دقيقة', function () {
+it('BR-01: نافذة تسجيل الحضور تبدأ قبل بداية الجلسة بثلاثين دقيقة', function (): void {
     freezeAt($this->start->subMinutes(30)->subSecond());
 
     assertRefused($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
@@ -61,7 +61,7 @@ it('BR-01: نافذة تسجيل الحضور تبدأ قبل بداية الج�
     expect(Attendance::query()->count())->toBe(1);
 });
 
-it('BR-01: نافذة تسجيل الحضور تنتهي بانتهاء الجلسة', function () {
+it('BR-01: نافذة تسجيل الحضور تنتهي بانتهاء الجلسة', function (): void {
     freezeAt($this->end->addSecond());
 
     assertRefused($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
@@ -69,7 +69,7 @@ it('BR-01: نافذة تسجيل الحضور تنتهي بانتهاء الجل
     expect(Attendance::query()->whereNotNull('check_in_at')->count())->toBe(0);
 });
 
-it('BR-01: التسجيل عند نهاية الجلسة بالضبط ما زال مقبولًا', function () {
+it('BR-01: التسجيل عند نهاية الجلسة بالضبط ما زال مقبولًا', function (): void {
     freezeAt($this->end);
 
     assertAccepted($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
@@ -83,7 +83,7 @@ it('BR-01: التسجيل عند نهاية الجلسة بالضبط ما زا�
 |--------------------------------------------------------------------------
 */
 
-it('BR-02: التسجيل خلال أول ثلاثين دقيقة من بداية الجلسة يُحتسب حاضرًا', function () {
+it('BR-02: التسجيل خلال أول ثلاثين دقيقة من بداية الجلسة يُحتسب حاضرًا', function (): void {
     freezeAt($this->start->addMinutes(30));
 
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
@@ -94,7 +94,7 @@ it('BR-02: التسجيل خلال أول ثلاثين دقيقة من بداي�
         ->and($attendance->check_in_at->equalTo($this->start->addMinutes(30)))->toBeTrue();
 });
 
-it('BR-03: التسجيل بعد أول ثلاثين دقيقة يُقبل ويُحتسب متأخرًا', function () {
+it('BR-03: التسجيل بعد أول ثلاثين دقيقة يُقبل ويُحتسب متأخرًا', function (): void {
     freezeAt($this->start->addMinutes(30)->addSecond());
 
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
@@ -110,7 +110,7 @@ it('BR-03: التسجيل بعد أول ثلاثين دقيقة يُقبل وي�
 |--------------------------------------------------------------------------
 */
 
-it('BR-04: نافذة الانصراف تبدأ قبل نهاية الجلسة بثلاثين دقيقة وتنتهي بعدها بثلاثين', function () {
+it('BR-04: نافذة الانصراف تبدأ قبل نهاية الجلسة بثلاثين دقيقة وتنتهي بعدها بثلاثين', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
@@ -123,7 +123,7 @@ it('BR-04: نافذة الانصراف تبدأ قبل نهاية الجلسة �
     expect(Attendance::query()->sole()->check_out_at)->not->toBeNull();
 });
 
-it('BR-04: الانصراف بعد نهاية الجلسة بثلاثين دقيقة وثانية مرفوض', function () {
+it('BR-04: الانصراف بعد نهاية الجلسة بثلاثين دقيقة وثانية مرفوض', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
@@ -140,7 +140,7 @@ it('BR-04: الانصراف بعد نهاية الجلسة بثلاثين دقي
 |--------------------------------------------------------------------------
 */
 
-it('BR-05: لا يمكن تسجيل الانصراف دون تسجيل حضور سابق للجلسة نفسها', function () {
+it('BR-05: لا يمكن تسجيل الانصراف دون تسجيل حضور سابق للجلسة نفسها', function (): void {
     freezeAt($this->end);
 
     assertRefused($this->actingAs($this->participant)->post(route('attendance.checkOut', $this->session)));
@@ -148,7 +148,7 @@ it('BR-05: لا يمكن تسجيل الانصراف دون تسجيل حضور 
     expect(Attendance::query()->count())->toBe(0);
 });
 
-it('BR-05: حضور في جلسة أخرى لا يبيح الانصراف من هذه الجلسة', function () {
+it('BR-05: حضور في جلسة أخرى لا يبيح الانصراف من هذه الجلسة', function (): void {
     $other = sessionInCohort($this->cohort, $this->start->subDay(), $this->end->subDay());
     makeAttendance($other, $this->participant, 'present');
 
@@ -165,7 +165,7 @@ it('BR-05: حضور في جلسة أخرى لا يبيح الانصراف من �
 |--------------------------------------------------------------------------
 */
 
-it('BR-06: التسجيل المكرر للجلسة الواحدة مرفوض', function () {
+it('BR-06: التسجيل المكرر للجلسة الواحدة مرفوض', function (): void {
     freezeAt($this->start);
 
     assertAccepted($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
@@ -174,7 +174,7 @@ it('BR-06: التسجيل المكرر للجلسة الواحدة مرفوض', 
     expect(Attendance::query()->where('session_id', $this->session->id)->count())->toBe(1);
 });
 
-it('BR-06: طلبان متزامنان ينتجان سطرًا واحدًا — القيد الفريد في قاعدة البيانات هو الحارس', function () {
+it('BR-06: طلبان متزامنان ينتجان سطرًا واحدًا — القيد الفريد في قاعدة البيانات هو الحارس', function (): void {
     // The application-level guard is bypassed on purpose: two raw inserts race for
     // the same (session_id, user_id). Only the database can settle this, and if the
     // unique index is missing, this test is the one that notices.
@@ -201,7 +201,7 @@ it('BR-06: طلبان متزامنان ينتجان سطرًا واحدًا — 
         ->count())->toBe(1);
 });
 
-it('BR-06: القيد الفريد لا يمنع متدربين مختلفين في الجلسة نفسها', function () {
+it('BR-06: القيد الفريد لا يمنع متدربين مختلفين في الجلسة نفسها', function (): void {
     $other = makeParticipant($this->cohort);
 
     makeAttendance($this->session, $this->participant, 'present');
@@ -216,7 +216,7 @@ it('BR-06: القيد الفريد لا يمنع متدربين مختلفين �
 |--------------------------------------------------------------------------
 */
 
-it('BR-07: وقت العميل المرسل في الطلب يُتجاهل تمامًا', function () {
+it('BR-07: وقت العميل المرسل في الطلب يُتجاهل تمامًا', function (): void {
     // The browser claims it is inside the window; the server clock says otherwise.
     freezeAt($this->start->subHours(5));
 
@@ -229,7 +229,7 @@ it('BR-07: وقت العميل المرسل في الطلب يُتجاهل تم�
     expect(Attendance::query()->count())->toBe(0);
 });
 
-it('BR-07: وقت التسجيل المخزَّن هو وقت الخادم لا القيمة المرسلة', function () {
+it('BR-07: وقت التسجيل المخزَّن هو وقت الخادم لا القيمة المرسلة', function (): void {
     freezeAt($this->start->addMinutes(5));
 
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session), [
@@ -239,7 +239,7 @@ it('BR-07: وقت التسجيل المخزَّن هو وقت الخادم لا 
     expect(Attendance::query()->sole()->check_in_at->equalTo($this->start->addMinutes(5)))->toBeTrue();
 });
 
-it('BR-07: يُخزَّن عنوان IP ومعرّف المتصفح مع كل تسجيل', function () {
+it('BR-07: يُخزَّن عنوان IP ومعرّف المتصفح مع كل تسجيل', function (): void {
     freezeAt($this->start);
 
     $this->actingAs($this->participant)
@@ -252,7 +252,7 @@ it('BR-07: يُخزَّن عنوان IP ومعرّف المتصفح مع كل ت
         ->and($attendance->user_agent)->toContain('AtharTestAgent');
 });
 
-it('BR-07: الجلسة الملغاة ترفض التسجيل في كل لحظات النافذة', function () {
+it('BR-07: الجلسة الملغاة ترفض التسجيل في كل لحظات النافذة', function (): void {
     $cancelled = sessionInCohort($this->cohort, $this->start, $this->end, [
         'status' => 'cancelled',
         'cancellation_reason' => 'trainer-unavailable',
@@ -272,7 +272,7 @@ it('BR-07: الجلسة الملغاة ترفض التسجيل في كل لحظ�
 |--------------------------------------------------------------------------
 */
 
-it('BR-08: من لم يسجّل حضورًا حتى انتهاء الجلسة يُحوَّل آليًا إلى غائب', function () {
+it('BR-08: من لم يسجّل حضورًا حتى انتهاء الجلسة يُحوَّل آليًا إلى غائب', function (): void {
     freezeAt($this->end->addMinutes(31));
 
     Artisan::call('attendance:reconcile');
@@ -286,7 +286,7 @@ it('BR-08: من لم يسجّل حضورًا حتى انتهاء الجلسة ي
         ->and($attendance->check_in_at)->toBeNull();
 });
 
-it('BR-08: لا يُحوَّل أحد إلى غائب قبل انتهاء الجلسة', function () {
+it('BR-08: لا يُحوَّل أحد إلى غائب قبل انتهاء الجلسة', function (): void {
     freezeAt($this->end->subSecond());
 
     Artisan::call('attendance:reconcile');
@@ -294,7 +294,7 @@ it('BR-08: لا يُحوَّل أحد إلى غائب قبل انتهاء الج
     expect(Attendance::query()->where('session_id', $this->session->id)->count())->toBe(0);
 });
 
-it('BR-09: من سجّل حضورًا ولم يسجّل انصرافًا يُحوَّل إلى حضور غير مكتمل', function () {
+it('BR-09: من سجّل حضورًا ولم يسجّل انصرافًا يُحوَّل إلى حضور غير مكتمل', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
@@ -308,7 +308,7 @@ it('BR-09: من سجّل حضورًا ولم يسجّل انصرافًا يُح�
         ->and($attendance->check_out_at)->toBeNull();
 });
 
-it('BR-09: المدرب يُنبَّه بالحضور غير المكتمل', function () {
+it('BR-09: المدرب يُنبَّه بالحضور غير المكتمل', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
@@ -318,7 +318,7 @@ it('BR-09: المدرب يُنبَّه بالحضور غير المكتمل', fu
     expect(Notification::query()->where('user_id', $this->trainer->id)->count())->toBeGreaterThan(0);
 });
 
-it('BR-09: من سجّل حضوره وانصرافه لا تتغير حالته عند المعالجة الآلية', function () {
+it('BR-09: من سجّل حضوره وانصرافه لا تتغير حالته عند المعالجة الآلية', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
@@ -331,7 +331,7 @@ it('BR-09: من سجّل حضوره وانصرافه لا تتغير حالته 
     expect(Attendance::query()->sole()->status->value)->toBe('present');
 });
 
-it('BR-08, BR-09: المعالجة الآلية قابلة لإعادة التشغيل بلا أثر جانبي', function () {
+it('BR-08, BR-09: المعالجة الآلية قابلة لإعادة التشغيل بلا أثر جانبي', function (): void {
     freezeAt($this->end->addMinutes(31));
 
     Artisan::call('attendance:reconcile');
@@ -346,7 +346,7 @@ it('BR-08, BR-09: المعالجة الآلية قابلة لإعادة التش
 |--------------------------------------------------------------------------
 */
 
-it('BR-10: التعديل اليدوي على الحضور بلا سبب مكتوب مرفوض', function () {
+it('BR-10: التعديل اليدوي على الحضور بلا سبب مكتوب مرفوض', function (): void {
     $attendance = makeAttendance($this->session, $this->participant, 'absent');
     freezeAt($this->end->addHour());
 
@@ -357,7 +357,7 @@ it('BR-10: التعديل اليدوي على الحضور بلا سبب مكت�
     expect($attendance->fresh()->status->value)->toBe('absent');
 });
 
-it('BR-10: سبب التعديل أقل من عشرة أحرف مرفوض', function () {
+it('BR-10: سبب التعديل أقل من عشرة أحرف مرفوض', function (): void {
     $attendance = makeAttendance($this->session, $this->participant, 'absent');
     freezeAt($this->end->addHour());
 
@@ -369,7 +369,7 @@ it('BR-10: سبب التعديل أقل من عشرة أحرف مرفوض', func
     expect($attendance->fresh()->status->value)->toBe('absent');
 });
 
-it('BR-10: التعديل اليدوي بسبب مكتوب يُقبل ويُسجَّل في سجل التدقيق', function () {
+it('BR-10: التعديل اليدوي بسبب مكتوب يُقبل ويُسجَّل في سجل التدقيق', function (): void {
     $attendance = makeAttendance($this->session, $this->participant, 'absent');
     freezeAt($this->end->addHour());
 
@@ -392,7 +392,7 @@ it('BR-10: التعديل اليدوي بسبب مكتوب يُقبل ويُسج
         ->count())->toBe(1);
 });
 
-it('BR-10: سجل التدقيق يحفظ القيمة قبل التعديل وبعده', function () {
+it('BR-10: سجل التدقيق يحفظ القيمة قبل التعديل وبعده', function (): void {
     $attendance = makeAttendance($this->session, $this->participant, 'absent');
     freezeAt($this->end->addHour());
 

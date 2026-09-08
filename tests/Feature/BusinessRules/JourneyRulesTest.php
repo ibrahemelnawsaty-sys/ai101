@@ -12,18 +12,18 @@ declare(strict_types=1);
 use App\Models\UserJourneyState;
 use Illuminate\Support\Facades\Route;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-20 12:00:00'));
 
     $this->cohort = makeCohort();
     $this->participant = makeParticipant($this->cohort);
     $this->weeks = collect(range(1, 4))->mapWithKeys(
-        fn (int $index): array => [$index => makeWeek($this->cohort, $index)]
+        fn (int $index): array => [$index => makeWeek($this->cohort, $index)],
     );
     $this->steps = seedJourneySteps($this->cohort, $this->weeks->all());
 });
 
-it('BR-20: خطوة التسجيل تظهر مكتملة لمتدرب جديد دون أي إجراء منه', function () {
+it('BR-20: خطوة التسجيل تظهر مكتملة لمتدرب جديد دون أي إجراء منه', function (): void {
     $this->actingAs($this->participant)
         ->get(route('participant.journey'))
         ->assertOk();
@@ -31,7 +31,7 @@ it('BR-20: خطوة التسجيل تظهر مكتملة لمتدرب جديد �
     expect(journeyEvaluator()->isStepComplete($this->participant, $this->steps[1]))->toBeTrue();
 });
 
-it('BR-20: عدد الخطوات المعروضة عشر خطوات بالترتيب', function () {
+it('BR-20: عدد الخطوات المعروضة عشر خطوات بالترتيب', function (): void {
     $this->actingAs($this->participant)
         ->get(route('participant.journey'))
         ->assertOk();
@@ -41,7 +41,7 @@ it('BR-20: عدد الخطوات المعروضة عشر خطوات بالترت
     expect($statuses)->toHaveCount(10);
 });
 
-it('BR-21: تسجيل حضور اللقاء التعريفي يحدّث خطوة الرحلة تلقائيًا', function () {
+it('BR-21: تسجيل حضور اللقاء التعريفي يحدّث خطوة الرحلة تلقائيًا', function (): void {
     $start = riyadhAt('2026-10-05 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['type' => 'intro']);
 
@@ -53,7 +53,7 @@ it('BR-21: تسجيل حضور اللقاء التعريفي يحدّث خطوة
     expect(journeyEvaluator()->isStepComplete($this->participant->fresh(), $this->steps[2]))->toBeTrue();
 });
 
-it('BR-21: تسليم مهمة يحدّث خطوة الأسبوع المرتبطة تلقائيًا', function () {
+it('BR-21: تسليم مهمة يحدّث خطوة الأسبوع المرتبطة تلقائيًا', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1, $week->id);
 
@@ -77,7 +77,7 @@ it('BR-21: تسليم مهمة يحدّث خطوة الأسبوع المرتبط
     expect(journeyEvaluator()->isStepComplete($this->participant->fresh(), $this->steps[3]))->toBeTrue();
 });
 
-it('BR-21: لا يوجد أي مسار يسمح للمتدرب بتعليم خطوة كمكتملة يدويًا', function () {
+it('BR-21: لا يوجد أي مسار يسمح للمتدرب بتعليم خطوة كمكتملة يدويًا', function (): void {
     // A whitelist check: no named route in the whole application exposes a
     // journey-step write to a participant. The absence of a feature is a
     // requirement here, so it is asserted rather than assumed.
@@ -90,7 +90,7 @@ it('BR-21: لا يوجد أي مسار يسمح للمتدرب بتعليم خط
     expect($writable)->toBeEmpty();
 });
 
-it('BR-21: حالة الخطوة لا تُقبل من الطلب حتى لو أُرسلت صراحة', function () {
+it('BR-21: حالة الخطوة لا تُقبل من الطلب حتى لو أُرسلت صراحة', function (): void {
     $step = $this->steps[9];
 
     $response = $this->actingAs($this->participant)->get(route('participant.journey', [
@@ -106,7 +106,7 @@ it('BR-21: حالة الخطوة لا تُقبل من الطلب حتى لو أ�
             ->count())->toBe(0);
 });
 
-it('BR-21: خطوات متدرب لا تتأثر ببيانات متدرب آخر في الدفعة نفسها', function () {
+it('BR-21: خطوات متدرب لا تتأثر ببيانات متدرب آخر في الدفعة نفسها', function (): void {
     $other = makeParticipant($this->cohort);
     sessionAttendedBy($this->cohort, $other, 'intro', 'present');
 
@@ -114,7 +114,7 @@ it('BR-21: خطوات متدرب لا تتأثر ببيانات متدرب آخ�
         ->and(journeyEvaluator()->isStepComplete($this->participant, $this->steps[2]))->toBeFalse();
 });
 
-it('BR-21: شريط التقدم يعرض نسبة محسوبة من الخطوات لا قيمة مخزّنة يدويًا', function () {
+it('BR-21: شريط التقدم يعرض نسبة محسوبة من الخطوات لا قيمة مخزّنة يدويًا', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'intro', 'present');
 
     foreach ($this->weeks as $index => $week) {

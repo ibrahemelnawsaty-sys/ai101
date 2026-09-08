@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +21,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class JourneyStep extends Model
 {
+    /** @use HasFactory<\Database\Factories\JourneyStepFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -58,11 +60,17 @@ class JourneyStep extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return HasMany<UserJourneyState, $this>
+     */
     public function states(): HasMany
     {
         return $this->hasMany(UserJourneyState::class);
@@ -87,7 +95,7 @@ class JourneyStep extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

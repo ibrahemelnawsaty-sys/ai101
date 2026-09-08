@@ -22,8 +22,13 @@ use Illuminate\Http\Response;
 trait ExportsCsv
 {
     /**
+     * The row container is only ever walked with foreach, so it does not have
+     * to be a list: callers build it with `->values()->all()`, which is a list
+     * at run time but types as `array<int, ...>`. Each row still has to be a
+     * list<string>, because csvRow() maps over it positionally.
+     *
      * @param  list<string>  $headings
-     * @param  list<list<string>>  $rows
+     * @param  array<int, list<string>>  $rows
      */
     protected function csvResponse(array $headings, array $rows, string $filename): Response
     {
@@ -46,7 +51,7 @@ trait ExportsCsv
     {
         return implode(',', array_map(
             static fn (string $cell): string => '"'.str_replace('"', '""', $cell).'"',
-            $cells
+            $cells,
         ));
     }
 }

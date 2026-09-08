@@ -12,8 +12,8 @@ use App\View\Composers\PublicLayoutComposer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View as ViewFacade;
 use Illuminate\Support\ServiceProvider;
@@ -121,7 +121,7 @@ final class AppServiceProvider extends ServiceProvider
 
         // The public shell prints meta tags and a Schema.org graph it must not
         // assemble itself (art. 13, rule 13). The composer hands it the values.
-        ViewFacade::composer('layouts.public', [PublicLayoutComposer::class, 'compose']);
+        ViewFacade::composer('layouts.public', PublicLayoutComposer::class);
 
         // BR-36: APP_URL is the source of every absolute link - certificate
         // verification URLs, digital-card QR targets and e-mail buttons all

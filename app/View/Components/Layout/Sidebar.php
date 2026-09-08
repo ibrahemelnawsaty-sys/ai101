@@ -55,9 +55,14 @@ final class Sidebar extends UiComponent
     public bool $drawer;
 
     /**
-     * @param  array<int, array<string, mixed>>|null  $groups
-     * @param  array<string, int>  $badges
-     * @param  array<int, array<string, mixed>>  $cohorts
+     * The props stay `mixed`: Blade passes a template attribute through
+     * untouched, so `drawer="1"` arrives as a string and a controller may hand
+     * over a ragged array. rows() and counts() are the boundary that turns what
+     * came in into the shapes the rail declares.
+     *
+     * `$groups` keeps its own is_array guard: anything that is not an array
+     * means "use the participant rail", which is not the same answer as an
+     * empty rail.
      */
     public function __construct(
         mixed $groups = null,
@@ -66,10 +71,10 @@ final class Sidebar extends UiComponent
         mixed $cohorts = [],
         mixed $drawer = false,
     ) {
-        $this->badges = is_array($badges) ? $badges : [];
-        $this->cohorts = is_array($cohorts) ? array_values($cohorts) : [];
+        $this->badges = self::counts($badges);
+        $this->cohorts = self::rows($cohorts);
         $this->drawer = (bool) $drawer;
-        $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? $groups : $this->participantGroups());
+        $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? self::rows($groups) : $this->participantGroups());
 
         $this->tag = $this->drawer ? 'div' : 'aside';
         $this->wrapperClass = $this->drawer ? 'drawer__panel' : 'side';

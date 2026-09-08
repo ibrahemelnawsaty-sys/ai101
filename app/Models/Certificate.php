@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use DateTimeInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,11 +18,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A revoked certificate keeps its row: the public verify page reports it as
  * revoked rather than as missing.
  *
+ * Every column type is derived from the migration and the casts() map by the
+ * static analyser itself; only `revoked_at` is spelled out, because a
+ * `datetime` cast is asymmetric — it reads back as CarbonImmutable but accepts
+ * any DateTimeInterface or date string on write, which is what markRevokedAt()
+ * hands it.
+ *
+ * @property-read CarbonImmutable|null $revoked_at
+ * @property-write \DateTimeInterface|string|null $revoked_at
+ *
  * @see BR-25, BR-26 · PRD §7.6, §9.17 · PROJECT-CONTRACT §4, §8
  */
 class Certificate extends Model
 {
+    /** @use HasFactory<\Database\Factories\CertificateFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'certificates';
@@ -73,7 +84,7 @@ class Certificate extends Model
     /**
      * Revocation instant is supplied by the caller from Clock::now() (BR-07).
      */
-    public function markRevokedAt(DateTimeInterface $at): bool
+    public function markRevokedAt(\DateTimeInterface $at): bool
     {
         $this->revoked_at = $at;
 
@@ -82,16 +93,25 @@ class Certificate extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');

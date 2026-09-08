@@ -132,6 +132,11 @@ final class CohortScope
     /**
      * Narrow a query to the cohorts this account may read. Accepts an Eloquent
      * builder or a raw query builder.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  EloquentBuilder<TModel>|QueryBuilder  $query
+     * @return EloquentBuilder<TModel>|QueryBuilder
      */
     public function apply(EloquentBuilder|QueryBuilder $query, User $user, string $column = 'cohort_id'): EloquentBuilder|QueryBuilder
     {
@@ -150,6 +155,11 @@ final class CohortScope
 
     /**
      * Narrow a query to the cohorts this account may change.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  EloquentBuilder<TModel>|QueryBuilder  $query
+     * @return EloquentBuilder<TModel>|QueryBuilder
      */
     public function applyWritable(EloquentBuilder|QueryBuilder $query, User $user, string $column = 'cohort_id'): EloquentBuilder|QueryBuilder
     {

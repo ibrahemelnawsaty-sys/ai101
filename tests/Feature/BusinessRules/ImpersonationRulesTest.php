@@ -33,7 +33,7 @@ use App\Models\Resource;
 use App\Models\Submission;
 use App\Models\ThreadParticipant;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -55,7 +55,7 @@ function startPreview(object $test, object $admin, object $target)
 |--------------------------------------------------------------------------
 */
 
-it('BR-33: المدير يستطيع معاينة حساب المتدرب ويرى لوحته', function () {
+it('BR-33: المدير يستطيع معاينة حساب المتدرب ويرى لوحته', function (): void {
     assertAccepted(startPreview($this, $this->admin, $this->target));
 
     $this->get(route('dashboard'))->assertOk();
@@ -67,7 +67,7 @@ it('BR-33: المدير يستطيع معاينة حساب المتدرب وير
         ->count())->toBe(1);
 });
 
-it('BR-33: تسجيل الحضور أثناء المعاينة مرفوض على الخادم', function () {
+it('BR-33: تسجيل الحضور أثناء المعاينة مرفوض على الخادم', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3));
 
@@ -79,7 +79,7 @@ it('BR-33: تسجيل الحضور أثناء المعاينة مرفوض على
     expect(Attendance::query()->count())->toBe(0);
 });
 
-it('BR-33: تسليم مهمة أثناء المعاينة مرفوض على الخادم', function () {
+it('BR-33: تسليم مهمة أثناء المعاينة مرفوض على الخادم', function (): void {
     $assignment = makeAssignment($this->cohort, ['due_at' => riyadhAt('2026-10-25 23:59:00')]);
 
     startPreview($this, $this->admin, $this->target);
@@ -91,7 +91,7 @@ it('BR-33: تسليم مهمة أثناء المعاينة مرفوض على ا�
     expect(Submission::query()->count())->toBe(0);
 });
 
-it('BR-33: إرسال رسالة أثناء المعاينة مرفوض على الخادم', function () {
+it('BR-33: إرسال رسالة أثناء المعاينة مرفوض على الخادم', function (): void {
     $thread = makeThreadFor($this->target, $this->cohort);
 
     startPreview($this, $this->admin, $this->target);
@@ -103,7 +103,7 @@ it('BR-33: إرسال رسالة أثناء المعاينة مرفوض على �
     expect(Message::query()->count())->toBe(0);
 });
 
-it('BR-33: تعديل الملف الشخصي أثناء المعاينة مرفوض على الخادم', function () {
+it('BR-33: تعديل الملف الشخصي أثناء المعاينة مرفوض على الخادم', function (): void {
     Profile::factory()->create([
         'user_id' => $this->target->id,
         'phone' => '0500000001',
@@ -118,7 +118,7 @@ it('BR-33: تعديل الملف الشخصي أثناء المعاينة مرف
         ->toBe('CANARY-ORIGINAL-CITY');
 });
 
-it('BR-33: انتهاء المعاينة تلقائيًا بعد ثلاثين دقيقة', function () {
+it('BR-33: انتهاء المعاينة تلقائيًا بعد ثلاثين دقيقة', function (): void {
     startPreview($this, $this->admin, $this->target);
 
     freezeAt(riyadhAt('2026-10-12 12:29:59'));
@@ -132,7 +132,7 @@ it('BR-33: انتهاء المعاينة تلقائيًا بعد ثلاثين د
     $this->assertAuthenticatedAs($this->admin->fresh());
 });
 
-it('BR-33: إنهاء المعاينة يعيد المدير إلى جلسته دون تسجيل دخول جديد', function () {
+it('BR-33: إنهاء المعاينة يعيد المدير إلى جلسته دون تسجيل دخول جديد', function (): void {
     startPreview($this, $this->admin, $this->target);
 
     assertAccepted($this->delete(route('admin.impersonation.stop')));
@@ -148,7 +148,7 @@ it('BR-33: إنهاء المعاينة يعيد المدير إلى جلسته �
 |--------------------------------------------------------------------------
 */
 
-it('BR-34: المعاينة لا تغيّر آخر تسجيل دخول للمستخدم', function () {
+it('BR-34: المعاينة لا تغيّر آخر تسجيل دخول للمستخدم', function (): void {
     $before = $this->target->fresh()->last_login_at;
 
     startPreview($this, $this->admin, $this->target);
@@ -158,7 +158,7 @@ it('BR-34: المعاينة لا تغيّر آخر تسجيل دخول للمس�
     expect($this->target->fresh()->last_login_at?->equalTo($before))->toBeTrue();
 });
 
-it('BR-34: المعاينة لا تعلّم إشعارات المستخدم كمقروءة', function () {
+it('BR-34: المعاينة لا تعلّم إشعارات المستخدم كمقروءة', function (): void {
     $notification = Notification::factory()->create([
         'user_id' => $this->target->id,
         'is_read' => false,
@@ -174,7 +174,7 @@ it('BR-34: المعاينة لا تعلّم إشعارات المستخدم كم
         ->and($fresh->read_at)->toBeNull();
 });
 
-it('BR-34: المعاينة لا تحدّث حالة قراءة الرسائل', function () {
+it('BR-34: المعاينة لا تحدّث حالة قراءة الرسائل', function (): void {
     $thread = makeThreadFor($this->target, $this->cohort);
 
     Message::factory()->create([
@@ -194,7 +194,7 @@ it('BR-34: المعاينة لا تحدّث حالة قراءة الرسائل',
         ->last_read_at)->toBeNull();
 });
 
-it('BR-34: المعاينة لا تزيد عدّاد تحميل الموارد', function () {
+it('BR-34: المعاينة لا تزيد عدّاد تحميل الموارد', function (): void {
     $resource = Resource::factory()->create([
         'cohort_id' => $this->cohort->id,
         'type' => 'file',
@@ -207,7 +207,7 @@ it('BR-34: المعاينة لا تزيد عدّاد تحميل الموارد',
     expect((int) $resource->fresh()->download_count)->toBe(7);
 });
 
-it('BR-34: التصفح العادي خارج المعاينة يترك أثره كالمعتاد', function () {
+it('BR-34: التصفح العادي خارج المعاينة يترك أثره كالمعتاد', function (): void {
     // The control case. Without it, a broken feature would pass BR-34 trivially.
     //
     // The trace it watches is the resource download counter, the mirror of the
@@ -235,7 +235,7 @@ it('BR-34: التصفح العادي خارج المعاينة يترك أثره
 |--------------------------------------------------------------------------
 */
 
-it('BR-35: لا يمكن معاينة حساب مدير نظام آخر', function () {
+it('BR-35: لا يمكن معاينة حساب مدير نظام آخر', function (): void {
     $otherAdmin = makeAdmin();
 
     startPreview($this, $this->admin, $otherAdmin)->assertForbidden();
@@ -244,13 +244,13 @@ it('BR-35: لا يمكن معاينة حساب مدير نظام آخر', functi
     $this->assertAuthenticatedAs($this->admin->fresh());
 });
 
-it('BR-35: المدير لا يعاين نفسه', function () {
+it('BR-35: المدير لا يعاين نفسه', function (): void {
     startPreview($this, $this->admin, $this->admin)->assertForbidden();
 
     expect(ImpersonationSession::query()->count())->toBe(0);
 });
 
-it('BR-35: المدرب لا يملك صلاحية المعاينة إطلاقًا', function () {
+it('BR-35: المدرب لا يملك صلاحية المعاينة إطلاقًا', function (): void {
     $trainer = makeTrainer($this->cohort);
 
     $this->actingAs($trainer)
@@ -260,7 +260,7 @@ it('BR-35: المدرب لا يملك صلاحية المعاينة إطلاقً
     expect(ImpersonationSession::query()->count())->toBe(0);
 });
 
-it('BR-35: بداية المعاينة ونهايتها تُسجَّلان في سجل التدقيق مع عنوان IP', function () {
+it('BR-35: بداية المعاينة ونهايتها تُسجَّلان في سجل التدقيق مع عنوان IP', function (): void {
     startPreview($this, $this->admin, $this->target);
     $this->delete(route('admin.impersonation.stop'));
 
@@ -274,7 +274,7 @@ it('BR-35: بداية المعاينة ونهايتها تُسجَّلان في 
         ->and($logs->pluck('action')->unique())->toHaveCount(2);
 });
 
-it('BR-35: مدة جلسة المعاينة المسجَّلة لا تتجاوز ثلاثين دقيقة', function () {
+it('BR-35: مدة جلسة المعاينة المسجَّلة لا تتجاوز ثلاثين دقيقة', function (): void {
     startPreview($this, $this->admin, $this->target);
 
     freezeAt(riyadhAt('2026-10-12 13:30:00'));

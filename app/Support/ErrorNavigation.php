@@ -34,7 +34,11 @@ final class ErrorNavigation
      * Suggested links per status code, as [route name, translation key] pairs.
      * 'user' is used when a session is present, 'guest' otherwise.
      *
-     * @var array<string, array{user: list<array{0: string, 1: string}>, guest: list<array{0: string, 1: string}>}>
+     * The keys are written as strings for readability, but PHP stores a decimal
+     * numeric string key as an integer, so the lookup below converts the code
+     * before asking for a row.
+     *
+     * @var array<int, array{user: list<array{0: string, 1: string}>, guest: list<array{0: string, 1: string}>}>
      */
     private const SUGGESTIONS = [
         '401' => [
@@ -160,7 +164,7 @@ final class ErrorNavigation
      */
     public static function suggestions(string $code): array
     {
-        $table = self::SUGGESTIONS[$code] ?? ['user' => [], 'guest' => []];
+        $table = self::SUGGESTIONS[(int) $code] ?? ['user' => [], 'guest' => []];
         $candidates = self::hasSession() ? $table['user'] : $table['guest'];
 
         $links = [];

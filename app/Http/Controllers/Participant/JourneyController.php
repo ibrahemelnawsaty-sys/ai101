@@ -143,7 +143,7 @@ final class JourneyController extends Controller
                         $this->window->startsAt($session),
                         $status,
                     );
-                }
+                },
             )->values());
     }
 
@@ -177,7 +177,7 @@ final class JourneyController extends Controller
                     Present::toDateTime($item->getAttribute('due_at')),
                     $submitted->has((string) $item->getKey()),
                     $now,
-                )
+                ),
             )->values());
     }
 

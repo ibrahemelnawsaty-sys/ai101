@@ -26,7 +26,6 @@ use App\Services\Time\Clock;
 use App\Support\AttendanceCounting;
 use App\Support\ScreenState;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -102,11 +101,11 @@ final class ScheduleController extends Controller
                 $this->window,
                 $now,
                 (string) $session->getKey() === $nextSessionId,
-            )
+            ),
         );
 
         $byWeek = $sessions->groupBy(
-            static fn (Session $session): string => (string) ($session->getAttribute('week_id') ?? '')
+            static fn (Session $session): string => (string) ($session->getAttribute('week_id') ?? ''),
         );
 
         $minimumRate = $this->eligibility->minAttendanceRate($cohort);
@@ -124,7 +123,10 @@ final class ScheduleController extends Controller
                 ->all();
 
             $weekSessions = $presented->filter(
-                static fn (SessionPresenter $item): bool => in_array($item->id, $ids, true)
+                // $item['id'] and $item->id are the same ViewModel read (both
+                // land in __get and still throw for an unpublished key), but
+                // only the ArrayAccess form has a declared type.
+                static fn (SessionPresenter $item): bool => in_array((string) $item['id'], $ids, true),
             )->values();
 
             return WeekPresenter::from(
@@ -149,7 +151,7 @@ final class ScheduleController extends Controller
             $groups->push(WeekPresenter::unscheduled(
                 (string) __('schedule.unscheduled_group'),
                 $presented->filter(
-                    static fn (SessionPresenter $item): bool => in_array($item->id, $looseIds, true)
+                    static fn (SessionPresenter $item): bool => in_array((string) $item['id'], $looseIds, true),
                 )->values(),
                 new Collection,
                 $this->countAttended($looseIds, $attended),
@@ -177,9 +179,9 @@ final class ScheduleController extends Controller
     /**
      * The calendar strip and its seven day columns (PRD §9.8.1).
      *
-     * @param  \Illuminate\Support\Collection<int, Week>  $weeks
-     * @param  \Illuminate\Support\Collection<int, Session>  $sessions
-     * @param  \Illuminate\Support\Collection<int, SessionPresenter>  $presented
+     * @param  Collection<int, Week>  $weeks
+     * @param  Collection<int, Session>  $sessions
+     * @param  Collection<int, SessionPresenter>  $presented
      */
     private function calendarPresenter(
         Collection $weeks,
@@ -194,7 +196,7 @@ final class ScheduleController extends Controller
 
         $requested = $request->query('week');
         $current = $weeks->first(
-            static fn (Week $week): bool => (string) $week->getKey() === (is_string($requested) ? $requested : '')
+            static fn (Week $week): bool => (string) $week->getKey() === (is_string($requested) ? $requested : ''),
         );
 
         if (! $current instanceof Week) {
@@ -203,8 +205,8 @@ final class ScheduleController extends Controller
                 $from = $week->getAttribute('start_date');
                 $to = $week->getAttribute('end_date');
 
-                return $from instanceof DateTimeInterface
-                    && $to instanceof DateTimeInterface
+                return $from instanceof \DateTimeInterface
+                    && $to instanceof \DateTimeInterface
                     && Clock::toRiyadh($from)->toDateString() <= $today
                     && Clock::toRiyadh($to)->toDateString() >= $today;
             }) ?? $weeks->first();
@@ -220,7 +222,7 @@ final class ScheduleController extends Controller
 
         $days = new Collection;
 
-        if ($from instanceof DateTimeInterface && $to instanceof DateTimeInterface) {
+        if ($from instanceof \DateTimeInterface && $to instanceof \DateTimeInterface) {
             $cursor = Clock::toRiyadh($from)->startOfDay();
             $last = Clock::toRiyadh($to)->startOfDay();
 
@@ -231,7 +233,7 @@ final class ScheduleController extends Controller
                     ->filter(static function (Session $session) use ($date): bool {
                         $on = $session->getAttribute('date');
 
-                        return $on instanceof DateTimeInterface
+                        return $on instanceof \DateTimeInterface
                             && Clock::toRiyadh($on)->toDateString() === $date;
                     })
                     ->pluck('id')
@@ -242,7 +244,7 @@ final class ScheduleController extends Controller
                     $cursor,
                     $now,
                     $presented->filter(
-                        static fn (SessionPresenter $item): bool => in_array($item->id, $ids, true)
+                        static fn (SessionPresenter $item): bool => in_array((string) $item['id'], $ids, true),
                     )->values(),
                 ));
 
@@ -252,8 +254,8 @@ final class ScheduleController extends Controller
 
         return CalendarPresenter::from(
             $days,
-            $from instanceof DateTimeInterface ? $from : null,
-            $to instanceof DateTimeInterface ? $to : null,
+            $from instanceof \DateTimeInterface ? $from : null,
+            $to instanceof \DateTimeInterface ? $to : null,
             $previous instanceof Week ? (string) $previous->getKey() : null,
             $next instanceof Week ? (string) $next->getKey() : null,
         );
@@ -264,7 +266,7 @@ final class ScheduleController extends Controller
      * cohort actually contains. An unknown id simply selects nothing, which
      * neither leaks its existence nor errors (BR-22).
      *
-     * @param  \Illuminate\Support\Collection<int, Session>  $sessions
+     * @param  Collection<int, Session>  $sessions
      */
     private function selectedSession(Collection $sessions, Request $request): ?SelectedSessionPresenter
     {
@@ -275,7 +277,7 @@ final class ScheduleController extends Controller
         }
 
         $session = $sessions->first(
-            static fn (Session $item): bool => (string) $item->getKey() === $requested
+            static fn (Session $item): bool => (string) $item->getKey() === $requested,
         );
 
         if (! $session instanceof Session) {
@@ -290,13 +292,13 @@ final class ScheduleController extends Controller
             $session,
             $this->window,
             (new Collection($resources))->map(
-                static fn (Resource $resource): ResourcePresenter => ResourcePresenter::from($resource, Clock::now())
+                static fn (Resource $resource): ResourcePresenter => ResourcePresenter::from($resource, Clock::now()),
             )->values(),
         );
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Session>  $sessions
+     * @param  Collection<int, Session>  $sessions
      */
     private function nextSessionId(Collection $sessions, CarbonImmutable $now): ?string
     {
@@ -316,7 +318,7 @@ final class ScheduleController extends Controller
     /**
      * This participant's own attendance rows, and only their own (BR-22).
      *
-     * @param  \Illuminate\Support\Collection<int, Session>  $sessions
+     * @param  Collection<int, Session>  $sessions
      * @return array<string, true>
      */
     private function attendedSessionIds(User $user, Collection $sessions): array
@@ -358,7 +360,7 @@ final class ScheduleController extends Controller
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Week>  $weeks
+     * @param  Collection<int, Week>  $weeks
      * @return list<array{value: string, label: string}>
      */
     private function weekOptions(Collection $weeks): array
@@ -395,10 +397,20 @@ final class ScheduleController extends Controller
 
         $cohort = $this->activeCohort($user);
 
+        $now = Clock::now();
+
+        // The print sheet reads the same presenters as the screen, so the two can
+        // never disagree about a status label or a time (CONSTITUTION art. 6).
+        $presented = $cohort === null
+            ? new Collection
+            : $this->sessions((string) $cohort->getKey())->map(
+                fn (Session $session): SessionPresenter => SessionPresenter::from($session, $this->window, $now),
+            )->values();
+
         return view('participant.schedule-print', [
-            'serverNow' => Clock::now(),
-            'cohort' => $cohort,
-            'sessions' => $cohort === null ? collect() : $this->sessions((string) $cohort->getKey()),
+            'serverNow' => $now,
+            'cohortName' => $cohort?->getAttribute('name'),
+            'sessions' => $presented,
         ]);
     }
 
@@ -429,7 +441,7 @@ final class ScheduleController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Session>
+     * @return Collection<int, Session>
      */
     private function sessions(string $cohortId)
     {
@@ -480,9 +492,9 @@ final class ScheduleController extends Controller
     private function escape(string $value): string
     {
         return str_replace(
-            ["\\", ';', ',', "\r\n", "\n"],
+            ['\\', ';', ',', "\r\n", "\n"],
             ['\\\\', '\;', '\,', '\n', '\n'],
-            $value
+            $value,
         );
     }
 }

@@ -68,7 +68,7 @@ return new class extends Migration
         if ($this->supportsCheckConstraints()) {
             DB::statement(
                 'ALTER TABLE `sessions` ADD CONSTRAINT `sessions_time_order_check` '
-                .'CHECK (`end_time` > `start_time`)'
+                .'CHECK (`end_time` > `start_time`)',
             );
         }
     }

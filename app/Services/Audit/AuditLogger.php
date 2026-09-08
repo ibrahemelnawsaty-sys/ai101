@@ -104,7 +104,7 @@ final class AuditLogger
         ?array $after = null,
         ?string $actorId = null,
     ): AuditLog {
-        $log = new AuditLog();
+        $log = new AuditLog;
 
         $log->setAttribute('actor_id', $actorId ?? $this->currentActorId());
         $log->setAttribute('action', $action);
@@ -329,8 +329,9 @@ final class AuditLogger
             return null;
         }
 
-        $request = App::make('request');
-
-        return $request instanceof Request ? $request : null;
+        // The container's `request` binding is registered by the framework and
+        // always resolves to Illuminate\Http\Request; the two guards above are
+        // what make this method's ?Request contract true.
+        return App::make('request');
     }
 }

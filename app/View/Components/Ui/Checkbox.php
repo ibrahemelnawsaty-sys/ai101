@@ -76,8 +76,11 @@ final class Checkbox extends UiComponent
 
         $this->items = is_array($options) ? array_values($options) : null;
 
+        // array_values keeps the promise the property makes: a checked-value bag
+        // arriving keyed (old('roles') from a keyed input) would otherwise stay
+        // keyed and no longer be the list the template iterates.
         $this->selected = is_array($value)
-            ? array_map(static fn (mixed $v): string => (string) $v, $value)
+            ? array_values(array_map(static fn (mixed $v): string => (string) $v, $value))
             : ($value === null ? [] : [(string) $value]);
 
         $this->errorId = $this->message !== null ? $this->baseId.'-error' : null;

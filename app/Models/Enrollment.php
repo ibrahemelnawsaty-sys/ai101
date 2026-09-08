@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Enrollment extends Model
 {
+    /** @use HasFactory<\Database\Factories\EnrollmentFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'enrollments';
@@ -54,11 +56,17 @@ class Enrollment extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

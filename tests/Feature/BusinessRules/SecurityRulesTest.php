@@ -21,13 +21,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
     $this->participant = withPassword(
         makeParticipant($this->cohort, ['email' => 'existing.trainee@example.test']),
-        'Correct-Horse-9'
+        'Correct-Horse-9',
     );
 });
 
@@ -37,7 +37,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-27: كل عملية حساسة تُسجَّل في سجل التدقيق', function () {
+it('BR-27: كل عملية حساسة تُسجَّل في سجل التدقيق', function (): void {
     $trainer = makeTrainer($this->cohort);
     $assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $submission = makeSubmission($assignment, $this->participant);
@@ -56,7 +56,7 @@ it('BR-27: كل عملية حساسة تُسجَّل في سجل التدقيق'
         ->and($log->created_at)->not->toBeNull();
 });
 
-it('BR-27, BR-28: رفض السياسة نفسه يُسجَّل في سجل التدقيق مع عنوان IP', function () {
+it('BR-27, BR-28: رفض السياسة نفسه يُسجَّل في سجل التدقيق مع عنوان IP', function (): void {
     // PRD §4.3: «أي محاولة وصول غير مصرح بها تُرجع خطأ 403 وتُسجَّل في سجل التدقيق
     // مع عنوان IP» — 403 AND a row, not one or the other.
     //
@@ -82,7 +82,7 @@ it('BR-27, BR-28: رفض السياسة نفسه يُسجَّل في سجل ال
         ->and($log->entity_id)->toBe($foreignAssignment->id);
 });
 
-it('BR-27: سجل التدقيق غير قابل للتعديل من طبقة النموذج', function () {
+it('BR-27: سجل التدقيق غير قابل للتعديل من طبقة النموذج', function (): void {
     $log = AuditLog::factory()->create([
         'actor_id' => $this->participant->id,
         'action' => 'test.action',
@@ -103,7 +103,7 @@ it('BR-27: سجل التدقيق غير قابل للتعديل من طبقة ا
     expect(AuditLog::query()->find($log->id)->action)->toBe('test.action');
 });
 
-it('BR-27: سجل التدقيق غير قابل للحذف من طبقة النموذج', function () {
+it('BR-27: سجل التدقيق غير قابل للحذف من طبقة النموذج', function (): void {
     $log = AuditLog::factory()->create([
         'actor_id' => $this->participant->id,
         'action' => 'test.action',
@@ -120,7 +120,7 @@ it('BR-27: سجل التدقيق غير قابل للحذف من طبقة الن
     expect(AuditLog::query()->count())->toBe(1);
 });
 
-it('BR-27: لا يوجد أي مسار في التطبيق يعدّل سجل التدقيق أو يحذفه', function () {
+it('BR-27: لا يوجد أي مسار في التطبيق يعدّل سجل التدقيق أو يحذفه', function (): void {
     $writable = collect(app('router')->getRoutes()->getRoutes())
         ->filter(fn ($route): bool => (bool) array_intersect($route->methods(), ['POST', 'PUT', 'PATCH', 'DELETE']))
         ->map(fn ($route): string => (string) $route->uri())
@@ -136,7 +136,7 @@ it('BR-27: لا يوجد أي مسار في التطبيق يعدّل سجل ا�
 |--------------------------------------------------------------------------
 */
 
-it('BR-29: تغيير كلمة المرور يُبطل كل الجلسات النشطة الأخرى', function () {
+it('BR-29: تغيير كلمة المرور يُبطل كل الجلسات النشطة الأخرى', function (): void {
     // phpunit.xml runs the suite on the `array` session driver, and
     // InvalidatesOtherSessions deliberately does nothing unless the driver is
     // `database` — there are no rows to delete otherwise. This one rule is about the
@@ -170,7 +170,7 @@ it('BR-29: تغيير كلمة المرور يُبطل كل الجلسات ال�
     expect(DB::table('user_sessions')->where('id', $otherSessionId)->count())->toBe(0);
 });
 
-it('BR-29: كلمة المرور الجديدة تحل محل القديمة ولا تبقى القديمة صالحة', function () {
+it('BR-29: كلمة المرور الجديدة تحل محل القديمة ولا تبقى القديمة صالحة', function (): void {
     $before = $this->participant->fresh()->getAuthPassword();
 
     $this->actingAs($this->participant)->put(route('profile.password'), [
@@ -201,7 +201,7 @@ it('BR-29: كلمة المرور الجديدة تحل محل القديمة و�
     $this->assertGuest();
 });
 
-it('BR-29: تغيير كلمة المرور بكلمة مرور حالية خاطئة مرفوض', function () {
+it('BR-29: تغيير كلمة المرور بكلمة مرور حالية خاطئة مرفوض', function (): void {
     $before = $this->participant->fresh()->getAuthPassword();
 
     assertRefused($this->actingAs($this->participant)->put(route('profile.password'), [
@@ -219,7 +219,7 @@ it('BR-29: تغيير كلمة المرور بكلمة مرور حالية خا�
 |--------------------------------------------------------------------------
 */
 
-it('BR-30: رسالة الدخول واحدة سواء كان البريد موجودًا أو غير موجود', function () {
+it('BR-30: رسالة الدخول واحدة سواء كان البريد موجودًا أو غير موجود', function (): void {
     $attempt = function (string $email): array {
         $this->flushSession();
 
@@ -247,7 +247,7 @@ it('BR-30: رسالة الدخول واحدة سواء كان البريد مو�
     $this->assertGuest();
 });
 
-it('BR-30: رسالة استعادة كلمة المرور واحدة سواء كان البريد موجودًا أو غير موجود', function () {
+it('BR-30: رسالة استعادة كلمة المرور واحدة سواء كان البريد موجودًا أو غير موجود', function (): void {
     $request = function (string $email): array {
         $this->flushSession();
 
@@ -268,7 +268,7 @@ it('BR-30: رسالة استعادة كلمة المرور واحدة سواء �
         ->and($missing['errors'])->toBe($existing['errors']);
 });
 
-it('BR-30: صفحة استعادة كلمة المرور تُخرج النص نفسه في الحالتين', function () {
+it('BR-30: صفحة استعادة كلمة المرور تُخرج النص نفسه في الحالتين', function (): void {
     $this->flushSession();
     $existing = $this->post(route('password.request'), ['email' => 'existing.trainee@example.test'])
         ->getContent();
@@ -280,7 +280,7 @@ it('BR-30: صفحة استعادة كلمة المرور تُخرج النص ن�
     expect($missing)->toBe($existing);
 });
 
-it('BR-30: قاعدة البيانات ترفض تكرار البريد فلا يمكن اكتشافه بمحاولة التسجيل', function () {
+it('BR-30: قاعدة البيانات ترفض تكرار البريد فلا يمكن اكتشافه بمحاولة التسجيل', function (): void {
     // PRD §7.7 requires the unique index to exist in the schema, not only in a rule.
     expect(fn () => makeParticipant($this->cohort, ['email' => 'existing.trainee@example.test']))
         ->toThrow(QueryException::class);

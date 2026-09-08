@@ -22,7 +22,7 @@ final class FaqEntryRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->can('update', new LandingSetting());
+        return $user !== null && $user->can('update', new LandingSetting);
     }
 
     protected function prepareForValidation(): void

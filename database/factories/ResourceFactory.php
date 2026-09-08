@@ -18,11 +18,11 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Resource>
+ * @extends Factory<resource>
  */
 final class ResourceFactory extends Factory
 {
-    /** @var class-string<Resource> */
+    /** @var class-string<resource> */
     protected $model = Resource::class;
 
     /**

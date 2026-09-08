@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Participant;
 
 use App\Enums\SessionStatus;
-use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Cohort;
@@ -182,7 +182,7 @@ final class DashboardController extends Controller
      * signed-in participant's own submissions eager-loaded — never anyone
      * else's (BR-22).
      *
-     * @return \Illuminate\Support\Collection<int, Assignment>
+     * @return Collection<int, Assignment>
      */
     private function dueAssignments(User $user, string $cohortId, CarbonImmutable $now)
     {
@@ -201,7 +201,7 @@ final class DashboardController extends Controller
      * not the three most recent - because the recorded-so-far denominator is a sum
      * over every recorded mark (BR-11).
      *
-     * @return \Illuminate\Support\Collection<int, Evaluation>
+     * @return Collection<int, Evaluation>
      */
     private function evaluations(User $user, Cohort $cohort)
     {
@@ -212,7 +212,7 @@ final class DashboardController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Evaluation>
+     * @return Collection<int, Evaluation>
      */
     private function latestGrades(User $user)
     {
@@ -225,7 +225,7 @@ final class DashboardController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Resource>
+     * @return Collection<int, resource>
      */
     private function newResources(string $cohortId)
     {
@@ -237,7 +237,7 @@ final class DashboardController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Notification>
+     * @return Collection<int, Notification>
      */
     private function announcements(User $user)
     {

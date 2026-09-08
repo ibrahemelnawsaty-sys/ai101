@@ -24,6 +24,8 @@ return [
 
     'session_count' => '{0} no sessions|{1} one session|[2,*] :count sessions',
     'current_week' => 'Current week',
+    'print_title' => 'Programme timetable',
+    'printed_at' => 'Printed :at, Riyadh time',
     'table_caption' => 'Sessions of :week',
     'unscheduled_group' => 'Sessions outside the weeks',
     'session_details' => 'Session details',

@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\EvaluationEntity;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -24,7 +24,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Evaluation extends Model
 {
+    /** @use HasFactory<\Database\Factories\EvaluationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -66,11 +68,17 @@ class Evaluation extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function evaluator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'evaluated_by');
@@ -78,6 +86,8 @@ class Evaluation extends Model
 
     /**
      * Valid only when `entity_type` is `assignment`.
+     *
+     * @return BelongsTo<Submission, $this>
      */
     public function submission(): BelongsTo
     {
@@ -86,6 +96,8 @@ class Evaluation extends Model
 
     /**
      * Valid only when `entity_type` is `final_project`.
+     *
+     * @return BelongsTo<ProjectSubmission, $this>
      */
     public function projectSubmission(): BelongsTo
     {
@@ -94,13 +106,17 @@ class Evaluation extends Model
 
     /**
      * The evaluated artefact, resolved from `entity_type`.
+     *
+     * The match is exhaustive over EvaluationEntity on purpose: a `default` arm
+     * would be unreachable today and would silently return null the day a third
+     * kind of evaluated artefact is added, instead of failing the build here.
+     * Either relation still resolves to null when the row it points at is gone.
      */
     public function subject(): Submission|ProjectSubmission|null
     {
         return match ($this->entity_type) {
             EvaluationEntity::Assignment => $this->submission,
             EvaluationEntity::FinalProject => $this->projectSubmission,
-            default => null,
         };
     }
 
@@ -136,7 +152,7 @@ class Evaluation extends Model
 
         return $query->whereIn(
             'user_id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 
@@ -157,7 +173,7 @@ class Evaluation extends Model
                 'user_id',
                 Enrollment::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('user_id')
+                    ->select('user_id'),
             );
         }
 

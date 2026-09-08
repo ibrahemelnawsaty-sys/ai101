@@ -33,7 +33,7 @@ final class LandingController extends Controller
 
     public function edit(): View
     {
-        $this->authorize('update', new LandingSetting());
+        $this->authorize('update', new LandingSetting);
 
         $cohort = $this->currentCohort();
 
@@ -112,7 +112,7 @@ final class LandingController extends Controller
             static fn (array $row): array => ($row['key'] ?? null) === $entry
                 ? array_merge($row, $request->entry())
                 : $row,
-            $this->entries($setting)
+            $this->entries($setting),
         );
 
         $this->persistFaq($setting, $cohort->getKey(), $entries, 'landing.faq_updated');
@@ -122,7 +122,7 @@ final class LandingController extends Controller
 
     public function destroyFaq(string $entry): RedirectResponse
     {
-        $this->authorize('update', new LandingSetting());
+        $this->authorize('update', new LandingSetting);
 
         $cohort = $this->currentCohort();
 
@@ -134,7 +134,7 @@ final class LandingController extends Controller
 
         $entries = array_values(array_filter(
             $this->entries($setting),
-            static fn (array $row): bool => ($row['key'] ?? null) !== $entry
+            static fn (array $row): bool => ($row['key'] ?? null) !== $entry,
         ));
 
         $this->persistFaq($setting, $cohort->getKey(), $entries, 'landing.faq_removed');

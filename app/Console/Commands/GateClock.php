@@ -115,7 +115,7 @@ final class GateClock extends GateCommand
                 self::CLOCK_FILE,
                 0,
                 'CLOCK-MISSING',
-                'the single time source does not exist yet; every other file is still checked'
+                'the single time source does not exist yet; every other file is still checked',
             );
         }
 
@@ -174,7 +174,7 @@ final class GateClock extends GateCommand
                                 $verdict['severity'],
                                 $token['line'],
                                 'CLOCK-NEW',
-                                'new '.$class.'() '.$verdict['reason'].'; the only time source is Clock::now()'
+                                'new '.$class.'() '.$verdict['reason'].'; the only time source is Clock::now()',
                             );
                         }
                     }
@@ -193,7 +193,7 @@ final class GateClock extends GateCommand
                         self::FAIL,
                         $token['line'],
                         'CLOCK-TEST-NOW',
-                        $class.'::setTestNow() is forbidden even in tests; use Clock::fake()'
+                        $class.'::setTestNow() is forbidden even in tests; use Clock::fake()',
                     );
 
                     continue;
@@ -204,7 +204,7 @@ final class GateClock extends GateCommand
                         self::FAIL,
                         $token['line'],
                         'CLOCK-STATIC',
-                        $class.'::'.$method.'() is forbidden; use Clock::now() / Clock::riyadh()'
+                        $class.'::'.$method.'() is forbidden; use Clock::now() / Clock::riyadh()',
                     );
                 }
 
@@ -250,7 +250,7 @@ final class GateClock extends GateCommand
                         $verdict['severity'],
                         $token['line'],
                         'CLOCK-NEW',
-                        $name.'() '.$verdict['reason'].'; the only time source is Clock::now()'
+                        $name.'() '.$verdict['reason'].'; the only time source is Clock::now()',
                     );
                 }
 
@@ -261,7 +261,7 @@ final class GateClock extends GateCommand
                 self::FAIL,
                 $token['line'],
                 'CLOCK-GLOBAL',
-                $name.'() reads the machine clock; use Clock::now()'
+                $name.'() reads the machine clock; use Clock::now()',
             );
         }
 
@@ -347,7 +347,7 @@ final class GateClock extends GateCommand
                     self::FAIL,
                     self::lineAt($code, $match['offset']),
                     $rule,
-                    self::excerpt($match['text']).' - the only time source is Clock'
+                    self::excerpt($match['text']).' - the only time source is Clock',
                 );
             }
         }
@@ -361,7 +361,7 @@ final class GateClock extends GateCommand
                 self::FAIL,
                 self::lineAt($withStrings, $match['offset']),
                 'CLOCK-NEW',
-                self::excerpt($match['text']).' captures the machine clock - the only time source is Clock'
+                self::excerpt($match['text']).' captures the machine clock - the only time source is Clock',
             );
         }
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Notification extends Model
 {
+    /** @use HasFactory<\Database\Factories\NotificationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'notifications';
@@ -59,6 +61,9 @@ class Notification extends Model
         'is_read' => false,
     ];
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -94,7 +99,7 @@ class Notification extends Model
 
         return $query->whereIn(
             'user_id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 

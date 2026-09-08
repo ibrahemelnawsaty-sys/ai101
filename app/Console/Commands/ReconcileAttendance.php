@@ -8,7 +8,6 @@ use App\Services\Attendance\AttendanceReconciler;
 use App\Services\Time\Clock;
 use App\Services\Time\RiyadhFormatter;
 use Illuminate\Console\Command;
-use Throwable;
 
 /**
  * The every-fifteen-minutes attendance reconciliation (PRD §9.9.5).
@@ -55,7 +54,7 @@ final class ReconcileAttendance extends Command
 
         try {
             $result = $reconciler->run($startedAt, $days);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             // Fail safe (art. 7): a partial pass must not be reported as a
             // success, and the next cron tick retries from the same data.
             $this->components->error('Attendance reconciliation failed: '.$e->getMessage());
@@ -91,13 +90,21 @@ final class ReconcileAttendance extends Command
      */
     private function lookbackOption(): int|null|false
     {
-        $option = $this->option('days');
+        // Read straight off the input, whose contract is mixed. A console run
+        // binds a string, but Artisan::call('attendance:reconcile',
+        // ['--days' => 7]) binds the integer itself, and both are a valid
+        // look-back rather than the integer being rejected as invalid.
+        $option = $this->input->getOption('days');
 
         if ($option === null || $option === '') {
             return null;
         }
 
-        if (! is_string($option) || preg_match('/^[1-9][0-9]*$/', $option) !== 1) {
+        if (! is_string($option) && ! is_int($option)) {
+            return false;
+        }
+
+        if (preg_match('/^[1-9][0-9]*$/', (string) $option) !== 1) {
             return false;
         }
 

@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 
 /**
  * One message in a thread (PRD §9.13).
@@ -34,7 +33,7 @@ final class MessagePresenter extends ViewModel
         Message $message,
         User $viewer,
         CarbonImmutable $now,
-        ?DateTimeInterface $otherPartyReadAt,
+        ?\DateTimeInterface $otherPartyReadAt,
     ): self {
         $senderId = (string) $message->getAttribute('sender_id');
         $isMine = $senderId === (string) $viewer->getKey();
@@ -79,7 +78,7 @@ final class MessagePresenter extends ViewModel
         return (string) $sender->getAttribute('email');
     }
 
-    private static function isRead(?DateTimeInterface $sentAt, ?DateTimeInterface $readAt): bool
+    private static function isRead(?\DateTimeInterface $sentAt, ?\DateTimeInterface $readAt): bool
     {
         if ($sentAt === null || $readAt === null) {
             return false;
@@ -88,7 +87,7 @@ final class MessagePresenter extends ViewModel
         return $readAt->getTimestamp() >= $sentAt->getTimestamp();
     }
 
-    private static function withinEditWindow(?DateTimeInterface $sentAt, CarbonImmutable $now): bool
+    private static function withinEditWindow(?\DateTimeInterface $sentAt, CarbonImmutable $now): bool
     {
         if ($sentAt === null) {
             return false;

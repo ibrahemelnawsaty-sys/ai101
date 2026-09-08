@@ -92,7 +92,6 @@ return [
     'error_title' => 'Your grades could not be shown',
     'error_body' => 'Something went wrong while fetching them. Try again shortly — your grades are safe and unaffected.',
 
-
     'state' => [
         'graded' => 'Graded',
         'pending' => 'Under review',

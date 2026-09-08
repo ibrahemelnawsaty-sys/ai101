@@ -63,7 +63,7 @@ final class UserProfile extends ViewModel
             'email' => (string) $subject->getAttribute('email'),
             'phone' => self::text($profile, 'phone'),
 
-            'role' => $role?->value ?? '',
+            'role' => $role->value ?? '',
             'roleLabel' => $role?->label() ?? '—',
             'roleVariant' => self::roleVariantOf($role),
             'statusLabel' => $status?->label() ?? '—',
@@ -84,10 +84,10 @@ final class UserProfile extends ViewModel
             'canBePreviewed' => $gate->allows('preview', $subject),
 
             'enrollments' => $enrollments->map(
-                static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row)
+                static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row),
             )->values(),
             'auditEntries' => $auditEntries->map(
-                static fn (AuditLog $row): AuditEntry => AuditEntry::from($row)
+                static fn (AuditLog $row): AuditEntry => AuditEntry::from($row),
             )->values(),
         ]);
     }

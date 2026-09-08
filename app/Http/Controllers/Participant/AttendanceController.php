@@ -192,7 +192,7 @@ final class AttendanceController extends Controller
         foreach ($rows as $row) {
             $lines[] = $this->csvRow([
                 (string) ($row->session?->getAttribute('title') ?? ''),
-                (string) ($row->getAttribute('status')?->value ?? ''),
+                (string) ($row->getAttribute('status')->value ?? ''),
             ]);
         }
 
@@ -218,7 +218,7 @@ final class AttendanceController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Attendance>
+     * @return Collection<int, Attendance>
      */
     private function log(User $user, string $cohortId)
     {

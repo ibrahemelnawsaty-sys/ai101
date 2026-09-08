@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\Gender;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Profile extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProfileFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'profiles';
@@ -110,10 +112,13 @@ class Profile extends Model
     {
         return implode(' ', array_filter(array_map(
             static fn (?string $part): string => trim((string) $part),
-            $parts
+            $parts,
         ), static fn (string $part): bool => $part !== ''));
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -138,7 +143,7 @@ class Profile extends Model
 
         return $query->whereIn(
             'user_id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 
@@ -159,7 +164,7 @@ class Profile extends Model
                 'user_id',
                 Enrollment::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('user_id')
+                    ->select('user_id'),
             );
         }
 

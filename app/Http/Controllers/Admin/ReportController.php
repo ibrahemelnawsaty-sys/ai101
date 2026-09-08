@@ -191,7 +191,7 @@ final class ReportController extends Controller
                 ->where('role_in_cohort', EnrollmentRole::Participant->value)
                 ->groupBy('cohort_id')
                 ->selectRaw('cohort_id, COUNT(*) as aggregate')
-                ->get()
+                ->get(),
         );
     }
 
@@ -208,7 +208,7 @@ final class ReportController extends Controller
                 ->where('status', EnrollmentStatus::Completed->value)
                 ->groupBy('cohort_id')
                 ->selectRaw('cohort_id, COUNT(*) as aggregate')
-                ->get()
+                ->get(),
         );
     }
 
@@ -271,7 +271,7 @@ final class ReportController extends Controller
                 ->where('status', AssignmentStatus::Published->value)
                 ->groupBy('cohort_id')
                 ->selectRaw('cohort_id, COUNT(*) as aggregate')
-                ->get()
+                ->get(),
         );
 
         $expected = [];
@@ -299,14 +299,21 @@ final class ReportController extends Controller
         $map = [];
 
         foreach ($rows as $row) {
-            $map[(string) $row->cohort_id] = (int) $row->aggregate;
+            $map[(string) $row->getAttribute('cohort_id')] = (int) $row->getAttribute('aggregate');
         }
 
         return $map;
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $rows
+     * Generic in the row model: callers hand in a concrete result set
+     * (Collection<int, Enrollment>, Collection<int, Assignment>), and
+     * Collection's generics are invariant, so a plain Model parameter would
+     * reject every one of them.
+     *
+     * @template TRow of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Collection<int, TRow>  $rows
      * @return array<string, int>
      */
     private function keyed(Collection $rows): array

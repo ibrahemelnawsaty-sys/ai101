@@ -29,6 +29,7 @@ use App\Services\Time\Clock;
 use App\Support\AttendanceCounting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -169,9 +170,9 @@ final class ReportController extends Controller
     /**
      * Active participants of the cohort.
      *
-     * @return Collection<int, User>
+     * @return EloquentCollection<int, User>
      */
-    private function participants(Cohort $cohort): Collection
+    private function participants(Cohort $cohort): EloquentCollection
     {
         return User::query()
             ->with('profile')
@@ -181,7 +182,7 @@ final class ReportController extends Controller
                     ->where('cohort_id', $cohort->getKey())
                     ->where('role_in_cohort', EnrollmentRole::Participant->value)
                     ->where('status', EnrollmentStatus::Active->value)
-                    ->select('user_id')
+                    ->select('user_id'),
             )
             ->limit(self::AT_RISK_LIMIT)
             ->get();
@@ -200,7 +201,7 @@ final class ReportController extends Controller
             ->withCount([
                 'attendances as attended_count' => static fn (Builder $query): Builder => $query->whereIn(
                     'status',
-                    AttendanceCounting::countedAsAttendedValues()
+                    AttendanceCounting::countedAsAttendedValues(),
                 ),
             ])
             ->orderBy('date')
@@ -216,9 +217,9 @@ final class ReportController extends Controller
     /**
      * Published assignments, in due order.
      *
-     * @return Collection<int, Assignment>
+     * @return EloquentCollection<int, Assignment>
      */
-    private function assignments(Cohort $cohort, ?string $weekId): Collection
+    private function assignments(Cohort $cohort, ?string $weekId): EloquentCollection
     {
         $query = Assignment::query()
             ->where('cohort_id', $cohort->getKey())
@@ -291,7 +292,7 @@ final class ReportController extends Controller
         // Expected hand-ins across the cohort, against what actually arrived.
         $expected = $count * $assignments->count();
         $received = $assignments->sum(
-            static fn (Assignment $item): int => $submitters[(string) $item->getKey()] ?? 0
+            static fn (Assignment $item): int => $submitters[(string) $item->getKey()] ?? 0,
         );
 
         return ReportSummary::of(

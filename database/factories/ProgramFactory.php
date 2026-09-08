@@ -27,7 +27,10 @@ final class ProgramFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake('en_US')->unique()->words(3, true);
+        // words() is declared as array|string whatever its $asText argument, so the
+        // three words are joined here rather than asked for as one string.
+        $words = fake('en_US')->unique()->words(3);
+        $name = is_array($words) ? implode(' ', $words) : $words;
 
         return [
             'name_ar' => fake('ar_SA')->company(),

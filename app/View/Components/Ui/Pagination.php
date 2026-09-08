@@ -60,7 +60,7 @@ final class Pagination extends UiComponent
             $this->window = $this->buildWindow();
         }
 
-        $this->total = $this->isLengthAware && method_exists($paginator, 'total') ? (int) $paginator->total() : null;
+        $this->total = $this->isLengthAware && is_object($paginator) && method_exists($paginator, 'total') ? (int) $paginator->total() : null;
         $this->firstItem = is_object($paginator) && method_exists($paginator, 'firstItem') ? $paginator->firstItem() : null;
         $this->lastItem = is_object($paginator) && method_exists($paginator, 'lastItem') ? $paginator->lastItem() : null;
     }

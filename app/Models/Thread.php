@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\ThreadType;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -26,7 +26,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class Thread extends Model
 {
+    /** @use HasFactory<\Database\Factories\ThreadFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'threads';
@@ -64,21 +66,33 @@ class Thread extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<ThreadParticipant, $this>
+     */
     public function participants(): HasMany
     {
         return $this->hasMany(ThreadParticipant::class);
     }
 
+    /**
+     * @return BelongsToMany<User, $this>
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'thread_participants')
@@ -86,11 +100,17 @@ class Thread extends Model
             ->withTimestamps();
     }
 
+    /**
+     * @return HasMany<Message, $this>
+     */
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
     }
 
+    /**
+     * @return HasOne<Message, $this>
+     */
     public function latestMessage(): HasOne
     {
         return $this->hasOne(Message::class)->latestOfMany('sent_at');
@@ -119,7 +139,7 @@ class Thread extends Model
 
         return $query->whereIn(
             'id',
-            ThreadParticipant::query()->where('user_id', $userId)->select('thread_id')
+            ThreadParticipant::query()->where('user_id', $userId)->select('thread_id'),
         );
     }
 
@@ -147,7 +167,7 @@ class Thread extends Model
 
         return $query->whereIn(
             'id',
-            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id')
+            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id'),
         );
     }
 }

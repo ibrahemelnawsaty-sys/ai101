@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use ArrayAccess;
-use BadMethodCallException;
 use Illuminate\Contracts\Support\Arrayable;
-use JsonSerializable;
-use OutOfBoundsException;
 
 /**
  * Base for every screen's read model.
@@ -30,9 +26,10 @@ use OutOfBoundsException;
  *     could compute `attendanceRate >= 75` itself would be a second place the
  *     rule lives, and the two would drift (CONSTITUTION art. 5, art. 6).
  *
- * @implements ArrayAccess<string, mixed>
+ * @implements \ArrayAccess<string, mixed>
+ * @implements Arrayable<string, mixed>
  */
-abstract class ViewModel implements Arrayable, ArrayAccess, JsonSerializable
+abstract class ViewModel implements \ArrayAccess, \JsonSerializable, Arrayable
 {
     /** @var array<string, mixed> */
     protected array $data = [];
@@ -68,7 +65,7 @@ abstract class ViewModel implements Arrayable, ArrayAccess, JsonSerializable
             return $this->{$accessor}();
         }
 
-        throw new OutOfBoundsException(sprintf(
+        throw new \OutOfBoundsException(sprintf(
             '%s does not publish [%s]. Published: %s.',
             static::class,
             $name,
@@ -88,7 +85,7 @@ abstract class ViewModel implements Arrayable, ArrayAccess, JsonSerializable
      */
     public function __set(string $name, mixed $value): void
     {
-        throw new BadMethodCallException(sprintf(
+        throw new \BadMethodCallException(sprintf(
             '%s is read-only; [%s] must be set by the presenter that built it.',
             static::class,
             $name,

@@ -53,7 +53,7 @@ final class NotificationController extends Controller
 
         return view('participant.notifications', [
             'notifications' => $notifications->through(
-                static fn (Notification $row): NotificationPresenter => NotificationPresenter::from($row)
+                static fn (Notification $row): NotificationPresenter => NotificationPresenter::from($row),
             ),
             'unreadCount' => $unread,
             'isImpersonating' => ImpersonationContext::isActive(),

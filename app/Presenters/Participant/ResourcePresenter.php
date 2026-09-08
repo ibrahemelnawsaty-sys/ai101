@@ -38,7 +38,7 @@ final class ResourcePresenter extends ViewModel
             'id' => (string) $resource->getKey(),
             'title' => (string) $resource->getAttribute('title'),
             'description' => Present::text($resource->getAttribute('description')),
-            'type' => $type?->value ?? ResourceType::File->value,
+            'type' => $type->value ?? ResourceType::File->value,
             'typeLabel' => $type?->label() ?? '',
             'typeIcon' => self::icon($type),
             'sizeLabel' => Present::fileSize($resource->getAttribute('size')),

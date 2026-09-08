@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,7 +19,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Message extends Model
 {
+    /** @use HasFactory<\Database\Factories\MessageFactory> */
     use HasFactory;
+
     use HasUuids;
     use SoftDeletes;
 
@@ -51,11 +53,17 @@ class Message extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Thread, $this>
+     */
     public function thread(): BelongsTo
     {
         return $this->belongsTo(Thread::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
@@ -82,7 +90,7 @@ class Message extends Model
 
         return $query->whereIn(
             'thread_id',
-            Thread::query()->where('cohort_id', $cohortId)->select('id')
+            Thread::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -100,7 +108,7 @@ class Message extends Model
 
         return $query->whereIn(
             'thread_id',
-            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id')
+            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id'),
         );
     }
 }

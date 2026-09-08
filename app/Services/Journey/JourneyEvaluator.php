@@ -256,7 +256,7 @@ final class JourneyEvaluator
             $row = $existing->get($stepId);
 
             if (! $row instanceof UserJourneyState) {
-                $fresh = new UserJourneyState();
+                $fresh = new UserJourneyState;
                 $fresh->setAttribute('user_id', $userId);
                 $fresh->setAttribute('journey_step_id', $stepId);
                 $fresh->setAttribute('status', $status);

@@ -52,8 +52,15 @@ final class Options
     /**
      * A list of models, labelled by a closure.
      *
-     * @param  iterable<int, Model>  $models
-     * @param  callable(Model): string  $label
+     * Generic in the model class: every caller hands in one concrete kind of
+     * model and a closure that names that same kind, so a
+     * `callable(Model): string` signature would reject every real call site
+     * (a closure taking Week is not a closure taking any Model).
+     *
+     * @template TModel of Model
+     *
+     * @param  iterable<int, TModel>  $models
+     * @param  callable(TModel): string  $label
      * @return list<array{value: string, label: string}>
      */
     public static function fromModels(iterable $models, callable $label): array

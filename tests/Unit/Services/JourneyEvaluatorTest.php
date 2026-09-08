@@ -25,13 +25,13 @@ use App\Models\Certificate;
 use App\Models\JourneyStep;
 use App\Models\UserJourneyState;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-11-20 12:00:00'));
 
     $this->cohort = makeCohort();
     $this->participant = makeParticipant($this->cohort);
     $this->weeks = collect(range(1, 4))->mapWithKeys(
-        fn (int $index): array => [$index => makeWeek($this->cohort, $index)]
+        fn (int $index): array => [$index => makeWeek($this->cohort, $index)],
     );
     $this->steps = seedJourneySteps($this->cohort, $this->weeks->all());
     $this->evaluator = journeyEvaluator();
@@ -43,12 +43,12 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-20: خطوة التسجيل مكتملة تلقائيًا لكل متدرب فور تفعيل حسابه والتحاقه', function () {
+it('BR-20: خطوة التسجيل مكتملة تلقائيًا لكل متدرب فور تفعيل حسابه والتحاقه', function (): void {
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[1]))->toBeTrue()
         ->and($this->evaluator->completedCount($this->participant, $this->cohort))->toBe(1);
 });
 
-it('BR-20: من لم يلتحق بالدفعة لا تكتمل له خطوة التسجيل', function () {
+it('BR-20: من لم يلتحق بالدفعة لا تكتمل له خطوة التسجيل', function (): void {
     $stranger = makeParticipant();
 
     expect($this->evaluator->isStepComplete($stranger, $this->steps[1]))->toBeFalse();
@@ -60,7 +60,7 @@ it('BR-20: من لم يلتحق بالدفعة لا تكتمل له خطوة ا�
 |--------------------------------------------------------------------------
 */
 
-it('حضور اللقاء التعريفي يكمل الخطوة الثانية', function (string $status, bool $complete) {
+it('حضور اللقاء التعريفي يكمل الخطوة الثانية', function (string $status, bool $complete): void {
     sessionAttendedBy($this->cohort, $this->participant, 'intro', $status);
 
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[2]))->toBe($complete);
@@ -71,7 +71,7 @@ it('حضور اللقاء التعريفي يكمل الخطوة الثانية'
     'غياب بعذر' => ['excused', false],
 ]);
 
-it('غياب اللقاء التعريفي كليًا يُبقي الخطوة الثانية مقفلة', function () {
+it('غياب اللقاء التعريفي كليًا يُبقي الخطوة الثانية مقفلة', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'intro', null);
 
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[2]))->toBeFalse();
@@ -83,7 +83,7 @@ it('غياب اللقاء التعريفي كليًا يُبقي الخطوة ا
 |--------------------------------------------------------------------------
 */
 
-it('خطوة الأسبوع لا تكتمل بالحضور وحده', function () {
+it('خطوة الأسبوع لا تكتمل بالحضور وحده', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1, $week->id);
     makeAssignment($this->cohort, ['week_id' => $week->id, 'is_mandatory' => true]);
@@ -91,7 +91,7 @@ it('خطوة الأسبوع لا تكتمل بالحضور وحده', function (
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[3]))->toBeFalse();
 });
 
-it('خطوة الأسبوع لا تكتمل بالتسليم وحده', function () {
+it('خطوة الأسبوع لا تكتمل بالتسليم وحده', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'absent', 1, $week->id);
     $assignment = makeAssignment($this->cohort, ['week_id' => $week->id, 'is_mandatory' => true]);
@@ -100,7 +100,7 @@ it('خطوة الأسبوع لا تكتمل بالتسليم وحده', function
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[3]))->toBeFalse();
 });
 
-it('خطوة الأسبوع تكتمل بالحضور والتسليم معًا', function () {
+it('خطوة الأسبوع تكتمل بالحضور والتسليم معًا', function (): void {
     $week = $this->weeks[1];
 
     foreach ([1, 2, 3] as $day) {
@@ -113,7 +113,7 @@ it('خطوة الأسبوع تكتمل بالحضور والتسليم معًا'
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[3]))->toBeTrue();
 });
 
-it('مهمة اختيارية غير مسلَّمة لا تمنع اكتمال خطوة الأسبوع', function () {
+it('مهمة اختيارية غير مسلَّمة لا تمنع اكتمال خطوة الأسبوع', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1, $week->id);
 
@@ -124,7 +124,7 @@ it('مهمة اختيارية غير مسلَّمة لا تمنع اكتمال �
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[3]))->toBeTrue();
 });
 
-it('غياب يوم واحد من الأسبوع يمنع اكتمال خطوته', function () {
+it('غياب يوم واحد من الأسبوع يمنع اكتمال خطوته', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1, $week->id);
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 2, $week->id);
@@ -136,7 +136,7 @@ it('غياب يوم واحد من الأسبوع يمنع اكتمال خطوت�
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[3]))->toBeFalse();
 });
 
-it('اكتمال الأسبوع الأول لا يكمل الأسبوع الثاني', function () {
+it('اكتمال الأسبوع الأول لا يكمل الأسبوع الثاني', function (): void {
     $week = $this->weeks[1];
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1, $week->id);
     $assignment = makeAssignment($this->cohort, ['week_id' => $week->id, 'is_mandatory' => true]);
@@ -155,7 +155,7 @@ it('اكتمال الأسبوع الأول لا يكمل الأسبوع الثا
 |--------------------------------------------------------------------------
 */
 
-it('تسليم المشروع النهائي يكمل الخطوة السابعة ولا يكمل الثامنة', function () {
+it('تسليم المشروع النهائي يكمل الخطوة السابعة ولا يكمل الثامنة', function (): void {
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
     makeProjectSubmission($project, $this->participant);
 
@@ -163,7 +163,7 @@ it('تسليم المشروع النهائي يكمل الخطوة السابع�
         ->and($this->evaluator->isStepComplete($this->participant, $this->steps[8]))->toBeFalse();
 });
 
-it('تقييم المشروع يكمل الخطوة الثامنة', function () {
+it('تقييم المشروع يكمل الخطوة الثامنة', function (): void {
     $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
     $submission = makeProjectSubmission($project, $this->participant);
     makeEvaluation('final_project', $submission->id, $this->participant, 45);
@@ -171,13 +171,13 @@ it('تقييم المشروع يكمل الخطوة الثامنة', function ()
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[8]))->toBeTrue();
 });
 
-it('حضور الحفل الختامي يكمل الخطوة التاسعة', function () {
+it('حضور الحفل الختامي يكمل الخطوة التاسعة', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'closing', 'present', 30);
 
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[9]))->toBeTrue();
 });
 
-it('إصدار الشهادة يكمل الخطوة العاشرة', function () {
+it('إصدار الشهادة يكمل الخطوة العاشرة', function (): void {
     expect($this->evaluator->isStepComplete($this->participant, $this->steps[10]))->toBeFalse();
 
     Certificate::factory()->create([
@@ -195,7 +195,7 @@ it('إصدار الشهادة يكمل الخطوة العاشرة', function ()
 |--------------------------------------------------------------------------
 */
 
-it('BR-21: الحالة المجمّعة تُظهر خطوة حالية واحدة فقط والباقي مكتمل أو مقفل', function () {
+it('BR-21: الحالة المجمّعة تُظهر خطوة حالية واحدة فقط والباقي مكتمل أو مقفل', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'intro', 'present');
 
     // Each week owns at least one unattended session, so no week step is vacuously
@@ -218,7 +218,7 @@ it('BR-21: الحالة المجمّعة تُظهر خطوة حالية واحد
         ->and($byIndex[10])->toBe('locked');
 });
 
-it('BR-21: نسبة التقدم تُحسب من الخطوات المكتملة فعلًا', function () {
+it('BR-21: نسبة التقدم تُحسب من الخطوات المكتملة فعلًا', function (): void {
     foreach ($this->weeks as $index => $week) {
         sessionAttendedBy($this->cohort, $this->participant, 'training', null, 10 + $index, $week->id);
     }
@@ -230,7 +230,7 @@ it('BR-21: نسبة التقدم تُحسب من الخطوات المكتملة
     expect($this->evaluator->progressPercent($this->participant->fresh(), $this->cohort))->toBe(20.0);
 });
 
-it('BR-21: المزامنة تكتب حالات الخطوات ولا تكرر السطر عند إعادة التشغيل', function () {
+it('BR-21: المزامنة تكتب حالات الخطوات ولا تكرر السطر عند إعادة التشغيل', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'intro', 'present');
 
     $this->evaluator->sync($this->participant, $this->cohort);
@@ -246,7 +246,7 @@ it('BR-21: المزامنة تكتب حالات الخطوات ولا تكرر �
     expect(is_string($second->status) ? $second->status : $second->status->value)->toBe('completed');
 });
 
-it('BR-22: بيانات متدرب لا تكمل خطوة متدرب آخر', function () {
+it('BR-22: بيانات متدرب لا تكمل خطوة متدرب آخر', function (): void {
     $other = makeParticipant($this->cohort);
 
     sessionAttendedBy($this->cohort, $other, 'intro', 'present');

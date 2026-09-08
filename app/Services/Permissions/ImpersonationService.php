@@ -118,7 +118,7 @@ final class ImpersonationService
         DB::transaction(function () use ($payload, $admin, $endedAt): void {
             $this->audit->record(
                 action: 'impersonation.stop',
-                entityType: (new ImpersonationSession())->getMorphClass(),
+                entityType: (new ImpersonationSession)->getMorphClass(),
                 entityId: $payload['record_id'],
                 before: null,
                 after: [

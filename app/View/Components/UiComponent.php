@@ -88,4 +88,63 @@ abstract class UiComponent extends Component
     {
         return view()->shared($key);
     }
+
+    /**
+     * A repeated-row prop as the templates iterate it.
+     *
+     * Blade hands a component whatever the template wrote, which is why these
+     * props are declared `mixed`: `items="x"` without a colon arrives as a
+     * string, and a controller may pass a Collection or a ragged array. A row
+     * that is not an array is dropped rather than half-rendered - fail safe in
+     * the chrome, never fail loud (art. 7).
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected static function rows(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+
+        foreach ($value as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $keyed = [];
+
+            foreach ($row as $key => $cell) {
+                $keyed[(string) $key] = $cell;
+            }
+
+            $rows[] = $keyed;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * A name-to-count prop, the shape the badge counters are read in.
+     *
+     * Same `mixed` boundary as rows(): a counter that is not a number is worth
+     * nothing to the badge, so it counts as zero instead of rendering garbage.
+     *
+     * @return array<string, int>
+     */
+    protected static function counts(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $counts = [];
+
+        foreach ($value as $key => $count) {
+            $counts[(string) $key] = is_numeric($count) ? (int) $count : 0;
+        }
+
+        return $counts;
+    }
 }

@@ -229,13 +229,15 @@ final class ScoreCalculator
             return [];
         }
 
-        return ProjectSubmission::query()
+        // array_values: Collection::all() types as array<int, string>, so the
+        // list<string> this method promises has to be restored explicitly.
+        return array_values(ProjectSubmission::query()
             ->where('final_project_id', $finalProjectId)
             ->where('user_id', $user->getKey())
             ->pluck('id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->values()
-            ->all();
+            ->all());
     }
 
     /**

@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use RuntimeException;
 
 /**
  * The append-only audit trail. Constitution Article 8 and BR-27: a row may be
@@ -27,7 +26,9 @@ use RuntimeException;
  */
 class AuditLog extends Model
 {
+    /** @use HasFactory<\Database\Factories\AuditLogFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const UPDATED_AT = null;
@@ -69,11 +70,11 @@ class AuditLog extends Model
     protected static function booted(): void
     {
         static::updating(static function (self $log): void {
-            throw new RuntimeException('audit_logs is append-only: an entry can never be updated.');
+            throw new \RuntimeException('audit_logs is append-only: an entry can never be updated.');
         });
 
         static::deleting(static function (self $log): void {
-            throw new RuntimeException('audit_logs is append-only: an entry can never be deleted.');
+            throw new \RuntimeException('audit_logs is append-only: an entry can never be deleted.');
         });
     }
 
@@ -84,7 +85,7 @@ class AuditLog extends Model
      */
     public function update(array $attributes = [], array $options = [])
     {
-        throw new RuntimeException('audit_logs is append-only: an entry can never be updated.');
+        throw new \RuntimeException('audit_logs is append-only: an entry can never be updated.');
     }
 
     /**
@@ -92,7 +93,7 @@ class AuditLog extends Model
      */
     public function delete()
     {
-        throw new RuntimeException('audit_logs is append-only: an entry can never be deleted.');
+        throw new \RuntimeException('audit_logs is append-only: an entry can never be deleted.');
     }
 
     /**
@@ -103,12 +104,15 @@ class AuditLog extends Model
     public function save(array $options = []): bool
     {
         if ($this->exists) {
-            throw new RuntimeException('audit_logs is append-only: an entry can never be updated.');
+            throw new \RuntimeException('audit_logs is append-only: an entry can never be updated.');
         }
 
         return parent::save($options);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
@@ -137,7 +141,7 @@ class AuditLog extends Model
 
         return $query->whereIn(
             'actor_id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 

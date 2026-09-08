@@ -81,7 +81,7 @@ final class ResourceController extends Controller
         return view('trainer.resources', array_merge($this->uploadLimits(), [
             'contextLabel' => $cohort->getAttribute('name'),
             'resources' => $page->through(
-                static fn (Resource $row): ResourceRow => ResourceRow::from($row)
+                static fn (Resource $row): ResourceRow => ResourceRow::from($row),
             ),
             'weekOptions' => Options::fromModels(
                 $weeks,
@@ -102,7 +102,7 @@ final class ResourceController extends Controller
     /**
      * The kit listing, bound to the scoped cohort and narrowed by the toolbar.
      *
-     * @return Builder<Resource>
+     * @return Builder<resource>
      */
     private function query(Request $request, Cohort $cohort): Builder
     {
@@ -218,7 +218,7 @@ final class ResourceController extends Controller
         $resource->forceFill(['deleted_at' => $stamp])->save();
 
         return back()->with('status', __(
-            $isArchived ? 'trainer.resources.restored' : 'trainer.resources.archived'
+            $isArchived ? 'trainer.resources.restored' : 'trainer.resources.archived',
         ));
     }
 }

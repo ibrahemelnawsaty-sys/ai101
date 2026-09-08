@@ -78,7 +78,7 @@ final class LiveController extends Controller
         $featured = $this->nextSession($cohortId, $now);
 
         $upcoming = $this->upcoming($cohortId, $now)->map(
-            fn (Session $session): SessionPresenter => SessionPresenter::from($session, $this->window, $now)
+            fn (Session $session): SessionPresenter => SessionPresenter::from($session, $this->window, $now),
         );
 
         $recordings = $this->recordings($cohortId)
@@ -102,7 +102,7 @@ final class LiveController extends Controller
             // Nothing to feature, nothing coming and nothing recorded: there is
             // no lecture on this screen at all (Art. 17).
             'screenState' => ScreenState::of(
-                $featured === null && $upcoming->isEmpty() && $recordings->getCollection()->isEmpty()
+                $featured === null && $upcoming->isEmpty() && $recordings->getCollection()->isEmpty(),
             ),
         ]);
     }
@@ -165,7 +165,7 @@ final class LiveController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Session>
+     * @return Collection<int, Session>
      */
     private function upcoming(string $cohortId, \DateTimeInterface $now)
     {

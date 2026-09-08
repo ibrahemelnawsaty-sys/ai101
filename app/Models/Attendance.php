@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\AttendanceStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Attendance extends Model
 {
+    /** @use HasFactory<\Database\Factories\AttendanceFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'attendances';
@@ -67,16 +69,25 @@ class Attendance extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Session, $this>
+     */
     public function session(): BelongsTo
     {
         return $this->belongsTo(Session::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'edited_by');
@@ -103,7 +114,7 @@ class Attendance extends Model
 
         return $query->whereIn(
             'session_id',
-            Session::query()->where('cohort_id', $cohortId)->select('id')
+            Session::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -116,7 +127,7 @@ class Attendance extends Model
     {
         return $query->whereIn(
             'status',
-            array_map(static fn (AttendanceStatus $status): string => $status->value, $statuses)
+            array_map(static fn (AttendanceStatus $status): string => $status->value, $statuses),
         );
     }
 
@@ -138,7 +149,7 @@ class Attendance extends Model
                 'session_id',
                 Session::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('id')
+                    ->select('id'),
             );
         }
 

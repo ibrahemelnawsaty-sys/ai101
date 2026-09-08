@@ -6,7 +6,6 @@ namespace App\Presenters\Participant;
 
 use App\Support\Dates;
 use App\Support\ViewModel;
-use DateTimeInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -29,8 +28,8 @@ final class CalendarPresenter extends ViewModel
      */
     public static function from(
         Collection $days,
-        ?DateTimeInterface $rangeFrom,
-        ?DateTimeInterface $rangeTo,
+        ?\DateTimeInterface $rangeFrom,
+        ?\DateTimeInterface $rangeTo,
         ?string $previousWeekIndex,
         ?string $nextWeekIndex,
     ): self {

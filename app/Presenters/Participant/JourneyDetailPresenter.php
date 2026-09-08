@@ -8,7 +8,6 @@ use App\Enums\AttendanceStatus;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 
 /**
  * One line inside an expanded journey step: a training day with its attendance,
@@ -22,7 +21,7 @@ use DateTimeInterface;
  */
 final class JourneyDetailPresenter extends ViewModel
 {
-    public static function forSession(string $title, ?DateTimeInterface $occursAt, ?AttendanceStatus $status): self
+    public static function forSession(string $title, ?\DateTimeInterface $occursAt, ?AttendanceStatus $status): self
     {
         return new self([
             'title' => $title,
@@ -43,7 +42,7 @@ final class JourneyDetailPresenter extends ViewModel
 
     public static function forAssignment(
         string $title,
-        ?DateTimeInterface $dueAt,
+        ?\DateTimeInterface $dueAt,
         bool $isSubmitted,
         CarbonImmutable $now,
     ): self {

@@ -26,7 +26,7 @@ use App\Models\AuditLog;
 
 const ZOOM_CANARY = 'https://zoom.example.test/j/CANARY-9931';
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -47,7 +47,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('BR-22: المتدرب لا يصل إلى تسليم متدرب آخر بتغيير المعرّف في الرابط', function () {
+it('BR-22: المتدرب لا يصل إلى تسليم متدرب آخر بتغيير المعرّف في الرابط', function (): void {
     $foreign = makeSubmission($this->assignment, $this->otherParticipant, [
         'note' => 'CANARY-OTHER-SUBMISSION',
     ]);
@@ -60,7 +60,7 @@ it('BR-22: المتدرب لا يصل إلى تسليم متدرب آخر بتغ
 })->skip('routes/web.php declares no `submissions.show`, and PROJECT-CONTRACT.md '
     .'section 10 does not name one. Un-skip when the contract grants the screen.');
 
-it('BR-22: المتدرب لا يصل إلى تقييم متدرب آخر', function () {
+it('BR-22: المتدرب لا يصل إلى تقييم متدرب آخر', function (): void {
     $foreign = makeSubmission($this->assignment, $this->otherParticipant);
     $evaluation = makeEvaluation('assignment', $foreign->id, $this->otherParticipant, 9, [
         'feedback' => 'CANARY-OTHER-FEEDBACK-TEXT',
@@ -74,7 +74,7 @@ it('BR-22: المتدرب لا يصل إلى تقييم متدرب آخر', func
 })->skip('routes/web.php declares no `evaluations.show`. Feedback reaches a trainee '
     .'only through `grades`, whose URL carries no id at all.');
 
-it('BR-22: صفحة درجات المتدرب لا تحمل أي درجة تخص غيره', function () {
+it('BR-22: صفحة درجات المتدرب لا تحمل أي درجة تخص غيره', function (): void {
     gradeAssignment($this->cohort, $this->otherParticipant, 10, 10);
     gradeAssignment($this->cohort, $this->participant, 10, 3);
 
@@ -83,7 +83,7 @@ it('BR-22: صفحة درجات المتدرب لا تحمل أي درجة تخص
     expect(scoreCalculator()->finalScore($this->participant, $this->cohort))->toBe(3.0);
 });
 
-it('BR-22: المتدرب لا يصل إلى رسالة في محادثة ليس طرفًا فيها', function () {
+it('BR-22: المتدرب لا يصل إلى رسالة في محادثة ليس طرفًا فيها', function (): void {
     $thread = makeThreadFor($this->otherParticipant, $this->cohort);
 
     // `messages.poll` is the per-thread endpoint; it asks ThreadPolicy::view() before
@@ -93,7 +93,7 @@ it('BR-22: المتدرب لا يصل إلى رسالة في محادثة ليس
         ->assertForbidden();
 });
 
-it('BR-22: كل رفض وصول يُسجَّل في سجل التدقيق مع عنوان IP', function () {
+it('BR-22: كل رفض وصول يُسجَّل في سجل التدقيق مع عنوان IP', function (): void {
     // The denial is provoked through a URL that exists: an assignment belonging to a
     // cohort this trainee is not enrolled in. AssignmentPolicy::view() refuses it, and
     // Article 22 requires the refusal itself to reach audit_logs with the caller's IP.
@@ -110,7 +110,7 @@ it('BR-22: كل رفض وصول يُسجَّل في سجل التدقيق مع �
         ->and($log->ip_address)->not->toBeNull();
 });
 
-it('BR-22: المتدرب لا يصل إلى شهادة متدرب آخر', function () {
+it('BR-22: المتدرب لا يصل إلى شهادة متدرب آخر', function (): void {
     issueCertificateFor($this->otherParticipant, $this->cohort, [
         'serial_number' => 'ATHAR-AI101-2026-0912',
     ]);
@@ -131,13 +131,13 @@ it('BR-22: المتدرب لا يصل إلى شهادة متدرب آخر', func
 |--------------------------------------------------------------------------
 */
 
-it('BR-23: المدرب لا يصل إلى دفعة غير مسندة إليه', function () {
+it('BR-23: المدرب لا يصل إلى دفعة غير مسندة إليه', function (): void {
     $this->actingAs($this->trainer)
         ->get(route('trainer.participants', ['cohort' => $this->otherCohort->id]))
         ->assertForbidden();
 });
 
-it('BR-23: المدرب لا يفتح تسليمًا في دفعة أخرى', function () {
+it('BR-23: المدرب لا يفتح تسليمًا في دفعة أخرى', function (): void {
     $foreignAssignment = makeAssignment($this->otherCohort, ['max_score' => 10]);
     $foreignParticipant = makeParticipant($this->otherCohort);
     $foreignSubmission = makeSubmission($foreignAssignment, $foreignParticipant, [
@@ -155,7 +155,7 @@ it('BR-23: المدرب لا يفتح تسليمًا في دفعة أخرى', fu
     expect($response->getContent())->not->toContain('CANARY-FOREIGN-COHORT-SUBMISSION');
 });
 
-it('BR-23: المدرب لا يرصد درجة لمتدرب في دفعة أخرى', function () {
+it('BR-23: المدرب لا يرصد درجة لمتدرب في دفعة أخرى', function (): void {
     $foreignAssignment = makeAssignment($this->otherCohort, ['max_score' => 10]);
     $foreignParticipant = makeParticipant($this->otherCohort);
     $foreignSubmission = makeSubmission($foreignAssignment, $foreignParticipant);
@@ -168,13 +168,13 @@ it('BR-23: المدرب لا يرصد درجة لمتدرب في دفعة أخر
         ->assertForbidden();
 });
 
-it('BR-23: المدرب يصل إلى دفعته هو', function () {
+it('BR-23: المدرب يصل إلى دفعته هو', function (): void {
     $this->actingAs($this->trainer)
         ->get(route('trainer.participants', ['cohort' => $this->cohort->id]))
         ->assertOk();
 });
 
-it('BR-23: تقرير حضور الدفعة لا يحمل متدربًا من دفعة أخرى', function () {
+it('BR-23: تقرير حضور الدفعة لا يحمل متدربًا من دفعة أخرى', function (): void {
     $foreignParticipant = makeParticipant($this->otherCohort, ['email' => 'foreign-canary@example.test']);
     sessionAttendedBy($this->otherCohort, $foreignParticipant, 'training', 'present');
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1);
@@ -194,7 +194,7 @@ it('BR-23: تقرير حضور الدفعة لا يحمل متدربًا من د
 |--------------------------------------------------------------------------
 */
 
-it('BR-24: رابط الزوم لا يظهر في شيفرة الصفحة قبل الجلسة بخمس عشرة دقيقة', function () {
+it('BR-24: رابط الزوم لا يظهر في شيفرة الصفحة قبل الجلسة بخمس عشرة دقيقة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
 
@@ -208,7 +208,7 @@ it('BR-24: رابط الزوم لا يظهر في شيفرة الصفحة قبل
     assertRefused($this->actingAs($this->participant)->post(route('live.join', $session)));
 });
 
-it('BR-24: الرابط يُسلَّم عند الحد بالضبط قبل الجلسة بخمس عشرة دقيقة', function () {
+it('BR-24: الرابط يُسلَّم عند الحد بالضبط قبل الجلسة بخمس عشرة دقيقة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
 
@@ -221,7 +221,7 @@ it('BR-24: الرابط يُسلَّم عند الحد بالضبط قبل ال�
     expect($response->getContent().json_encode($response->headers->all()))->toContain(ZOOM_CANARY);
 });
 
-it('BR-24: الرابط يُغلق بعد نهاية الجلسة', function () {
+it('BR-24: الرابط يُغلق بعد نهاية الجلسة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $end = $start->addHours(3);
     $session = sessionInCohort($this->cohort, $start, $end, ['zoom_url' => ZOOM_CANARY]);
@@ -231,7 +231,7 @@ it('BR-24: الرابط يُغلق بعد نهاية الجلسة', function () 
     assertRefused($this->actingAs($this->participant)->post(route('live.join', $session)));
 });
 
-it('BR-24: متدرب من دفعة أخرى لا يحصل على الرابط في نافذته الزمنية', function () {
+it('BR-24: متدرب من دفعة أخرى لا يحصل على الرابط في نافذته الزمنية', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
     $stranger = makeParticipant($this->otherCohort);
@@ -251,7 +251,7 @@ it('BR-24: متدرب من دفعة أخرى لا يحصل على الرابط �
 |--------------------------------------------------------------------------
 */
 
-it('BR-28: سحب الدور أثناء الجلسة يمنع الطلب التالي فورًا', function () {
+it('BR-28: سحب الدور أثناء الجلسة يمنع الطلب التالي فورًا', function (): void {
     $this->actingAs($this->trainer)
         ->get(route('trainer.participants', ['cohort' => $this->cohort->id]))
         ->assertOk();
@@ -263,7 +263,7 @@ it('BR-28: سحب الدور أثناء الجلسة يمنع الطلب الت�
         ->assertForbidden();
 });
 
-it('BR-28: تعليق الحساب أثناء الجلسة يمنع الطلب التالي فورًا', function () {
+it('BR-28: تعليق الحساب أثناء الجلسة يمنع الطلب التالي فورًا', function (): void {
     $this->actingAs($this->participant)->get(route('dashboard'))->assertOk();
 
     $this->participant->update(['status' => 'suspended']);
@@ -273,7 +273,7 @@ it('BR-28: تعليق الحساب أثناء الجلسة يمنع الطلب �
     expect($response->status())->toBeIn([302, 403]);
 });
 
-it('BR-28: سحب الالتحاق بالدفعة يمنع الوصول إلى محتواها فورًا', function () {
+it('BR-28: سحب الالتحاق بالدفعة يمنع الوصول إلى محتواها فورًا', function (): void {
     $this->actingAs($this->participant)->get(route('assignments.show', $this->assignment))->assertOk();
 
     $this->participant->enrollments()->where('cohort_id', $this->cohort->id)->update(['status' => 'withdrawn']);
@@ -283,7 +283,7 @@ it('BR-28: سحب الالتحاق بالدفعة يمنع الوصول إلى �
         ->assertForbidden();
 });
 
-it('BR-28: الزائر غير المسجل لا يصل إلى أي مسار في لوحة التحكم', function () {
+it('BR-28: الزائر غير المسجل لا يصل إلى أي مسار في لوحة التحكم', function (): void {
     foreach ([route('dashboard'), route('grades'), route('attendance.index'), route('participant.journey')] as $url) {
         $this->get($url)->assertRedirect(route('login'));
     }

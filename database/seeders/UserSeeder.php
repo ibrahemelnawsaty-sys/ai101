@@ -28,7 +28,6 @@ use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 final class UserSeeder extends Seeder
 {
@@ -228,7 +227,7 @@ final class UserSeeder extends Seeder
             ->count();
 
         if ($taken > (int) $cohort->getAttribute('capacity')) {
-            throw new RuntimeException('The seeded cohort would be over capacity.');
+            throw new \RuntimeException('The seeded cohort would be over capacity.');
         }
 
         $cohort->setAttribute('seats_taken', $taken);

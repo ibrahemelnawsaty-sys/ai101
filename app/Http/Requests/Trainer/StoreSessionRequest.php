@@ -35,7 +35,7 @@ final class StoreSessionRequest extends FormRequest
             return false;
         }
 
-        $draft = new Session();
+        $draft = new Session;
         $draft->setAttribute('cohort_id', $cohortId);
 
         return $user->can('create', $draft);

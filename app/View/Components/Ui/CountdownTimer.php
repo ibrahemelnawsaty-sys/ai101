@@ -6,7 +6,6 @@ namespace App\View\Components\Ui;
 
 use App\Services\Time\Clock;
 use App\View\Components\UiComponent;
-use DateTimeInterface;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -45,7 +44,7 @@ final class CountdownTimer extends UiComponent
         mixed $urgentBelow = 0,
         mixed $showDays = true,
     ) {
-        $targetAt = $target instanceof DateTimeInterface
+        $targetAt = $target instanceof \DateTimeInterface
             ? Clock::toUtc($target)
             : ($target !== null ? Clock::fromRiyadh((string) $target) : null);
 

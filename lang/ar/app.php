@@ -216,7 +216,6 @@ return [
     'delete_confirm' => 'هل تريد حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
     'leave_unsaved' => 'لديك تغييرات لم تُحفظ. هل تريد المغادرة؟',
 
-
     /*
     |--------------------------------------------------------------------------
     | Remaining time — read by App\Presenters\Support\Present::remainingLabel()

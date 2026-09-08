@@ -51,7 +51,7 @@ dataset('boundaries', [
     'E+30m+1s' => ['E', 1801, false, false, null],
 ]);
 
-beforeEach(function () {
+beforeEach(function (): void {
     [$this->session, $this->start, $this->end] = canonicalSession();
     $this->window = attendanceWindow();
 });
@@ -70,23 +70,23 @@ function boundaryInstant(CarbonImmutable $start, CarbonImmutable $end, string $a
 |--------------------------------------------------------------------------
 */
 
-it('يفتح تسجيل الحضور قبل بداية الجلسة بثلاثين دقيقة بالضبط', function () {
+it('يفتح تسجيل الحضور قبل بداية الجلسة بثلاثين دقيقة بالضبط', function (): void {
     expect($this->window->checkInOpensAt($this->session)->equalTo($this->start->subMinutes(30)))->toBeTrue();
 });
 
-it('يغلق تسجيل الحضور عند نهاية الجلسة بالضبط', function () {
+it('يغلق تسجيل الحضور عند نهاية الجلسة بالضبط', function (): void {
     expect($this->window->checkInClosesAt($this->session)->equalTo($this->end))->toBeTrue();
 });
 
-it('يفتح تسجيل الانصراف قبل نهاية الجلسة بثلاثين دقيقة بالضبط', function () {
+it('يفتح تسجيل الانصراف قبل نهاية الجلسة بثلاثين دقيقة بالضبط', function (): void {
     expect($this->window->checkOutOpensAt($this->session)->equalTo($this->end->subMinutes(30)))->toBeTrue();
 });
 
-it('يغلق تسجيل الانصراف بعد نهاية الجلسة بثلاثين دقيقة بالضبط', function () {
+it('يغلق تسجيل الانصراف بعد نهاية الجلسة بثلاثين دقيقة بالضبط', function (): void {
     expect($this->window->checkOutClosesAt($this->session)->equalTo($this->end->addMinutes(30)))->toBeTrue();
 });
 
-it('يعلن الثوابت الأربعة كما نص عليها العقد', function () {
+it('يعلن الثوابت الأربعة كما نص عليها العقد', function (): void {
     expect(AttendanceWindow::CHECK_IN_OPENS_BEFORE_START_MINUTES)->toBe(30)
         ->and(AttendanceWindow::LATE_AFTER_START_MINUTES)->toBe(30)
         ->and(AttendanceWindow::CHECK_OUT_OPENS_BEFORE_END_MINUTES)->toBe(30)
@@ -99,19 +99,19 @@ it('يعلن الثوابت الأربعة كما نص عليها العقد', f
 |--------------------------------------------------------------------------
 */
 
-it('BR-01: نافذة تسجيل الحضور عند الحد', function (string $anchor, int $offset, bool $mayCheckIn) {
+it('BR-01: نافذة تسجيل الحضور عند الحد', function (string $anchor, int $offset, bool $mayCheckIn): void {
     $at = boundaryInstant($this->start, $this->end, $anchor, $offset);
 
     expect($this->window->canCheckIn($this->session, $at))->toBe($mayCheckIn);
 })->with('boundaries');
 
-it('BR-04: نافذة تسجيل الانصراف عند الحد', function (string $anchor, int $offset, bool $mayCheckIn, bool $mayCheckOut) {
+it('BR-04: نافذة تسجيل الانصراف عند الحد', function (string $anchor, int $offset, bool $mayCheckIn, bool $mayCheckOut): void {
     $at = boundaryInstant($this->start, $this->end, $anchor, $offset);
 
     expect($this->window->canCheckOut($this->session, $at))->toBe($mayCheckOut);
 })->with('boundaries');
 
-it('BR-02, BR-03: تصنيف الحضور عند الحد', function (string $anchor, int $offset, bool $mayCheckIn, bool $mayCheckOut, ?string $expected) {
+it('BR-02, BR-03: تصنيف الحضور عند الحد', function (string $anchor, int $offset, bool $mayCheckIn, bool $mayCheckOut, ?string $expected): void {
     if ($expected === null) {
         expect($this->window->canCheckIn($this->session, boundaryInstant($this->start, $this->end, $anchor, $offset)))
             ->toBeFalse();
@@ -130,11 +130,11 @@ it('BR-02, BR-03: تصنيف الحضور عند الحد', function (string $an
 |--------------------------------------------------------------------------
 */
 
-it('BR-02: الدقيقة الثلاثون بالضبط من بداية الجلسة تُحتسب حاضرًا لا متأخرًا', function () {
+it('BR-02: الدقيقة الثلاثون بالضبط من بداية الجلسة تُحتسب حاضرًا لا متأخرًا', function (): void {
     expect($this->window->classify($this->session, $this->start->addMinutes(30))->value)->toBe('present');
 });
 
-it('BR-03: الثانية التالية للدقيقة الثلاثين تُحتسب متأخرًا', function () {
+it('BR-03: الثانية التالية للدقيقة الثلاثين تُحتسب متأخرًا', function (): void {
     expect($this->window->classify($this->session, $this->start->addMinutes(30)->addSecond())->value)->toBe('late');
 });
 
@@ -144,7 +144,7 @@ it('BR-03: الثانية التالية للدقيقة الثلاثين تُح�
 |--------------------------------------------------------------------------
 */
 
-it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذها على التوقيت الحقيقي لا على التاريخ', function () {
+it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذها على التوقيت الحقيقي لا على التاريخ', function (): void {
     $start = riyadhAt('2026-10-12 23:00:00');
     $end = riyadhAt('2026-10-13 01:00:00');
     $session = makeSessionAt($start, $end);
@@ -167,7 +167,7 @@ it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذه�
 })->skip(
     'D-35: PRD §14.1 يُلزم باختبار جلسة تعبر منتصف الليل، بينما قيد PRD §7.7 '
     .'CHECK (end_time > start_time) يمنع تخزينها أصلًا. تعارض في المصدر، والحضور '
-    .'نطاق يحظر فيه الدستور الافتراض (المادة 4) — بانتظار قرار صاحب المنتج.'
+    .'نطاق يحظر فيه الدستور الافتراض (المادة 4) — بانتظار قرار صاحب المنتج.',
 );
 
 /*
@@ -176,13 +176,13 @@ it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذه�
 |--------------------------------------------------------------------------
 */
 
-it('BR-07: النوافذ تُحسب من توقيت الرياض وتُرجع بتوقيت UTC', function () {
+it('BR-07: النوافذ تُحسب من توقيت الرياض وتُرجع بتوقيت UTC', function (): void {
     // 6:00 pm Riyadh is 15:00 UTC; the window opens at 14:30 UTC.
     expect($this->window->checkInOpensAt($this->session)->format('Y-m-d H:i:s'))->toBe('2026-10-12 14:30:00')
         ->and($this->window->checkInOpensAt($this->session)->getTimezone()->getName())->toBe('UTC');
 });
 
-it('BR-07: النافذة لا تتأثر بأي وقت يرسله العميل — الوسيط الوحيد هو لحظة الخادم', function () {
+it('BR-07: النافذة لا تتأثر بأي وقت يرسله العميل — الوسيط الوحيد هو لحظة الخادم', function (): void {
     // Two identical calls with the same server instant must agree, whatever the
     // caller believes the time to be. The signature admits no client-supplied value.
     $at = $this->start->addMinutes(10);
@@ -191,7 +191,7 @@ it('BR-07: النافذة لا تتأثر بأي وقت يرسله العميل 
         ->toBe($this->window->canCheckIn($this->session->fresh(), $at));
 });
 
-it('نافذة الانصراف لجلسة قصيرة تبدأ قبل بداية الجلسة نفسها ولا تنكسر', function () {
+it('نافذة الانصراف لجلسة قصيرة تبدأ قبل بداية الجلسة نفسها ولا تنكسر', function (): void {
     // A 20-minute session: E-30m falls before S. The check-out window still opens
     // there, and check-in is still governed by its own edges.
     $start = riyadhAt('2026-10-12 18:00:00');
@@ -212,7 +212,7 @@ it('نافذة الانصراف لجلسة قصيرة تبدأ قبل بداية
     expect($window->classify($session, $end)->value)->toBe('present');
 });
 
-it('يقبل نموذج الجلسة كما هو بلا إعادة تحميل من قاعدة البيانات', function () {
+it('يقبل نموذج الجلسة كما هو بلا إعادة تحميل من قاعدة البيانات', function (): void {
     // The service must not issue its own query; it reads the row it was given.
     $session = $this->session;
 

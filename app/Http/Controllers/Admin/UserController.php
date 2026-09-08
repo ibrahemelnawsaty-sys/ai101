@@ -168,7 +168,7 @@ final class UserController extends Controller
 
             Profile::query()->create(array_merge(
                 $request->profileAttributes(),
-                ['user_id' => $user->getKey()]
+                ['user_id' => $user->getKey()],
             ));
 
             $this->audit->log('user.created', $user, null, [

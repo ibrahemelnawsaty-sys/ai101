@@ -10,7 +10,6 @@ use App\Services\Time\Clock;
 use App\Support\Dates;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -102,7 +101,7 @@ final class WeekPresenter extends ViewModel
 
     private static function covers(CarbonImmutable $now, mixed $startsOn, mixed $endsOn): bool
     {
-        if (! $startsOn instanceof DateTimeInterface || ! $endsOn instanceof DateTimeInterface) {
+        if (! $startsOn instanceof \DateTimeInterface || ! $endsOn instanceof \DateTimeInterface) {
             return false;
         }
 

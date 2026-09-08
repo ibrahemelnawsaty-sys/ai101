@@ -72,7 +72,7 @@ final class ParticipantProfile extends ViewModel
             'maxScore' => ScoreCalculator::GRAND_TOTAL,
             'passScore' => self::score($passScore),
             'isGraded' => $submissions->contains(
-                static fn (ParticipantSubmission $row): bool => (bool) $row->isGraded
+                static fn (ParticipantSubmission $row): bool => (bool) $row->isGraded,
             ),
 
             'submissions' => $submissions,

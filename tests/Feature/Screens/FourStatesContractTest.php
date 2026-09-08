@@ -43,20 +43,20 @@ function allScreenNames(): array
     ];
 }
 
-it('لكل شاشة هيكل تحميل موجود فعلًا', function () {
+it('لكل شاشة هيكل تحميل موجود فعلًا', function (): void {
     $missing = array_values(array_filter(
         allScreenNames(),
-        fn (string $screen): bool => ! View::exists('partials.skeletons.'.$screen)
+        fn (string $screen): bool => ! View::exists('partials.skeletons.'.$screen),
     ));
 
     expect($missing)->toBe([]);
 });
 
-it('كل هيكل تحميل يحمل وسم حالة التحميل', function (string $screen) {
+it('كل هيكل تحميل يحمل وسم حالة التحميل', function (string $screen): void {
     expect(renderSkeleton($screen))->toBeScreenState('loading');
 })->with(allScreenNames());
 
-it('هيكل التحميل بشكل المحتوى لا دوّامة فارغة', function (string $screen) {
+it('هيكل التحميل بشكل المحتوى لا دوّامة فارغة', function (string $screen): void {
     $markup = renderSkeleton($screen);
 
     // A skeleton shaped like its content has several placeholder blocks. A single
@@ -65,7 +65,7 @@ it('هيكل التحميل بشكل المحتوى لا دوّامة فارغة
         ->and($markup)->not->toContain('data-spinner');
 })->with(allScreenNames());
 
-it('نص كل حالة فارغة خاص بشاشته ولا يتكرر بين شاشتين', function () {
+it('نص كل حالة فارغة خاص بشاشته ولا يتكرر بين شاشتين', function (): void {
     $keys = [];
 
     foreach (allScreenNames() as $screen) {
@@ -79,7 +79,7 @@ it('نص كل حالة فارغة خاص بشاشته ولا يتكرر بين �
     expect(array_unique($keys))->toHaveCount(count($keys));
 });
 
-it('لكل حالة فارغة عنوان وشرح وزر إجراء', function (string $screen) {
+it('لكل حالة فارغة عنوان وشرح وزر إجراء', function (string $screen): void {
     foreach (['title', 'body', 'action'] as $part) {
         $key = 'empty.'.$screen.'.'.$part;
 
@@ -87,7 +87,7 @@ it('لكل حالة فارغة عنوان وشرح وزر إجراء', function 
     }
 })->with(allScreenNames());
 
-it('رسائل الخطأ عربية تشرح ما حدث وما الحل بلا مصطلح تقني', function () {
+it('رسائل الخطأ عربية تشرح ما حدث وما الحل بلا مصطلح تقني', function (): void {
     $forbidden = ['exception', 'stack', 'sql', 'query', 'null', 'undefined', 'error 500', 'server error'];
 
     $messages = collect(trans('errors'))->flatten()->filter(fn ($value): bool => is_string($value));
@@ -103,7 +103,7 @@ it('رسائل الخطأ عربية تشرح ما حدث وما الحل بلا
     }
 });
 
-it('لا تظهر مفاتيح ترجمة خام في أي شاشة عامة', function () {
+it('لا تظهر مفاتيح ترجمة خام في أي شاشة عامة', function (): void {
     $cohort = makeCohort();
     $participant = makeParticipant($cohort);
 
@@ -134,11 +134,18 @@ function assertNoRawTranslationKeys(string $html): void
 
     preg_match_all('/(?<![\w\/.-])[a-z][a-z_]*(?:\.[a-z][a-z_]*){1,3}(?![\w\/.-])/', $stripped, $matches);
 
+    // The platform's own hostname is printed in the footer and in verification
+    // links, and it is dotted like a key. It is a configured fact (BR-36), so
+    // it is exempted by reading the config rather than by growing the TLD list
+    // below every time the domain changes.
+    $ownDomain = (string) config('athar.domain', '');
+
     $suspects = array_values(array_filter(
         array_unique($matches[0]),
-        fn (string $candidate): bool => ! str_ends_with($candidate, '.sa')
+        fn (string $candidate): bool => $candidate !== $ownDomain
+            && ! str_ends_with($candidate, '.sa')
             && ! str_ends_with($candidate, '.com')
-            && ! str_ends_with($candidate, '.test')
+            && ! str_ends_with($candidate, '.test'),
     ));
 
     expect($suspects)->toBe([]);

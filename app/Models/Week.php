@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Week extends Model
 {
+    /** @use HasFactory<\Database\Factories\WeekFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'weeks';
@@ -51,21 +53,33 @@ class Week extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return HasMany<Session, $this>
+     */
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
     }
 
+    /**
+     * @return HasMany<Assignment, $this>
+     */
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
     }
 
+    /**
+     * @return HasMany<\App\Models\Resource, $this>
+     */
     public function resources(): HasMany
     {
         return $this->hasMany(Resource::class);
@@ -83,7 +97,7 @@ class Week extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,7 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class LandingSetting extends Model
 {
+    /** @use HasFactory<\Database\Factories\LandingSettingFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'landing_settings';
@@ -61,6 +63,9 @@ class LandingSetting extends Model
         'is_registration_open' => false,
     ];
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
@@ -79,7 +84,7 @@ class LandingSetting extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use Throwable;
-
 /**
  * Attendance domain failures.
  *
@@ -39,7 +37,7 @@ final class AttendanceException extends DomainException
     }
 
     /** BR-06 — one attendance row per user per session. */
-    public static function alreadyCheckedIn(?Throwable $previous = null): self
+    public static function alreadyCheckedIn(?\Throwable $previous = null): self
     {
         return new self('attendance.errors.already_checked_in', [], 409, $previous);
     }
@@ -48,7 +46,7 @@ final class AttendanceException extends DomainException
      * BR-06 — a row already exists for this user and session but it was not
      * created by a check-in (absent or excused), so check-in cannot proceed.
      */
-    public static function recordAlreadyExists(?Throwable $previous = null): self
+    public static function recordAlreadyExists(?\Throwable $previous = null): self
     {
         return new self('attendance.errors.record_exists', [], 409, $previous);
     }

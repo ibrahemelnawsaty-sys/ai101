@@ -44,7 +44,6 @@ return [
     'error_title' => 'The final project could not be shown',
     'error_body' => 'Something went wrong while fetching it. Try again shortly — your submission is safe and unaffected.',
 
-
     'closed_deadline' => 'The final project deadline has passed.',
     'closed_locked' => 'Final project submission is not open for you right now. Contact your trainer if you think this is wrong.',
 

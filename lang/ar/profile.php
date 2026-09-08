@@ -79,7 +79,6 @@ return [
     'error_title' => 'تعذّر عرض حسابك',
     'error_body' => 'حدث خطأ أثناء جلب بياناتك. أعد المحاولة بعد قليل — بياناتك محفوظة ولم تتأثر.',
 
-
     // Shown for a session whose browser could not be recognised (PRD §9.3.2).
     'unknown_device' => 'جهاز غير معروف',
 

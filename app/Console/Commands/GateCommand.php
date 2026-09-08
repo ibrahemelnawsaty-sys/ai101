@@ -67,10 +67,13 @@ abstract class GateCommand extends Command
 
     /**
      * Repository root, always with forward slashes and no trailing slash.
+     *
+     * Every gate signature declares --path and --json, so the option is always
+     * defined and only its value is worth checking.
      */
     protected function repoRoot(): string
     {
-        $override = $this->hasOption('path') ? $this->option('path') : null;
+        $override = $this->option('path');
         $root = is_string($override) && $override !== '' ? $override : base_path();
 
         return rtrim(str_replace('\\', '/', $root), '/');
@@ -297,7 +300,7 @@ abstract class GateCommand extends Command
 
                 return self::blankPattern('#(?<![:\'"])//[^\r\n]*#', $island);
             },
-            $contents
+            $contents,
         );
 
         return $result ?? $contents;
@@ -319,7 +322,7 @@ abstract class GateCommand extends Command
         $result = preg_replace_callback(
             $pattern,
             static fn (array $match): string => self::blank((string) $match[0]),
-            $contents
+            $contents,
         );
 
         return $result ?? $contents;
@@ -338,7 +341,7 @@ abstract class GateCommand extends Command
         $result = preg_replace_callback(
             $pattern,
             static fn (array $match): string => (string) $match[1].self::blank((string) $match[2]).(string) $match[1],
-            $contents
+            $contents,
         );
 
         return $result ?? $contents;
@@ -372,15 +375,14 @@ abstract class GateCommand extends Command
         foreach ($sets as $set) {
             $groups = [];
 
+            // PREG_OFFSET_CAPTURE makes every capture a [text, offset] pair,
+            // the ones that did not participate in the match included, so there
+            // is no non-array element to skip here.
             foreach ($set as $index => $capture) {
-                $groups[(int) $index] = is_array($capture) ? (string) $capture[0] : '';
+                $groups[(int) $index] = (string) $capture[0];
             }
 
             $full = $set[0];
-
-            if (! is_array($full)) {
-                continue;
-            }
 
             $out[] = [
                 'text' => (string) $full[0],
@@ -575,7 +577,7 @@ abstract class GateCommand extends Command
             if (count($this->findings) > self::MAX_TABLE_ROWS) {
                 $this->line(sprintf(
                     '  ... %d more finding(s) not shown. Re-run with --json for the full list.',
-                    count($this->findings) - self::MAX_TABLE_ROWS
+                    count($this->findings) - self::MAX_TABLE_ROWS,
                 ));
             }
         }
@@ -597,6 +599,6 @@ abstract class GateCommand extends Command
 
     protected function jsonRequested(): bool
     {
-        return $this->hasOption('json') && $this->option('json') === true;
+        return $this->option('json') === true;
     }
 }

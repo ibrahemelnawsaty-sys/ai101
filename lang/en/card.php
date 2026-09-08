@@ -45,7 +45,6 @@ return [
     'error_title' => 'Your card could not be shown',
     'error_body' => 'Something went wrong while fetching it. Try again shortly — your card and its code are unaffected.',
 
-
     'state' => [
         'valid' => 'Valid',
         'revoked' => 'Revoked',

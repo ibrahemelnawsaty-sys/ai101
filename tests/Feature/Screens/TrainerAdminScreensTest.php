@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 use App\Models\ImpersonationSession;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
@@ -36,7 +36,7 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('شاشة الدفعة للمدرب: الحالة العادية تعرض متدربي الدفعة', function () {
+it('شاشة الدفعة للمدرب: الحالة العادية تعرض متدربي الدفعة', function (): void {
     $body = $this->actingAs($this->trainer)
         ->get(route('trainer.participants', ['cohort' => $this->cohort->id]))
         ->assertOk()
@@ -45,7 +45,7 @@ it('شاشة الدفعة للمدرب: الحالة العادية تعرض م�
     expect($body)->toBeScreenState('normal');
 });
 
-it('شاشة الدفعة للمدرب: الحالة الفارغة حين لا متدرب ملتحق', function () {
+it('شاشة الدفعة للمدرب: الحالة الفارغة حين لا متدرب ملتحق', function (): void {
     $emptyCohort = makeCohort();
     enroll($this->trainer, $emptyCohort, 'trainer');
 
@@ -57,7 +57,7 @@ it('شاشة الدفعة للمدرب: الحالة الفارغة حين لا 
     expect($body)->toBeScreenState('empty');
 });
 
-it('شاشة حضور الدفعة للمدرب: الحالة الفارغة حين لا جلسات بعد', function () {
+it('شاشة حضور الدفعة للمدرب: الحالة الفارغة حين لا جلسات بعد', function (): void {
     $body = $this->actingAs($this->trainer)
         ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
         ->assertOk()
@@ -66,7 +66,7 @@ it('شاشة حضور الدفعة للمدرب: الحالة الفارغة ح�
     expect($body)->toBeScreenState('empty');
 });
 
-it('شاشة حضور الدفعة للمدرب: الحالة العادية بعد انعقاد جلسة', function () {
+it('شاشة حضور الدفعة للمدرب: الحالة العادية بعد انعقاد جلسة', function (): void {
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present');
 
     $body = $this->actingAs($this->trainer)
@@ -77,7 +77,7 @@ it('شاشة حضور الدفعة للمدرب: الحالة العادية ب�
     expect($body)->toBeScreenState('normal');
 });
 
-it('شاشة تسليم للمدرب: الحالة العادية تعرض التسليم وملاحظته', function () {
+it('شاشة تسليم للمدرب: الحالة العادية تعرض التسليم وملاحظته', function (): void {
     $assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $submission = makeSubmission($assignment, $this->participant, ['note' => 'CANARY-SUBMISSION-NOTE']);
 
@@ -93,7 +93,7 @@ it('شاشة تسليم للمدرب: الحالة العادية تعرض ال�
         ->and($body)->toContain('CANARY-SUBMISSION-NOTE');
 });
 
-it('شاشة تسليم للمدرب: حالة الخطأ لتسليم خارج دفعته صفحة عربية بلا تفاصيل تقنية', function () {
+it('شاشة تسليم للمدرب: حالة الخطأ لتسليم خارج دفعته صفحة عربية بلا تفاصيل تقنية', function (): void {
     $foreignCohort = makeCohort();
     $foreignAssignment = makeAssignment($foreignCohort, ['max_score' => 10]);
     $foreignSubmission = makeSubmission($foreignAssignment, makeParticipant($foreignCohort), [
@@ -119,13 +119,13 @@ it('شاشة تسليم للمدرب: حالة الخطأ لتسليم خارج 
 |--------------------------------------------------------------------------
 */
 
-it('لوحة المدير: الحالة العادية تعرض البطاقات الإحصائية', function () {
+it('لوحة المدير: الحالة العادية تعرض البطاقات الإحصائية', function (): void {
     $body = $this->actingAs($this->admin)->get(route('dashboard'))->assertOk()->getContent();
 
     expect($body)->toBeScreenState('normal');
 });
 
-it('شريط المعاينة ظاهر طوال جلسة المعاينة مع زر الإنهاء', function () {
+it('شريط المعاينة ظاهر طوال جلسة المعاينة مع زر الإنهاء', function (): void {
     $this->actingAs($this->admin)->post(route('admin.users.preview', $this->participant));
 
     $body = $this->get(route('dashboard'))->assertOk()->getContent();
@@ -136,13 +136,13 @@ it('شريط المعاينة ظاهر طوال جلسة المعاينة مع �
     expect(ImpersonationSession::query()->whereNull('ended_at')->count())->toBe(1);
 });
 
-it('شريط المعاينة لا يظهر في التصفح العادي', function () {
+it('شريط المعاينة لا يظهر في التصفح العادي', function (): void {
     $body = $this->actingAs($this->participant)->get(route('dashboard'))->assertOk()->getContent();
 
     expect($body)->not->toContain('data-impersonation-bar');
 });
 
-it('كل شاشات المدرب والمدير تحمل وسم الشاشة والاتجاه الصحيح', function () {
+it('كل شاشات المدرب والمدير تحمل وسم الشاشة والاتجاه الصحيح', function (): void {
     $pages = [
         [$this->trainer, route('trainer.participants', ['cohort' => $this->cohort->id])],
         [$this->trainer, route('trainer.attendance', ['cohort' => $this->cohort->id])],

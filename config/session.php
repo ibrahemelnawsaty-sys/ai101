@@ -68,7 +68,7 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'athar'), '_').'_session'
+        Str::slug((string) env('APP_NAME', 'athar'), '_').'_session',
     ),
 
     'path' => env('SESSION_PATH', '/'),

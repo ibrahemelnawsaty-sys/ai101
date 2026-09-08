@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EmailTokenType;
-use DateTimeInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,11 +20,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Every instant is supplied by the caller from App\Services\Time\Clock, so this
  * model never reads a clock of its own (BR-07).
  *
+ * `expires_at` is NOT NULL in the migration, but a column is still absent — and
+ * therefore null — on an instance that was never hydrated from a full row: a
+ * freshly constructed model, or one fetched by a query whose select() left the
+ * column out. hasExpiredAt() guards for exactly that and fails closed, so the
+ * read type has to admit null (CONSTITUTION Article 7).
+ *
+ * A `datetime` cast is asymmetric: it reads back as CarbonImmutable but accepts
+ * any DateTimeInterface or date string on write, which is what markUsedAt() hands it.
+ *
+ * @property-read CarbonImmutable|null $expires_at
+ * @property-write \DateTimeInterface|string $expires_at
+ * @property-read CarbonImmutable|null $used_at
+ * @property-write \DateTimeInterface|string|null $used_at
+ *
  * @see BR-07, BR-29, BR-30 · PRD §7.6, §9.2, §9.3 · PROJECT-CONTRACT §4
  */
 class EmailToken extends Model
 {
+    /** @use HasFactory<\Database\Factories\EmailTokenFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'email_tokens';
@@ -64,7 +80,7 @@ class EmailToken extends Model
         return $this->used_at !== null;
     }
 
-    public function hasExpiredAt(DateTimeInterface $at): bool
+    public function hasExpiredAt(\DateTimeInterface $at): bool
     {
         return $this->expires_at === null
             || $this->expires_at->getTimestamp() <= $at->getTimestamp();
@@ -74,18 +90,21 @@ class EmailToken extends Model
      * A token is usable only when it is neither spent nor expired. Anything the
      * model cannot decide fails closed (Constitution, Article 7).
      */
-    public function isUsableAt(DateTimeInterface $at): bool
+    public function isUsableAt(\DateTimeInterface $at): bool
     {
         return ! $this->isUsed() && ! $this->hasExpiredAt($at);
     }
 
-    public function markUsedAt(DateTimeInterface $at): bool
+    public function markUsedAt(\DateTimeInterface $at): bool
     {
         $this->used_at = $at;
 
         return $this->save();
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -106,7 +125,7 @@ class EmailToken extends Model
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeUsableAt(Builder $query, DateTimeInterface $at): Builder
+    public function scopeUsableAt(Builder $query, \DateTimeInterface $at): Builder
     {
         return $query->whereNull('used_at')->where('expires_at', '>', $at);
     }
@@ -130,7 +149,7 @@ class EmailToken extends Model
 
         return $query->whereIn(
             'user_id',
-            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id')
+            Enrollment::query()->where('cohort_id', $cohortId)->select('user_id'),
         );
     }
 

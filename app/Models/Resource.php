@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\ResourceType;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,7 +23,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Resource extends Model
 {
+    /** @use HasFactory<\Database\Factories\ResourceFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'resources';
@@ -73,21 +75,33 @@ class Resource extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<Week, $this>
+     */
     public function week(): BelongsTo
     {
         return $this->belongsTo(Week::class);
     }
 
+    /**
+     * @return BelongsTo<Session, $this>
+     */
     public function session(): BelongsTo
     {
         return $this->belongsTo(Session::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
@@ -114,7 +128,7 @@ class Resource extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

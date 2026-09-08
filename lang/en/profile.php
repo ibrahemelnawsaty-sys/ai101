@@ -53,7 +53,6 @@ return [
     'error_title' => 'Your account could not be shown',
     'error_body' => 'Something went wrong while fetching your details. Try again shortly — your data is safe and unaffected.',
 
-
     'unknown_device' => 'Unrecognised device',
 
 ];

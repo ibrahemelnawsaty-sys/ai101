@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\EvaluationEntity;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class ProjectSubmission extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProjectSubmissionFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'project_submissions';
@@ -66,16 +68,25 @@ class ProjectSubmission extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<FinalProject, $this>
+     */
     public function finalProject(): BelongsTo
     {
         return $this->belongsTo(FinalProject::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return HasMany<Evaluation, $this>
+     */
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class, 'entity_id')
@@ -85,6 +96,8 @@ class ProjectSubmission extends Model
     /**
      * The most recent mark, with the entity_type constraint applied to the
      * one-of-many sub-query as well.
+     *
+     * @return HasOne<Evaluation, $this>
      */
     public function latestEvaluation(): HasOne
     {
@@ -93,7 +106,7 @@ class ProjectSubmission extends Model
             ->ofMany(
                 ['evaluated_at' => 'max'],
                 static fn (Builder $query): Builder => $query
-                    ->where('entity_type', EvaluationEntity::FinalProject->value)
+                    ->where('entity_type', EvaluationEntity::FinalProject->value),
             );
     }
 
@@ -118,7 +131,7 @@ class ProjectSubmission extends Model
 
         return $query->whereIn(
             'final_project_id',
-            FinalProject::query()->where('cohort_id', $cohortId)->select('id')
+            FinalProject::query()->where('cohort_id', $cohortId)->select('id'),
         );
     }
 
@@ -139,7 +152,7 @@ class ProjectSubmission extends Model
                 'final_project_id',
                 FinalProject::query()
                     ->whereIn('cohort_id', $user->accessibleCohortIds())
-                    ->select('id')
+                    ->select('id'),
             );
         }
 

@@ -6,8 +6,8 @@ namespace App\Models;
 
 use App\Enums\AssignmentStatus;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Assignment extends Model
 {
+    /** @use HasFactory<\Database\Factories\AssignmentFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'assignments';
@@ -72,21 +74,33 @@ class Assignment extends Model
 
     // --------------------------------------------------------- relationships
 
+    /**
+     * @return BelongsTo<Cohort, $this>
+     */
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
     }
 
+    /**
+     * @return BelongsTo<Week, $this>
+     */
     public function week(): BelongsTo
     {
         return $this->belongsTo(Week::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<Submission, $this>
+     */
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
@@ -122,7 +136,7 @@ class Assignment extends Model
 
         return $query->whereIn(
             'cohort_id',
-            Enrollment::query()->where('user_id', $userId)->select('cohort_id')
+            Enrollment::query()->where('user_id', $userId)->select('cohort_id'),
         );
     }
 

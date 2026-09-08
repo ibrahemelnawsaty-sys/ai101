@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\EnrollmentRole;
+use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\BulkAttendanceRequest;
 use App\Http\Requests\Trainer\UpdateAttendanceRequest;
-use App\Enums\AttendanceStatus;
-use App\Enums\EnrollmentRole;
-use App\Enums\EnrollmentStatus;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\Enrollment;
@@ -30,12 +30,13 @@ use App\Services\Certificates\CertificateEligibility;
 use App\Services\Time\Clock;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * Attendance as the trainer manages it (PRD §9.9.7).
@@ -134,9 +135,9 @@ final class AttendanceController extends Controller
     /**
      * Active participants of the scoped cohort.
      *
-     * @return Collection<int, User>
+     * @return EloquentCollection<int, User>
      */
-    private function participants(Cohort $cohort): Collection
+    private function participants(Cohort $cohort): EloquentCollection
     {
         return User::query()
             ->with('profile')
@@ -146,7 +147,7 @@ final class AttendanceController extends Controller
                     ->where('cohort_id', $cohort->getKey())
                     ->where('role_in_cohort', EnrollmentRole::Participant->value)
                     ->where('status', EnrollmentStatus::Active->value)
-                    ->select('user_id')
+                    ->select('user_id'),
             )
             ->limit(self::AT_RISK_LIMIT)
             ->get();
@@ -176,7 +177,7 @@ final class AttendanceController extends Controller
 
         $record = $records->get($id);
         $participant = $participants->first(
-            static fn (User $user): bool => (string) $user->getKey() === $id
+            static fn (User $user): bool => (string) $user->getKey() === $id,
         );
 
         return $record instanceof Attendance && $participant instanceof User
@@ -284,7 +285,7 @@ final class AttendanceController extends Controller
             ->with(['user.profile', 'session'])
             ->whereIn(
                 'session_id',
-                Session::query()->where('cohort_id', $cohort->getKey())->select('id')
+                Session::query()->where('cohort_id', $cohort->getKey())->select('id'),
             )
             ->orderBy('created_at')
             ->get();
@@ -299,7 +300,7 @@ final class AttendanceController extends Controller
             $lines[] = $this->csvRow([
                 (string) ($row->user?->profile?->getAttribute('full_name_ar') ?? ''),
                 (string) ($row->session?->getAttribute('title') ?? ''),
-                (string) ($row->getAttribute('status')?->value ?? ''),
+                (string) ($row->getAttribute('status')->value ?? ''),
             ]);
         }
 
@@ -318,7 +319,7 @@ final class AttendanceController extends Controller
 
         if (is_string($requested) && $requested !== '') {
             $match = $sessions->first(
-                static fn (Session $session): bool => (string) $session->getKey() === $requested
+                static fn (Session $session): bool => (string) $session->getKey() === $requested,
             );
 
             if ($match instanceof Session) {
@@ -351,15 +352,15 @@ final class AttendanceController extends Controller
      * Statuses are fetched in a single query for the people on this page only,
      * and every row is built against the same column order (art. 19).
      *
-     * @param  Collection<int, Session>  $sessions
-     * @param  Collection<int, User>  $participants
+     * @param  EloquentCollection<int, Session>  $sessions
+     * @param  EloquentCollection<int, User>  $participants
      * @param  array<string, float>  $rates
      */
     private function matrix(
         Request $request,
         Cohort $cohort,
-        Collection $sessions,
-        Collection $participants,
+        EloquentCollection $sessions,
+        EloquentCollection $participants,
         array $rates,
     ): AttendanceMatrix {
         $window = $this->window;
@@ -370,7 +371,7 @@ final class AttendanceController extends Controller
 
         $sessionIds = array_map(
             static fn (mixed $id): string => (string) $id,
-            $sessions->modelKeys()
+            $sessions->modelKeys(),
         );
 
         $page = LengthAwarePaginator::resolveCurrentPage('roster');
@@ -400,10 +401,10 @@ final class AttendanceController extends Controller
 
     /**
      * @param  array<int, string>  $sessionIds
-     * @param  Collection<int, User>  $participants
+     * @param  EloquentCollection<int, User>  $participants
      * @return array<string, array<string, AttendanceStatus>>
      */
-    private function statusesFor(array $sessionIds, Collection $participants): array
+    private function statusesFor(array $sessionIds, EloquentCollection $participants): array
     {
         if ($sessionIds === [] || $participants->isEmpty()) {
             return [];

@@ -25,6 +25,8 @@ return [
 
     'session_count' => '{0} بلا جلسات|{1} جلسة واحدة|{2} جلستان|[3,10] :count جلسات|[11,*] :count جلسة',
     'current_week' => 'الأسبوع الحالي',
+    'print_title' => 'جدول البرنامج التدريبي',
+    'printed_at' => 'طُبع في :at بتوقيت الرياض',
     'table_caption' => 'جلسات :week',
     'unscheduled_group' => 'جلسات خارج الأسابيع',
     'session_details' => 'تفاصيل الجلسة',

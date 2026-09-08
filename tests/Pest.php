@@ -420,7 +420,7 @@ function sessionAttendedBy(Cohort $cohort, User $user, string $type, ?string $st
  * makes steps 3 to 6 identical in code and distinct in data.
  *
  * @param  array<int, Week>  $weeks  keyed 1..4
- * @return array<int, JourneyStep>  keyed by step index 1..10
+ * @return array<int, JourneyStep> keyed by step index 1..10
  */
 function seedJourneySteps(Cohort $cohort, array $weeks): array
 {

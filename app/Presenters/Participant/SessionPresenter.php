@@ -53,7 +53,7 @@ final class SessionPresenter extends ViewModel
             'title' => (string) $session->getAttribute('title'),
             'topic' => Present::text($session->getAttribute('topic'))
                 ?? (string) $session->getAttribute('title'),
-            'type' => $type?->value ?? 'training',
+            'type' => $type->value ?? 'training',
             'typeLabel' => $type?->label() ?? '',
             'date' => Present::toDateTime($session->getAttribute('date')),
             'startsAt' => $window->startsAt($session),

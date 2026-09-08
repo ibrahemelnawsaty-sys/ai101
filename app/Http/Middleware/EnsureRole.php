@@ -7,7 +7,6 @@ namespace App\Http\Middleware;
 use App\Http\Middleware\Concerns\LogsDenials;
 use App\Services\Audit\AuditLogger;
 use App\Services\Permissions\RoleResolver;
-use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,7 +31,7 @@ final class EnsureRole
         private readonly AuditLogger $audit,
     ) {}
 
-    public function handle(Request $request, Closure $next, string ...$allowed): Response
+    public function handle(Request $request, \Closure $next, string ...$allowed): Response
     {
         $user = $request->user();
 

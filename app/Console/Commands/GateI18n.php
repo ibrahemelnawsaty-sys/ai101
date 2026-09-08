@@ -125,8 +125,8 @@ final class GateI18n extends GateCommand
                         ? 'Arabic inside a comment (%d char(s), first is %s); comments are written in English'
                         : 'Arabic text in code (%d char(s), first is %s); move it to lang/ar and call __()',
                     self::characterCount($match['text']),
-                    self::firstCodePoint($match['text'])
-                )
+                    self::firstCodePoint($match['text']),
+                ),
             );
         }
 
@@ -166,7 +166,7 @@ final class GateI18n extends GateCommand
                     $englishFile,
                     0,
                     'I18N-EN-FILE-MISSING',
-                    sprintf('no English counterpart for lang/ar/%s (%d key(s) untranslated)', $basename, count($arabic))
+                    sprintf('no English counterpart for lang/ar/%s (%d key(s) untranslated)', $basename, count($arabic)),
                 );
 
                 continue;
@@ -188,7 +188,7 @@ final class GateI18n extends GateCommand
                     $englishFile,
                     0,
                     'I18N-EN-KEY-MISSING',
-                    sprintf('%d key(s) missing, e.g. %s', count($missing), implode(', ', array_slice($missing, 0, 3)))
+                    sprintf('%d key(s) missing, e.g. %s', count($missing), implode(', ', array_slice($missing, 0, 3))),
                 );
             }
 
@@ -197,7 +197,7 @@ final class GateI18n extends GateCommand
                     $englishFile,
                     0,
                     'I18N-EN-KEY-ORPHAN',
-                    sprintf('%d key(s) absent from lang/ar, e.g. %s', count($orphans), implode(', ', array_slice($orphans, 0, 3)))
+                    sprintf('%d key(s) absent from lang/ar, e.g. %s', count($orphans), implode(', ', array_slice($orphans, 0, 3))),
                 );
             }
         }
@@ -269,7 +269,7 @@ final class GateI18n extends GateCommand
                     $file,
                     self::lineAt($contents, $match['offset']),
                     'I18N-KEY-UNKNOWN',
-                    sprintf('translation key "%s" is not defined in lang/ar/%s.php', $key, $group)
+                    sprintf('translation key "%s" is not defined in lang/ar/%s.php', $key, $group),
                 );
             }
         }

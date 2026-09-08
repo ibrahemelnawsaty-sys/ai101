@@ -28,7 +28,7 @@ final class MatrixCell extends ViewModel
     public static function of(?AttendanceStatus $status): self
     {
         return new self([
-            'shortCode' => __('attendance.matrix.short.'.($status?->value ?? 'none')),
+            'shortCode' => __('attendance.matrix.short.'.($status->value ?? 'none')),
             'statusLabel' => $status?->label() ?? __('attendance.status.not_recorded'),
             'variant' => $status === null ? 'none' : self::attendanceVariantOf($status),
         ]);

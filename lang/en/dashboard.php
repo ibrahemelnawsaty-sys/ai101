@@ -26,7 +26,6 @@ return [
         'empty_body' => 'Nothing is scheduled yet. The date and a live countdown will appear here as soon as it is.',
     ],
 
-
     'status_line' => [
         'not_started' => 'Your journey has not started yet. Your steps appear here once you join a cohort.',
         'in_progress' => 'You have completed :completed of :total steps.',

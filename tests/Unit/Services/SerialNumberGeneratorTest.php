@@ -24,7 +24,7 @@ use App\Models\Cohort;
 use App\Models\User;
 use App\Services\Certificates\SerialNumberGenerator;
 
-beforeEach(function () {
+beforeEach(function (): void {
     freezeAt(riyadhAt('2026-11-20 12:00:00'));
 
     $this->cohort = makeCohort([
@@ -48,23 +48,23 @@ function issueWithSerial(Cohort $cohort, User $user, string $serial): Certificat
     ]);
 }
 
-it('يولّد الرقم التسلسلي بالصيغة المنصوص عليها', function () {
+it('يولّد الرقم التسلسلي بالصيغة المنصوص عليها', function (): void {
     $serial = $this->generator->next($this->cohort);
 
     expect($serial)->toMatch('/^ATHAR-[A-Z0-9]+-\d{4}-\d{4,}$/');
 });
 
-it('BR-36: رمز البرنامج في الرقم التسلسلي يُقرأ من الإعدادات لا من الكود', function () {
+it('BR-36: رمز البرنامج في الرقم التسلسلي يُقرأ من الإعدادات لا من الكود', function (): void {
     $serial = $this->generator->next($this->cohort);
 
     expect(explode('-', $serial)[1])->toBe((string) config('athar.program.code'));
 });
 
-it('الجزء الأول ثابت باسم المركز', function () {
+it('الجزء الأول ثابت باسم المركز', function (): void {
     expect(explode('-', $this->generator->next($this->cohort))[0])->toBe('ATHAR');
 });
 
-it('السنة تُكتب بأربعة أرقام لاتينية بلا فاصلة آلاف', function () {
+it('السنة تُكتب بأربعة أرقام لاتينية بلا فاصلة آلاف', function (): void {
     $serial = $this->generator->next($this->cohort);
     $year = explode('-', $serial)[2];
 
@@ -72,11 +72,11 @@ it('السنة تُكتب بأربعة أرقام لاتينية بلا فاصل
         ->and($serial)->toUseLatinNumerals();
 });
 
-it('التسلسل يبدأ من واحد ويُصفَّر إلى أربع خانات', function () {
+it('التسلسل يبدأ من واحد ويُصفَّر إلى أربع خانات', function (): void {
     expect($this->generator->next($this->cohort))->toEndWith('-0001');
 });
 
-it('التسلسل يزيد واحدًا مع كل شهادة صادرة', function () {
+it('التسلسل يزيد واحدًا مع كل شهادة صادرة', function (): void {
     $first = $this->generator->next($this->cohort);
     issueWithSerial($this->cohort, makeParticipant($this->cohort), $first);
 
@@ -90,7 +90,7 @@ it('التسلسل يزيد واحدًا مع كل شهادة صادرة', funct
         ->and($third)->toEndWith('-0003');
 });
 
-it('التصفير يحافظ على أربع خانات عند 10 و 100 و 1000', function (int $issued, string $expectedSuffix) {
+it('التصفير يحافظ على أربع خانات عند 10 و 100 و 1000', function (int $issued, string $expectedSuffix): void {
     $participant = makeParticipant($this->cohort);
     $prefix = implode('-', array_slice(explode('-', $this->generator->next($this->cohort)), 0, 3));
 
@@ -104,7 +104,7 @@ it('التصفير يحافظ على أربع خانات عند 10 و 100 و 100
     'بعد 99 شهادة' => [99, '-0100'],
 ]);
 
-it('يتجاوز أربع خانات ولا يقتطع بعد الشهادة رقم 9999', function () {
+it('يتجاوز أربع خانات ولا يقتطع بعد الشهادة رقم 9999', function (): void {
     $prefix = implode('-', array_slice(explode('-', $this->generator->next($this->cohort)), 0, 3));
 
     issueWithSerial($this->cohort, makeParticipant($this->cohort), $prefix.'-9999');
@@ -112,7 +112,7 @@ it('يتجاوز أربع خانات ولا يقتطع بعد الشهادة ر�
     expect($this->generator->next($this->cohort->fresh()))->toEndWith('-10000');
 });
 
-it('لا يُصدر رقمًا مكررًا أبدًا', function () {
+it('لا يُصدر رقمًا مكررًا أبدًا', function (): void {
     $seen = [];
 
     for ($i = 0; $i < 25; $i++) {
@@ -126,7 +126,7 @@ it('لا يُصدر رقمًا مكررًا أبدًا', function () {
     expect(array_unique($seen))->toHaveCount(25);
 });
 
-it('لا يعيد استخدام رقم شهادة مسحوبة', function () {
+it('لا يعيد استخدام رقم شهادة مسحوبة', function (): void {
     $first = $this->generator->next($this->cohort);
     $certificate = issueWithSerial($this->cohort, makeParticipant($this->cohort), $first);
 
@@ -136,7 +136,7 @@ it('لا يعيد استخدام رقم شهادة مسحوبة', function () {
         ->and($this->generator->next($this->cohort->fresh()))->toEndWith('-0002');
 });
 
-it('الرقم التسلسلي ليس معرّف المستخدم ولا يحتوي أي جزء منه', function () {
+it('الرقم التسلسلي ليس معرّف المستخدم ولا يحتوي أي جزء منه', function (): void {
     $participant = makeParticipant($this->cohort);
 
     $serial = $this->generator->next($this->cohort);
@@ -145,6 +145,6 @@ it('الرقم التسلسلي ليس معرّف المستخدم ولا يحت
         ->and($serial)->not->toContain((string) $participant->email);
 });
 
-it('BR-26: نطاق تسلسل الأرقام بين الدفعات — بانتظار قرار صاحب المنتج', function () {
+it('BR-26: نطاق تسلسل الأرقام بين الدفعات — بانتظار قرار صاحب المنتج', function (): void {
     expect(true)->toBeTrue();
 })->skip('D-31: نطاق العدّاد ومرجع السنة غير محسومين — وتثبيتهما باختبار يساوي الحكم فيهما (المادة 4).');

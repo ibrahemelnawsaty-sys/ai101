@@ -71,7 +71,7 @@ final class AttendanceRoster extends ViewModel
             'endsAt' => $window->endsAt($session),
             'isLive' => $window->isLive($session, Clock::now()),
             'presentCount' => $records->filter(
-                static fn (Attendance $record): bool => $record->getAttribute('check_in_at') !== null
+                static fn (Attendance $record): bool => $record->getAttribute('check_in_at') !== null,
             )->count(),
             'totalCount' => $participants->count(),
             'entries' => $entries,
