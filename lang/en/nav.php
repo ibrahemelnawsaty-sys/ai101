@@ -51,6 +51,30 @@ return [
     'notifications' => 'Notifications',
     'profile' => 'My account',
 
+    'admin' => [
+        'dashboard' => 'Console',
+        'programs' => 'Programmes',
+        'cohorts' => 'Cohorts',
+        'landing' => 'Landing page',
+        'users' => 'Users',
+        'registrations' => 'Registrations',
+        'certificates' => 'Certificates',
+        'reports' => 'Reports',
+        'audit' => 'Audit log',
+        'settings' => 'Platform settings',
+    ],
+
+    'trainer' => [
+        'participants' => 'Cohort participants',
+        'sessions' => 'Sessions',
+        'attendance' => 'Attendance',
+        'resources' => 'Resources',
+        'assignments' => 'Assignments',
+        'submissions' => 'Submissions and grading',
+        'final_project' => 'Final project',
+        'reports' => 'Cohort reports',
+    ],
+
     'participant' => [
         'dashboard' => 'Home',
         'card' => 'Digital card',

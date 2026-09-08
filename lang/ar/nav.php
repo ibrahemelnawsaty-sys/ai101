@@ -58,6 +58,30 @@ return [
     | without knowing the rail (the error pages, for one).
     */
 
+    'admin' => [
+        'dashboard' => 'لوحة المنصة',
+        'programs' => 'البرامج',
+        'cohorts' => 'الدفعات',
+        'landing' => 'صفحة الهبوط',
+        'users' => 'المستخدمون',
+        'registrations' => 'طلبات التسجيل',
+        'certificates' => 'الشهادات',
+        'reports' => 'التقارير',
+        'audit' => 'سجل التدقيق',
+        'settings' => 'إعدادات المنصة',
+    ],
+
+    'trainer' => [
+        'participants' => 'متدربو الدفعة',
+        'sessions' => 'الجلسات',
+        'attendance' => 'رصد الحضور',
+        'resources' => 'الحقيبة التدريبية',
+        'assignments' => 'المهام',
+        'submissions' => 'التسليمات والتصحيح',
+        'final_project' => 'المشروع الختامي',
+        'reports' => 'تقارير الدفعة',
+    ],
+
     'participant' => [
         'dashboard' => 'الرئيسية',
         'card' => 'البطاقة الرقمية',

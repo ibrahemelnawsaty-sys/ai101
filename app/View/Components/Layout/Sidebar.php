@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\View\Components\Layout;
 
+use App\Models\User;
+use App\Services\Permissions\RoleResolver;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -22,11 +25,24 @@ use Illuminate\Support\Facades\Route;
  * it links to enforces its own middleware, policy and query scope on the server
  * (CONSTITUTION art. 5). Hiding an item here protects nothing.
  *
- * NOTE ON TRAINER / ADMIN GROUPING
- * PRD §9.5.1 specifies the participant menu only, and PROJECT-CONTRACT §10
- * names /trainer/* and /admin/* as wildcards with no individual route names.
- * Rather than invent a structure (art. 4), those roles render the groups their
- * controller passes in. Escalated as D-30 in docs/03-decisions/DECISIONS.md.
+ * NOTE ON TRAINER / ADMIN GROUPING - D-30, resolved 8 September 2026
+ * The PRD specifies the participant menu only, so this component used to fall
+ * back to the participant rail for every role and wait for a controller to hand
+ * it `:groups`. NO CONTROLLER EVER DID. The consequence was found on the live
+ * host, not in review: an administrator signed in, was served the PARTICIPANT
+ * rail, and had no link to programmes, cohorts, users, registrations,
+ * certificates, the audit log or settings. Every one of those screens existed
+ * and worked - the road to them was simply missing.
+ *
+ * Leaving D-30 open cost more than choosing would have: an unreachable admin
+ * console is a worse answer than a rail that can be rearranged later. So the
+ * rail is chosen HERE, from the signed-in user's role, with the SAME precedence
+ * DashboardController already applies - admin first, then a trainer who is not
+ * also a participant, else participant. Two different answers to "which role am
+ * I right now" would be worse than either answer alone.
+ *
+ * A controller may still pass `:groups` and it still wins, so nothing that
+ * relied on the previous contract breaks.
  *
  * @see PRD §9.5.1 · CONSTITUTION.md Articles 4, 5, 7, 13, 16 · CONTRACT §10
  */
@@ -74,7 +90,7 @@ final class Sidebar extends UiComponent
         $this->badges = self::counts($badges);
         $this->cohorts = self::rows($cohorts);
         $this->drawer = (bool) $drawer;
-        $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? self::rows($groups) : $this->participantGroups());
+        $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? self::rows($groups) : $this->defaultGroups());
 
         $this->tag = $this->drawer ? 'div' : 'aside';
         $this->wrapperClass = $this->drawer ? 'drawer__panel' : 'side';
@@ -83,6 +99,97 @@ final class Sidebar extends UiComponent
         // guard stays: the switcher is pointless with a single cohort.
         $this->switchUrl = Route::has('cohort.switch') ? route('cohort.switch') : null;
         $this->showSwitcher = count($this->cohorts) > 1 && $this->switchUrl !== null;
+    }
+
+    /**
+     * The rail for whoever is signed in.
+     *
+     * A signed-out render falls back to the participant rail. There is none
+     * today, but the component must not depend on that, and every route it
+     * links to would bounce a guest to the login screen anyway.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function defaultGroups(): array
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return $this->participantGroups();
+        }
+
+        $roles = app(RoleResolver::class);
+
+        if ($roles->isAdmin($user)) {
+            return $this->adminGroups();
+        }
+
+        if (! $roles->hasRole($user, 'participant') && $roles->hasRole($user, 'trainer')) {
+            return $this->trainerGroups();
+        }
+
+        return $this->participantGroups();
+    }
+
+    /**
+     * The administrator console rail.
+     *
+     * Grouped by what the work IS rather than by the URL tree: what the
+     * programme is, who the people are, what the platform produced, and how it
+     * is configured. resolveGroups() drops any item whose route is not
+     * registered, so this degrades to whatever the router actually has instead
+     * of throwing in the chrome.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function adminGroups(): array
+    {
+        return [
+            ['items' => [
+                ['route' => 'admin.dashboard', 'icon' => 'i-home', 'label' => __('nav.admin.dashboard')],
+            ]],
+            ['label' => __('nav.groups.program'), 'items' => [
+                ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],
+                ['route' => 'admin.cohorts.index', 'icon' => 'i-cal', 'label' => __('nav.admin.cohorts')],
+                ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
+            ]],
+            ['label' => __('nav.groups.admin'), 'items' => [
+                ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
+                ['route' => 'admin.registrations.index', 'icon' => 'i-user', 'label' => __('nav.admin.registrations')],
+                ['route' => 'admin.certificates.index', 'icon' => 'i-badge', 'label' => __('nav.admin.certificates')],
+            ]],
+            ['label' => __('nav.groups.work'), 'items' => [
+                ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
+                ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
+                ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
+            ]],
+        ];
+    }
+
+    /**
+     * The trainer rail, ordered by the rhythm of a training week: who is in the
+     * cohort, when it meets, what was set, what came back, what the numbers say.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function trainerGroups(): array
+    {
+        return [
+            ['items' => [
+                ['route' => 'trainer.participants', 'icon' => 'i-users', 'label' => __('nav.trainer.participants')],
+            ]],
+            ['label' => __('nav.groups.program'), 'items' => [
+                ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.trainer.sessions')],
+                ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.trainer.attendance')],
+                ['route' => 'trainer.resources', 'icon' => 'i-folder', 'label' => __('nav.trainer.resources')],
+            ]],
+            ['label' => __('nav.groups.work'), 'items' => [
+                ['route' => 'trainer.assignments', 'icon' => 'i-file', 'label' => __('nav.trainer.assignments')],
+                ['route' => 'trainer.submissions', 'icon' => 'i-check', 'label' => __('nav.trainer.submissions')],
+                ['route' => 'trainer.finalProject', 'icon' => 'i-spark', 'label' => __('nav.trainer.final_project')],
+                ['route' => 'trainer.reports', 'icon' => 'i-chart', 'label' => __('nav.trainer.reports')],
+            ]],
+        ];
     }
 
     /**

@@ -44,6 +44,10 @@
          and cap style as every other line glyph here, so the two contact cards
          read as one pair rather than two borrowed icons. --}}
     <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2.6 7.2l8.35 5.7a1.8 1.8 0 002.1 0l8.35-5.7"/></symbol>
+    {{-- House: the first item of the participant and admin rails. It was
+         referenced by the rail from the beginning and never existed, so that
+         item has always rendered with an empty square where its icon goes. --}}
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.2 12 3.6l8.5 6.6"/><path d="M5.6 11.9V19a1.4 1.4 0 0 0 1.4 1.4h10a1.4 1.4 0 0 0 1.4-1.4v-7.1"/><path d="M9.8 20.4v-5.2h4.4v5.2"/></symbol>
     {{-- Close glyph: used by the toast and by every dismissible notice. --}}
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></symbol>
   </defs>
