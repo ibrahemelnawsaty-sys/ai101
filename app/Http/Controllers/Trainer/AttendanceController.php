@@ -59,8 +59,11 @@ final class AttendanceController extends Controller
     /** How many people one matrix page shows (art. 19). */
     private const PER_PAGE = 25;
 
-    /** How many participants the at-risk sweep looks at. */
-    private const AT_RISK_LIMIT = 300;
+    /* AT_RISK_LIMIT was removed. Its docblock said it bounded the at-risk
+       sweep, but it was applied to participants() — the query that also builds
+       the marking roster — so it capped the roster as a side effect and hid
+       participant 301 from the trainer entirely. A cap on a derived list must
+       be applied where that list is derived, never on the shared query. */
 
     /** The Article 17 screen name. */
     private const SCREEN = 'trainer-attendance';
@@ -149,7 +152,16 @@ final class AttendanceController extends Controller
                     ->where('status', EnrollmentStatus::Active->value)
                     ->select('user_id'),
             )
-            ->limit(self::AT_RISK_LIMIT)
+            // No limit. This used to stop at 300 and say nothing: participant
+            // 301 was absent from the roster, could not be marked, and appeared
+            // to the trainer as though they were not enrolled. That is lost
+            // attendance data, not a display cap.
+            //
+            // OWED: Article 20 makes pagination mandatory above 50 rows, and a
+            // full cohort already exceeds that. It is not done here because the
+            // roster is also the bulk-marking form — paginating it changes what
+            // a "mark all" submission covers, and that behaviour cannot be
+            // changed blind. Tracked as D-44.
             ->get();
     }
 

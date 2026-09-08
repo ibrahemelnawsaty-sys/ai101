@@ -53,13 +53,23 @@
                     </div>
                 </div>
 
-                <div class="row__acts"
-                    x-data="atharJoinSession({ endpoint: '{{ route('live.join', $featured->id) }}' })">
-                    <x-ui.button variant="primary"
-                        type="button"
-                        :disabled="! $featured->joinWindowOpen"
-                        x-on:click="join()"
-                        x-bind:aria-busy="loading">{{ __('live.join') }}</x-ui.button>
+                {{-- A plain form, not an Alpine handler. The button used to call
+                     atharJoinSession(), a component that existed in this one line and
+                     nowhere else in the codebase: Alpine could not resolve it, the
+                     click did nothing, and live.join had no caller at all — BR-24 was
+                     unreachable from the interface.
+
+                     A form is also the better shape. join() answers with a redirect —
+                     away() to the meeting, or back() with an error — and a browser
+                     follows a redirect natively. The JavaScript would have had to
+                     re-implement that, and it would break again the day JS fails. --}}
+                <div class="row__acts">
+                    <form method="POST" action="{{ route('live.join', $featured->id) }}">
+                        @csrf
+                        <x-ui.button variant="primary"
+                            type="submit"
+                            :disabled="! $featured->joinWindowOpen">{{ __('live.join') }}</x-ui.button>
+                    </form>
 
                     @unless ($featured->joinWindowOpen)
                         <p class="hint">
@@ -68,7 +78,12 @@
                         </p>
                     @endunless
 
-                    <p class="hint" role="status" aria-live="polite" x-show="message" x-text="message" x-cloak></p>
+                    @error('session')
+                        <p class="hint hint--error" role="alert">
+                            <x-ui.icon name="warn" />
+                            {{ $message }}
+                        </p>
+                    @enderror
 
                     {{-- The passcode arrives with the URL, only after the guarded call succeeds. --}}
                     <template x-if="passcode">
