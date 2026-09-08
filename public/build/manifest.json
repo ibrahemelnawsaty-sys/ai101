@@ -4,7 +4,7 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-C-XMJ7k_.css",
+    "file": "assets/app-Zt9AIQWr.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -14,7 +14,7 @@
     "isEntry": true
   },
   "resources/js/auth.js": {
-    "file": "assets/auth-6OFLlz7v.js",
+    "file": "assets/auth-cryxaSzp.js",
     "name": "auth",
     "src": "resources/js/auth.js",
     "isEntry": true,

@@ -861,9 +861,11 @@ block-size: var(--s19);
 
 .page--app { background: var(--surface-page); color: var(--text-body); }
 
-/* Column 1 of .shell in RTL flow, so the rail in column 2 sits on the RIGHT. */
+/* Column 2 of .shell. In RTL the first column is the right-hand one, so the
+   rail takes column 1 and the content takes column 2 — the reverse of what the
+   comment here used to claim. */
 .shell__main {
-  grid-column: 1;
+  grid-column: 2;
   min-inline-size: 0;
   display: flex;
   flex-direction: column;
