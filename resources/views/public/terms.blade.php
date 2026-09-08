@@ -11,7 +11,6 @@
 @extends('layouts.public')
 
 @section('content')
-    @include('partials.public-header')
 
     <section class="sec sec--legal">
         <div class="wrap wrap--reading">

@@ -75,6 +75,13 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
 </div>
 
+{{-- The site header is a banner landmark, so it must sit OUTSIDE <main>. It
+     used to be included by each of the six public views, from inside their
+     @section('content') — which put <header> under <main>, demoted it to a
+     generic region, and left the skip link pointing at a #main that still
+     contained the whole navigation it exists to skip (WCAG 2.4.1, 1.3.1). --}}
+@include('partials.public-header')
+
 {{-- The Article 17 state marker, plus the landing page's own registration
      flag: "closed" is a state of its own and must not read as a generic empty
      screen (PRD §9.1.2). Every value is decided by the controller. --}}

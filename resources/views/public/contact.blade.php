@@ -22,7 +22,6 @@
 @extends('layouts.public')
 
 @section('content')
-    @include('partials.public-header')
 
     <section class="sec">
         <div class="wrap wrap--reading">

@@ -20,7 +20,6 @@
 
 @section('content')
 
-@include('partials.public-header')
 
 {{-- ============================================================
      State: error - Constitution art. 17
