@@ -73,6 +73,11 @@
   --n-500: #6E6E7E;   /* D-23 · contrast 5.01 — the smallest readable grey */
   --n-400: #9A9AA8;   /* decorative / disabled only — NOT for body text */
   --n-200: #E4E4EB;
+  /* Border neutral. Measured 3.49 on #FFFFFF, 3.21 on #F5F5F7 and 3.04 on
+     #EFEFF3 — the three light surfaces a field can sit on. It exists because
+     --n-200 was carrying field borders at 1.27 and --n-400 reaches only 2.78,
+     both under the 3.0 that WCAG 1.4.11 asks of a component boundary. */
+  --n-450: #888897;
   --n-150: #EFEFF3;
   --n-100: #F5F5F7;
   --n-000: #FFFFFF;
@@ -392,7 +397,7 @@
   --text-body:    var(--dk-1);
   --text-muted:   var(--dk-5);
   --text-subtle:  var(--dk-8);
-  --text-faint:   var(--dk-9);
+  --text-faint:   var(--dk-8);   /* 5.58 on --ink; --dk-9 measured 3.76 and failed */
   --text-accent:  var(--violet-300);
   --text-accent-2:var(--teal-300);
   --text-invert:  var(--n-900);
@@ -496,7 +501,7 @@
   --text-invert: var(--white);
 
   --border-1: var(--n-200);
-  --border-2: var(--n-200);
+  --border-2: var(--n-450);   /* 3.49 on white — WCAG 1.4.11 */
   --border-3: var(--n-200);
   --border-accent: var(--violet-300);
 
@@ -523,7 +528,7 @@
   --text-accent: var(--violet-700);
   --text-accent-2: var(--teal-700);
   --border-1: var(--n-200);
-  --border-2: var(--n-200);
+  --border-2: var(--n-450);   /* 3.49 on white — WCAG 1.4.11 */
   --border-3: var(--n-200);
   --border-accent: var(--violet-300);
   --focus-ring: var(--violet-500);

@@ -155,7 +155,11 @@ outline-offset: var(--s1);
 .ui-btn--ghost { background: transparent; color: var(--text-muted); }
 .ui-btn--ghost:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--surface-2); color: var(--text-strong); }
 
-.ui-btn--danger { background: var(--bad); color: var(--white); }
+/* Black, not white: white on --bad measures 4.38 and fails 4.5. Black
+   measures 4.80. The hover shade --bad-800 was already darker than the
+   resting one, so the button used to be MORE legible on hover than at
+   rest — the opposite of what a destructive action should do. */
+.ui-btn--danger { background: var(--bad); color: var(--black); }
 .ui-btn--danger:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--bad-800); }
 
 .ui-btn[disabled],

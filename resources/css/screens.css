@@ -192,7 +192,9 @@ border: var(--bw-hairline) solid var(--border-1);
 .jn__b b { font-size: var(--fs-sm); color: var(--text-strong); display: block; }
 .jn__b span { font-size: var(--fs-xs); color: var(--text-muted); }
 .jn__i.is-done .jn__d { background: var(--teal-500); border-color: var(--teal-500); }
-.jn__i.is-done .jn__d svg { color: var(--white); }
+/* 7.35. White on --teal-500 measures 2.86 — the exact pairing CLAUDE.md
+   names by hand as failing. The violet dot below keeps white at 8.6. */
+.jn__i.is-done .jn__d svg { color: var(--black); }
 .jn__i.is-now .jn__d { background: var(--violet-500); border-color: var(--violet-500); animation: jnHalo 2.2s infinite; }
 .jn__i.is-now .jn__d svg { color: var(--white); }
 @keyframes jnHalo {

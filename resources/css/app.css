@@ -655,7 +655,10 @@ border: var(--bw-hairline) solid var(--border-1);
     gap: var(--s3);
     padding: var(--s3) var(--s5);
     background: var(--warn);
-    color: var(--white);
+    /* 6.28. White on --warn measures 3.34 and fails — and this bar is the one
+       piece of chrome that must never be missed: it is what tells an admin they
+       are looking at someone else's account (art. 23). */
+    color: var(--black);
 font-size: var(--fs-sm);
     font-weight: var(--fw-semi);
     box-shadow: var(--sh-md);
