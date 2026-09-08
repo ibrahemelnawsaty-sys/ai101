@@ -86,7 +86,6 @@ function registerWizard(options = {}) {
     return {
         step: Math.min(Math.max(Number(options.startStep) || 1, 1), totalSteps),
         totalSteps,
-        restored: false,
         submitting: false,
 
         password: '',
@@ -94,13 +93,10 @@ function registerWizard(options = {}) {
         strength: 0,
         rules: { length: false, upper: false, lower: false, digit: false, symbol: false },
 
-        data: { terms_accepted: false },
-
         metLabel: copy.met || '',
         unmetLabel: copy.unmet || '',
 
         init() {
-            this.restore();
             this.$watch('step', () => this.persist());
         },
 
@@ -115,6 +111,23 @@ function registerWizard(options = {}) {
             const labels = Array.isArray(copy.strength) ? copy.strength : [];
             const index = Math.max(0, Math.min(this.strength - 1, labels.length - 1));
             return labels[index] || '';
+        },
+
+        /* Pure DOM helpers. They format what the user typed; they do not judge
+           it. Validation belongs to the server (art. 5) and the fields already
+           carry required / pattern / minlength for the browser's own check. */
+
+        capitalise(event) {
+            const el = event.target;
+            el.value = el.value.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+        },
+
+        lowercase(event) {
+            event.target.value = event.target.value.toLowerCase().trim();
+        },
+
+        digitsOnly(event) {
+            event.target.value = event.target.value.replace(/\D+/g, '');
         },
 
         scorePassword() {
@@ -148,51 +161,14 @@ function registerWizard(options = {}) {
             // The password never touches storage, and the draft is dropped the
             // moment the form is handed to the server.
             this.submitting = true;
-            this.clear();
         },
 
-        /* ---------------------------------------------------------------
-           Draft persistence.  Names and e-mail only: never the password,
-           never the consent checkbox — consent must be given deliberately
-           on the device in front of the person (PRD §9.2.1).
-           --------------------------------------------------------------- */
-
-        persist() {
-            if (!storageKey) return;
-            try {
-                window.localStorage.setItem(
-                    storageKey,
-                    JSON.stringify({ step: this.step }),
-                );
-            } catch (error) {
-                /* Private mode or a full quota: the wizard still works. */
-            }
-        },
-
-        restore() {
-            if (!storageKey) return;
-            try {
-                const raw = window.localStorage.getItem(storageKey);
-                if (!raw) return;
-                const saved = JSON.parse(raw);
-                const step = Number(saved.step);
-                if (step >= 1 && step <= this.totalSteps && step !== this.step) {
-                    this.step = step;
-                    this.restored = true;
-                }
-            } catch (error) {
-                /* A corrupt draft is discarded silently. */
-            }
-        },
-
-        clear() {
-            if (!storageKey) return;
-            try {
-                window.localStorage.removeItem(storageKey);
-            } catch (error) {
-                /* Nothing to do. */
-            }
-        },
+        /* Draft persistence was removed. It saved { step } and nothing else,
+           while the screen told the user "we restored what you entered". The
+           comment that used to sit here described names-and-email persistence
+           that was never written. Storing a half-filled registration on a
+           shared device is also a data-retention question (D-12, open), so the
+           honest answer today is to keep nothing and promise nothing. */
     };
 }
 

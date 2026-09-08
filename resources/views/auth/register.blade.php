@@ -73,8 +73,8 @@
     @else
 
         <div class="wiz"
-             x-data="registerWizard({ storageKey: 'athar.register.v1', totalSteps: 3, startStep: {{ $errors->any() ? 3 : 1 }} })"
-             x-cloak>
+             x-data="registerWizard({ totalSteps: 3 })"
+            >
 
             <header class="authcard__hd">
                 <h1>{{ __('auth.register.title') }}</h1>
@@ -102,18 +102,10 @@
 
             <p class="wiz__count u-num" aria-live="polite" x-text="stepLabel"></p>
 
-            {{-- Restored-from-storage notice --}}
-            <div class="note note--info" role="status" x-show="restored" x-cloak>
-                <svg aria-hidden="true"><use href="#i-info"/></svg>
-                <div>
-                    <b>{{ __('auth.register.restored_title') }}</b>
-                    <p>{{ __('auth.register.restored_body') }}</p>
-                </div>
-                <button type="button" class="note__close" @click="restored = false"
-                        aria-label="{{ __('auth.register.restored_dismiss') }}">
-                    <svg aria-hidden="true"><use href="#i-chev"/></svg>
-                </button>
-            </div>
+            {{-- The "we restored what you entered" notice was removed in D-46.
+                 It fired whenever a saved step number was found, but the draft
+                 saved the step and nothing else — so the user was told their
+                 input was restored while looking at empty fields. --}}
 
             {{-- Server-side error summary --}}
             @if ($errors->any())
@@ -143,7 +135,7 @@
                 {{-- ==========================================================
                      Step 1 - names
                      ========================================================== --}}
-                <section class="wiz__pane" x-show="step === 1" x-cloak
+                <section class="wiz__pane" x-show="step === 1"
                          aria-labelledby="step1Title">
                     <h2 id="step1Title" class="wiz__title">{{ __('auth.register.step_1') }}</h2>
                     <p class="wiz__hint">{{ __('auth.register.step_1_hint') }}</p>
@@ -155,29 +147,25 @@
                                         :label="__('auth.register.first_name_ar')"
                                         :placeholder="__('auth.register.ph_first_ar')"
                                         :value="old('first_name_ar')"
-                                        :error="$errors->first('first_name_ar')"
-                                        x-model="data.first_name_ar" data-rule="name_ar" @blur="validateField($event)"/>
+                                        :error="$errors->first('first_name_ar')" data-rule="name_ar"/>
 
                             <x-ui.input name="father_name_ar" required maxlength="20"
                                         :label="__('auth.register.father_name_ar')"
                                         :placeholder="__('auth.register.ph_father_ar')"
                                         :value="old('father_name_ar')"
-                                        :error="$errors->first('father_name_ar')"
-                                        x-model="data.father_name_ar" data-rule="name_ar" @blur="validateField($event)"/>
+                                        :error="$errors->first('father_name_ar')" data-rule="name_ar"/>
 
                             <x-ui.input name="grandfather_name_ar" required maxlength="20"
                                         :label="__('auth.register.grandfather_name_ar')"
                                         :placeholder="__('auth.register.ph_grandfather_ar')"
                                         :value="old('grandfather_name_ar')"
-                                        :error="$errors->first('grandfather_name_ar')"
-                                        x-model="data.grandfather_name_ar" data-rule="name_ar" @blur="validateField($event)"/>
+                                        :error="$errors->first('grandfather_name_ar')" data-rule="name_ar"/>
 
                             <x-ui.input name="family_name_ar" required maxlength="20"
                                         :label="__('auth.register.family_name_ar')"
                                         :placeholder="__('auth.register.ph_family_ar')"
                                         :value="old('family_name_ar')"
-                                        :error="$errors->first('family_name_ar')"
-                                        x-model="data.family_name_ar" data-rule="name_ar" @blur="validateField($event)"/>
+                                        :error="$errors->first('family_name_ar')" data-rule="name_ar"/>
                         </div>
                     </fieldset>
 
@@ -188,33 +176,29 @@
                                         :label="__('auth.register.first_name_en')"
                                         :placeholder="__('auth.register.ph_first_en')"
                                         :value="old('first_name_en')"
-                                        :error="$errors->first('first_name_en')"
-                                        x-model="data.first_name_en" data-rule="name_en"
-                                        @blur="capitalise($event); validateField($event)"/>
+                                        :error="$errors->first('first_name_en')" data-rule="name_en"
+                                        @blur="capitalise($event)"/>
 
                             <x-ui.input name="father_name_en" ltr required maxlength="20"
                                         :label="__('auth.register.father_name_en')"
                                         :placeholder="__('auth.register.ph_father_en')"
                                         :value="old('father_name_en')"
-                                        :error="$errors->first('father_name_en')"
-                                        x-model="data.father_name_en" data-rule="name_en"
-                                        @blur="capitalise($event); validateField($event)"/>
+                                        :error="$errors->first('father_name_en')" data-rule="name_en"
+                                        @blur="capitalise($event)"/>
 
                             <x-ui.input name="grandfather_name_en" ltr required maxlength="20"
                                         :label="__('auth.register.grandfather_name_en')"
                                         :placeholder="__('auth.register.ph_grandfather_en')"
                                         :value="old('grandfather_name_en')"
-                                        :error="$errors->first('grandfather_name_en')"
-                                        x-model="data.grandfather_name_en" data-rule="name_en"
-                                        @blur="capitalise($event); validateField($event)"/>
+                                        :error="$errors->first('grandfather_name_en')" data-rule="name_en"
+                                        @blur="capitalise($event)"/>
 
                             <x-ui.input name="family_name_en" ltr required maxlength="20"
                                         :label="__('auth.register.family_name_en')"
                                         :placeholder="__('auth.register.ph_family_en')"
                                         :value="old('family_name_en')"
-                                        :error="$errors->first('family_name_en')"
-                                        x-model="data.family_name_en" data-rule="name_en"
-                                        @blur="capitalise($event); validateField($event)"/>
+                                        :error="$errors->first('family_name_en')" data-rule="name_en"
+                                        @blur="capitalise($event)"/>
                         </div>
                     </fieldset>
                 </section>
@@ -222,7 +206,7 @@
                 {{-- ==========================================================
                      Step 2 - contact details
                      ========================================================== --}}
-                <section class="wiz__pane" x-show="step === 2" x-cloak
+                <section class="wiz__pane" x-show="step === 2"
                          aria-labelledby="step2Title">
                     <h2 id="step2Title" class="wiz__title">{{ __('auth.register.step_2') }}</h2>
                     <p class="wiz__hint">{{ __('auth.register.step_2_hint') }}</p>
@@ -235,9 +219,8 @@
                                     :placeholder="__('auth.register.phone_placeholder')"
                                     :hint="__('auth.register.phone_hint')"
                                     :value="old('phone')"
-                                    :error="$errors->first('phone')"
-                                    x-model="data.phone" data-rule="phone"
-                                    @input="digitsOnly($event)" @blur="validateField($event)"/>
+                                    :error="$errors->first('phone')" data-rule="phone"
+                                    @input="digitsOnly($event)"/>
                     </div>
 
                     <x-ui.input name="email" type="email" ltr inputmode="email"
@@ -245,9 +228,8 @@
                                 :label="__('auth.shared.email')"
                                 :placeholder="__('auth.shared.email_placeholder')"
                                 :value="old('email')"
-                                :error="$errors->first('email')"
-                                x-model="data.email" data-rule="email"
-                                @blur="lowercase($event); validateField($event)"/>
+                                :error="$errors->first('email')" data-rule="email"
+                                @blur="lowercase($event)"/>
 
                     {{-- Paste is blocked here on purpose (PRD 9.2.1): it defeats the check. --}}
                     <x-ui.input name="email_confirmation" type="email" ltr inputmode="email"
@@ -255,10 +237,9 @@
                                 :label="__('auth.register.email_confirm')"
                                 :placeholder="__('auth.register.email_confirm_placeholder')"
                                 :hint="__('auth.register.email_confirm_hint')"
-                                :error="$errors->first('email_confirmation')"
-                                x-model="data.email_confirmation" data-rule="email_confirm"
+                                :error="$errors->first('email_confirmation')" data-rule="email_confirm"
                                 @paste.prevent @drop.prevent
-                                @blur="lowercase($event); validateField($event)"/>
+                                @blur="lowercase($event)"/>
 
                     {{-- Gender is a required choice with no default: an unanswered radio
                          group is rejected by the FormRequest, not pre-filled here.
@@ -278,7 +259,7 @@
                 {{-- ==========================================================
                      Step 3 - password and consent
                      ========================================================== --}}
-                <section class="wiz__pane" x-show="step === 3" x-cloak
+                <section class="wiz__pane" x-show="step === 3"
                          aria-labelledby="step3Title">
                     <h2 id="step3Title" class="wiz__title">{{ __('auth.register.step_3') }}</h2>
                     <p class="wiz__hint">{{ __('auth.register.step_3_hint') }}</p>
@@ -345,8 +326,7 @@
                         required
                         class="check--terms"
                         :checked="(bool) old('terms_accepted')"
-                        :error="$errors->first('terms_accepted')"
-                        x-model="data.terms_accepted">
+                        :error="$errors->first('terms_accepted')">
                         {{ __('auth.register.terms_accept_before') }}
                         <a href="{{ route('terms') }}" target="_blank" rel="noopener">{{ __('auth.register.terms_link') }}</a>
                         {{ __('auth.register.terms_accept_and') }}
