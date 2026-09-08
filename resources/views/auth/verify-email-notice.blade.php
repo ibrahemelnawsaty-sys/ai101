@@ -25,6 +25,8 @@
 --}}
 @extends('layouts.auth')
 
+@section('pageTitle', __('auth.verify.title'))
+
 @section('content')
 
 <div class="authcard">

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\CohortStatus;
 use App\Enums\EmailTokenType;
+use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Events\AccountRegistered;
@@ -16,6 +17,7 @@ use App\Models\Cohort;
 use App\Models\LandingSetting;
 use App\Models\Profile;
 use App\Models\User;
+use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
@@ -43,6 +45,11 @@ final class RegisterController extends Controller
     {
         return view('auth.register', [
             'state' => 'ok',
+            // Built here, not in the view: a multi-line array inside a
+            // `:attr="[...]"` binding is silently truncated by Blade's attribute
+            // parser, which is what made this page a 500 (CONSTITUTION art. 5).
+            'genderOptions' => Options::fromEnum(Gender::class),
+            'registerCopy' => $this->clientCopy(),
             'registrationOpen' => $this->openCohort() !== null,
         ]);
     }
@@ -101,6 +108,35 @@ final class RegisterController extends Controller
      * The cohort currently accepting registrations, if any. Capacity and the
      * closing instant are both checked against the server clock (BR-07).
      */
+
+    /**
+     * Copy the wizard needs on the client: the strength meter, the rule
+     * ticks and the step counter.
+     *
+     * Assembled here rather than inside `@json([...])` in the view. Blade's
+     * directive parser mangles a nested multi-line array argument — it closed
+     * the array with a parenthesis and emitted invalid PHP, which is what made
+     * GET /register a 500 in production while every existing test, none of
+     * which rendered the page, stayed green.
+     *
+     * @return array<string, mixed>
+     */
+    private function clientCopy(): array
+    {
+        return [
+            'errors' => __('auth.register.errors'),
+            'met' => __('auth.register.rule_met'),
+            'unmet' => __('auth.register.rule_unmet'),
+            'strength' => [
+                __('auth.register.strength_0'),
+                __('auth.register.strength_1'),
+                __('auth.register.strength_2'),
+                __('auth.register.strength_3'),
+            ],
+            'step_of' => __('auth.register.step_of', ['current' => '{current}', 'total' => '{total}']),
+        ];
+    }
+
     private function openCohort(): ?Cohort
     {
         /** @var Cohort|null $cohort */

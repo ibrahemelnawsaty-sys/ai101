@@ -24,7 +24,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="referrer" content="same-origin">
 
-    <title>{{ $pageTitle ?? __('auth.login.title') }} · {{ config('athar.platform_name') }}</title>
+    <title>@yield('pageTitle', $pageTitle ?? __('auth.login.title')) · {{ config('athar.platform_name') }}</title>
     <meta name="description" content="{{ $pageDescription ?? '' }}">
 
     <link rel="icon" href="{{ asset('brand/icons/favicon-mark.svg') }}" type="image/svg+xml">

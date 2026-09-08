@@ -18,6 +18,8 @@
 --}}
 @extends('layouts.auth')
 
+@section('pageTitle', __('auth.register.title'))
+
 @section('content')
 
 <div class="authcard authcard--wide">
@@ -129,18 +131,7 @@
             @endif
 
             {{-- Live client-side copy, read from a JSON island so no Arabic sits in a .js file --}}
-            <script type="application/json" id="registerCopy">@json([
-                'errors' => __('auth.register.errors'),
-                'met' => __('auth.register.rule_met'),
-                'unmet' => __('auth.register.rule_unmet'),
-                'strength' => [
-                    __('auth.register.strength_0'),
-                    __('auth.register.strength_1'),
-                    __('auth.register.strength_2'),
-                    __('auth.register.strength_3'),
-                ],
-                'step_of' => __('auth.register.step_of', ['current' => '{current}', 'total' => '{total}']),
-            ], JSON_UNESCAPED_UNICODE)</script>
+            <script type="application/json" id="registerCopy">@json($registerCopy, JSON_UNESCAPED_UNICODE)</script>
 
             <form method="POST"
                   action="{{ route('register') }}"
@@ -280,10 +271,7 @@
                             :legend="__('auth.register.gender')"
                             :value="old('gender')"
                             :error="$errors->first('gender')"
-                            :options="[
-                                ['value' => 'male', 'label' => __('auth.register.gender_male')],
-                                ['value' => 'female', 'label' => __('auth.register.gender_female')],
-                            ]"/>
+                            :options="$genderOptions"/>
                     </div>
                 </section>
 

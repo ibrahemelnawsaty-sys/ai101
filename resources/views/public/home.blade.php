@@ -420,8 +420,8 @@
                 <span class="goal__n u-num" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                 <div class="tilt__in">
                     <div class="card__ic"><svg aria-hidden="true"><use href="#i-{{ data_get($goal, 'icon', 'spark') }}"/></svg></div>
-                    <h3>{{ data_get($goal, 'title') }}</h3>
-                    <p>{{ data_get($goal, 'body') }}</p>
+                    @if (filled(data_get($goal, 'title')))<h3>{{ data_get($goal, 'title') }}</h3>@endif
+                    @if (filled(data_get($goal, 'body')))<p>{{ data_get($goal, 'body') }}</p>@endif
                 </div>
             </div>
             @if ($loop->last)</div>@endif
@@ -449,8 +449,8 @@
                     <div class="who__i">
                         <span class="who__ck" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
                         <div>
-                            <b>{{ data_get($item, 'title') }}</b>
-                            <span>{{ data_get($item, 'body') }}</span>
+                            @if (filled(data_get($item, 'title')))<b>{{ data_get($item, 'title') }}</b>@endif
+                            @if (filled(data_get($item, 'body')))<span>{{ data_get($item, 'body') }}</span>@endif
                         </div>
                     </div>
                 @empty
@@ -484,12 +484,17 @@
         <article class="deck__c" data-i="{{ $loop->index }}">
             <span class="deck__no u-num" aria-hidden="true">{{ str_pad((string) data_get($week, 'index', $loop->iteration), 2, '0', STR_PAD_LEFT) }}</span>
             <h3>{{ data_get($week, 'title') }}</h3>
-            <div class="dt">
-                <span>{{ data_get($week, 'dates') }}</span>
-                @if (! is_null(data_get($week, 'sessions')))
-                    · <span>{{ trans_choice('landing.sections.sessions_choice', (int) data_get($week, 'sessions'), ['count' => data_get($week, 'sessions')]) }}</span>
-                @endif
-            </div>
+            @if (filled(data_get($week, 'dates')) || ! is_null(data_get($week, 'sessions')))
+                <div class="dt">
+                    @if (filled(data_get($week, 'dates')))
+                        <span>{{ data_get($week, 'dates') }}</span>
+                    @endif
+                    @if (! is_null(data_get($week, 'sessions')))
+                        @if (filled(data_get($week, 'dates'))) · @endif
+                        <span>{{ trans_choice('landing.sections.sessions_choice', (int) data_get($week, 'sessions'), ['count' => data_get($week, 'sessions')]) }}</span>
+                    @endif
+                </div>
+            @endif
             @if (filled(data_get($week, 'topics')))
                 <div class="deck__tags">
                     @foreach (data_get($week, 'topics') as $topic)
@@ -566,18 +571,24 @@
             @if ($loop->first)<div class="grid g2">@endif
 
             {{-- Flips on hover or focus; both faces stack under prefers-reduced-motion --}}
-            <div class="flip rv" tabindex="0">
+            {{-- The condition is repeated rather than hoisted into a raw PHP
+                 island, which gate:forbidden reports as a finding. --}}
+            <div class="flip rv" @if (filled(data_get($cert, 'tag')) || filled(data_get($cert, 'rows'))) tabindex="0" @endif>
                 <div class="flip__in">
                     <div class="flip__f flip__f--{{ data_get($cert, 'tone', 'violet') }}">
                         <div class="cert__seal cert__seal--{{ data_get($cert, 'tone', 'violet') }}">
                             <svg aria-hidden="true"><use href="#i-{{ data_get($cert, 'icon', 'badge') }}"/></svg>
                         </div>
-                        <h3>{{ data_get($cert, 'title') }}</h3>
-                        <p>{{ data_get($cert, 'body') }}</p>
-                        <div class="flip__hint">
-                            <svg aria-hidden="true"><use href="#i-eye"/></svg>
-                            {{ __('landing.sections.certificate_flip_hint') }}
-                        </div>
+                        @if (filled(data_get($cert, 'title')))<h3>{{ data_get($cert, 'title') }}</h3>@endif
+                        @if (filled(data_get($cert, 'body')))<p>{{ data_get($cert, 'body') }}</p>@endif
+                        {{-- Promising details behind a flip that has no back is worse
+                             than showing no hint at all. --}}
+                        @if (filled(data_get($cert, 'tag')) || filled(data_get($cert, 'rows')))
+                            <div class="flip__hint">
+                                <svg aria-hidden="true"><use href="#i-eye"/></svg>
+                                {{ __('landing.sections.certificate_flip_hint') }}
+                            </div>
+                        @endif
                     </div>
 
                     <div class="flip__b">
@@ -777,6 +788,11 @@
      Trainers
      $landing['trainers'] = kicker, title, lead, items[{initials,name,role,bio,photo_url}]
      ============================================================ --}}
+{{-- The list is empty by construction, not by absence of data: HomeController
+     does not read trainers from the enrolment table yet. An empty state here
+     would ask the centre to fix something no admin action can fix, so the
+     section stays out of the page until the list is wired. --}}
+@if (filled(data_get($landing, 'trainers.items')))
 <section class="sec sec--pale" id="trainers">
     <div class="wrap">
         <div class="sec__hd sec__hd--center rv">
@@ -808,6 +824,7 @@
         @endforelse
     </div>
 </section>
+@endif
 
 {{-- ============================================================
      FAQ - at least 8 entries, managed from the admin panel (BR-31)

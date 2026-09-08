@@ -121,7 +121,52 @@ return [
         ],
     ],
 
+    'headings' => [
+        'about' => [
+            'kicker' => 'About the programme',
+        ],
+        'goals' => [
+            'kicker' => 'Objectives',
+            'title' => 'What you will master',
+            'lead' => 'Objectives stated before you start, measured by the final project rather than by impression.',
+        ],
+        'audience' => [
+            'kicker' => 'Audience',
+            'title' => 'Who this programme is for',
+            'lead' => 'The groups the content was designed for.',
+        ],
+        'weeks' => [
+            'kicker' => 'Modules',
+            'title' => 'The four-week plan',
+        ],
+        'timeline' => [
+            'kicker' => 'Schedule',
+            'title' => 'Cohort timeline',
+            'lead' => 'Week dates exactly as fixed for the current cohort.',
+        ],
+        'certificates' => [
+            'kicker' => 'Certificates',
+            'title' => 'What you receive',
+            'lead' => 'Awarded once the passing conditions are met.',
+        ],
+        'trainers' => [
+            'kicker' => 'Trainers',
+            'title' => 'Who will train you',
+            'lead' => 'The team assigned to this cohort.',
+        ],
+        'faq' => [
+            'kicker' => 'Frequently asked',
+            'title' => 'Common questions',
+        ],
+        'final' => [
+            'eyebrow' => 'Next step',
+            'title' => 'Start here',
+            'body' => 'If you have a question before deciding, the FAQ is above and the contact channel is open.',
+        ],
+    ],
+
     'sections' => [
+        'date_range' => ':from — :to',
         'deck_hint' => 'Scroll to move between the weeks',
         'week_progress' => 'Week progress',
         'sessions_count' => 'live sessions',

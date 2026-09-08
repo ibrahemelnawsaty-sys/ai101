@@ -10,6 +10,7 @@ use App\Models\Cohort;
 use App\Models\LandingSetting;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Time\Clock;
+use App\Services\Time\RiyadhFormatter;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 
@@ -45,7 +46,7 @@ final class HomeController extends Controller
         CohortStatus::Running,
     ];
 
-    public function index(): View
+    public function index(RiyadhFormatter $formatter): View
     {
         $cohort = $this->featuredCohort();
         $facts = $this->cohortFacts($cohort);
@@ -57,7 +58,7 @@ final class HomeController extends Controller
             // §9.1.2 gives it its own copy and its own waiting-list form, so it
             // must never be mistaken for a generic empty screen.
             'registrationState' => $facts['is_registration_open'] === true ? 'open' : 'closed',
-            'landing' => $this->landingContent($cohort),
+            'landing' => $this->landingContent($cohort, $formatter),
             'cohort' => $facts,
             'serverNowIso' => Clock::now()->toIso8601String(),
             'copyrightYear' => Clock::riyadh()->year,
@@ -75,7 +76,7 @@ final class HomeController extends Controller
         foreach (self::COHORT_PREFERENCE as $status) {
             /** @var Cohort|null $cohort */
             $cohort = Cohort::query()
-                ->with(['program', 'landingSetting', 'weeks' => static fn ($query) => $query->orderBy('index')])
+                ->with(['program', 'landingSetting', 'weeks' => static fn ($query) => $query->withCount('sessions')->orderBy('index')])
                 ->withCount('sessions')
                 ->where('status', $status->value)
                 ->orderBy('start_date')
@@ -96,12 +97,12 @@ final class HomeController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function landingContent(?Cohort $cohort): array
+    private function landingContent(?Cohort $cohort, RiyadhFormatter $formatter): array
     {
         $program = $cohort?->program;
         $setting = $cohort?->landingSetting;
 
-        $weeks = $this->weekItems($cohort);
+        $weeks = $this->weekItems($cohort, $formatter);
 
         return [
             'hero' => [
@@ -114,56 +115,60 @@ final class HomeController extends Controller
             'ticker' => [],
             'trust' => [],
             'about' => [
-                'kicker' => null,
+                'kicker' => __('landing.headings.about.kicker'),
                 'title' => $program?->getAttribute('name_ar'),
                 'paragraphs' => array_filter([$program?->getAttribute('description')]),
                 'tags' => [],
                 'cards' => [],
             ],
             'goals' => [
-                'kicker' => null,
-                'title' => null,
-                'lead' => null,
-                'items' => $this->jsonList($program?->getAttribute('objectives')),
+                'kicker' => __('landing.headings.goals.kicker'),
+                'title' => __('landing.headings.goals.title'),
+                'lead' => __('landing.headings.goals.lead'),
+                'items' => $this->jsonCards($program?->getAttribute('objectives')),
             ],
             'audience' => [
-                'kicker' => null,
-                'title' => null,
-                'lead' => null,
-                'items' => $this->jsonList($program?->getAttribute('target_audience')),
+                'kicker' => __('landing.headings.audience.kicker'),
+                'title' => __('landing.headings.audience.title'),
+                'lead' => __('landing.headings.audience.lead'),
+                'items' => $this->jsonCards($program?->getAttribute('target_audience')),
             ],
             'certificates' => [
-                'kicker' => null,
-                'title' => null,
-                'lead' => null,
-                'items' => $this->jsonList($program?->getAttribute('certificates')),
+                'kicker' => __('landing.headings.certificates.kicker'),
+                'title' => __('landing.headings.certificates.title'),
+                'lead' => __('landing.headings.certificates.lead'),
+                'items' => $this->jsonCards($program?->getAttribute('certificates')),
             ],
             'weeks' => [
-                'kicker' => null,
-                'title' => null,
+                'kicker' => __('landing.headings.weeks.kicker'),
+                'title' => __('landing.headings.weeks.title'),
                 'items' => $weeks,
             ],
             'timeline' => [
-                'kicker' => null,
-                'title' => null,
-                'lead' => null,
+                'kicker' => __('landing.headings.timeline.kicker'),
+                'title' => __('landing.headings.timeline.title'),
+                'lead' => __('landing.headings.timeline.lead'),
                 'items' => $weeks,
             ],
+            // Trainers are not wired to the enrolment table yet, so the list is
+            // empty by construction rather than by absence of data. The template
+            // hides the whole section while it is empty instead of showing an
+            // empty state that no admin action could ever clear.
             'trainers' => [
-                'kicker' => null,
-                'title' => null,
-                'lead' => null,
+                'kicker' => __('landing.headings.trainers.kicker'),
+                'title' => __('landing.headings.trainers.title'),
+                'lead' => __('landing.headings.trainers.lead'),
                 'items' => [],
             ],
             'faq' => [
-                'kicker' => null,
-                'title' => null,
+                'kicker' => __('landing.headings.faq.kicker'),
+                'title' => __('landing.headings.faq.title'),
                 'items' => $this->faqItems($setting),
             ],
             'final' => [
-                'eyebrow' => null,
-                'title' => null,
-                'body' => null,
+                'eyebrow' => __('landing.headings.final.eyebrow'),
+                'title' => __('landing.headings.final.title'),
+                'body' => __('landing.headings.final.body'),
             ],
         ];
     }
@@ -245,7 +250,7 @@ final class HomeController extends Controller
     /**
      * @return list<array<string, mixed>>
      */
-    private function weekItems(?Cohort $cohort): array
+    private function weekItems(?Cohort $cohort, RiyadhFormatter $formatter): array
     {
         if ($cohort === null) {
             return [];
@@ -255,10 +260,14 @@ final class HomeController extends Controller
         // time but all() still types as array<int, ...>.
         return array_values(
             $cohort->weeks
-                ->map(static fn ($week): array => [
+                ->map(fn ($week): array => [
                     'index' => (int) $week->getAttribute('index'),
                     'title' => $week->getAttribute('title'),
-                    'objectives' => $week->getAttribute('objectives'),
+                    'dates' => $this->weekRange($week, $formatter),
+                    'sessions' => (int) ($week->getAttribute('sessions_count') ?? 0),
+                    // The column is `objectives`; the template calls them topics.
+                    // The mismatch is why the week tags never rendered.
+                    'topics' => $this->jsonStrings($week->getAttribute('objectives')),
                 ])
                 ->all(),
         );
@@ -292,7 +301,7 @@ final class HomeController extends Controller
     /**
      * @return list<string>
      */
-    private function jsonList(mixed $value): array
+    private function jsonStrings(mixed $value): array
     {
         if (! is_array($value)) {
             return [];
@@ -307,5 +316,68 @@ final class HomeController extends Controller
         }
 
         return $items;
+    }
+
+    /**
+     * The goals, audience and certificate templates each read `title` and
+     * `body` off every item. The admin stores those three lists as plain
+     * strings, so `data_get($item, 'title')` resolved to null on a string and
+     * all three sections rendered as empty shells: icon, number, nothing else.
+     *
+     * A plain string becomes the card's title, which is what those sentences
+     * are. An entry that is already an array keeps whatever it carries, so the
+     * day the admin screen starts storing richer objects nothing here changes.
+     *
+     * @return list<array{title: string|null, body: string|null}>
+     */
+    private function jsonCards(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ($value as $item) {
+            if (is_string($item) && $item !== '') {
+                $items[] = ['title' => $item, 'body' => null];
+
+                continue;
+            }
+
+            if (is_array($item)) {
+                $title = $item['title'] ?? null;
+                $body = $item['body'] ?? null;
+
+                if (is_string($title) || is_string($body)) {
+                    $items[] = [
+                        'title' => is_string($title) ? $title : null,
+                        'body' => is_string($body) ? $body : null,
+                    ] + $item;
+                }
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * The week's date span, shown under its title. Returns null rather than a
+     * half-formed range when the model has not cast the columns to dates, so a
+     * missing cast degrades to no line instead of a crash on a public page.
+     */
+    private function weekRange(mixed $week, RiyadhFormatter $formatter): ?string
+    {
+        $start = $week->getAttribute('start_date');
+        $end = $week->getAttribute('end_date');
+
+        if (! $start instanceof \DateTimeInterface || ! $end instanceof \DateTimeInterface) {
+            return null;
+        }
+
+        return __('landing.sections.date_range', [
+            'from' => $formatter->shortDate($start),
+            'to' => $formatter->shortDate($end),
+        ]);
     }
 }

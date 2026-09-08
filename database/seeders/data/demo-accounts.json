@@ -1,0 +1,47 @@
+{
+  "_note": "Roster for `php artisan athar:demo-accounts`. Lives beside the other seed content because it is data, not interface copy — which is also why Arabic is allowed here and not in app/ (CONSTITUTION art. 13 rule 3, gate G5). Arabic names are deliberate: a reviewer walking the platform should see real RTL name rendering on the digital card, the header and the certificate.",
+  "people": [
+    {
+      "role": "admin",
+      "local_part": "admin",
+      "phone": "0590000001",
+      "first_name_ar": "مدير",
+      "second_name_ar": "عبدالله",
+      "third_name_ar": "سعد",
+      "last_name_ar": "المنصة",
+      "first_name_en": "Admin",
+      "second_name_en": "Abdullah",
+      "third_name_en": "Saad",
+      "last_name_en": "Platform",
+      "gender": "male"
+    },
+    {
+      "role": "trainer",
+      "local_part": "trainer",
+      "phone": "0590000002",
+      "first_name_ar": "سعد",
+      "second_name_ar": "عبدالله",
+      "third_name_ar": "ناصر",
+      "last_name_ar": "القحطاني",
+      "first_name_en": "Saad",
+      "second_name_en": "Abdullah",
+      "third_name_en": "Nasser",
+      "last_name_en": "Alqahtani",
+      "gender": "male"
+    },
+    {
+      "role": "participant",
+      "local_part": "student",
+      "phone": "0590000003",
+      "first_name_ar": "محمد",
+      "second_name_ar": "عبدالله",
+      "third_name_ar": "سعد",
+      "last_name_ar": "القحطاني",
+      "first_name_en": "Mohammed",
+      "second_name_en": "Abdullah",
+      "third_name_en": "Saad",
+      "last_name_en": "Alqahtani",
+      "gender": "male"
+    }
+  ]
+}

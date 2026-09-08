@@ -15,7 +15,6 @@ use App\Services\Time\Clock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Throwable;
 
 /**
  * Create a platform account from the console.
@@ -116,7 +115,7 @@ final class MakeUser extends Command
 
                 return $user;
             });
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->error('Nothing was written. The transaction was rolled back.');
             $this->line('  '.$e->getMessage());
 
@@ -157,11 +156,17 @@ final class MakeUser extends Command
     {
         $given = $this->option('role');
 
-        $value = is_string($given) && $given !== ''
-            ? $given
-            : $this->choice('Role', UserRole::values(), 'admin');
+        // choice() is typed array|string because it also serves multi-select
+        // prompts; this one is single, so narrow it here rather than casting an
+        // array to string and printing "Array" in the error below.
+        if (is_string($given) && $given !== '') {
+            $value = $given;
+        } else {
+            $chosen = $this->choice('Role', UserRole::values(), 'admin');
+            $value = is_array($chosen) ? (string) reset($chosen) : (string) $chosen;
+        }
 
-        $role = UserRole::tryFrom((string) $value);
+        $role = UserRole::tryFrom($value);
 
         if ($role === null) {
             $this->error('Unknown role: '.$value.'. Expected one of: '.implode(', ', UserRole::values()));
