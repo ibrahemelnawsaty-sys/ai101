@@ -20,7 +20,6 @@
         @if (! $isImpersonating && $unreadCount > 0)
             <form method="POST" action="{{ route('notifications.readAll') }}" class="toolbar__end">
                 @csrf
-                @method('PUT')
                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('notifications.mark_all_read') }}</x-ui.button>
             </form>
         @endif

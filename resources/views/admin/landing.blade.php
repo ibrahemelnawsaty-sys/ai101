@@ -43,7 +43,7 @@
 
             <form method="POST" action="{{ route('admin.landing.update') }}">
                 @csrf
-                @method('PATCH')
+                @method('PUT')
 
                 <x-ui.toggle name="is_registration_open" value="1"
                     :checked="old('is_registration_open', $settings->isRegistrationOpen)"
@@ -95,7 +95,7 @@
                 @foreach ($settings->faq as $entry)
                     <form method="POST" action="{{ route('admin.landing.faq.update', $entry->id) }}">
                         @csrf
-                        @method('PATCH')
+                        @method('PUT')
 
                         <x-ui.input name="question" required
                             :label="__('admin.landing.faq_question')"

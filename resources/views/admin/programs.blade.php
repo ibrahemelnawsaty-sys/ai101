@@ -177,7 +177,7 @@
 
                 <form method="POST" action="{{ route('admin.programs.archive', $archiving->id) }}">
                     @csrf
-                    @method('PATCH')
+                    @method('PUT')
 
                     <div class="row__acts">
                         <x-ui.button variant="danger" type="submit">{{ __('app.archive') }}</x-ui.button>

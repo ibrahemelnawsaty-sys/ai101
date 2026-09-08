@@ -105,7 +105,7 @@
 
             <form method="POST" action="{{ route('admin.users.role', $user->id) }}">
                 @csrf
-                @method('PATCH')
+                @method('PUT')
 
                 <x-ui.select name="role" required :label="__('admin.users.actions.change_role')"
                     :options="$roleOptions" :value="old('role', $user->role)"

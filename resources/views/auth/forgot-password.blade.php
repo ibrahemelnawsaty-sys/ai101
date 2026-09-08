@@ -92,7 +92,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('password.request') }}" class="form" novalidate>
+            <form method="POST" action="{{ route('password.email') }}" class="form" novalidate>
                 @csrf
 
                 <x-ui.input

@@ -177,7 +177,6 @@
 
                 <form method="POST" action="{{ route('trainer.sessions.cancel', $cancelling->id) }}">
                     @csrf
-                    @method('PATCH')
 
                     <p><b>{{ $cancelling->topic }}</b> ·
                         <span class="u-num">{{ \App\Support\Dates::dateTime($cancelling->startsAt) }}</span></p>

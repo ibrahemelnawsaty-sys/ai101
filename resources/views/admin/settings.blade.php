@@ -39,7 +39,7 @@
         <x-ui.card class="dc--span" icon="globe" :title="__('admin.settings.centre_info')">
             <form method="POST" action="{{ route('admin.settings.update') }}">
                 @csrf
-                @method('PATCH')
+                @method('PUT')
 
                 <div class="f2">
                     <x-ui.input name="centre_name" required
@@ -96,7 +96,7 @@
             @else
                 <form method="POST" action="{{ route('admin.settings.notifications') }}">
                     @csrf
-                    @method('PATCH')
+                    @method('PUT')
 
                     @foreach ($settings->notificationDefaults as $preference)
                         <div class="row">

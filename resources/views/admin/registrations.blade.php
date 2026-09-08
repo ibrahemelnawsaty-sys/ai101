@@ -146,6 +146,7 @@
                 <div class="f2">
                     <form method="POST" action="{{ route('admin.registrations.approve', $reviewing->id) }}">
                         @csrf
+                        @method('PUT')
                         <p>{{ __('admin.registrations.approve_hint') }}</p>
                         <div class="row__acts">
                             <x-ui.button variant="primary" type="submit"
@@ -155,6 +156,7 @@
 
                     <form method="POST" action="{{ route('admin.registrations.reject', $reviewing->id) }}">
                         @csrf
+                        @method('PUT')
 
                         <x-ui.textarea name="rejection_reason" rows="3" required minlength="10"
                             :label="__('admin.registrations.reject_reason')"
