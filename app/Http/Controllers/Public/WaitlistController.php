@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Events\WaitlistJoined;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\WaitlistRequest;
 use App\Services\Audit\AuditLogger;
@@ -36,6 +37,10 @@ final class WaitlistController extends Controller
             before: null,
             after: ['email' => (string) $request->validated('email')],
         );
+
+        // No account, no profile, no name — an address and a promise, which
+        // is all the copy claims.
+        WaitlistJoined::dispatch((string) $request->validated('email'));
 
         return redirect()
             ->route('home')

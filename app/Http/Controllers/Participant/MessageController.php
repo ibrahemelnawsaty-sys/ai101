@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use Illuminate\Support\Str;
+use App\Events\MessageReceived;
 use App\Enums\ThreadType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\ReportMessageRequest;
@@ -193,6 +195,30 @@ final class MessageController extends Controller
         ]);
 
         $thread->touch();
+
+        // Everyone on the thread except the person who just wrote. An excerpt
+        // only: reproducing a conversation by e-mail defeats the point of
+        // holding it inside the platform, where it is scoped, reportable and
+        // audited.
+        //
+        // `counterpartFor()` and `displayName()` were assumed and do not exist;
+        // the thread's own `users` relation and the profile's `full_name_ar`
+        // are what the project actually has.
+        $sender = $request->user();
+        $senderName = (string) ($sender?->profile?->getAttribute('full_name_ar') ?? '');
+
+        foreach ($thread->users as $participant) {
+            if ($sender !== null && $participant->is($sender)) {
+                continue;
+            }
+
+            MessageReceived::dispatch(
+                $participant,
+                $senderName,
+                (string) $thread->getAttribute('title'),
+                Str::limit((string) $request->validated('body'), 120),
+            );
+        }
 
         return back()->with('status', __('messages.sent'));
     }

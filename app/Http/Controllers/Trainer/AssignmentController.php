@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
+use App\Support\Dates;
+use App\Events\AssignmentPublished;
 use App\Enums\AssignmentStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
@@ -130,10 +132,20 @@ final class AssignmentController extends Controller
         /** @var User $trainer */
         $trainer = $request->user();
 
-        Assignment::query()->create(array_merge($request->columns(), [
+        $assignment = Assignment::query()->create(array_merge($request->columns(), [
             'cohort_id' => $request->cohortId(),
             'created_by' => $trainer->getKey(),
         ]));
+
+        // Addressed to the cohort; the listener resolves who is actively
+        // enrolled at send time rather than at publish time.
+        AssignmentPublished::dispatch(
+            (string) $assignment->getAttribute('cohort_id'),
+            (string) $assignment->getAttribute('title'),
+            (int) $assignment->getAttribute('max_score'),
+            Dates::dateTime($assignment->getAttribute('due_at')),
+            route('trainer.assignments'),
+        );
 
         return back()->with('status', __('trainer.assignments.created'));
     }

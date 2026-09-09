@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\EnrollmentRejected;
+use App\Events\EnrollmentApproved;
 use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
@@ -125,6 +127,13 @@ final class RegistrationController extends Controller
             $cohort->forceFill(['seats_taken' => (int) $cohort->seats_taken + 1])->save();
         });
 
+        // Announced after the row is saved, never before: a letter about a
+        // place that failed to save is a promise the platform cannot keep.
+        EnrollmentApproved::dispatch(
+            $enrollment->user,
+            (string) $enrollment->cohort?->getAttribute('name'),
+        );
+
         return back()->with('status', __('admin.registrations.approved'));
     }
 
@@ -138,6 +147,14 @@ final class RegistrationController extends Controller
         ]);
 
         $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
+
+        // The reason travels with the event because the letter must give one:
+        // a refusal without one is exactly the shape art. 7 forbids.
+        EnrollmentRejected::dispatch(
+            $enrollment->user,
+            (string) config('athar.program_name'),
+            $request->reason(),
+        );
 
         return back()->with('status', __('admin.registrations.rejected'));
     }
