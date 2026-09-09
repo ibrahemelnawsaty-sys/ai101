@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use Illuminate\Support\Facades\DB;
+use App\Services\Storage\PrivateFileService;
+use App\Exceptions\FileException;
 use App\Enums\AssignmentStatus;
 use App\Enums\EvaluationEntity;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
@@ -48,7 +51,30 @@ final class AssignmentController extends Controller
     /** The Article 17 screen names, and the names of their loading skeletons. */
     private const SCREEN_INDEX = 'assignments';
 
-    public function __construct(private readonly ScoreCalculator $scores) {}
+    public function __construct(
+        private readonly ScoreCalculator $scores,
+        private readonly PrivateFileService $files,
+    ) {}
+
+    /**
+     * The uploaded files, as a flat list.
+     *
+     * `$request->file('files')` hands back a single UploadedFile when one was
+     * sent, an array when several were, and null when none. Normalising it here
+     * keeps every caller from having to remember that.
+     *
+     * @return array<int, mixed>
+     */
+    private function uploads(SubmitAssignmentRequest $request): array
+    {
+        $files = $request->file('files');
+
+        if ($files === null) {
+            return [];
+        }
+
+        return array_values(is_array($files) ? $files : [$files]);
+    }
 
     public function index(Request $request): View
     {
@@ -270,23 +296,51 @@ final class AssignmentController extends Controller
             ->where('user_id', $user->getKey())
             ->max('version');
 
-        // NOTE — the uploaded files are validated here (count, size, declared
-        // extension) but are stored by App\Services\Storage, which sniffs the
-        // real type from the file's bytes and writes it outside the web root
-        // with a random name (PRD §12.5). That service is not part of this
-        // slice; until it lands, `files` is written empty rather than pointing
-        // at an unchecked path, and the GitHub link carries the hand-in.
-        Submission::query()->create([
-            'assignment_id' => $assignment->getKey(),
-            'user_id' => $user->getKey(),
-            'files' => [],
-            'github_url' => $request->validated('github_url'),
-            'note' => $request->validated('note'),
-            'submitted_at' => $now,
-            'is_late' => $isLate,
-            'version' => $previous + 1,
-            'status' => 'submitted',
-        ]);
+        // Files are stored through App\Services\Storage, which sniffs the real
+        // type from the bytes and writes outside the web root under a random
+        // name (PRD §12.5).
+        //
+        // This used to read `'files' => []`, under a comment saying the storage
+        // service "is not part of this slice; until it lands". The service HAD
+        // landed — PrivateFileService was complete and had zero callers — so
+        // every file a trainee attached was validated, counted as a valid
+        // hand-in, and then thrown away. The trainee was told it worked and the
+        // trainer saw nothing. A stale comment described the code, and the code
+        // was believed.
+        //
+        // Storing and recording happen in ONE transaction: a file that fails to
+        // store must not leave a submission claiming to hold it, and a row that
+        // fails to write must not leave an orphan on disk.
+        try {
+            DB::transaction(function () use ($request, $assignment, $user, $now, $isLate, $previous): void {
+                $descriptors = [];
+
+                foreach ($this->uploads($request) as $file) {
+                    $descriptors[] = $this->files->store(
+                        $file,
+                        'submissions/'.$assignment->getKey(),
+                        $user,
+                    );
+                }
+
+                Submission::query()->create([
+                    'assignment_id' => $assignment->getKey(),
+                    'user_id' => $user->getKey(),
+                    'files' => $descriptors,
+                    'github_url' => $request->validated('github_url'),
+                    'note' => $request->validated('note'),
+                    'submitted_at' => $now,
+                    'is_late' => $isLate,
+                    'version' => $previous + 1,
+                    'status' => 'submitted',
+                ]);
+            });
+        } catch (FileException $failure) {
+            // The service refuses a file whose bytes do not match what it claims
+            // to be, among other things. The trainee gets the reason in Arabic
+            // and nothing is half-accepted.
+            return back()->withErrors(['files' => $failure->getMessage()]);
+        }
 
         return redirect()
             ->route('assignments.show', $assignment)

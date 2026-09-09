@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use Illuminate\Support\Facades\DB;
+use App\Services\Storage\PrivateFileService;
+use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\SubmitFinalProjectRequest;
@@ -33,6 +36,8 @@ use Illuminate\Http\Request;
  */
 final class FinalProjectController extends Controller
 {
+    public function __construct(private readonly PrivateFileService $files) {}
+
     use ResolvesActiveCohort;
 
     public function show(Request $request): View
@@ -126,19 +131,43 @@ final class FinalProjectController extends Controller
             ->where('user_id', $user->getKey())
             ->max('version');
 
-        // The stored files are written by App\Services\Storage, which sniffs
-        // the real type from the bytes and keeps the file outside the web root
-        // (PRD §12.5); that service is not part of this slice.
-        ProjectSubmission::query()->create([
-            'final_project_id' => $project->getKey(),
-            'user_id' => $user->getKey(),
-            'files' => [],
-            'github_url' => $request->validated('github_url'),
-            'description' => $request->validated('description'),
-            'submitted_at' => $now,
-            'is_late' => $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt)),
-            'version' => $previous + 1,
-        ]);
+        // Same defect as the assignment screen, same fix (D-56): this wrote
+        // `'files' => []` under a comment claiming the storage service "is not
+        // part of this slice", while PrivateFileService sat complete with no
+        // callers. Half the marks in the programme live in this project, and
+        // every file attached to it was accepted and thrown away.
+        //
+        // Storing and recording in one transaction: neither a submission that
+        // claims files it does not have, nor a file with no row pointing at it.
+        try {
+            DB::transaction(function () use ($request, $project, $user, $now, $dueAt, $previous): void {
+                $descriptors = [];
+
+                $files = $request->file('files');
+                $files = $files === null ? [] : (is_array($files) ? $files : [$files]);
+
+                foreach ($files as $file) {
+                    $descriptors[] = $this->files->store(
+                        $file,
+                        'final-projects/'.$project->getKey(),
+                        $user,
+                    );
+                }
+
+                ProjectSubmission::query()->create([
+                    'final_project_id' => $project->getKey(),
+                    'user_id' => $user->getKey(),
+                    'files' => $descriptors,
+                    'github_url' => $request->validated('github_url'),
+                    'description' => $request->validated('description'),
+                    'submitted_at' => $now,
+                    'is_late' => $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt)),
+                    'version' => $previous + 1,
+                ]);
+            });
+        } catch (FileException $failure) {
+            return back()->withErrors(['files' => $failure->getMessage()]);
+        }
 
         return redirect()
             ->route('finalProject')
