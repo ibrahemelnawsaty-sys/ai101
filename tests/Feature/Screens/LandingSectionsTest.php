@@ -34,6 +34,10 @@ beforeEach(function (): void {
 });
 
 it('PRD §9.1.1: كل محطة في الخط الزمني تحمل تاريخها', function (): void {
+    // The original defect: the controller produced `dates` and the template read
+    // `when`, so every milestone rendered as an empty <span>. WHICH milestones
+    // the section lists is a separate contract, asserted in ProgramTimelineTest;
+    // this one guards only that nothing is printed without its date.
     makeWeek($this->cohort, 1, [
         'title' => 'WEEK-ONE-TITLE',
         'start_date' => riyadhAt('2026-10-04 00:00:00'),
@@ -45,7 +49,7 @@ it('PRD §9.1.1: كل محطة في الخط الزمني تحمل تاريخه�
     // The milestone list, isolated so a date printed elsewhere cannot pass it.
     expect(preg_match('/<ol class="tl__row">(.*?)<\/ol>/s', $body, $row))->toBe(1);
 
-    expect($row[1])->toContain('WEEK-ONE-TITLE')
+    expect($row[1])->toContain('2026')
         // An empty <span></span> is what the mismatch produced.
         ->and($row[1])->not->toMatch('/<span>\s*<\/span>/');
 });

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Enums\CohortStatus;
+use App\Enums\SessionType;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
+use App\Models\FinalProject;
 use App\Models\LandingSetting;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Time\Clock;
@@ -168,23 +170,11 @@ final class HomeController extends Controller
                 'title' => __('landing.headings.weeks.title'),
                 'items' => $weeks,
             ],
-            // The timeline template prints `when`; the week list carries the same
-            // value under `dates`. Handing it the week list unchanged rendered a
-            // row of empty <span>s — four milestone titles with no date beside
-            // any of them. It is mapped rather than aliased so the two sections
-            // can diverge when the timeline grows the rest of the milestones
-            // PRD §9.1.1 asks for (registration, intro, project, closing).
             'timeline' => [
                 'kicker' => __('landing.headings.timeline.kicker'),
                 'title' => __('landing.headings.timeline.title'),
                 'lead' => __('landing.headings.timeline.lead'),
-                'items' => array_map(
-                    static fn (array $week): array => [
-                        'title' => $week['title'],
-                        'when' => $week['dates'],
-                    ],
-                    $weeks,
-                ),
+                'items' => $this->timelineMilestones($cohort, $weeks, $formatter),
             ],
             // Trainers are not wired to the enrolment table yet, so the list is
             // empty by construction rather than by absence of data. The template
@@ -542,6 +532,103 @@ final class HomeController extends Controller
         }
 
         return __('landing.sections.date_range', [
+            'from' => $formatter->shortDate($start),
+            'to' => $formatter->shortDate($end),
+        ]);
+    }
+
+    /**
+     * The programme's stages, in order, each with a real date (PRD §9.1.1).
+     *
+     * This section used to be handed the week list verbatim, so it repeated the
+     * four cards above it and named no other stage at all. §9.1.1 asks for the
+     * whole arc, and every date below already exists on the cohort:
+     *
+     *   registration → `cohorts.registration_closes_at`
+     *   intro        → the `intro` session's date
+     *   the weeks    → first week's start to last week's end
+     *   the project  → `final_projects.due_at`
+     *   the ceremony → the `closing` session's date
+     *
+     * A stage the centre has not scheduled is DROPPED rather than printed with
+     * an empty date beside it: a milestone with no date is what this section
+     * looked like before, and it told the visitor nothing.
+     *
+     * The certificate stage that §9.1.1 also names is deliberately absent — no
+     * column anywhere stores a planned issuance date, and inventing one would be
+     * an assumption inside the certificate rules, where none is permitted. It is
+     * recorded as an open decision instead.
+     *
+     * @param  list<array<string, mixed>>  $weeks
+     * @return list<array{title: string, when: string}>
+     */
+    private function timelineMilestones(?Cohort $cohort, array $weeks, RiyadhFormatter $formatter): array
+    {
+        if ($cohort === null) {
+            return [];
+        }
+
+        $milestones = [];
+
+        $add = static function (?string $title, mixed $date) use (&$milestones, $formatter): void {
+            if ($title === null || ! $date instanceof \DateTimeInterface) {
+                return;
+            }
+
+            $milestones[] = ['title' => $title, 'when' => $formatter->shortDate($date)];
+        };
+
+        $add(__('landing.headings.timeline.registration_closes'), $cohort->registration_closes_at);
+        $add(__('landing.headings.timeline.intro_session'), $this->sessionDate($cohort, SessionType::Intro));
+
+        // The four weeks as one stage: their individual titles are the section
+        // directly above this one, and repeating them here is what made the
+        // timeline a duplicate rather than an arc.
+        $span = $this->weeksSpan($cohort, $formatter);
+
+        if ($span !== null && $weeks !== []) {
+            $milestones[] = ['title' => __('landing.headings.timeline.training_weeks'), 'when' => $span];
+        }
+
+        $add(__('landing.headings.timeline.final_project'), $this->finalProjectDue($cohort));
+        $add(__('landing.headings.timeline.closing_session'), $this->sessionDate($cohort, SessionType::Closing));
+
+        return $milestones;
+    }
+
+    /** The date of the cohort's first session of a given type, if it has one. */
+    private function sessionDate(Cohort $cohort, SessionType $type): ?\DateTimeInterface
+    {
+        $date = $cohort->sessions()
+            ->where('type', $type->value)
+            ->orderBy('date')
+            ->value('date');
+
+        return $date instanceof \DateTimeInterface ? $date : null;
+    }
+
+    /** The deadline the centre set for the final project, if it set one. */
+    private function finalProjectDue(Cohort $cohort): ?\DateTimeInterface
+    {
+        $due = FinalProject::query()
+            ->where('cohort_id', $cohort->getKey())
+            ->orderBy('due_at')
+            ->value('due_at');
+
+        return $due instanceof \DateTimeInterface ? $due : null;
+    }
+
+    /** First week's start to last week's end, as one range. */
+    private function weeksSpan(Cohort $cohort, RiyadhFormatter $formatter): ?string
+    {
+        $start = $cohort->weeks->min('start_date');
+        $end = $cohort->weeks->max('end_date');
+
+        if (! $start instanceof \DateTimeInterface || ! $end instanceof \DateTimeInterface) {
+            return null;
+        }
+
+        return __('landing.headings.timeline.range', [
             'from' => $formatter->shortDate($start),
             'to' => $formatter->shortDate($end),
         ]);

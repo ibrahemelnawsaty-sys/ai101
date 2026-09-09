@@ -165,7 +165,16 @@ return [
         'timeline' => [
             'kicker' => 'الجدول',
             'title' => 'الخط الزمني للدفعة',
-            'lead' => 'مواعيد الأسابيع كما هي مثبَتة في الدفعة الحالية.',
+            'lead' => 'مراحل البرنامج بمواعيدها كما هي مثبَتة في الدفعة الحالية.',
+            // The stage names the platform gives its own milestones — interface
+            // chrome, not programme copy, so they belong here and not in the
+            // database. Every DATE beside them comes from the cohort (BR-31).
+            'registration_closes' => 'إغلاق التسجيل',
+            'intro_session' => 'اللقاء التعريفي',
+            'training_weeks' => 'الأسابيع التدريبية',
+            'final_project' => 'تسليم المشروع الختامي',
+            'closing_session' => 'الحفل الختامي',
+            'range' => ':from — :to',
         ],
         'certificates' => [
             'kicker' => 'الشهادات',
