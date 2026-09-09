@@ -34,9 +34,17 @@ final class EmailPalette
     /** Colour roles a letter may ask for. */
     private const COLOURS = [
         'brand' => 'violet-500',
+        'brandDeep' => 'violet-900',
         'brandDark' => 'violet-700',
+        'brandLight' => 'violet-300',
+        'brandTint' => 'violet-050',
         'accent' => 'teal-500',
-        'ink' => 'n-900',
+        'accentDark' => 'teal-700',
+        'accentLight' => 'teal-300',
+        'accentTint' => 'teal-100',
+        'ink' => 'ink',
+        'inkSoft' => 'ink-3',
+        'inkText' => 'n-900',
         'body' => 'n-600',
         'muted' => 'n-500',
         'line' => 'n-200',
@@ -60,6 +68,8 @@ final class EmailPalette
         'textSm' => 'fs-sm',
         'textXs' => 'fs-xs',
         'cardWidth' => 'd-9',
+        'gapHuge' => 's12',
+        'radiusPill' => 's11',
     ];
 
     /**

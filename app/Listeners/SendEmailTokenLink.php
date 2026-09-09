@@ -19,9 +19,10 @@ use Illuminate\Support\Facades\Mail;
  * `IssuesEmailTokens` describes in its own comment: the controller mints the
  * token and announces it, and the mail layer listens and sends.
  *
- * Laravel 11 discovers listeners in `app/Listeners` by the type it accepts, so
- * no registration is needed and none is added: a listener that has to be
- * remembered in a provider is a listener that will be forgotten.
+ * Listeners are discovered by the type they accept, and `bootstrap/app.php`
+ * now says so explicitly rather than trusting a framework default. The failure
+ * mode of an unregistered listener is silence — it does not error, it simply
+ * never runs — and silence is what hid this gap in the first place.
  *
  * FAILURE IS SWALLOWED, DELIBERATELY. A send that fails must not roll anything
  * back: the token is already stored and still valid, and the account is intact.

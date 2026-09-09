@@ -59,6 +59,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // proxy ranges are confirmed they must be listed explicitly via
         // trustProxies(); until then the direct remote address is used.
     })
+    /*
+     * Event listeners are discovered from app/Listeners rather than listed.
+     *
+     * Stated explicitly instead of relying on the framework default, because
+     * the default is exactly the kind of thing that is true until it is not —
+     * and the failure mode here is silent: a listener that is never registered
+     * does not error, it simply never runs. That is precisely what happened
+     * before D-49, when four events were dispatched and app/Listeners did not
+     * exist at all.
+     */
+    ->withEvents(discover: [__DIR__.'/../app/Listeners'])
     ->withSchedule(function (Schedule $schedule): void {
         // Shared hosting has no supervisor and no long-lived daemon
         // (Article 10). A single cPanel cron entry calls `schedule:run` every

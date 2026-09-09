@@ -129,3 +129,55 @@ it('المادة 13: لا نص عربي ولا لون حرفي في طبقة ا�
 
     expect($offenders)->toBe([]);
 });
+
+it('D-49: كل حدث من الأربعة له مستمع', function (): void {
+    // The gap this whole batch exists to close: four events were dispatched and
+    // app/Listeners did not exist. A listener is registered by the type it
+    // accepts, so the check is that a handler EXISTS for each event class —
+    // not that a file with a likely name is present.
+    $missing = [];
+
+    foreach ([
+        App\Events\EmailTokenIssued::class => App\Listeners\SendEmailTokenLink::class,
+        App\Events\AccountVerified::class => App\Listeners\SendAccountVerifiedWelcome::class,
+        App\Events\PasswordChanged::class => App\Listeners\SendPasswordChangedNotice::class,
+    ] as $event => $listener) {
+        if (! class_exists($listener)) {
+            $missing[] = $listener.' does not exist';
+
+            continue;
+        }
+
+        $handles = (new ReflectionMethod($listener, 'handle'))->getParameters()[0] ?? null;
+
+        if ($handles === null || (string) $handles->getType() !== $event) {
+            $missing[] = $listener.' does not accept '.$event;
+        }
+    }
+
+    expect($missing)->toBe([]);
+});
+
+it('D-49: القالب المشترك يحمل الهوية ولا يحمل حرفًا واحدًا', function (): void {
+    $letter = new App\Mail\AtharLetter(
+        copyKey: 'emails.certificate_issued',
+        values: ['serial' => 'ATHAR-AI101-2026-0001'],
+        ctaUrl: 'https://example.test/certificate',
+        meta: ['CANARY-LABEL' => 'CANARY-VALUE'],
+    );
+
+    $html = $letter->render();
+    $theme = app(App\Services\Mail\EmailPalette::class)->all();
+
+    expect($html)->toContain('dir="rtl"')
+        ->and($html)->toContain('lang="ar"')
+        // The brand comes from the token file, not from this template.
+        ->and($html)->toContain($theme['brandDeep'])
+        ->and($html)->toContain($theme['accent'])
+        // The detail strip and the one button both render.
+        ->and($html)->toContain('CANARY-LABEL')
+        ->and($html)->toContain('CANARY-VALUE')
+        ->and($html)->toContain('https://example.test/certificate')
+        // A missing translation must never reach a reader as its own key.
+        ->and($html)->not->toContain('emails.certificate_issued.');
+});

@@ -72,6 +72,7 @@ final class EmailTokenLink extends Mailable implements ShouldQueue
                 'name' => $this->displayName(),
                 'programName' => (string) config('athar.program_name'),
                 'platformName' => (string) config('athar.platform_name'),
+                'tagline' => (string) config('athar.tagline'),
                 'contactEmail' => (string) config('athar.email'),
                 'homeUrl' => (string) config('app.url'),
             ],
