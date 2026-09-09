@@ -745,7 +745,13 @@ border: var(--bw-icon) solid var(--border-2);
   transform-style: preserve-3d;
   transition: transform 240ms var(--e-out);
   aspect-ratio: 1.586 / 1;
-min-block-size: var(--d-4);
+  min-block-size: var(--d-4);
+  /* A card is a card. Without a ceiling this grew to the full width of the
+     dashboard column — on a wide screen it rendered over a thousand pixels
+     across, at which point the type inside it is sized for something the
+     size of a poster (D-57). */
+  max-inline-size: var(--d-8);
+  margin-inline: auto;
 }
 .idcard__sheen {
   position: absolute;
@@ -770,8 +776,19 @@ background-size: var(--s9) var(--s9);
 }
 .idcard__in { position: relative; block-size: 100%; display: flex; flex-direction: column; }
 .idcard__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3); }
-.idcard__top svg { block-size: var(--icon-lg); inline-size: auto; }
-.idcard__prog { font-size: var(--fs-2xs); color: var(--dk-tint-1); text-align: end; line-height: var(--lh-xs); }
+/* The mark keeps its own width and never grows into the text beside it; the
+   programme name takes what is left and is allowed to shrink to it rather than
+   wrapping one word per line. */
+.idcard__top svg { block-size: var(--icon-lg); inline-size: auto; flex: none; max-inline-size: 45%; }
+.idcard__prog {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-size: var(--fs-2xs);
+  color: var(--dk-tint-1);
+  text-align: end;
+  line-height: var(--lh-xs);
+  text-wrap: balance;
+}
 .idcard__mid { display: flex; align-items: center; gap: var(--s3); margin-block-start: auto; }
 .idcard__name b { display: block; font-size: var(--fs-h4); font-weight: var(--fw-bold); line-height: 1.4; }
 .idcard__name span { display: block; font-size: var(--fs-xs); color: var(--dk-tint-2); direction: ltr; unicode-bidi: isolate; text-align: start; }

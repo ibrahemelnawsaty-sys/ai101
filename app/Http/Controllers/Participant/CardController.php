@@ -11,9 +11,7 @@ use App\Models\User;
 use App\Presenters\Participant\CardPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The digital participant card (PRD §9.6).
@@ -48,7 +46,19 @@ final class CardController extends Controller
         ]);
     }
 
-    public function download(Request $request): StreamedResponse
+    /**
+     * A printable copy of the card.
+     *
+     * This replaces `download()`, which could never succeed: it read
+     * `file_url` — a column that exists on `certificates` and NOT on
+     * `digital_cards` — so the value was always null and the route always
+     * answered 404. Nothing in the platform ever generated a card file.
+     *
+     * The browser makes the PDF. A server-side renderer would have to shape
+     * Arabic itself, and one that shapes it badly prints the holder's own name
+     * broken across their card (D-57).
+     */
+    public function print(Request $request): View
     {
         /** @var User $user */
         $user = $request->user();
@@ -59,15 +69,11 @@ final class CardController extends Controller
             abort(HttpResponse::HTTP_NOT_FOUND);
         }
 
-        $this->authorize('download', $card);
+        $this->authorize('view', $card);
 
-        $path = $card->getAttribute('file_url');
-
-        if (! is_string($path) || $path === '' || ! Storage::disk('generated')->exists($path)) {
-            abort(HttpResponse::HTTP_NOT_FOUND);
-        }
-
-        return Storage::disk('generated')->download($path);
+        return view('participant.card-print', [
+            'card' => CardPresenter::from($card),
+        ]);
     }
 
     private function ownCard(User $user): ?DigitalCard

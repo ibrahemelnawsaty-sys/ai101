@@ -52,8 +52,16 @@
                         <div class="idcard__sheen" aria-hidden="true"></div>
                         <div class="idcard__in">
                             <div class="idcard__top">
-                                <x-ui.icon name="athar-wordmark" variant="on-dark"
-                                    :label="__('app.brand_name')" />
+                                {{-- x-ui.logo, not x-ui.icon. The icon component
+                                     prefixes every name with "i-", so
+                                     name="athar-wordmark" resolved to
+                                     #i-athar-wordmark — a symbol that does not
+                                     exist. The <svg> rendered empty and with no
+                                     viewBox, and because .idcard__top svg is
+                                     inline-size:auto it took an undefined width
+                                     and crushed the programme name beside it
+                                     into a one-word-per-line column (D-57). --}}
+                                <x-ui.logo variant="wordmark" size="sm" tone="light" />
                                 <div class="idcard__prog">
                                     {{ $card->programName }}<br>{{ $card->cohortName }}
                                 </div>
@@ -84,10 +92,17 @@
                 </div>
 
                 <div class="idacts">
-                    <x-ui.button variant="primary" size="sm" icon="down"
-                        :href="route('participant.card.download', ['format' => 'png'])">{{ __('card.download_png') }}</x-ui.button>
+                    {{-- Both download buttons were dead: CardController::download read
+                         `file_url`, a column that exists on `certificates` and NOT on
+                         `digital_cards`, so it was always null and the route always
+                         answered 404. Nothing ever generated a file to download.
+                    
+                         Replaced with a print sheet, the pattern this project already
+                         uses for the timetable: the browser makes the PDF, so there is
+                         no PDF library, no second rendering path to keep in step, and
+                         no broken Arabic shaping from a server-side renderer. --}}
                     <x-ui.button variant="secondary" size="sm"
-                        :href="route('participant.card.download', ['format' => 'pdf'])">{{ __('card.download_pdf') }}</x-ui.button>
+                        :href="route('participant.card.print')">{{ __('card.print') }}</x-ui.button>
                     <x-ui.button variant="secondary" size="sm"
                         x-data="atharShare({ url: '{{ $card->verifyUrl }}', title: '{{ __('card.share_title') }}' })"
                         x-on:click="share()">{{ __('app.share') }}</x-ui.button>

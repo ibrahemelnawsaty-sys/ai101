@@ -269,7 +269,9 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
      */
     Route::middleware('role:participant')->group(function (): void {
         Route::get('/card', [CardController::class, 'show'])->name('participant.card');
-        Route::get('/card/download', [CardController::class, 'download'])->name('participant.card.download');
+        // The browser makes the PDF; download() read a column that does not
+        // exist on this table and always answered 404 (D-57).
+        Route::get('/card/print', [CardController::class, 'print'])->name('participant.card.print');
 
         Route::get('/journey', JourneyController::class)->name('participant.journey');
 
