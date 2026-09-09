@@ -551,6 +551,19 @@ border: var(--bw-hairline) solid var(--border-1);
 .row__acts { flex: none; display: flex; gap: var(--s2); align-items: center; }
 .row__by { font-size: var(--fs-xs); color: var(--text-faint); }
 .row__ltr { direction: ltr; unicode-bidi: isolate; text-align: left; }
+/* A verification URL is one unbroken 64-character token, so it has nowhere to
+   wrap on its own: without `anywhere` it either overflows the card or gets cut
+   off by an ellipsis, and a truncated link is no link at all (D-58). */
+.row__url {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: var(--s1);
+}
+.row__url:hover,
+.row__url:focus-visible { color: var(--text-accent); }
 .row__score { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); }
 
 .tagrow { display: flex; flex-wrap: wrap; gap: var(--s2); }

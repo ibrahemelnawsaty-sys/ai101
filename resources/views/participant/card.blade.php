@@ -123,7 +123,13 @@
                     <div class="row">
                         <div class="row__m">
                             <b>{{ __('card.verify_link') }}</b>
-                            <span dir="ltr" class="row__ltr">{{ $card->verifyUrlMasked }}</span>
+                            {{-- Printed in full, and wrapping rather than truncated.
+                                 It was masked to six characters of the token, which
+                                 protected nothing — the QR on this same screen encodes
+                                 the whole URL — while making the copy button the only
+                                 way to obtain the link. The copy button was dead
+                                 (D-55, D-58), so there was no way at all. --}}
+                            <a href="{{ $card->verifyUrl }}" dir="ltr" class="row__ltr row__url">{{ $card->verifyUrl }}</a>
                         </div>
                         <div class="row__e">
                             <x-ui.button variant="secondary" size="sm"
