@@ -28,12 +28,35 @@ const num = (el, name, fallback) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-/** Replaces :name placeholders in a Blade-provided template. */
+/**
+ * A percentage that survives an empty cohort.
+ *
+ * `Math.round((0 / 0) * 100)` is NaN, and NaN reached the live page: the
+ * certificate simulator printed "NaN%" on a cohort whose sessions had not been
+ * created yet. A denominator of zero is not an error to propagate — there is
+ * simply nothing to be a percentage OF, and zero is the honest answer.
+ */
+function pct(part, whole) {
+    return whole > 0 ? Math.round((part / whole) * 100) : 0;
+}
+
+/**
+ * Replaces :name placeholders in a Blade-provided template.
+ *
+ * A placeholder the caller did not supply is dropped rather than printed. A
+ * visitor reading ":count" learns nothing and loses trust in everything else on
+ * the page; an absent word at least reads as a sentence. The mismatch itself is
+ * caught by SimulatorCopyTest, which is where a bug belongs — not on a landing
+ * page.
+ */
 function fill(template, values) {
     if (!template) return '';
-    return template.replace(/:([a-z_]+)/g, (match, key) =>
-        Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match
-    );
+    return template
+        .replace(/:([a-z_]+)/g, (match, key) =>
+            Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : ''
+        )
+        .replace(/\s{2,}/g, ' ')
+        .trim();
 }
 
 /**
@@ -41,10 +64,18 @@ function fill(template, values) {
  * The four forms come from lang/ar via data attributes — never from here.
  */
 function plural(forms, n) {
-    if (n === 1) return forms.one;
-    if (n === 2) return forms.two;
-    if (n >= 3 && n <= 10) return forms.few;
-    return forms.many;
+    const form =
+        n === 1 ? forms.one
+        : n === 2 ? forms.two
+        : n >= 3 && n <= 10 ? forms.few
+        : forms.many;
+
+    // The paucal and plural forms carry their own :count — "‏:count جلسات".
+    // Returning the form raw meant fill() injected it into the sentence AFTER
+    // its single pass had already gone by that position, so a visitor read
+    // "ينقصك حضور :count جلسة". The form is completed here, before it is
+    // handed to the sentence that will contain it.
+    return fill(form, { count: n });
 }
 
 /* ==========================================================================
@@ -578,12 +609,12 @@ function certificateSimulator() {
         setText('#simVSessions', attended);
         setText('#simVTasks', tasksDone);
         setText('#simVProject', projectScore);
-        setWidth('#simFSessions', (attended / SESSIONS) * 100);
-        setWidth('#simFTasks', (tasksDone / TASKS) * 100);
-        setWidth('#simFProject', (projectScore / PROJECT_POINTS) * 100);
+        setWidth('#simFSessions', pct(attended, SESSIONS));
+        setWidth('#simFTasks', pct(tasksDone, TASKS));
+        setWidth('#simFProject', pct(projectScore, PROJECT_POINTS));
 
-        const attendance = Math.round((attended / SESSIONS) * 100);
-        const taskScore = Math.round((tasksDone / TASKS) * TASK_POINTS);
+        const attendance = pct(attended, SESSIONS);
+        const taskScore = TASKS > 0 ? Math.round((tasksDone / TASKS) * TASK_POINTS) : 0;
         const total = taskScore + projectScore;
 
         const passAttendance = attendance >= MIN_ATTENDANCE;

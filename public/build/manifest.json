@@ -4,7 +4,7 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-E1Skgmf2.css",
+    "file": "assets/app-DXx58MQ5.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -33,7 +33,7 @@
     ]
   },
   "resources/js/public.js": {
-    "file": "assets/public-CND_IEaV.js",
+    "file": "assets/public-DRWdLGiy.js",
     "name": "public",
     "src": "resources/js/public.js",
     "isEntry": true,
