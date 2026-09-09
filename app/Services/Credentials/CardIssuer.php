@@ -102,17 +102,23 @@ final class CardIssuer
     /**
      * The next card number, in the prefix the certificate serials already use.
      *
-     * Counting rows would repeat a number the moment one is soft-deleted, so
-     * the sequence is taken from the highest number actually issued. The
-     * unique index is the real guarantee; this only has to avoid colliding
-     * with it in the ordinary case.
+     * Counting rows would repeat a number the moment one is removed, so the
+     * sequence is taken from the highest number actually issued. The unique
+     * index is the real guarantee; this only has to avoid colliding with it in
+     * the ordinary case.
+     *
+     * There is no `withTrashed()` here, and that is not an oversight: the
+     * migration gives `digital_cards` a `deleted_at` column but the model does
+     * NOT use SoftDeletes, so the scope does not exist and a removed card is
+     * removed outright. Calling it threw at runtime the first time this ran on
+     * a real server — the column and the model disagree, and the model is what
+     * the query obeys.
      */
     private function nextNumber(): string
     {
         $prefix = (string) config('athar.program.code', 'AI101');
 
         $highest = DigitalCard::query()
-            ->withTrashed()
             ->where('card_number', 'like', $prefix.'-%')
             ->orderByDesc('card_number')
             ->value('card_number');
