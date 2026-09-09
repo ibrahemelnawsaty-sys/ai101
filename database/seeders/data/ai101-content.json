@@ -170,36 +170,29 @@
       "education_level": "ماجستير",
       "bio": "مدير منصة البرامج التدريبية في مركز أثر."
     },
+    "_trainers_note": "The two trainers the centre named. Only the names are theirs: e-mail and phone continue the placeholder sequence above so the seeder can build an account at all, and city, education level, job title and biography are null because nobody has supplied them. They are entered from the admin panel, never invented here (D-53).",
     "trainers": [
       {
-        "email": "sara.trainer@athar-dev.edu.sa",
+        "email": "ibrahim.trainer@athar-dev.edu.sa",
         "phone": "0500000002",
-        "gender": "female",
-        "first_name_ar": "سارة", "second_name_ar": "فهد", "third_name_ar": "عبدالعزيز", "last_name_ar": "الدوسري",
-        "first_name_en": "Sara", "second_name_en": "Fahad", "third_name_en": "Abdulaziz", "last_name_en": "Aldosari",
-        "city": "الرياض",
-        "education_level": "ماجستير",
-        "bio": "مدرّبة معتمدة في الذكاء الاصطناعي التطبيقي وتحليل البيانات."
+        "gender": "male",
+        "first_name_ar": "ابراهيم", "second_name_ar": "", "third_name_ar": "", "last_name_ar": "صابر",
+        "first_name_en": "Ibrahim", "second_name_en": "", "third_name_en": "", "last_name_en": "Saber",
+        "city": null,
+        "education_level": null,
+        "job_title": null,
+        "bio": null
       },
       {
-        "email": "majed.trainer@athar-dev.edu.sa",
+        "email": "ahmed.trainer@athar-dev.edu.sa",
         "phone": "0500000003",
         "gender": "male",
-        "first_name_ar": "ماجد", "second_name_ar": "خالد", "third_name_ar": "عبدالرحمن", "last_name_ar": "العتيبي",
-        "first_name_en": "Majed", "second_name_en": "Khalid", "third_name_en": "Abdulrahman", "last_name_en": "Alotaibi",
-        "city": "جدة",
-        "education_level": "بكالوريوس",
-        "bio": "مهندس برمجيات ومدرّب في أتمتة العمليات ونماذج اللغة."
-      },
-      {
-        "email": "noura.trainer@athar-dev.edu.sa",
-        "phone": "0500000004",
-        "gender": "female",
-        "first_name_ar": "نورة", "second_name_ar": "سلطان", "third_name_ar": "ناصر", "last_name_ar": "الشهري",
-        "first_name_en": "Noura", "second_name_en": "Sultan", "third_name_en": "Nasser", "last_name_en": "Alshehri",
-        "city": "الدمام",
-        "education_level": "دكتوراه",
-        "bio": "باحثة في أخلاقيات الذكاء الاصطناعي وحوكمة البيانات."
+        "first_name_ar": "احمد", "second_name_ar": "", "third_name_ar": "", "last_name_ar": "سامي",
+        "first_name_en": "Ahmed", "second_name_en": "", "third_name_en": "", "last_name_en": "Samy",
+        "city": null,
+        "education_level": null,
+        "job_title": null,
+        "bio": null
       }
     ]
   },

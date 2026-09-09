@@ -196,6 +196,10 @@ final class UserSeeder extends Seeder
             'gender' => $row['gender'],
             'city' => $row['city'],
             'education_level' => $row['education_level'],
+            // Optional on a staff row: the centre supplies a title and a
+            // biography from the admin panel, and a seeded null is honest until
+            // it does. PRD §9.1.1 prints each only when it exists.
+            'job_title' => $row['job_title'] ?? null,
             'bio' => $row['bio'],
         ]);
     }

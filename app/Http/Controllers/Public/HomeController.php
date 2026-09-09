@@ -176,15 +176,11 @@ final class HomeController extends Controller
                 'lead' => __('landing.headings.timeline.lead'),
                 'items' => $this->timelineMilestones($cohort, $weeks, $formatter),
             ],
-            // Trainers are not wired to the enrolment table yet, so the list is
-            // empty by construction rather than by absence of data. The template
-            // hides the whole section while it is empty instead of showing an
-            // empty state that no admin action could ever clear.
             'trainers' => [
                 'kicker' => __('landing.headings.trainers.kicker'),
                 'title' => __('landing.headings.trainers.title'),
                 'lead' => __('landing.headings.trainers.lead'),
-                'items' => [],
+                'items' => $this->trainerCards($cohort),
             ],
             'faq' => [
                 'kicker' => __('landing.headings.faq.kicker'),
@@ -594,6 +590,70 @@ final class HomeController extends Controller
         $add(__('landing.headings.timeline.closing_session'), $this->sessionDate($cohort, SessionType::Closing));
 
         return $milestones;
+    }
+
+    /**
+     * The people teaching this cohort (PRD §9.1.1).
+     *
+     * The list used to be `[]` written into this method, so the section could
+     * never appear no matter what any administrator did. It comes from the
+     * enrolment table now: whoever is enrolled on this cohort as a trainer is
+     * who the page names, which is what BR-31 asks for.
+     *
+     * Only the public half of a profile crosses this line. The name is the
+     * first-and-family pair the verification pages already use — never the full
+     * four-part legal name, and never the e-mail or the phone (BR-25).
+     *
+     * A title, a biography and a picture are each printed ONLY if the centre has
+     * entered one. The template omits the line rather than rendering an empty
+     * element, so a trainer with nothing but a name is a card with a name.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function trainerCards(?Cohort $cohort): array
+    {
+        if ($cohort === null) {
+            return [];
+        }
+
+        return array_values(
+            $cohort->trainers()
+                ->with('profile')
+                ->get()
+                ->map(static function ($trainer): ?array {
+                    $profile = $trainer->getAttribute('profile');
+
+                    if ($profile === null) {
+                        return null;
+                    }
+
+                    $name = trim((string) $profile->getAttribute('short_name_ar'));
+
+                    if ($name === '') {
+                        return null;
+                    }
+
+                    $card = ['name' => $name];
+
+                    // The two-letter monogram the card falls back to when there
+                    // is no photograph. Built from the same two name parts.
+                    $parts = preg_split('/\s+/u', $name) ?: [];
+                    $card['initials'] = mb_substr((string) ($parts[0] ?? ''), 0, 1)
+                        .mb_substr((string) ($parts[count($parts) - 1] ?? ''), 0, 1);
+
+                    foreach (['role' => 'job_title', 'bio' => 'bio', 'photo_url' => 'avatar_url'] as $key => $column) {
+                        $value = $profile->getAttribute($column);
+
+                        if (is_string($value) && trim($value) !== '') {
+                            $card[$key] = $value;
+                        }
+                    }
+
+                    return $card;
+                })
+                ->filter()
+                ->all(),
+        );
     }
 
     /** The date of the cohort's first session of a given type, if it has one. */

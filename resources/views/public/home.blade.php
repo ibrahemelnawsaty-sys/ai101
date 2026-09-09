@@ -829,8 +829,16 @@
                         <div class="trainer__av" aria-hidden="true">{{ data_get($trainer, 'initials') }}</div>
                     @endif
                     <b>{{ data_get($trainer, 'name') }}</b>
-                    <span>{{ data_get($trainer, 'role') }}</span>
-                    <p>{{ data_get($trainer, 'bio') }}</p>
+                    {{-- The title and the biography are optional: the centre may
+                         have entered neither. An empty <span> and an empty <p>
+                         are the shape this page has been fixing all along, so a
+                         trainer with only a name is a card with only a name. --}}
+                    @if (filled(data_get($trainer, 'role')))
+                        <span>{{ data_get($trainer, 'role') }}</span>
+                    @endif
+                    @if (filled(data_get($trainer, 'bio')))
+                        <p>{{ data_get($trainer, 'bio') }}</p>
+                    @endif
                 </div>
             </div>
             @if ($loop->last)</div>@endif

@@ -48,6 +48,7 @@ class Profile extends Model
         'birth_date',
         'city',
         'education_level',
+        'job_title',
         'bio',
     ];
 
