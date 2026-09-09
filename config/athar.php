@@ -38,6 +38,25 @@ return [
 
     'program' => [
         'code' => env('ATHAR_PROGRAM_CODE', 'AI101'),
+
+        /*
+         | Whether the programme is free of charge.
+         |
+         | Defaults to FALSE, and deliberately so: the Schema.org graph published
+         | with every public page carries `isAccessibleForFree`, and a wrong
+         | `true` there tells every search engine that a programme the centre
+         | sells costs nothing. That was live. A default of false means the worst
+         | an unset variable can do is understate a discount, never advertise a
+         | paid programme as free.
+         */
+        'is_free' => (bool) env('ATHAR_PROGRAM_IS_FREE', false),
+
+        /*
+         | Whether the programme is delivered entirely remotely. Drives the hero
+         | badge; a centre that moves into a room turns it off and the badge goes
+         | with it, rather than a sentence being edited out of a template.
+         */
+        'is_remote' => (bool) env('ATHAR_PROGRAM_IS_REMOTE', true),
     ],
 
     'platform_name' => env('ATHAR_PLATFORM_NAME', ''),

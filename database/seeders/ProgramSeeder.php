@@ -46,6 +46,10 @@ final class ProgramSeeder extends Seeder
             'objectives' => $content['objectives'],
             'target_audience' => $content['target_audience'],
             'certificates' => $content['certificates'],
+            // The column existed from the admin-screens migration and was never
+            // written, so the figure the guide leads with — sixty accredited
+            // hours — was absent from the hero badges and the trust bar alike.
+            'hours' => $content['hours'],
             'status' => 'published',
         ]);
     }

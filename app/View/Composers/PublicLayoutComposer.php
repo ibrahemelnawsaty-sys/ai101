@@ -66,7 +66,19 @@ final class PublicLayoutComposer
                     'description' => $description,
                     'url' => $appUrl.'/',
                     'inLanguage' => 'ar',
-                    'isAccessibleForFree' => true,
+                    // The programme is PAID. This node said `true` and was live in
+                    // production, so every crawler that read the page was told a
+                    // course the centre sells is free of charge — the one claim on
+                    // the page a search engine repeats verbatim in its results.
+                    //
+                    // It is a config value, not a literal, because whether a
+                    // programme charges is a fact about the programme and belongs
+                    // with the rest of them (BR-36). The PRICE is deliberately not
+                    // here: it is promotional and time-bound, and a figure frozen
+                    // into a view composer is a figure nobody can correct without
+                    // a deploy. A Schema.org `offers` node needs a real price
+                    // source first — see D-54.
+                    'isAccessibleForFree' => (bool) config('athar.program.is_free'),
                     'provider' => ['@id' => $appUrl.'/#organization'],
                 ],
             ],

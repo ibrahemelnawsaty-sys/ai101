@@ -39,16 +39,27 @@ final class SeedContent
     /** Day offset, from the cohort start, of the closing ceremony. */
     public const CLOSING_DAY = 35;
 
-    /** Day offsets inside each week that carry a session: Sunday, Tuesday, Thursday. */
+    /**
+     * Day offsets inside each week that carry a session: Saturday, Monday,
+     * Wednesday — the pattern the centre publishes in its programme guide.
+     *
+     * The offsets are unchanged; the week now STARTS on Saturday (see
+     * cohortStart), which is what turns 0/2/4 from Sun/Tue/Thu into Sat/Mon/Wed.
+     */
     public const SESSION_WEEKDAY_OFFSETS = [0, 2, 4];
 
-    public const SESSION_START_TIME = '19:00:00';
+    /*
+     | The daily window from the guide: five to seven in the evening, Riyadh.
+     | It ran 19:00–21:30 here while the seeded FAQ told visitors 19:00–21:30 as
+     | well — both wrong together, which is why neither looked wrong.
+     */
+    public const SESSION_START_TIME = '17:00:00';
 
-    public const SESSION_END_TIME = '21:30:00';
+    public const SESSION_END_TIME = '19:00:00';
 
-    public const INTRO_END_TIME = '21:00:00';
+    public const INTRO_END_TIME = '19:00:00';
 
-    public const CLOSING_END_TIME = '20:30:00';
+    public const CLOSING_END_TIME = '19:00:00';
 
     public const WEEK_COUNT = 4;
 
@@ -107,7 +118,10 @@ final class SeedContent
     {
         return Clock::riyadh()
             ->startOfDay()
-            ->startOfWeek(CarbonInterface::SUNDAY)
+            // Saturday, because the programme's own week does: the guide runs
+            // Saturday / Monday / Wednesday, and anchoring to Sunday shifted
+            // every seeded session a day off the published schedule.
+            ->startOfWeek(CarbonInterface::SATURDAY)
             ->subWeeks(4);
     }
 

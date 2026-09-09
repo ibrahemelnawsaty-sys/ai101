@@ -309,6 +309,21 @@ final class HomeController extends Controller
             $chips[] = ['icon' => 'video', 'label' => trans_choice('landing.facts.chip_sessions', $sessions, ['count' => $sessions])];
         }
 
+        // The figure the guide leads with. The column was written by nobody, so
+        // the badge the centre most wants shown was the one badge missing.
+        $hours = (int) ($cohort->program?->getAttribute('hours') ?? 0);
+
+        if ($hours > 0) {
+            $chips[] = ['icon' => 'clock', 'label' => trans_choice('landing.facts.chip_hours', $hours, ['count' => $hours])];
+        }
+
+        // Delivery mode is a fact about the programme, so it is a config value
+        // rather than a sentence in this method (BR-36). A centre that starts
+        // teaching in a room turns it off and the badge goes with it.
+        if ((bool) config('athar.program.is_remote')) {
+            $chips[] = ['icon' => 'globe', 'label' => __('landing.facts.chip_remote')];
+        }
+
         $certificates = count($this->jsonCards($cohort->program?->getAttribute('certificates')));
 
         if ($certificates > 0) {
@@ -366,6 +381,15 @@ final class HomeController extends Controller
 
         if ($sessions > 0) {
             $stats[] = ['value' => $sessions, 'suffix' => null, 'label' => __('landing.facts.trust_sessions')];
+        }
+
+        // PRD §9.1.1 asks this band for training hours by name, and the guide
+        // leads with sixty. It sat ahead of the pass mark because a visitor
+        // reads this band for what they GET, not for what is required of them.
+        $hours = (int) ($cohort->program?->getAttribute('hours') ?? 0);
+
+        if ($hours > 0) {
+            $stats[] = ['value' => $hours, 'suffix' => null, 'label' => __('landing.facts.trust_hours')];
         }
 
         $stats[] = ['value' => ScoreCalculator::GRAND_TOTAL, 'suffix' => null, 'label' => __('landing.facts.trust_points')];
