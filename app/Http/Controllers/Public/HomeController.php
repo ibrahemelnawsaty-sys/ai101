@@ -131,6 +131,12 @@ final class HomeController extends Controller
                 'kicker' => __('landing.headings.about.kicker'),
                 'title' => $program?->getAttribute('name_ar'),
                 'paragraphs' => array_filter([$program?->getAttribute('description')]),
+                // PRD §9.1.1 asks this section for an image, and the programme
+                // already has one: `programs.banner_url` is read and rendered by
+                // the public directory. The landing page never read it, so the
+                // same programme appeared with a picture in the directory and
+                // without one on its own page — one column of data, two answers.
+                'banner_url' => $program?->getAttribute('banner_url'),
                 // Nothing in the schema backs either of these, and the sentences
                 // that do exist are already spent on the goals, audience and
                 // certificate sections. Inventing copy here would be worse than

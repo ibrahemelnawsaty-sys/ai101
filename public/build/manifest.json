@@ -4,12 +4,12 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CDEcpD8C.css",
+    "file": "assets/app-2wUM8pgY.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/public.css": {
-    "file": "assets/public-CrPo_m3Q.css",
+    "file": "assets/public-BHlO0-3Z.css",
     "src": "resources/css/public.css",
     "isEntry": true
   },
@@ -33,7 +33,7 @@
     ]
   },
   "resources/js/public.js": {
-    "file": "assets/public-DRWdLGiy.js",
+    "file": "assets/public-BuxeNcPD.js",
     "name": "public",
     "src": "resources/js/public.js",
     "isEntry": true,

@@ -1093,11 +1093,84 @@ function publicNav() {
     });
 }
 
+/**
+ * Countdown to the close of registration (PRD §9.1.2, BR-07).
+ *
+ * The browser clock is never the reference. Blade prints two SERVER instants —
+ * the deadline and the moment the page was rendered — and the offset between
+ * the server's "now" and this device's "now" is measured once, at start. Every
+ * tick then reads the device clock and corrects it by that offset, so a visitor
+ * whose laptop is three hours out still counts down to the centre's deadline.
+ *
+ * Each tick recomputes from the target rather than decrementing a counter, so a
+ * throttled background tab cannot accumulate drift.
+ *
+ * At zero the countdown does not sit at 00:00:00 pretending registration is
+ * still open: the page is reloaded once, and the server — the only authority on
+ * whether the window is shut — renders the closed state and its waiting-list
+ * form. No copy is decided here, so no Arabic lives in this file.
+ */
+function registrationCountdown() {
+    const box = document.getElementById('heroCountdown');
+    if (!box) return;
+
+    const until = Date.parse(box.getAttribute('data-until') || '');
+    const serverNow = Date.parse(box.getAttribute('data-now') || '');
+    if (!Number.isFinite(until) || !Number.isFinite(serverNow)) return;
+
+    const cells = {
+        days: box.querySelector('[data-cd="days"]'),
+        hours: box.querySelector('[data-cd="hours"]'),
+        minutes: box.querySelector('[data-cd="minutes"]'),
+        seconds: box.querySelector('[data-cd="seconds"]'),
+    };
+    if (!cells.days || !cells.hours || !cells.minutes || !cells.seconds) return;
+
+    // Positive when this device runs behind the server.
+    const skew = serverNow - Date.now();
+    const pad = (n) => String(n).padStart(2, '0');
+
+    let timer = null;
+    let reloading = false;
+
+    const tick = () => {
+        const left = until - (Date.now() + skew);
+
+        if (left <= 0) {
+            if (timer !== null) window.clearInterval(timer);
+            cells.days.textContent = '0';
+            cells.hours.textContent = '00';
+            cells.minutes.textContent = '00';
+            cells.seconds.textContent = '00';
+
+            // Ask the server what the page should say now. Guarded so a tab left
+            // open past the deadline reloads once, not in a loop.
+            if (!reloading) {
+                reloading = true;
+                window.setTimeout(() => window.location.reload(), 1200);
+            }
+
+            return;
+        }
+
+        const totalSeconds = Math.floor(left / 1000);
+
+        cells.days.textContent = String(Math.floor(totalSeconds / 86400));
+        cells.hours.textContent = pad(Math.floor(totalSeconds / 3600) % 24);
+        cells.minutes.textContent = pad(Math.floor(totalSeconds / 60) % 60);
+        cells.seconds.textContent = pad(totalSeconds % 60);
+    };
+
+    tick();
+    timer = window.setInterval(tick, 1000);
+}
+
 /* ==========================================================================
    Boot
    ========================================================================== */
 
 function boot() {
+    registrationCountdown();
     neuralCanvas();
     classifierLab();
     certificateSimulator();

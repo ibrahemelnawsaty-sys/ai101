@@ -157,6 +157,38 @@
             </ul>
         @endif
 
+        {{-- ----------------------------------------------------------------
+             Countdown to the close of registration (PRD §9.1.2).
+
+             The deadline and "now" are BOTH server instants, printed here as
+             ISO-8601. The script measures the difference ONCE against the
+             server's own clock and counts down from that offset, so a visitor
+             whose device clock is wrong still sees the centre's deadline
+             (BR-07, art. 11). Nothing here reads the browser clock as truth.
+
+             Latin digits, and each unit labelled for a screen reader. The
+             region is polite rather than assertive: a value that changes every
+             second must not interrupt what is being read.
+             ---------------------------------------------------------------- --}}
+        @if (data_get($cohort, 'is_registration_open') && filled(data_get($cohort, 'registration_closes_at_iso')))
+            <div class="cd"
+                 id="heroCountdown"
+                 data-until="{{ data_get($cohort, 'registration_closes_at_iso') }}"
+                 data-now="{{ $serverNowIso }}"
+                 aria-live="polite"
+                 aria-atomic="true">
+                <span class="cd__t">{{ __('landing.hero.countdown_title') }}</span>
+                <div class="cd__row">
+                    @foreach (['days', 'hours', 'minutes', 'seconds'] as $unit)
+                        <div class="cd__cell">
+                            <b class="cd__n u-num" data-cd="{{ $unit }}">—</b>
+                            <span class="cd__l">{{ __('landing.hero.'.$unit) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <div class="hero__acts">
             @if (data_get($cohort, 'is_registration_open'))
                 <x-ui.button variant="primary" size="lg" :href="route('register')" class="mag">
@@ -170,6 +202,50 @@
                 <span class="mag__t">{{ __('landing.hero.try_lab') }}</span>
             </x-ui.button>
         </div>
+
+        {{-- ----------------------------------------------------------------
+             Registration closed (PRD §9.1.2).
+
+             Closed is a state of the REGISTRATION, not of the page: without
+             this block the two guarded buttons simply vanished and a visitor
+             who arrived after the deadline had no action left anywhere — while
+             the header still invited them to register, and /register turned
+             them away pointing back here. The form is the way out of that loop.
+
+             The reply is identical whether or not the address is already known
+             (BR-30), so this form can never be used to ask the platform who
+             has registered.
+             ---------------------------------------------------------------- --}}
+        @if (! data_get($cohort, 'is_registration_open'))
+            <div class="closed">
+                <h2 class="closed__t">{{ __('landing.hero.registration_closed_title') }}</h2>
+                <p class="closed__b">{{ __('landing.hero.registration_closed_body') }}</p>
+
+                @if (session('status'))
+                    <p class="closed__ok" role="status">{{ session('status') }}</p>
+                @else
+                    <form method="POST" action="{{ route('waitlist.store') }}" class="closed__form" novalidate>
+                        @csrf
+
+                        <x-ui.input
+                            type="email"
+                            name="email"
+                            ltr
+                            inputmode="email"
+                            autocomplete="email"
+                            required
+                            :value="old('email')"
+                            :label="__('landing.hero.waitlist_email')"
+                            :placeholder="__('landing.hero.waitlist_email_placeholder')"
+                            :error="$errors->first('email')"/>
+
+                        <x-ui.button variant="primary" size="lg" type="submit" class="mag">
+                            <span class="mag__t">{{ __('landing.hero.waitlist_submit') }}</span>
+                        </x-ui.button>
+                    </form>
+                @endif
+            </div>
+        @endif
     </div>
 </section>
 
@@ -235,6 +311,20 @@
                 @foreach (data_get($landing, 'about.paragraphs', []) as $paragraph)
                     <p class="lead">{{ $paragraph }}</p>
                 @endforeach
+
+                {{-- PRD §9.1.1 asks this section for an illustration. The source
+                     is programs.banner_url — the same column the public
+                     directory renders, so a programme cannot show a picture in
+                     one place and none in the other. Decorative: the paragraphs
+                     above already say everything it shows, so alt is empty
+                     rather than a description repeated to a screen reader. --}}
+                @if (filled(data_get($landing, 'about.banner_url')))
+                    <img class="about__banner"
+                         src="{{ data_get($landing, 'about.banner_url') }}"
+                         alt=""
+                         loading="lazy"
+                         decoding="async">
+                @endif
 
                 @if (filled(data_get($landing, 'about.tags')))
                     <div class="tagrow">

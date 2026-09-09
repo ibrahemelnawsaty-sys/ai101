@@ -335,6 +335,60 @@ border-block-end: var(--bw-hairline) solid var(--ln-02);
 }
 .seats__row b { color: var(--text-strong); font-weight: var(--fw-semi); }
 
+/* Countdown to the close of registration (PRD §9.1.2).
+   Four fixed cells, so the row does not reflow every time a digit narrows. */
+.cd { margin-block-start: var(--s6); }
+.cd__t {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-block-end: var(--s2);
+}
+.cd__row { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.cd__cell {
+  min-inline-size: var(--s14);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--violet-a20);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  text-align: center;
+}
+.cd__n {
+  display: block;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  color: var(--text-strong);
+  /* Digits change every second: tabular figures stop the box twitching. */
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-h3);
+}
+.cd__l { font-size: var(--fs-2xs); color: var(--text-muted); }
+
+/* Registration closed, and the way out of it (PRD §9.1.2). */
+.closed {
+  margin-block-start: var(--s6);
+  padding: var(--s6);
+  border: 1px solid var(--violet-a20);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  max-inline-size: var(--d-8);
+}
+.closed__t {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  color: var(--text-strong);
+  margin: 0 0 var(--s2);
+}
+.closed__b { color: var(--text-body); margin: 0 0 var(--s4); }
+.closed__form { display: flex; flex-direction: column; gap: var(--s4); }
+.closed__ok {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  background: var(--teal-a16);
+  color: var(--text-strong);
+}
+
 /* ==========================================================================
    6 · SECTION VARIANTS
    ========================================================================== */
@@ -600,7 +654,12 @@ block-size: var(--s22);
    colour anywhere in this rule (art. 6, art. 13 rule 4). aspect-ratio rather
    than a fixed height so a wide banner and a square one both crop predictably
    instead of one of them stretching. */
-.card__banner {
+.card__banner,
+/* The landing page's "about" illustration is the same column as the directory
+   card's, so it is the same picture and keeps the same shape. A fixed ratio
+   also reserves the box before the file arrives, which is what keeps CLS under
+   the Article 19 budget on a lazy-loaded image. */
+.about__banner {
   inline-size: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -608,6 +667,8 @@ block-size: var(--s22);
   margin-block-end: var(--s4);
   background: var(--surface-2);
 }
+
+.about__banner { margin-block-start: var(--s5); }
 
 .cert__seal {
 inline-size: var(--s14);
