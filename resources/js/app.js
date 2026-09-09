@@ -910,7 +910,17 @@ function atharCardTilt() {
             return finePointer() && !reduced();
         },
 
-        move(event) {
+        /*
+         * `track` and `transformStyle`, not `move` and `style`: those are the
+         * names the card markup has always called, and registering a component
+         * under the right name with the wrong members leaves it just as dead
+         * — `Alpine Expression Error: transformStyle is not defined` (D-58).
+         *
+         * `style` would also have been a poor name to bind through
+         * `x-bind:style`, where it reads as the DOM property rather than as a
+         * value this object computes.
+         */
+        track(event) {
             if (!this.enabled) return;
             const box = this.$el.getBoundingClientRect();
             if (!box.width || !box.height) return;
@@ -925,7 +935,7 @@ function atharCardTilt() {
             this.ry = 0;
         },
 
-        get style() {
+        get transformStyle() {
             return this.enabled
                 ? `transform: perspective(900px) rotateX(${this.rx}deg) rotateY(${this.ry}deg)`
                 : '';

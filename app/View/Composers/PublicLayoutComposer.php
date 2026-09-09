@@ -77,7 +77,7 @@ final class PublicLayoutComposer
                     // here: it is promotional and time-bound, and a figure frozen
                     // into a view composer is a figure nobody can correct without
                     // a deploy. A Schema.org `offers` node needs a real price
-                    // source first — see D-54.
+                    // source first — see D-60.
                     'isAccessibleForFree' => (bool) config('athar.program.is_free'),
                     'provider' => ['@id' => $appUrl.'/#organization'],
                 ],

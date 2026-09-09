@@ -344,7 +344,7 @@
       "education_level": "ماجستير",
       "bio": "مدير منصة البرامج التدريبية في مركز أثر."
     },
-    "_trainers_note": "The two trainers named in the centre's official guide, with the job titles and biographies the guide publishes. E-mail and phone continue the placeholder sequence because both columns are NOT NULL and the guide does not publish personal contact details (D-53).",
+    "_trainers_note": "The two trainers named in the centre's official guide, with the job titles and biographies the guide publishes. E-mail and phone continue the placeholder sequence because both columns are NOT NULL and the guide does not publish personal contact details (D-59).",
     "trainers": [
       {
         "email": "ibrahim.trainer@athar-dev.edu.sa",
@@ -512,5 +512,5 @@
       "link": "/dashboard/certificate"
     }
   ],
-  "_source_note": "Content aligned with the centre's official programme guide at https://aifoundationprogram.athar-dev.edu.sa/ — the guide is authoritative for every fact below (D-54)."
+  "_source_note": "Content aligned with the centre's official programme guide at https://aifoundationprogram.athar-dev.edu.sa/ — the guide is authoritative for every fact below (D-60)."
 }

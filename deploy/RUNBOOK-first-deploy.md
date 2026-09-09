@@ -387,17 +387,49 @@ DELETE FROM audit_logs LIMIT 1;
 
 ## النشر التالي — لا الأول
 
+**هذا هو الإجراء المستعمل فعلًا، وهو الذي يُتَّبع:**
+
 ```sh
-cd "$HOME/athar-app"
-php artisan down --render="errors.503" --retry=60
-git pull origin main
-composer install --no-dev --optimize-autoloader --no-interaction
-php artisan migrate --force
-php artisan optimize:clear
-php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache
-php artisan queue:restart
-php artisan up
+cd "$APP"
+git checkout -B main origin/main
+git pull
+php artisan optimize:clear && php artisan view:cache && php artisan route:cache
 ```
+
+ثم **أعد المرحلة 3** إن تغيّر `composer.json`، و**المرحلة 5 من المرحلة 6** (`migrate --force`)
+إن أضاف النشر ترحيلًا.
+
+### `config:cache` — لا يُشغَّل على هذا الخادم
+
+النسخة السابقة من هذا القسم كانت تقول
+`config:cache && route:cache && view:cache && event:cache`. **الإجراء العامل يبني `view`
+و`route` فقط**، ويترك الإعدادات تُقرأ حيّة بعد أن يمسحها `optimize:clear`.
+
+في 9 سبتمبر 2026 شُغِّل `config:cache` على الإنتاج ضمن نشر، وأعقبه **500 على كل مسار**
+بما فيها `/robots.txt`. لم يُثبَت أنه السبب المباشر — لكن الإجراء الذي يعمل يتجنّبه،
+وهذا وحده يكفي: **لا تُضِف إلى إجراء ناجح خطوةً لا يحتاجها.**
+
+إن وجدت ذاكرة إعدادات من محاولة سابقة:
+
+```sh
+rm -f "$APP/bootstrap/cache/config.php"
+```
+
+### `git checkout -B main origin/main` — لماذا هذه الصيغة بالذات
+
+تُعيد بناء `main` المحلي من البعيد قسرًا. على خادم يُعدَّل عليه أحيانًا بيد،
+`git pull` وحده يتعثّر بتباعد أو بتعديل محلي ويتوقف نصف الطريق. هذه الصيغة لا تتعثّر.
+
+### الأصول المبنية — لا تُنسخ يدويًّا
+
+الإجراء العامل **لا يحتوي `rsync` ولا `scp`** للأصول. جذر الويب يقرأ من `$APP/public`،
+فالسحب وحده يكفي. **`rsync --delete` إلى `public_html/build/` قد يُفسد رابطًا رمزيًّا
+إن وُجد** — لا تفعله ما لم تتحقّق أولًا أن `public_html/build` مجلّد حقيقي لا رابط.
+
+### السجلّات
+
+القناة الافتراضية `daily` واللاحقة اسم التطبيق، فالملف **`storage/logs/athar-YYYY-MM-DD.log`**
+لا `laravel.log`. البحث عن `laravel.log` يعطي «الملف غير موجود» على خادم سليم تمامًا.
 
 ثم **أعد المرحلة 7** إن تغيّر شيء في `resources/css` أو `resources/js`.
 

@@ -25,17 +25,22 @@ use Illuminate\Support\Facades\Route;
  * is the card's long random value and never the account id, so the public
  * verification page cannot be walked by counting (BR-25).
  *
- * `verifyUrlMasked` is what the card prints beside the copy button: the host
- * and a stub of the token, because the full token belongs on the clipboard, not
- * in a screenshot.
+ * `verifyUrl` is printed in full beside the copy button. It used to be masked
+ * down to six characters of the token, on the reasoning that "the full token
+ * belongs on the clipboard, not in a screenshot" — but that reasoning does not
+ * survive the screen it was written for: the QR sits a few centimetres away on
+ * the same screen and encodes the very same URL in machine-readable form, so a
+ * screenshot never lost anything to the mask. What the mask did cost was real —
+ * with the copy button dead (D-55, D-58) there was no way left to obtain the
+ * link at all, and no way to check by eye that the link was the right one.
  *
- * @see BR-22, BR-25 · PRD §9.6 · CONSTITUTION art. 22
+ * The link is public by design (BR-25): it proves a card is genuine and reveals
+ * nothing that the card itself does not already show.
+ *
+ * @see BR-22, BR-25 · PRD §9.6 · CONSTITUTION art. 22 · D-58
  */
 final class CardPresenter extends ViewModel
 {
-    /** Enough of the token to recognise the link, too little to retype it. */
-    private const MASK_VISIBLE_CHARS = 6;
-
     private const QR_SIZE = 180;
 
     public static function missing(): self
@@ -53,7 +58,6 @@ final class CardPresenter extends ViewModel
             'expiresAt' => null,
             'qrSvg' => '',
             'verifyUrl' => '',
-            'verifyUrlMasked' => '',
             'statusLabel' => '',
             'statusVariant' => 'neutral',
             'statusIcon' => 'card',
@@ -84,7 +88,6 @@ final class CardPresenter extends ViewModel
                 : Present::toDateTime($cohort->getAttribute('end_date')),
             'qrSvg' => self::qrSvg($verifyUrl),
             'verifyUrl' => $verifyUrl,
-            'verifyUrlMasked' => self::mask($verifyUrl, $token),
             'statusLabel' => (string) __($isRevoked ? 'card.state.revoked' : 'card.state.valid'),
             'statusVariant' => $isRevoked ? 'error' : 'success',
             'statusIcon' => $isRevoked ? 'warn' : 'check',
@@ -122,17 +125,6 @@ final class CardPresenter extends ViewModel
         } catch (\Throwable) {
             return '';
         }
-    }
-
-    private static function mask(string $url, string $token): string
-    {
-        if ($url === '' || $token === '') {
-            return $url;
-        }
-
-        $stub = mb_substr($token, 0, self::MASK_VISIBLE_CHARS);
-
-        return str_replace($token, $stub.'…', $url);
     }
 
     private static function profile(DigitalCard $card): ?Profile

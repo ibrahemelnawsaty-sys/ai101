@@ -219,7 +219,7 @@ return [
         // opposite in the one place a visitor is most likely to read it. The
         // price itself does not belong here either: there is no price column to
         // source it from, and a figure frozen into a translation file is a
-        // figure nobody can correct without a deploy (D-54).
+        // figure nobody can correct without a deploy (D-60).
         'register' => 'سجّل الآن',
         'ask' => 'لديّ سؤال أولًا',
         'seats_booked_suffix' => 'مقعدًا محجوزة',
