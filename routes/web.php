@@ -56,6 +56,7 @@ use App\Http\Controllers\Participant\ResourceController;
 use App\Http\Controllers\Participant\ScheduleController;
 use App\Http\Controllers\Public\CardVerificationController;
 use App\Http\Controllers\Public\CertificateVerificationController;
+use App\Http\Controllers\Public\CrawlerController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LegalController;
 use App\Http\Controllers\Public\PageController;
@@ -99,6 +100,13 @@ Route::middleware('throttle:public')->group(function (): void {
 
     Route::get('/certificate/verify/{code}', [CertificateVerificationController::class, 'show'])
         ->name('certificate.verify');
+
+    // PRD §9.1.3 requires both, and both answered 404 in production. Routes
+    // rather than files: the deploy copies only build/, fonts/ and brand/ into
+    // the web root, and both documents name the site's own host, which belongs
+    // to APP_URL and not to a second copy in the repository (BR-36).
+    Route::get('/robots.txt', [CrawlerController::class, 'robots'])->name('robots');
+    Route::get('/sitemap.xml', [CrawlerController::class, 'sitemap'])->name('sitemap');
 });
 
 Route::post('/waitlist', [WaitlistController::class, 'store'])

@@ -31,25 +31,14 @@ final class HomeController extends Controller
     /** The Article 17 screen name, and the name of its loading skeleton. */
     private const SCREEN = 'landing';
 
-    /**
-     * Which cohort the landing page describes, in order of preference. A cohort
-     * that has already started still has a landing page — the programme is the
-     * centre's shop window whether or not it is taking registrations today, and
-     * dropping to the empty state the moment a cohort starts running made the
-     * whole programme disappear from its own page (PRD §9.1.1).
-     *
-     * @var list<CohortStatus>
-     */
-    private const COHORT_PREFERENCE = [
-        CohortStatus::Open,
-        CohortStatus::Upcoming,
-        CohortStatus::Running,
-    ];
+    /** Where search results and link previews cut a description off. */
+    private const META_DESCRIPTION_MAX = 160;
 
     public function index(RiyadhFormatter $formatter): View
     {
         $cohort = $this->featuredCohort();
         $facts = $this->cohortFacts($cohort);
+        $landing = $this->landingContent($cohort, $formatter);
 
         return view('public.home', [
             'screen' => self::SCREEN,
@@ -58,11 +47,47 @@ final class HomeController extends Controller
             // §9.1.2 gives it its own copy and its own waiting-list form, so it
             // must never be mistaken for a generic empty screen.
             'registrationState' => $facts['is_registration_open'] === true ? 'open' : 'closed',
-            'landing' => $this->landingContent($cohort, $formatter),
+            'landing' => $landing,
+            // PublicLayoutComposer defaults an absent `pageDescription` to '',
+            // and nothing here ever passed one — so the landing page shipped an
+            // empty <meta name="description">, an empty og:description, an empty
+            // twitter:description and an empty Course.description in the
+            // Schema.org graph. Four surfaces blank from one missing value, and
+            // every share of the link showed a title with no sentence under it.
+            // The hero subtitle is the sentence the centre already writes about
+            // the programme from the admin panel (BR-31), so it is the honest
+            // source rather than a second copy invented here.
+            'pageDescription' => $this->metaDescription($landing),
             'cohort' => $facts,
             'serverNowIso' => Clock::now()->toIso8601String(),
             'copyrightYear' => Clock::riyadh()->year,
         ]);
+    }
+
+    /**
+     * The sentence search engines and chat apps show under the page title.
+     *
+     * Search engines truncate around 160 characters, so it is cut on a word
+     * boundary rather than mid-word. Empty when the centre has published no
+     * programme yet, which is the state where the page has nothing to describe.
+     *
+     * @param  array<string, mixed>  $landing
+     */
+    private function metaDescription(array $landing): string
+    {
+        $subtitle = data_get($landing, 'hero.subtitle');
+
+        if (! is_string($subtitle) || trim($subtitle) === '') {
+            return '';
+        }
+
+        $subtitle = trim((string) preg_replace('/\s+/u', ' ', $subtitle));
+
+        return mb_strlen($subtitle) <= self::META_DESCRIPTION_MAX
+            ? $subtitle
+            : rtrim(mb_substr($subtitle, 0, mb_strrpos(
+                mb_substr($subtitle, 0, self::META_DESCRIPTION_MAX), ' ',
+            ) ?: self::META_DESCRIPTION_MAX)).'…';
     }
 
     /**
@@ -73,21 +98,9 @@ final class HomeController extends Controller
      */
     private function featuredCohort(): ?Cohort
     {
-        foreach (self::COHORT_PREFERENCE as $status) {
-            /** @var Cohort|null $cohort */
-            $cohort = Cohort::query()
-                ->with(['program', 'landingSetting', 'weeks' => static fn ($query) => $query->withCount('sessions')->orderBy('index')])
-                ->withCount('sessions')
-                ->where('status', $status->value)
-                ->orderBy('start_date')
-                ->first();
-
-            if ($cohort !== null) {
-                return $cohort;
-            }
-        }
-
-        return null;
+        return Cohort::featured(static fn ($query) => $query
+            ->with(['program', 'landingSetting', 'weeks' => static fn ($weeks) => $weeks->withCount('sessions')->orderBy('index')])
+            ->withCount(['sessions', 'assignments']));
     }
 
     /**
@@ -149,11 +162,23 @@ final class HomeController extends Controller
                 'title' => __('landing.headings.weeks.title'),
                 'items' => $weeks,
             ],
+            // The timeline template prints `when`; the week list carries the same
+            // value under `dates`. Handing it the week list unchanged rendered a
+            // row of empty <span>s — four milestone titles with no date beside
+            // any of them. It is mapped rather than aliased so the two sections
+            // can diverge when the timeline grows the rest of the milestones
+            // PRD §9.1.1 asks for (registration, intro, project, closing).
             'timeline' => [
                 'kicker' => __('landing.headings.timeline.kicker'),
                 'title' => __('landing.headings.timeline.title'),
                 'lead' => __('landing.headings.timeline.lead'),
-                'items' => $weeks,
+                'items' => array_map(
+                    static fn (array $week): array => [
+                        'title' => $week['title'],
+                        'when' => $week['dates'],
+                    ],
+                    $weeks,
+                ),
             ],
             // Trainers are not wired to the enrolment table yet, so the list is
             // empty by construction rather than by absence of data. The template
@@ -187,9 +212,14 @@ final class HomeController extends Controller
      */
     private function cohortFacts(?Cohort $cohort): array
     {
+        // `assignments_points` is a mark total and `assignments_total` is a head
+        // count. They are different quantities, and filling both from
+        // ASSIGNMENTS_TOTAL put "50" behind the slider that asks how many tasks
+        // the visitor will hand in — BR-11 stated wrongly on the one widget whose
+        // own copy promises no estimating and no rounding. The count comes from
+        // the cohort, like every other figure the simulator is handed.
         $points = [
             'assignments_points' => ScoreCalculator::ASSIGNMENTS_TOTAL,
-            'assignments_total' => ScoreCalculator::ASSIGNMENTS_TOTAL,
             'project_points' => ScoreCalculator::PROJECT_TOTAL,
             'grand_total' => ScoreCalculator::GRAND_TOTAL,
         ];
@@ -203,6 +233,7 @@ final class HomeController extends Controller
                 'seats_taken_percent' => 0,
                 'registration_closes_at_iso' => null,
                 'sessions_total' => 0,
+                'assignments_total' => 0,
                 'pass_score' => 0,
                 'min_attendance_rate' => 0,
             ]);
@@ -222,6 +253,7 @@ final class HomeController extends Controller
             'seats_taken_percent' => $capacity > 0 ? (int) round($taken / $capacity * 100) : 0,
             'registration_closes_at_iso' => $closesAt === null ? null : Clock::toUtc($closesAt)->toIso8601String(),
             'sessions_total' => (int) ($cohort->getAttribute('sessions_count') ?? 0),
+            'assignments_total' => (int) ($cohort->getAttribute('assignments_count') ?? 0),
             'pass_score' => (int) $cohort->pass_score,
             'min_attendance_rate' => (int) $cohort->min_attendance_rate,
         ]);
@@ -441,7 +473,14 @@ final class HomeController extends Controller
      * named here rather than splatting the whole stored object through, so the
      * contract between this method and the view is something you can read.
      *
-     * @return list<array{title: string|null, body: string|null, icon: string|null}>
+     * An item with no icon OMITS the key rather than carrying a null. Each of the
+     * four `<use href="#i-{{ data_get($x, 'icon', '...') }}">` sites declares its
+     * own fallback — `spark` for a card, `badge` for a seal — and `data_get`
+     * tests with array_key_exists, so a key that is present and null returns the
+     * null and never the fallback. That rendered `<use href="#i-">`: seven silent
+     * holes on the live page, five goals and two certificate seals.
+     *
+     * @return list<array{title: string|null, body: string|null, icon?: string}>
      */
     private function jsonCards(mixed $value): array
     {
@@ -453,7 +492,7 @@ final class HomeController extends Controller
 
         foreach ($value as $item) {
             if (is_string($item) && $item !== '') {
-                $items[] = ['title' => $item, 'body' => null, 'icon' => null];
+                $items[] = ['title' => $item, 'body' => null];
 
                 continue;
             }
@@ -465,11 +504,16 @@ final class HomeController extends Controller
                 if (is_string($title) || is_string($body)) {
                     $icon = $item['icon'] ?? null;
 
-                    $items[] = [
+                    $card = [
                         'title' => is_string($title) ? $title : null,
                         'body' => is_string($body) ? $body : null,
-                        'icon' => is_string($icon) ? $icon : null,
                     ];
+
+                    if (is_string($icon) && $icon !== '') {
+                        $card['icon'] = $icon;
+                    }
+
+                    $items[] = $card;
                 }
             }
         }

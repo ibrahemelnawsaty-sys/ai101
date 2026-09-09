@@ -141,6 +141,57 @@ class Cohort extends Model
     }
 
     /**
+     * Which cohort the platform treats as "the current one", in order.
+     *
+     * Running is included and last: dropping to no cohort the moment a cohort
+     * starts would make the programme vanish from its own page (PRD §9.1.1).
+     *
+     * @var list<CohortStatus>
+     */
+    public const FEATURED_PREFERENCE = [
+        CohortStatus::Open,
+        CohortStatus::Upcoming,
+        CohortStatus::Running,
+    ];
+
+    /**
+     * The cohort the public page shows and the admin panel edits.
+     *
+     * It lives here because it had lived in two places that disagreed: the
+     * landing page accepted a running cohort and the landing editor did not, so
+     * on a cohort that had already started the page rendered it while every save
+     * in the admin panel returned "no cohort". BR-31 promises the centre edits
+     * this content; two answers to "which cohort" made that promise unkeepable.
+     *
+     * `$prepare` adds the eager loads each caller needs — the page wants weeks
+     * and counts, the editor wants only the landing row — without either of them
+     * restating the rule itself.
+     *
+     * @param  (callable(Builder<self>): mixed)|null  $prepare
+     */
+    public static function featured(?callable $prepare = null): ?self
+    {
+        foreach (self::FEATURED_PREFERENCE as $status) {
+            $query = self::query()
+                ->where('status', $status->value)
+                ->orderBy('start_date');
+
+            if ($prepare !== null) {
+                $prepare($query);
+            }
+
+            /** @var self|null $cohort */
+            $cohort = $query->first();
+
+            if ($cohort !== null) {
+                return $cohort;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return HasMany<Week, $this>
      */
     public function weeks(): HasMany

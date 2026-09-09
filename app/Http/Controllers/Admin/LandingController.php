@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\CohortStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\FaqEntryRequest;
 use App\Http\Requests\Admin\UpdateLandingRequest;
@@ -176,13 +175,10 @@ final class LandingController extends Controller
      */
     private function currentCohort(): ?Cohort
     {
-        /** @var Cohort|null $cohort */
-        $cohort = Cohort::query()
-            ->with('landingSetting')
-            ->whereIn('status', [CohortStatus::Open->value, CohortStatus::Upcoming->value])
-            ->orderBy('start_date')
-            ->first();
-
-        return $cohort;
+        // Cohort::featured() is the one place that decides this. When the rule
+        // lived here as well, the two copies drifted: this one never accepted a
+        // running cohort, so once a cohort started the visitor kept reading its
+        // landing page while every save here answered "no cohort" (BR-31).
+        return Cohort::featured(static fn ($query) => $query->with('landingSetting'));
     }
 }
