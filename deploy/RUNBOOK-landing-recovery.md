@@ -54,22 +54,70 @@ tar -czf "$HOME/releases/athar-$(date +%Y%m%d-%H%M%S).tar.gz" -C "$HOME/athar-ap
 
 ### الإصلاح
 
+> ⚠️ **لا يوجد Git على الخادم.** `deploy/README.md` §5.1 يمنع رفع `.git/`، فالنشر
+> هنا أرشيف يُبنى على جهازك ويُرفع — لا `git pull`. الأوامر أدناه تعكس ذلك.
+
+### الطريق الأقصر — يُصلح `NaN%` وحده، بلا PHP وبلا composer
+
+العطبان الحرجان الأولان سببهما **الأصول المبنيّة فقط**. رفع مجلّد واحد يُسقطهما:
+
 ```sh
-cd "$HOME/athar-app"
-git fetch --all
-git checkout fix/gate-baseline     # أو الفرع بعد دمجه في main
-git pull --ff-only
+# على جهازك، من جذر المستودع:
+npm run build                    # يُنتج public/build/ ومعه manifest.json
+tar -czf build-only.tar.gz public/build
+```
 
-# public/build ملتزَم في المستودع عمدًا (لا Node على الاستضافة المشتركة)،
-# فالسحب وحده يجلب الأصول المبنيّة.
-ls -la public/build/assets/
+ثم على الخادم — عبر SSH إن توفّر:
 
-# النسخ إلى جذر الويب. --delete ضرورية: بدونها تبقى الأصول القديمة
-# جنبًا إلى جنب مع الجديدة، والصفحة تخدم خليطًا منهما.
+```sh
+scp -P <ssh-port> build-only.tar.gz <user>@<host>:$HOME/
+ssh -p <ssh-port> <user>@<host>
+cd "$HOME" && tar -xzf build-only.tar.gz
+rsync -a --delete public/build/ "$HOME/public_html/build/"
+```
+
+أو **بلا SSH**، من مدير ملفات hPanel: ارفع `build-only.tar.gz`، استخرجه، ثم
+**احذف محتويات `public_html/build/` القديمة كاملةً** قبل نقل الجديدة مكانها.
+الحذف ليس تنظيفًا — بدونه تبقى الملفات القديمة جنبًا إلى جنب مع الجديدة
+والصفحة تخدم خليطًا منهما، وهو أسوأ من العطل الأصلي.
+
+### الطريق الكامل — يُصلح كل ما في هذه الدفعات
+
+```sh
+# على جهازك، من جذر المستودع:
+composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+npm ci && npm run build
+
+tar --exclude-vcs --exclude='node_modules' --exclude='storage/logs/*' \
+    --exclude='storage/framework/cache/data/*' --exclude='storage/framework/sessions/*' \
+    --exclude='storage/framework/views/*' --exclude='.env' --exclude='.env.*' \
+    -czf athar-release.tar.gz .
+
+# ⚠️ ثم أعِد بيئة التطوير على جهازك، وإلا اختفت أدوات الاختبار:
+#    composer install
+```
+
+ثم على الخادم:
+
+```sh
+scp -P <ssh-port> athar-release.tar.gz <user>@<host>:$HOME/releases/
+ssh -p <ssh-port> <user>@<host>
+cd "$HOME/athar-app" && tar -xzf "$HOME/releases/athar-release.tar.gz"
+
 rsync -a --delete public/build/ "$HOME/public_html/build/"
 rsync -a          public/fonts/ "$HOME/public_html/fonts/"
 rsync -a          public/brand/ "$HOME/public_html/brand/"
+
+php artisan config:clear && php artisan config:cache
+php artisan view:clear   && php artisan route:cache
 ```
+
+> **`config:cache` إلزامي هنا.** ادّعاء المجانية صار يُقرأ من الإعداد، والإعداد
+> المخزَّن مؤقتًا على الخادم لا يعرفه بعد. وبلا مسح المخزَّن يبقى الادّعاء الكاذب
+> منشورًا رغم أن الشيفرة صحّت.
+>
+> ولا حاجة لإضافة `ATHAR_PROGRAM_IS_FREE` إلى `.env` على الخادم: الافتراض في
+> `config/athar.php` هو `false` أصلًا، فغياب المتغيّر يعطي الجواب الصحيح.
 
 ### التحقق — لا تكمل قبل أن يمرّ
 
