@@ -214,7 +214,13 @@ return [
     ],
 
     'final' => [
-        'register' => 'سجّل الآن — مجانًا',
+        // No price claim in a button label. The programme is sold — 1,499 ريالًا
+        // after a discount from 2,950, VAT included — and this label said the
+        // opposite in the one place a visitor is most likely to read it. The
+        // price itself does not belong here either: there is no price column to
+        // source it from, and a figure frozen into a translation file is a
+        // figure nobody can correct without a deploy (D-54).
+        'register' => 'سجّل الآن',
         'ask' => 'لديّ سؤال أولًا',
         'seats_booked_suffix' => 'مقعدًا محجوزة',
     ],

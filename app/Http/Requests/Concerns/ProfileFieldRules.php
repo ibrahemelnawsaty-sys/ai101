@@ -111,7 +111,10 @@ trait ProfileFieldRules
             }
         }
 
-        foreach (['phone', 'gender', 'bio', 'city', 'education_level', 'birth_date'] as $field) {
+        // `job_title` is the line the public trainer card prints under the name
+        // (PRD §9.1.1). The column was added without a way to write it, so the
+        // field the page publishes could never be filled from the panel.
+        foreach (['phone', 'gender', 'bio', 'city', 'education_level', 'job_title', 'birth_date'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $columns[$field] = $validated[$field];
             }

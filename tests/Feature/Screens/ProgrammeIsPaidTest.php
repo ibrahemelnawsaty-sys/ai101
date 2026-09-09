@@ -63,6 +63,33 @@ it('BR-36: القيمة تأتي من الإعداد لا من ثابت في ا�
     expect($body)->toContain('"isAccessibleForFree":true');
 });
 
+it('المادة 7: لا نصّ معروض للزائر يَعِد بأن البرنامج مجاني', function (): void {
+    // The Schema.org fix closed the claim MACHINES read and left the one PEOPLE
+    // read: `landing.final.register` said "سجّل الآن — مجانًا" on the button at
+    // the foot of the page, in both locales. Pinning one key would miss the next
+    // one, so this sweeps every interface string on the public path.
+    $offenders = [];
+
+    foreach (['ar', 'en'] as $locale) {
+        $strings = require lang_path($locale.'/landing.php');
+
+        array_walk_recursive($strings, function (mixed $value, string $key) use (&$offenders, $locale): void {
+            if (! is_string($value)) {
+                return;
+            }
+
+            // "مجاني" is legitimate about a PERK — the guide gives a free year of
+            // hosting and a free consultation. It is false about the programme,
+            // and a call to action is where that difference stops being subtle.
+            if (preg_match('/(مجان|\bfree\b)/iu', $value) === 1) {
+                $offenders[] = "{$locale}.{$key}: {$value}";
+            }
+        });
+    }
+
+    expect($offenders)->toBe([]);
+});
+
 it('المادة 12: الافتراضي عند غياب المتغيّر هو «ليس مجانيًا»', function (): void {
     // Fail safe in the direction that cannot mislead: an unset variable may
     // understate a discount, but must never advertise a paid programme as free.

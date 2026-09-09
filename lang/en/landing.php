@@ -192,7 +192,8 @@ return [
     ],
 
     'final' => [
-        'register' => 'Register now — free',
+        // The programme is sold. See the note on the Arabic key of the same name.
+        'register' => 'Register now',
         'ask' => 'I have a question first',
         'seats_booked_suffix' => 'seats taken',
     ],

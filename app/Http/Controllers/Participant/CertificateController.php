@@ -88,16 +88,33 @@ final class CertificateController extends Controller
     }
 
     /**
-     * The programme's taught hours, summed from its own timetable.
+     * The training hours printed on the certificate.
      *
-     * PRD §9.17 puts a number of training hours on the certificate, and no
-     * column records one (PROJECT-CONTRACT §4), so it is derived from the
-     * sessions that were actually scheduled and not cancelled — the same
-     * timetable everything else on the platform is measured against. It is
-     * declared in the batch report as a derivation, not a stored fact.
+     * The ACCREDITED figure when the centre has declared one, and only then a
+     * sum of the timetable.
+     *
+     * The comment that stood here said no column records this. One does now:
+     * `programs.hours`, which the centre's guide leads with — sixty accredited
+     * hours — and which is the figure TVTC accredits and the guide promises the
+     * Athar certificate will state. Summing live sessions cannot reach it and
+     * never could: it counted taught time only, so the seeded programme printed
+     * roughly half the number the participant was promised.
+     *
+     * The two are different quantities. Accredited hours cover the assignments
+     * and the final project as well as the sessions; the timetable covers the
+     * sessions alone. Where the centre has declared the accredited figure, that
+     * is the fact the certificate exists to attest. Where it has not, the
+     * derivation stands — it is what shipped, and a certificate with no hours at
+     * all would be worse than an understated one.
      */
     private function trainingHours(Cohort $cohort): int
     {
+        $declared = (int) ($cohort->program?->getAttribute('hours') ?? 0);
+
+        if ($declared > 0) {
+            return $declared;
+        }
+
         $seconds = 0;
 
         $sessions = Session::query()

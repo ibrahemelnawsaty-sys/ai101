@@ -71,6 +71,9 @@ final class UpdateUserRequest extends FormRequest
             'gender' => ['required', Rule::enum(Gender::class)],
             'city' => ['nullable', 'string', 'max:80'],
             'education_level' => ['nullable', 'string', 'max:80'],
+            // The role printed under a trainer's name on the public page. Max
+            // matches the column (PRD §9.1.1).
+            'job_title' => ['nullable', 'string', 'max:120'],
             'bio' => ['nullable', 'string', 'max:500'],
         ];
 
