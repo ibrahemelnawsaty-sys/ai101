@@ -118,80 +118,80 @@
                     :description="$closedReason"
                     :action-label="__('nav.assignments')" :action-href="route('assignments.index')" />
             @else
+                {{-- A PLAIN FORM. It used to be driven by an Alpine component called
+                     atharUploader, which does not exist: app.js registers the
+                     component as `uploader`, and its API is different in every
+                     name the template used — `hot` not `dragging`, `add()` not
+                     `accept()`, `submit()` not `send()`, `file.id` not `file.key`.
+                     The two were written against different contracts.
+
+                     The browser console on the live platform showed the whole
+                     cascade: "atharUploader is not defined", then dragging,
+                     files, ready, uploading and accept in turn. And because
+                     x-on:submit.prevent calls preventDefault() BEFORE evaluating
+                     the expression, the native submit was cancelled and the
+                     replacement never ran — pressing "hand in" did nothing at
+                     all. A trainee could not submit a single piece of work.
+
+                     So this is now a form that needs no JavaScript to work. Drag
+                     and drop and per-file progress are worth having back, but not
+                     at the price of the platform being unable to accept work; the
+                     enhancement can return once its API matches this markup and a
+                     test exercises it. --}}
                 <form method="POST"
                     action="{{ route('assignments.submit', $assignment->id) }}"
-                    enctype="multipart/form-data"
-                    x-data="atharUploader({
-                        endpoint: '{{ route('assignments.submit', $assignment->id) }}',
-                        maxFiles: {{ $assignment->maxFiles }},
-                        maxBytes: {{ $assignment->maxFileBytes }},
-                        replaceWarning: @js(__('assignments.replace_warning'))
-                    })"
-                    x-on:submit.prevent="send()">
+                    enctype="multipart/form-data">
                     @csrf
 
-                    {{-- Drop zone; the visible button keeps it operable by keyboard. --}}
-                    <div class="drop"
-                        x-bind:class="{ 'is-over': dragging }"
-                        x-on:dragover.prevent="dragging = true"
-                        x-on:dragleave.prevent="dragging = false"
-                        x-on:drop.prevent="accept($event.dataTransfer.files); dragging = false">
+                    <div class="drop">
                         <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                        <b>{{ __('assignments.drop_here') }}</b>
+                        <b>{{ __('assignments.choose_files') }}</b>
                         <span>
                             {{ __('assignments.accepted_types') }}
                             · {{ __('assignments.size_limit', ['size' => $assignment->maxFileSizeLabel]) }}
                             · {{ trans_choice('assignments.file_limit', $assignment->maxFiles, ['count' => $assignment->maxFiles]) }}
                         </span>
-                        <x-ui.button variant="secondary" size="sm" type="button"
-                            x-on:click="$refs.picker.click()">{{ __('assignments.choose_files') }}</x-ui.button>
-                        <input type="file" name="files[]" multiple class="sr" x-ref="picker"
-                            x-on:change="accept($event.target.files)"
-                            aria-label="{{ __('assignments.choose_files') }}">
-                    </div>
 
-                    {{-- Real per-file progress driven by XHR upload events. --}}
-                    <template x-for="file in files" x-bind:key="file.key">
-                        <div class="up">
-                            <div class="up__hd">
-                                <x-ui.icon name="file" />
-                                <b x-text="file.name"></b>
-                                <span class="u-num" x-text="file.percent + '%'"></span>
-                                <x-ui.button variant="ghost" size="sm" type="button"
-                                    x-on:click="cancel(file)"
-                                    x-show="file.percent < 100">{{ __('app.cancel') }}</x-ui.button>
-                            </div>
-                            <div class="pbar">
-                                <div class="pbar__f" x-bind:style="`inline-size:${file.percent}%`"></div>
-                            </div>
-                            <div class="up__ft">
-                                <span class="u-num" x-text="file.sizeLabel"></span>
-                                <span x-text="file.stateLabel"></span>
-                            </div>
-                        </div>
-                    </template>
+                        {{-- Visible, and labelled. It used to be class="sr" and
+                             opened by a button that called into the missing
+                             component, so with JavaScript broken there was no way
+                             to reach it at all. --}}
+                        <input type="file" name="files[]" multiple
+                            id="submission-files"
+                            aria-describedby="submission-files-hint">
+                        <label class="sr" for="submission-files">{{ __('assignments.choose_files') }}</label>
+
+                        @error('files')
+                            <p class="hint hint--error" role="alert">{{ $message }}</p>
+                        @enderror
+                        @error('files.*')
+                            <p class="hint hint--error" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <x-ui.input name="github_url" type="url" dir="ltr"
                         :label="__('assignments.github_url')"
                         :hint="__('assignments.github_hint')"
                         :value="old('github_url', $submission?->githubUrl)"
+                        :error="$errors->first('github_url')"
                         placeholder="https://github.com/" />
 
                     <x-ui.textarea name="note" rows="3"
                         :label="__('assignments.note_to_trainer')"
                         :value="old('note', $submission?->note)"
+                        :error="$errors->first('note')"
                         :placeholder="__('assignments.note_placeholder')" />
 
-                    {{-- Enabled only once a file or a GitHub URL exists (server re-checks). --}}
+                    {{-- The "save as draft" button was removed. It posted draft=1,
+                         SubmitAssignmentRequest::rules() never declared the field,
+                         and the controller writes status = 'submitted'
+                         unconditionally — so it handed the work in for good while
+                         telling the trainee it had been kept private. --}}
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit"
-                            x-bind:disabled="! ready"
-                            x-bind:aria-busy="uploading">{{ __('assignments.submit_action') }}</x-ui.button>
-                        <x-ui.button variant="secondary" type="submit"
-                            name="draft" value="1">{{ __('assignments.save_draft') }}</x-ui.button>
+                        <x-ui.button variant="primary" type="submit">{{ __('assignments.submit_action') }}</x-ui.button>
                     </div>
 
-                    <p class="hint" role="status" aria-live="polite">
+                    <p class="hint" id="submission-files-hint" role="status">
                         <x-ui.icon name="info" />
                         {{ __('assignments.resubmit_keeps_versions') }}
                     </p>
