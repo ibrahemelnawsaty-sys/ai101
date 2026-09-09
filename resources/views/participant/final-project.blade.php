@@ -149,46 +149,36 @@
                     :title="__('project.submission_closed_title')"
                     :description="$closedReason" />
             @else
+                {{-- A plain form, for the same reason as the assignment screen
+                     (D-54): this was driven by an Alpine component named
+                     atharUploader that nothing registers, and
+                     x-on:submit.prevent cancelled the native submit before the
+                     missing handler could throw. Half the marks in the whole
+                     programme live in this project, and it could not be handed
+                     in at all. --}}
                 <form method="POST" action="{{ route('finalProject.submit') }}"
-                    enctype="multipart/form-data"
-                    x-data="atharUploader({
-                        endpoint: '{{ route('finalProject.submit') }}',
-                        maxFiles: {{ $project->maxFiles }},
-                        maxBytes: {{ $project->maxFileBytes }},
-                        replaceWarning: @js(__('assignments.replace_warning'))
-                    })"
-                    x-on:submit.prevent="send()">
+                    enctype="multipart/form-data">
                     @csrf
 
-                    <div class="drop"
-                        x-bind:class="{ 'is-over': dragging }"
-                        x-on:dragover.prevent="dragging = true"
-                        x-on:dragleave.prevent="dragging = false"
-                        x-on:drop.prevent="accept($event.dataTransfer.files); dragging = false">
+                    <div class="drop">
                         <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                        <b>{{ __('assignments.drop_here') }}</b>
-                        <span>{{ __('assignments.size_limit', ['size' => $project->maxFileSizeLabel]) }}</span>
-                        <x-ui.button variant="secondary" size="sm" type="button"
-                            x-on:click="$refs.picker.click()">{{ __('assignments.choose_files') }}</x-ui.button>
-                        <input type="file" name="files[]" multiple class="sr" x-ref="picker"
-                            x-on:change="accept($event.target.files)"
-                            aria-label="{{ __('assignments.choose_files') }}">
-                    </div>
+                        <b>{{ __('assignments.choose_files') }}</b>
+                        <span>
+                            {{ __('assignments.accepted_types') }}
+                            · {{ __('assignments.size_limit', ['size' => $project->maxFileSizeLabel]) }}
+                            · {{ trans_choice('assignments.file_limit', $project->maxFiles, ['count' => $project->maxFiles]) }}
+                        </span>
 
-                    <template x-for="file in files" x-bind:key="file.key">
-                        <div class="up">
-                            <div class="up__hd">
-                                <x-ui.icon name="file" />
-                                <b x-text="file.name"></b>
-                                <span class="u-num" x-text="file.percent + '%'"></span>
-                            </div>
-                            <div class="pbar"><div class="pbar__f" x-bind:style="`inline-size:${file.percent}%`"></div></div>
-                            <div class="up__ft">
-                                <span class="u-num" x-text="file.sizeLabel"></span>
-                                <span x-text="file.stateLabel"></span>
-                            </div>
-                        </div>
-                    </template>
+                        <input type="file" name="files[]" multiple id="project-files">
+                        <label class="sr" for="project-files">{{ __('assignments.choose_files') }}</label>
+
+                        @error('files')
+                            <p class="hint hint--error" role="alert">{{ $message }}</p>
+                        @enderror
+                        @error('files.*')
+                            <p class="hint hint--error" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <x-ui.input name="github_url" type="url" dir="ltr"
                         :label="__('assignments.github_url')"

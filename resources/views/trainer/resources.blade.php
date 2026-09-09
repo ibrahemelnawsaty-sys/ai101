@@ -21,41 +21,29 @@
 
         {{-- Upload ------------------------------------------------------------ --}}
         <x-ui.card class="dc--span" icon="up" :title="__('trainer.resources.upload_title')">
-            <form method="POST" action="{{ route('trainer.resources.store') }}" enctype="multipart/form-data"
-                x-data="atharUploader({
-                    endpoint: '{{ route('trainer.resources.store') }}',
-                    maxFiles: {{ $maxFiles }},
-                    maxBytes: {{ $maxFileBytes }},
-                    replaceWarning: null
-                })"
-                x-on:submit.prevent="send()">
+            {{-- A plain form, for the third time and the same reason (D-54, D-55):
+                 atharUploader is called here too and nothing registers it, and
+                 x-on:submit.prevent cancelled the native submit before the
+                 missing handler could throw. A trainer could not add a single
+                 resource to the library. --}}
+            <form method="POST" action="{{ route('trainer.resources.store') }}" enctype="multipart/form-data">
                 @csrf
 
-                <div class="drop"
-                    x-bind:class="{ 'is-over': dragging }"
-                    x-on:dragover.prevent="dragging = true"
-                    x-on:dragleave.prevent="dragging = false"
-                    x-on:drop.prevent="accept($event.dataTransfer.files); dragging = false">
+                <div class="drop">
                     <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                    <b>{{ __('assignments.drop_here') }}</b>
-                    <span>{{ __('assignments.size_limit', ['size' => $maxFileSizeLabel]) }}</span>
-                    <x-ui.button variant="secondary" size="sm" type="button"
-                        x-on:click="$refs.picker.click()">{{ __('assignments.choose_files') }}</x-ui.button>
-                    <input type="file" name="files[]" multiple class="sr" x-ref="picker"
-                        x-on:change="accept($event.target.files)"
-                        aria-label="{{ __('assignments.choose_files') }}">
-                </div>
+                    <b>{{ __('assignments.choose_files') }}</b>
+                    <span>{{ __('assignments.accepted_types') }}</span>
 
-                <template x-for="file in files" x-bind:key="file.key">
-                    <div class="up">
-                        <div class="up__hd">
-                            <x-ui.icon name="file" />
-                            <b x-text="file.name"></b>
-                            <span class="u-num" x-text="file.percent + '%'"></span>
-                        </div>
-                        <div class="pbar"><div class="pbar__f" x-bind:style="`inline-size:${file.percent}%`"></div></div>
-                    </div>
-                </template>
+                    <input type="file" name="files[]" multiple id="resource-files">
+                    <label class="sr" for="resource-files">{{ __('assignments.choose_files') }}</label>
+
+                    @error('files')
+                        <p class="hint hint--error" role="alert">{{ $message }}</p>
+                    @enderror
+                    @error('files.*')
+                        <p class="hint hint--error" role="alert">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <div class="f2">
                     <x-ui.input name="title" required :label="__('trainer.resources.field_title')" />

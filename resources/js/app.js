@@ -813,6 +813,126 @@ const toastStore = {
 
 initServerClock();
 
+/**
+ * Copy one value to the clipboard.
+ *
+ * The card screen called `atharCopy({ value })` and nothing registered it, so
+ * the button threw and the label never changed — D-55. Written here rather than
+ * removed because a sixty-character verification URL is exactly the thing
+ * nobody should have to select by hand on a phone.
+ *
+ * Falls back to selecting the text when the Clipboard API is unavailable or
+ * refused: over plain HTTP, and in some in-app browsers, navigator.clipboard
+ * simply does not exist.
+ */
+function atharCopy() {
+    return (config = {}) => ({
+        value: config.value || '',
+        copied: false,
+
+        async copy() {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(this.value);
+                } else {
+                    const helper = document.createElement('textarea');
+                    helper.value = this.value;
+                    helper.setAttribute('readonly', '');
+                    helper.style.position = 'fixed';
+                    helper.style.insetInlineStart = '-9999px';
+                    document.body.appendChild(helper);
+                    helper.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(helper);
+                }
+
+                this.copied = true;
+                setTimeout(() => { this.copied = false; }, 2000);
+            } catch (error) {
+                // A refused clipboard is not worth an error dialogue; the URL is
+                // printed beside the button and can still be selected.
+                this.copied = false;
+            }
+        },
+    });
+}
+
+/**
+ * Share the verification link through the operating system's own sheet.
+ *
+ * `atharShare({ url, title })` was called and never registered — D-55. Where
+ * navigator.share does not exist (every desktop browser), the button copies
+ * instead, which is the useful thing rather than a dead control.
+ */
+function atharShare() {
+    return (config = {}) => ({
+        url: config.url || '',
+        title: config.title || '',
+        shared: false,
+
+        get supported() {
+            return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+        },
+
+        async share() {
+            try {
+                if (this.supported) {
+                    await navigator.share({ title: this.title, url: this.url });
+                } else if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(this.url);
+                }
+
+                this.shared = true;
+                setTimeout(() => { this.shared = false; }, 2000);
+            } catch (error) {
+                // A cancelled share sheet throws. That is the user declining,
+                // not a failure to report.
+                this.shared = false;
+            }
+        },
+    });
+}
+
+/**
+ * The card's pointer tilt.
+ *
+ * `atharCardTilt({ maxDegrees: 8 })` was called and never registered — D-55.
+ * Honours prefers-reduced-motion and does nothing on a coarse pointer: a card
+ * that tilts under a finger is a card that fights the scroll.
+ */
+function atharCardTilt() {
+    return (config = {}) => ({
+        max: Number(config.maxDegrees || 8),
+        rx: 0,
+        ry: 0,
+
+        get enabled() {
+            return finePointer() && !reduced();
+        },
+
+        move(event) {
+            if (!this.enabled) return;
+            const box = this.$el.getBoundingClientRect();
+            if (!box.width || !box.height) return;
+            const px = (event.clientX - box.left) / box.width - 0.5;
+            const py = (event.clientY - box.top) / box.height - 0.5;
+            this.ry = px * this.max * 2;
+            this.rx = -py * this.max * 2;
+        },
+
+        reset() {
+            this.rx = 0;
+            this.ry = 0;
+        },
+
+        get style() {
+            return this.enabled
+                ? `transform: perspective(900px) rotateX(${this.rx}deg) rotateY(${this.ry}deg)`
+                : '';
+        },
+    });
+}
+
 Alpine.store('toast', toastStore);
 Alpine.data('countdown', countdown());
 Alpine.data('drawer', drawer());
@@ -823,6 +943,9 @@ Alpine.data('sidebar', sidebar());
 Alpine.data('uploader', uploader());
 Alpine.data('asyncPanel', asyncPanel());
 Alpine.data('impersonation', impersonation());
+Alpine.data('atharCopy', atharCopy());
+Alpine.data('atharShare', atharShare());
+Alpine.data('atharCardTilt', atharCardTilt());
 
 window.Alpine = Alpine;
 

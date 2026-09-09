@@ -58,10 +58,13 @@
                 :action-label="__('trainer.sessions.title')" :action-href="route('trainer.sessions')" />
         @else
             <x-ui.card class="dc--span" flush
-                x-data="atharRoster({
-                    pollUrl: '{{ route('trainer.attendance.poll', $roster->sessionId) }}',
-                    live: @js($roster->isLive)
-                })">
+                {{-- The live-poll component was removed in D-55: atharRoster was
+                     never registered, so the auto-refresh never ran, and nothing
+                     else on this screen consumed its state. The roster renders
+                     from the server and the bulk-marking form is a plain form,
+                     so removing it costs a refresh button nobody had. The poll
+                     endpoint still exists for when it is written and tested. --}}
+                >
 
                 <div class="tablebar">
                     <div>
