@@ -36,7 +36,12 @@ final class LiveSessionPresenter extends ViewModel
             'statusLabel' => null,
             'statusVariant' => 'neutral',
             'joinWindowOpen' => false,
-            'joinOpensBeforeMinutes' => self::windowFor($session),
+            // There is no session here to ask, so the platform default is the
+            // only honest answer. A blind search-and-replace put windowFor(
+            // $session) in this method, which has no $session — and the whole
+            // live screen returned 500 for exactly the case it exists to
+            // handle: a cohort with no session yet (D-52 correction).
+            'joinOpensBeforeMinutes' => LiveController::JOIN_OPENS_BEFORE_START_MINUTES,
         ]);
     }
 
