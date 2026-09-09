@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
-use App\Support\Dates;
-use App\Events\AssignmentPublished;
 use App\Enums\AssignmentStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Events\AssignmentPublished;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreAssignmentRequest;
@@ -22,6 +21,7 @@ use App\Presenters\Support\Options;
 use App\Presenters\Trainer\AssignmentForm;
 use App\Presenters\Trainer\AssignmentRow;
 use App\Services\Grading\ScoreCalculator;
+use App\Support\Dates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

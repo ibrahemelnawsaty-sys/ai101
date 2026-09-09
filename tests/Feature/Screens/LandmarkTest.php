@@ -24,8 +24,22 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
 
+/**
+ * A template's source with its Blade comments removed.
+ *
+ * These tests reason about the ORDER of landmarks in the rendered document, so
+ * they must not see markup that is never rendered. The comment above <main> in
+ * the public layout explains this very fix and quotes "<main>" twice while doing
+ * it — so a raw strpos() found the explanation before the element and reported
+ * the fix as broken. The prose that documents a rule is not the rule.
+ */
+function renderedSource(string $view): string
+{
+    return (string) preg_replace('/\{\{--.*?--\}\}/s', '', (string) File::get(resource_path($view)));
+}
+
 it('D-47: الرأس خارج main في التخطيط العام', function (): void {
-    $layout = (string) File::get(resource_path('views/layouts/public.blade.php'));
+    $layout = renderedSource('views/layouts/public.blade.php');
 
     $headerAt = strpos($layout, "@include('partials.public-header')");
     $mainAt = strpos($layout, '<main');
@@ -52,8 +66,8 @@ it('D-47: لا صفحة عامّة تُدرج الرأس بنفسها', function
 });
 
 it('D-47: رابط تخطّي المحتوى يشير إلى هدف موجود', function (): void {
-    $layout = (string) File::get(resource_path('views/layouts/public.blade.php'));
-    $header = (string) File::get(resource_path('views/partials/public-header.blade.php'));
+    $layout = renderedSource('views/layouts/public.blade.php');
+    $header = renderedSource('views/partials/public-header.blade.php');
 
     $both = $layout.$header;
 

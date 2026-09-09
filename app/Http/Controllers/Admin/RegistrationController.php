@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Events\EnrollmentRejected;
-use App\Events\EnrollmentApproved;
 use App\Enums\EnrollmentStatus;
+use App\Events\EnrollmentApproved;
+use App\Events\EnrollmentRejected;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RegistrationDecisionRequest;
 use App\Models\Cohort;
 use App\Models\Enrollment;
+use App\Models\User;
 use App\Presenters\Admin\RegistrationReview;
 use App\Presenters\Admin\RegistrationRow;
 use App\Presenters\Support\Options;
@@ -130,7 +131,7 @@ final class RegistrationController extends Controller
         // Announced after the row is saved, never before: a letter about a
         // place that failed to save is a promise the platform cannot keep.
         EnrollmentApproved::dispatch(
-            $enrollment->user,
+            $this->recipient($enrollment),
             (string) $enrollment->cohort?->getAttribute('name'),
         );
 
@@ -150,13 +151,42 @@ final class RegistrationController extends Controller
 
         // The reason travels with the event because the letter must give one:
         // a refusal without one is exactly the shape art. 7 forbids.
+        $reason = $request->reason();
+
+        if ($reason === null) {
+            // RegistrationDecisionRequest marks reject_reason `required` on this
+            // path, so an empty one cannot arrive through validation. Coercing it
+            // to '' would post a refusal that explains nothing, which is the one
+            // outcome art. 7 rules out — so this fails instead.
+            throw new \RuntimeException('Rejection of enrolment '.$enrollment->getKey().' carries no reason.');
+        }
+
         EnrollmentRejected::dispatch(
-            $enrollment->user,
+            $this->recipient($enrollment),
             (string) config('athar.program_name'),
-            $request->reason(),
+            $reason,
         );
 
         return back()->with('status', __('admin.registrations.rejected'));
+    }
+
+    /**
+     * The account a decision letter is addressed to.
+     *
+     * `enrollments.user_id` is a constrained, non-nullable foreign key, so an
+     * enrolment without an account is unreachable through the application. If a
+     * row is ever orphaned, stopping is right: a decision letter addressed to
+     * nobody is a worse outcome than an error an administrator can report.
+     */
+    private function recipient(Enrollment $enrollment): User
+    {
+        $user = $enrollment->user;
+
+        if ($user === null) {
+            throw new \RuntimeException('Enrolment '.$enrollment->getKey().' has no account attached.');
+        }
+
+        return $user;
     }
 
     /** The waiting list of requests as a CSV. */

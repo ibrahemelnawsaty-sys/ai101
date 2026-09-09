@@ -243,6 +243,7 @@
          instead of eyeballing a value two pixels off it.  The same grid sizes
          boxes, not only the gaps between them.
      ====================================================================== */
+  --s0:  0;      /* structural zero — collapses a spacer, never a design gap */
   --s1:  4px;    /* PRD §5.5 · icon to its label */
   --s2:  8px;    /* PRD §5.5 · small inner padding */
   --s3:  12px;   /* PRD §5.5 · between close form controls */

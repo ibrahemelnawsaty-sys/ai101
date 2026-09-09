@@ -123,9 +123,16 @@ it('D-30: أسبقية الأدوار تطابق ما يفعله DashboardContro
     // participant dashboard by DashboardController, so it must get the
     // participant rail. Two different answers to "which role am I" would be
     // worse than either answer alone.
-    $cohort = makeCohort();
-    $user = makeTrainer($cohort);
-    enroll($user, $cohort, 'participant');
+    // `enrollments` is unique on (cohort_id, user_id), so one account cannot hold
+    // two roles inside a single cohort — the dual-role case only exists ACROSS
+    // cohorts, and that is what RoleResolver::effectiveRoles() reads. Enrolling
+    // twice in the same cohort tested a row the schema forbids and died on the
+    // constraint before it ever reached the rail.
+    $trainerCohort = makeCohort();
+    $participantCohort = makeCohort();
+
+    $user = makeTrainer($trainerCohort);
+    enroll($user, $participantCohort, 'participant');
 
     $hrefs = railHrefsFor($user->fresh());
 

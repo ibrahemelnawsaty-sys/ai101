@@ -38,7 +38,7 @@ function formRouteContracts(): array
     $found = [];
 
     /** @var SplFileInfo $file */
-    foreach (\Illuminate\Support\Facades\File::allFiles(resource_path('views')) as $file) {
+    foreach (Illuminate\Support\Facades\File::allFiles(resource_path('views')) as $file) {
         if (! str_ends_with($file->getFilename(), '.blade.php')) {
             continue;
         }

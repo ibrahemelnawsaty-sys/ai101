@@ -61,7 +61,7 @@ it('D-49: الرسالة مُطابورة لا مُرسَلة داخل الطل�
     // control can take seconds. A slow send must never hold a web request open.
     expect(new EmailTokenLink(makeParticipant(), EmailTokenType::Reset, 'https://example.test/x'))
         ->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class)
-        ->and(new SendEmailTokenLink())->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+        ->and(new SendEmailTokenLink)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
 });
 
 it('D-49: فشل الإرسال لا يُبطل الرمز ولا يُسقط الطلب', function (): void {
@@ -73,7 +73,7 @@ it('D-49: فشل الإرسال لا يُبطل الرمز ولا يُسقط ا�
     $user = makeParticipant();
     $token = EmailToken::factory()->create(['user_id' => $user->getKey()]);
 
-    $listener = new SendEmailTokenLink();
+    $listener = new SendEmailTokenLink;
 
     $listener->handle(new EmailTokenIssued(
         $user,
@@ -138,7 +138,7 @@ it('D-49: كل حدث من الأربعة له مستمع', function (): void {
     $missing = [];
 
     foreach ([
-        App\Events\EmailTokenIssued::class => App\Listeners\SendEmailTokenLink::class,
+        EmailTokenIssued::class => SendEmailTokenLink::class,
         App\Events\AccountVerified::class => App\Listeners\SendAccountVerifiedWelcome::class,
         App\Events\PasswordChanged::class => App\Listeners\SendPasswordChangedNotice::class,
     ] as $event => $listener) {
@@ -167,7 +167,7 @@ it('D-49: القالب المشترك يحمل الهوية ولا يحمل حر
     );
 
     $html = $letter->render();
-    $theme = app(App\Services\Mail\EmailPalette::class)->all();
+    $theme = app(EmailPalette::class)->all();
 
     expect($html)->toContain('dir="rtl"')
         ->and($html)->toContain('lang="ar"')

@@ -32,8 +32,8 @@ final class EmptyState extends UiComponent
         // Seventy call sites in thirty-four views have been passing these two
         // since the component was written. It never declared them, so Blade
         // spilled them onto the root element as stray HTML attributes —
-        // <div class="ui-empty" action-label="اعرض جدول البرنامج"> — and no
-        // button was ever rendered. Every empty and error state in the platform
+        // <div class="ui-empty" action-label="..."> — and no button was ever
+        // rendered. Every empty and error state in the platform
         // was missing the "what to do next" that Article 17 requires of it.
         public ?string $actionLabel = null,
         public ?string $actionHref = null,

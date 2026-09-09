@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
-use Illuminate\Support\Str;
-use App\Events\MessageReceived;
 use App\Enums\ThreadType;
+use App\Events\MessageReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\ReportMessageRequest;
 use App\Http\Requests\Participant\SendMessageRequest;
@@ -26,6 +25,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Internal messaging (PRD §9.13).

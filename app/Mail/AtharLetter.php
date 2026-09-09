@@ -47,9 +47,9 @@ final class AtharLetter extends Mailable implements ShouldQueue
     public array $backoff = [60, 300];
 
     /**
-     * @param  string  $copyKey     a block in emails.php, e.g. 'emails.certificate_issued'
+     * @param  string  $copyKey  a block in emails.php, e.g. 'emails.certificate_issued'
      * @param  array<string, string|int>  $values  placeholder values for that block
-     * @param  array<string, string>  $meta   label => value, shown as a detail strip
+     * @param  array<string, string>  $meta  label => value, shown as a detail strip
      */
     public function __construct(
         public readonly string $copyKey,

@@ -92,7 +92,7 @@
                 {{-- A hairline of brand colour under the crown: the one piece of
                      ornament in the letter, and it costs nothing to render. --}}
                 <tr>
-                    <td style="height:{{ $c['gapXs'] }}; background:{{ $c['accent'] }}; background-image:linear-gradient(90deg, {{ $c['accent'] }} 0%, {{ $c['brand'] }} 100%); font-size:0; line-height:0;">&nbsp;</td>
+                    <td style="height:{{ $c['gapXs'] }}; background:{{ $c['accent'] }}; background-image:linear-gradient(90deg, {{ $c['accent'] }} 0%, {{ $c['brand'] }} 100%); font-size:{{ $c['zero'] }}; line-height:{{ $c['zero'] }};">&nbsp;</td>
                 </tr>
 
                 {{-- ── The message ───────────────────────────────────────── --}}

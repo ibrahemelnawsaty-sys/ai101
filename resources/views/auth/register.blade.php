@@ -126,7 +126,7 @@
             <script type="application/json" id="registerCopy">@json($registerCopy, JSON_UNESCAPED_UNICODE)</script>
 
             <form method="POST"
-                  action="{{ route('register') }}"
+                  action="{{ route('register.store') }}"
                   class="form"
                   novalidate
                   @submit="onSubmit($event)">

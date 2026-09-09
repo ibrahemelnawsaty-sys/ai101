@@ -42,6 +42,7 @@ final class EmailTokenLink extends Mailable implements ShouldQueue
     /** Retries spread over the cron-driven queue rather than hammering the host. */
     public int $tries = 3;
 
+    /** @var list<int> Seconds to wait before each retry. */
     public array $backoff = [60, 300];
 
     public function __construct(

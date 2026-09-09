@@ -6,7 +6,6 @@ namespace App\Services\Mail;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use RuntimeException;
 
 /**
  * The design tokens an e-mail template needs, read out of `tokens.css`.
@@ -70,6 +69,11 @@ final class EmailPalette
         'cardWidth' => 'd-9',
         'gapHuge' => 's12',
         'radiusPill' => 's11',
+        // A spacer row carries an &nbsp; so Outlook will not collapse it, then
+        // zeroes the type so the cell is exactly its stated height and not one
+        // line of text tall. That zero is structural, not typographic — but it
+        // is still a value, so it comes from the token file like every other.
+        'zero' => 's0',
     ];
 
     /**
@@ -102,7 +106,7 @@ final class EmailPalette
         // avoid.
         foreach ([...self::COLOURS, ...self::LENGTHS] as $role => $token) {
             if (! isset($tokens[$token])) {
-                throw new RuntimeException(sprintf(
+                throw new \RuntimeException(sprintf(
                     'tokens.css does not define --%s, needed by the e-mail role "%s".',
                     $token,
                     $role,
@@ -113,7 +117,7 @@ final class EmailPalette
         }
 
         if (! isset($tokens['font'])) {
-            throw new RuntimeException('tokens.css does not define --font.');
+            throw new \RuntimeException('tokens.css does not define --font.');
         }
 
         $theme['font'] = $tokens['font'];

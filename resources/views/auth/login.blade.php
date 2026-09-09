@@ -119,7 +119,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}" class="form" novalidate>
+        <form method="POST" action="{{ route('login.store') }}" class="form" novalidate>
             @csrf
 
             <x-ui.input

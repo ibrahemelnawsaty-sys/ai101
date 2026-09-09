@@ -114,7 +114,7 @@
         ], JSON_UNESCAPED_UNICODE)</script>
 
         <form method="POST"
-              action="{{ route('password.reset', ['token' => $token ?? '']) }}"
+              action="{{ route('password.update', ['token' => $token ?? '']) }}"
               class="form"
               novalidate
               x-data="passwordStrength({ minLength: 8 })"

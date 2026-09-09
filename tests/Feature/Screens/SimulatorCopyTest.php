@@ -41,6 +41,21 @@ const SIMULATOR_SUPPLIED = [
     'count', 'sessions', 'min', 'tasks', 'project', 'pass', 'short', 'total', 'attendance',
 ];
 
+/**
+ * The simulator only exists on a landing page that HAS a cohort to describe.
+ *
+ * Without one, HomeController resolves the screen to `empty`, the template takes
+ * its empty-state branch, and the whole `.sim` block — every data-t-* attribute
+ * this suite reads — is never emitted. The suite then measured an empty page and
+ * reported it as a copy failure. Seeding a cohort is what puts the thing under
+ * test on the page at all.
+ */
+beforeEach(function (): void {
+    freezeAt(riyadhAt('2026-09-20 12:00:00'));
+
+    $this->cohort = makeCohort(['capacity' => 30]);
+});
+
 it('D-50: كل نائب يصل المتصفح له قيمة تملؤه', function (): void {
     $body = $this->get(route('home'))->assertOk()->getContent();
 
@@ -71,7 +86,7 @@ it('D-50: صيغة الجمع تُكمل نائبها قبل أن تُحقن ف�
     $source = (string) File::get(resource_path('js/landing.js'));
 
     expect($source)->toMatch('/function plural\(forms, n\)/')
-        ->and($source)->toContain("return fill(form, { count: n });")
+        ->and($source)->toContain('return fill(form, { count: n });')
         // The old shape returned the raw form and must not come back.
         ->and($source)->not->toMatch('/if \(n === 1\) return forms\.one;/');
 });

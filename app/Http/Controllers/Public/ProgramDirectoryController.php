@@ -13,10 +13,10 @@ use Illuminate\Contracts\View\View;
 /**
  * The public programme directory.
  *
- * The platform is "منصة البرامج التدريبية" and AI 101 is only its first
- * programme, but until now the only public entry point was that one
- * programme's landing page. A second programme could be published from the
- * admin panel and no visitor would ever find it.
+ * The platform is a directory of training programmes and AI 101 is only its
+ * first, but until now the only public entry point was that one programme's
+ * landing page. A second programme could be published from the admin panel and
+ * no visitor would ever find it.
  *
  * SCOPE IS THE WHOLE POINT OF THIS CONTROLLER. `Program::published()` is the
  * only reason a draft or archived programme cannot leak onto a public page,
