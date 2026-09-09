@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use App\Services\Attendance\AttendanceRecorder;
+use App\Exceptions\AttendanceException;
 use App\Enums\SessionStatus;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
@@ -49,7 +51,10 @@ final class LiveController extends Controller
     /** The Article 17 screen name, and the name of its loading skeleton. */
     private const SCREEN = 'live';
 
-    public function __construct(private readonly AttendanceWindow $window) {}
+    public function __construct(
+        private readonly AttendanceWindow $window,
+        private readonly AttendanceRecorder $recorder,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -112,7 +117,7 @@ final class LiveController extends Controller
      * policy answers "is this your cohort's session and is it not cancelled",
      * and the window answers "is it time". Neither is inferable from the page.
      */
-    public function join(Session $session): RedirectResponse
+    public function join(Request $request, Session $session): RedirectResponse
     {
         $this->authorize('revealJoinLink', $session);
 
@@ -120,7 +125,11 @@ final class LiveController extends Controller
         $start = $this->window->startsAt($session);
         $end = $this->window->endsAt($session);
 
-        $opensAt = $start->subMinutes(self::JOIN_OPENS_BEFORE_START_MINUTES);
+        // The trainer's own figure for this session, falling back to the
+        // platform default when they did not set one (D-52). Read here rather
+        // than in the window service: this is a presentation rule about when a
+        // link appears, not an attendance rule — BR-01 is untouched by it.
+        $opensAt = $start->subMinutes($this->joinWindowMinutes($session));
 
         if ($now->lessThan($opensAt) || $now->greaterThan($end)) {
             return back()->withErrors(['session' => __('live.errors.window_closed')]);
@@ -132,7 +141,40 @@ final class LiveController extends Controller
             return back()->withErrors(['session' => __('live.errors.no_link')]);
         }
 
+        // Opening the meeting IS attending it, so the platform records it rather
+        // than asking the trainee to also press a second button they will forget
+        // — and it records it through the SAME recorder the manual button uses,
+        // never a parallel path. That recorder owns BR-01's window, BR-03's
+        // late classification, the enrolment guard and the audit entry; none of
+        // that may be re-implemented here (art. 6).
+        /** @var User $user */
+        $user = $request->user();
+
+        try {
+            $this->recorder->checkIn($user, $session, $request->ip(), $request->userAgent());
+        } catch (AttendanceException) {
+            // Already checked in, or outside the check-in window. Neither is a
+            // reason to withhold the meeting: the attendance rules decide what
+            // the record SAYS, they do not decide who may attend. The refusal is
+            // already audited by the recorder.
+        }
+
         return redirect()->away($url);
+    }
+
+    /**
+     * How early this session's link opens.
+     *
+     * The trainer's figure when they set one, the platform default otherwise.
+     * A null is not "zero": it means the trainer expressed no preference, and
+     * treating it as zero would hide every link until the minute a session
+     * starts (D-52).
+     */
+    private function joinWindowMinutes(Session $session): int
+    {
+        $minutes = $session->getAttribute('join_opens_minutes');
+
+        return is_int($minutes) ? $minutes : self::JOIN_OPENS_BEFORE_START_MINUTES;
     }
 
     /** The recording, once the session is over and a recording exists. */

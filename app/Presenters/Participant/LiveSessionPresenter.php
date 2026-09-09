@@ -36,7 +36,7 @@ final class LiveSessionPresenter extends ViewModel
             'statusLabel' => null,
             'statusVariant' => 'neutral',
             'joinWindowOpen' => false,
-            'joinOpensBeforeMinutes' => LiveController::JOIN_OPENS_BEFORE_START_MINUTES,
+            'joinOpensBeforeMinutes' => self::windowFor($session),
         ]);
     }
 
@@ -44,7 +44,7 @@ final class LiveSessionPresenter extends ViewModel
     {
         $startsAt = $window->startsAt($session);
         $endsAt = $window->endsAt($session);
-        $opensAt = $startsAt->subMinutes(LiveController::JOIN_OPENS_BEFORE_START_MINUTES);
+        $opensAt = $startsAt->subMinutes(self::windowFor($session));
         $isLive = $window->isLive($session, $now);
 
         $status = $session->getAttribute('status');
@@ -63,7 +63,19 @@ final class LiveSessionPresenter extends ViewModel
             'joinWindowOpen' => ! $window->isCancelled($session)
                 && $now->greaterThanOrEqualTo($opensAt)
                 && $now->lessThanOrEqualTo($endsAt),
-            'joinOpensBeforeMinutes' => LiveController::JOIN_OPENS_BEFORE_START_MINUTES,
+            'joinOpensBeforeMinutes' => self::windowFor($session),
         ]);
     }
+    /**
+     * The trainer's own join window for this session, or the platform default.
+     * Kept beside the presenter that uses it so the screen and the controller
+     * cannot disagree about when a link appears (D-52).
+     */
+    private static function windowFor(Session $session): int
+    {
+        $minutes = $session->getAttribute('join_opens_minutes');
+
+        return is_int($minutes) ? $minutes : LiveController::JOIN_OPENS_BEFORE_START_MINUTES;
+    }
+
 }

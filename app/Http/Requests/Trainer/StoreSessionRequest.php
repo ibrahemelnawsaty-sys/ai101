@@ -69,6 +69,10 @@ final class StoreSessionRequest extends FormRequest
             ],
             'meeting_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'meeting_passcode' => ['nullable', 'string', 'max:60'],
+            // How early the link appears, in minutes. Null means "use the
+            // platform default" — the trainer is choosing, not being forced to
+            // restate a value they are happy with (D-52).
+            'join_opens_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
             // A new session is scheduled; cancelling and completing are their
             // own endpoints, so the editor never posts a status.
             'status' => ['nullable', Rule::enum(SessionStatus::class)],
@@ -95,6 +99,7 @@ final class StoreSessionRequest extends FormRequest
             'trainer_id' => $data['trainer_id'] ?? null,
             'zoom_url' => $data['meeting_url'] ?? null,
             'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             'status' => $data['status'] ?? SessionStatus::Scheduled->value,
         ];
     }

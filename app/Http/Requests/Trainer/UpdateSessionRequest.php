@@ -55,6 +55,10 @@ final class UpdateSessionRequest extends FormRequest
             ],
             'meeting_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'meeting_passcode' => ['nullable', 'string', 'max:60'],
+            // How early the link appears, in minutes. Null means "use the
+            // platform default" — the trainer is choosing, not being forced to
+            // restate a value they are happy with (D-52).
+            'join_opens_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
             'recording_url' => ['nullable', 'string', 'url:https', 'max:500'],
             // Cancelling is its own endpoint because it demands a reason and
             // notifies the cohort, so the editor leaves the status alone.
@@ -89,6 +93,7 @@ final class UpdateSessionRequest extends FormRequest
             'trainer_id' => $data['trainer_id'] ?? null,
             'zoom_url' => $data['meeting_url'] ?? null,
             'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             'recording_url' => $data['recording_url'] ?? null,
             'status' => $data['status'] ?? $this->trainingSession()->getAttribute('status')?->value,
         ];

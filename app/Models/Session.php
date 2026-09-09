@@ -54,6 +54,7 @@ class Session extends Model
         'trainer_id',
         'zoom_url',
         'zoom_passcode',
+        'join_opens_minutes',
         'recording_url',
         'status',
         'cancellation_reason',
@@ -76,6 +77,10 @@ class Session extends Model
             'date' => 'date',
             'start_time' => 'string',
             'end_time' => 'string',
+            // Null means the trainer expressed no preference and the platform
+            // default applies — it is not zero, and casting must not turn it
+            // into one (D-52).
+            'join_opens_minutes' => 'integer',
         ];
     }
 

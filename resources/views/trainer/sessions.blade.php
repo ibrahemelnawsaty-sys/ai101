@@ -156,6 +156,12 @@
                     <x-ui.input name="meeting_passcode" dir="ltr"
                         :label="__('live.passcode')"
                         :value="old('meeting_passcode', $editing->meetingPasscode)" />
+                    {{-- How early the link appears. Left empty, the platform default applies. --}}
+                    <x-ui.input name="join_opens_minutes" type="number" min="0" max="240" dir="ltr"
+                        :value="old('join_opens_minutes', $editing->join_opens_minutes)"
+                        :label="__('trainer.sessions.join_opens_minutes')"
+                        :hint="__('trainer.sessions.join_opens_hint')"
+                        :error="$errors->first('join_opens_minutes')" />
 
                     <p class="footnote">{{ __('app.riyadh_time_hint') }}</p>
 

@@ -78,6 +78,8 @@ return [
     ],
 
     'sessions' => [
+        'join_opens_minutes' => 'Link opens this many minutes early',
+        'join_opens_hint' => 'Leave empty for the platform default of 15 minutes.',
         'title' => 'Sessions of your cohort',
         'description' => 'Session description',
         'create' => 'Add a session',
