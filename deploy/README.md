@@ -25,9 +25,21 @@ Throughout this document:
 
 - `$HOME` is the hosting account home, e.g. `/home/u123456789`. **Run `echo $HOME` on the server and use the real value.**
 - `$APP` is the application root: `$HOME/athar-app` — **outside the web root.**
-- `$WEB` is the document root that the domain points at. On Hostinger this is normally
-  `$HOME/public_html` for the primary domain, or `$HOME/domains/<domain>/public_html` for an addon domain.
-  **Run `ls -d $HOME/domains/*/public_html` to confirm which one your domain uses.**
+- `$WEB` is the document root that the domain points at. **On this account it is
+  `$HOME/domains/wareed.vip/public_html/AI`** — verified on the live server, 10 September 2026.
+  It is neither `$HOME/public_html` nor `$HOME/domains/ai.wareed.vip/public_html`: `ai.wareed.vip` is a
+  subdomain of `wareed.vip`, and hPanel placed its root in an `AI/` subdirectory of the parent domain.
+
+  **Never assume this path.** The command that finds it without guessing, using the asset hash the live
+  page actually loads:
+
+  ```sh
+  curl -s https://ai.wareed.vip/ | grep -oE 'build/assets/app-[A-Za-z0-9_-]+\.css'
+  grep -rl "<that hash>" "$HOME" --include=manifest.json 2>/dev/null
+  ```
+
+  The directory that contains the matching `manifest.json` **is** `$WEB`. This is how it was finally
+  located after a day of work in the wrong directory.
 
 > ⚠️ Never place `$APP` inside `$WEB`. `.env`, `storage/`, `database/`, `vendor/` and every uploaded file
 > must be unreachable over HTTP. This is Article 10 and Article 24, not a preference.
@@ -575,7 +587,7 @@ Verify `.env` is not reachable over HTTP — this must return **403 or 404**, ne
 
 ```sh
 curl -sS -o /dev/null -w '%{http_code}\n' https://ai.wareed.vip/.env
-curl -sS -o /dev/null -w '%{http_code}\n' https://ai.wareed.vip/storage/logs/laravel.log
+curl -sS -o /dev/null -w '%{http_code}\n' https://ai.wareed.vip/storage/logs/athar.log
 curl -sS -o /dev/null -w '%{http_code}\n' https://ai.wareed.vip/composer.json
 ```
 
@@ -740,7 +752,7 @@ Do not report a successful deployment until every line below has actually been r
 | 2 | `curl -o /dev/null -w '%{http_code}' https://<host>/` | `200` |
 | 3 | `curl -o /dev/null -w '%{http_code}' http://<host>/` | `301` to `https://` |
 | 4 | `curl -o /dev/null -w '%{http_code}' https://<host>/.env` | `403` or `404` |
-| 5 | `curl -o /dev/null -w '%{http_code}' https://<host>/storage/logs/laravel.log` | `403` or `404` |
+| 5 | `curl -o /dev/null -w '%{http_code}' https://<host>/storage/logs/athar.log` | `403` or `404` |
 | 6 | Landing page in a browser | Arabic renders RTL, letters connected, no missing glyphs, no yellow/gold anywhere |
 | 7 | Latin digits shown for numbers, dates as «الأحد 12 أكتوبر 2026» | Article 15 |
 | 8 | Login → dashboard | Session persists across a page reload (proves §10.2) |
@@ -750,7 +762,7 @@ Do not report a successful deployment until every line below has actually been r
 | 12 | Attendance window boundary | Server-side check honours S−30m / S+30m / E / E+30m; verified against `php artisan tinker` using `Clock::now()` |
 | 13 | `UPDATE audit_logs …` and `DELETE FROM audit_logs …` | Both **fail** (§3.2) |
 | 14 | Backup script dry run | Produces a `.sql.gz` that `gunzip -t` accepts |
-| 15 | `storage/logs/laravel.log` after the smoke test | No `ERROR` or `CRITICAL` lines |
+| 15 | `storage/logs/athar-$(date +%F).log` after the smoke test | No `ERROR` or `CRITICAL` lines |
 
 Note on check 11: `new DateTimeImmutable` is used **only** here, in a throwaway shell command outside the
 codebase, to prove the host clock is correct. Inside the application the only time source is
