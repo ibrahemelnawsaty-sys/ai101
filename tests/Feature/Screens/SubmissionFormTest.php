@@ -28,7 +28,6 @@ declare(strict_types=1);
  * @see BR-19 · PRD §9.11 · CONSTITUTION.md Article 5, Article 21 · D-54
  */
 
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
@@ -82,14 +81,14 @@ it('BR-19: تسليم ثانٍ يُنشئ نسخة جديدة ولا يمحو ا
     $this->actingAs($this->participant)
         ->post(route('assignments.submit', $assignment), [
             'note' => 'CANARY-FIRST',
-            'files' => [UploadedFile::fake()->create('first.pdf', 20, 'application/pdf')],
+            'files' => [fakeUpload('first.pdf')],
         ])
         ->assertRedirect();
 
     $this->actingAs($this->participant)
         ->post(route('assignments.submit', $assignment), [
             'note' => 'CANARY-SECOND',
-            'files' => [UploadedFile::fake()->create('second.pdf', 20, 'application/pdf')],
+            'files' => [fakeUpload('second.pdf')],
         ])
         ->assertRedirect();
 
@@ -104,6 +103,36 @@ it('BR-19: تسليم ثانٍ يُنشئ نسخة جديدة ولا يمحو ا
         ->and((int) $versions[1]->getAttribute('version'))->toBe(2)
         // The first must still be readable: BR-19 is about not losing work.
         ->and((string) $versions[0]->getAttribute('note'))->toBe('CANARY-FIRST');
+});
+
+it('المادة 15: رفض الملف يصل المتدرّب نصًا عربيًا لا مفتاح ترجمة خامًا', function (): void {
+    Storage::fake('private');
+
+    $assignment = makeAssignment($this->cohort);
+
+    // Bytes that sniff as a DOS executable under a .pdf name: the service reads
+    // the content, not the extension, and refuses — which is the path that
+    // surfaces a FileException to the screen.
+    //
+    // The bytes are built inside fakeUpload(), not written here: pint's
+    // single_quote fixer rewrites a double-quoted hex escape into the raw byte
+    // it denotes, which put four NUL bytes into this source file, made git call
+    // the test a binary blob, and quietly changed the payload on the way.
+    $response = $this->actingAs($this->participant)
+        ->post(route('assignments.submit', $assignment), [
+            'files' => [fakeUpload('payload.pdf', 'exe')],
+        ]);
+
+    $message = (string) ($response->baseResponse->getSession()?->get('errors')?->first('files') ?? '');
+
+    // The controller used to pass getMessage(), which is the translation KEY:
+    // the trainee saw `errors.file.mime_not_allowed` in Latin letters and was
+    // told nothing about what had happened or what to do about it.
+    expect($message)->not->toBe('')
+        ->and($message)->not->toStartWith('errors.')
+        ->and($message)->toBe(__('errors.file.mime_not_allowed'));
+
+    expect(App\Models\Submission::query()->count())->toBe(0);
 });
 
 it('المادة 5: متدرّب لا يسلّم لمهمة ليست في دفعته', function (): void {

@@ -166,7 +166,10 @@ final class FinalProjectController extends Controller
                 ]);
             });
         } catch (FileException $failure) {
-            return back()->withErrors(['files' => $failure->getMessage()]);
+            // localizedMessage(), not getMessage() — the latter is the raw
+            // translation key, kept language neutral for the log (see
+            // DomainException). The same slip lived in AssignmentController.
+            return back()->withErrors(['files' => $failure->localizedMessage()]);
         }
 
         return redirect()

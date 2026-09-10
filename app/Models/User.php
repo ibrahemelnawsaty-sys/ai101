@@ -74,6 +74,30 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
+     * Defaults every new instance carries before anything is written to it.
+     *
+     * `remember_token` is declared by `$table->rememberToken()`, and no code
+     * path that creates a user passes it — not registration, not the invitation
+     * service, not the factory. The row gets the column's NULL default, but the
+     * in-memory model the create() call hands back does not know the attribute
+     * exists, and `Model::preventAccessingMissingAttributes()` turns that into a
+     * thrown exception the moment the framework reads it.
+     *
+     * The framework reads it on LOGOUT. So a freshly created account could sign
+     * in and use the platform, and then get a 500 instead of a redirect the
+     * first time it signed out — including the account that had just been
+     * invited, on the very screen the invitation leads to.
+     *
+     * Declaring the default here fixes it once, for every creation path, rather
+     * than asking each one to remember a column none of them care about.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'remember_token' => null,
+    ];
+
+    /**
      * Memoised cohort ids this account may reach.
      *
      * @var array<int, string>|null

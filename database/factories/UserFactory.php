@@ -58,6 +58,13 @@ final class UserFactory extends Factory
             'must_change_password' => false,
             'temp_password_expires_at' => null,
             'invited_at' => null,
+            // Declared by `$table->rememberToken()`, which names no column in
+            // its call — so a scan of the migrations for quoted column names
+            // misses it, and so did this factory. Logging out writes the token
+            // on the signed-in instance, and that instance is the one the
+            // factory handed back: without this line, every logout in a test
+            // answers 500 on a missing attribute rather than a redirect.
+            'remember_token' => null,
             // The row this factory writes has deleted_at NULL, so the model it
             // hands back must say so too. Without it the in-memory instance is
             // missing a column the database has, and User::isActive() - which

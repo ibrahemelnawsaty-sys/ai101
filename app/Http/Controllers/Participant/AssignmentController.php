@@ -339,7 +339,14 @@ final class AssignmentController extends Controller
             // The service refuses a file whose bytes do not match what it claims
             // to be, among other things. The trainee gets the reason in Arabic
             // and nothing is half-accepted.
-            return back()->withErrors(['files' => $failure->getMessage()]);
+            //
+            // localizedMessage(), NOT getMessage(). DomainException deliberately
+            // keeps the raw translation key as its technical message so logs stay
+            // language neutral — so getMessage() here put `errors.file.empty` on
+            // the screen, in Latin letters, to a trainee whose upload had just
+            // been refused for a reason they were never told. The comment above
+            // has always claimed Arabic; only this line makes it true.
+            return back()->withErrors(['files' => $failure->localizedMessage()]);
         }
 
         return redirect()

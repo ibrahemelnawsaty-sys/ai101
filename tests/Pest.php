@@ -651,3 +651,51 @@ function renderSkeleton(string $screen): string
 
     return View::make('partials.skeletons.'.$screen)->render();
 }
+
+/*
+|--------------------------------------------------------------------------
+| Upload helpers — a fixture must be indistinguishable from a real upload
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * A real file, not a hollow one.
+ *
+ * `UploadedFile::fake()->create('x.pdf', 20)` writes ZERO bytes: the kilobyte
+ * count it takes is stored in `sizeToReport` and only ever surfaces through
+ * `getSize()`. Anything that reads the file itself sees an empty file — and
+ * PrivateFileService reads it twice, once with `filesize()` (which refuses at
+ * `<= 0`, BR-17) and once with `finfo` to sniff the real type from the bytes
+ * (PRD §12.5). So a fake-created upload can never reach storage, and the only
+ * test that ever posted one asserted a redirect, got the redirect back from
+ * `withErrors()`, and passed while nothing was stored at all.
+ *
+ * This writes bytes libmagic actually recognises, so the sniffing path is
+ * exercised rather than bypassed.
+ */
+function fakeUpload(string $name, string $type = 'pdf'): Illuminate\Http\UploadedFile
+{
+    $bytes = match ($type) {
+        // The smallest structure libmagic will call application/pdf: the header
+        // is what it matches on, the body is here so the file is a coherent
+        // document rather than a magic number with nothing behind it.
+        'pdf' => "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+            ."trailer\n<< /Root 1 0 R >>\n%%EOF\n",
+        'txt' => "CANARY\n",
+        // A DOS/PE header, for the test that the content sniffer refuses a file
+        // whatever its extension claims (PRD §12.5).
+        //
+        // Built with pack() from a hex string in SINGLE quotes, deliberately.
+        // Written the obvious way — "MZ\x90\x00" — pint's single_quote
+        // fixer rewrites the literal into the raw bytes it denotes, so the source
+        // file itself ends up holding NUL bytes: git then calls the test a binary
+        // blob and every diff on it is unreadable, and \x90 is re-encoded as two
+        // UTF-8 bytes so the payload stops being the one the test meant to send.
+        // pack() reaches the same bytes through a literal pint will not touch.
+        'exe' => (string) pack('H*', '4d5a90000300000004000000ffff0000b8000000'),
+        default => throw new InvalidArgumentException("fakeUpload() has no bytes for type [{$type}]."),
+    };
+
+    return Illuminate\Http\UploadedFile::fake()->createWithContent($name, $bytes);
+}
