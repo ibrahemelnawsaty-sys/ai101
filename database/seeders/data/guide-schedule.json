@@ -1,0 +1,146 @@
+{
+  "_source": "Transcribed from the centre's official programme guide at https://aifoundationprogram.athar-dev.edu.sa/ section 07 (الخط الزمني) and section 09 (جدول الأعمال). Every date, title and description below is verbatim from the guide; nothing here is derived or invented. Extracted and then verified field-by-field against the guide text.",
+
+  "_session_model": "ONE session per training day, 16:00–20:00 Riyadh, by the centre's decision (D-61). The guide publishes each day as TWO blocks (17:00–17:50 and 18:00–19:00) plus a 10-minute break; merging them into one session means ONE attendance check-in per day instead of two. The block titles are preserved in each session's `topic` so nothing the guide says is lost.",
+
+  "_guide_contradictions": "Two inconsistencies inside the guide itself, recorded rather than silently resolved (D-62): (1) the intro day's three blocks run back-to-back 17:00-17:30-18:15-19:00 with no gap, yet the guide shows break rows between them, while every other day leaves a real 10-minute gap; (2) the agenda lists only TWO days for week one (Mon 07, Wed 09) while «معلومات البرنامج» states three days per week and every other week has three. Neither affects the merged model, which uses neither block times nor a day count.",
+
+  "cohort": {
+    "name": "الدفعة الأولى",
+    "start_date": "2026-09-05",
+    "end_date": "2026-10-01",
+    "registration_closes_at": "2026-09-04 23:59:00",
+    "_note": "Registration closed on 4 September per the guide's own timeline, so the landing page will show the closed state and its waiting-list form. That is the guide's truth, not a defect. Opening it is an admin-panel change to registration_closes_at."
+  },
+
+  "session_window": {
+    "start_time": "16:00:00",
+    "end_time": "20:00:00"
+  },
+
+  "weeks": [
+    { "index": 1, "start_date": "2026-09-07", "end_date": "2026-09-09", "theme": "برمجة Python وعلوم البيانات" },
+    { "index": 2, "start_date": "2026-09-12", "end_date": "2026-09-16", "theme": "الرؤية بالحاسب" },
+    { "index": 3, "start_date": "2026-09-19", "end_date": "2026-09-22", "theme": "معالجة اللغات الطبيعية" },
+    { "index": 4, "start_date": "2026-09-26", "end_date": "2026-09-30", "theme": "الذكاء الاصطناعي التوليدي والتوكيلي" }
+  ],
+
+  "days": [
+    {
+      "date": "2026-09-05",
+      "weekday": "السبت",
+      "type": "intro",
+      "week": null,
+      "title": "اللقاء التعريفي",
+      "topic": "الترحيب والتعريف بالبرنامج · جولة على المنصة الرقمية والتجهيز التقني · جلسة أسئلة وأجوبة مفتوحة"
+    },
+    {
+      "date": "2026-09-07",
+      "weekday": "الاثنين",
+      "type": "training",
+      "week": 1,
+      "title": "اليوم الأول — برمجة Python وعلوم البيانات",
+      "topic": "أساسيات لغة بايثون · التعامل مع البيانات في بايثون"
+    },
+    {
+      "date": "2026-09-09",
+      "weekday": "الأربعاء",
+      "type": "training",
+      "week": 1,
+      "title": "اليوم الثاني — برمجة Python وعلوم البيانات",
+      "topic": "مقدمة في علوم البيانات · تحليل البيانات ورسمها بيانيًا"
+    },
+    {
+      "date": "2026-09-12",
+      "weekday": "السبت",
+      "type": "training",
+      "week": 2,
+      "title": "اليوم الأول — الرؤية بالحاسب",
+      "topic": "مقدمة في الرؤية بالحاسب · معالجة الصور الأساسية"
+    },
+    {
+      "date": "2026-09-14",
+      "weekday": "الاثنين",
+      "type": "training",
+      "week": 2,
+      "title": "اليوم الثاني — الرؤية بالحاسب",
+      "topic": "التعرف على الوجوه · تصنيف الصور تلقائيًا"
+    },
+    {
+      "date": "2026-09-16",
+      "weekday": "الأربعاء",
+      "type": "training",
+      "week": 2,
+      "title": "اليوم الثالث — الرؤية بالحاسب",
+      "topic": "معالجة الفيديو المباشر · مشروع تطبيقي مصغّر"
+    },
+    {
+      "date": "2026-09-19",
+      "weekday": "السبت",
+      "type": "training",
+      "week": 3,
+      "title": "اليوم الأول — معالجة اللغات الطبيعية",
+      "topic": "مقدمة في معالجة اللغة الطبيعية · تحليل مشاعر النصوص"
+    },
+    {
+      "date": "2026-09-21",
+      "weekday": "الاثنين",
+      "type": "training",
+      "week": 3,
+      "title": "اليوم الثاني — معالجة اللغات الطبيعية",
+      "topic": "التلخيص التلقائي للنصوص · بناء شات بوت بسيط"
+    },
+    {
+      "date": "2026-09-22",
+      "weekday": "الثلاثاء",
+      "type": "training",
+      "week": 3,
+      "title": "اليوم الثالث — معالجة اللغات الطبيعية",
+      "topic": "دمج الصوت مع النص · مشروع تطبيقي مصغّر"
+    },
+    {
+      "date": "2026-09-26",
+      "weekday": "السبت",
+      "type": "training",
+      "week": 4,
+      "title": "اليوم الأول — الذكاء الاصطناعي التوليدي والتوكيلي",
+      "topic": "مقدمة في الذكاء الاصطناعي التوليدي · توليد الصور بالذكاء الاصطناعي"
+    },
+    {
+      "date": "2026-09-28",
+      "weekday": "الاثنين",
+      "type": "training",
+      "week": 4,
+      "title": "اليوم الثاني — الذكاء الاصطناعي التوليدي والتوكيلي",
+      "topic": "مقدمة في الذكاء الاصطناعي التوكيلي · هندسة الأوامر"
+    },
+    {
+      "date": "2026-09-30",
+      "weekday": "الأربعاء",
+      "type": "training",
+      "week": 4,
+      "title": "اليوم الثالث — الذكاء الاصطناعي التوليدي والتوكيلي",
+      "topic": "بناء وكيل ذكي متكامل · التجهيز للمشروع الختامي"
+    },
+    {
+      "date": "2026-10-01",
+      "weekday": "الخميس",
+      "type": "closing",
+      "week": null,
+      "title": "عرض المشاريع والحفل الختامي",
+      "topic": "تعرض مشروعك الخاص أمام المدربين وباقي المشاركين، ونحتفل سوا بإنجازك."
+    }
+  ],
+
+  "final_project": {
+    "title": "المشروع الختامي — مشروعك الخاص من فكرتك إلى واقع ملموس",
+    "brief": "تختار فكرة تهمك فعلًا، وتبنيها بنفسك من الصفر باستخدام كل المهارات التي اكتسبتها خلال الأسابيع الأربعة، بإشراف ومتابعة مباشرة من المدربين.",
+    "due_at": "2026-10-01 12:00:00",
+    "requirements": [
+      "تختار فكرة مشروعك بمساعدة المدربين.",
+      "تبنيه خطوة بخطوة تحت إشراف مباشر.",
+      "تراجعه وتختبره قبل يوم العرض.",
+      "تعرضه أمام المدربين والمشاركين في الحفل الختامي."
+    ]
+  }
+}

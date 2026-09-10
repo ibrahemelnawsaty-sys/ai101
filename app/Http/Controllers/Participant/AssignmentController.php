@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
-use Illuminate\Support\Facades\DB;
-use App\Services\Storage\PrivateFileService;
-use App\Exceptions\FileException;
 use App\Enums\AssignmentStatus;
 use App\Enums\EvaluationEntity;
+use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\SubmitAssignmentRequest;
@@ -23,12 +21,14 @@ use App\Presenters\Participant\SubmissionPresenter;
 use App\Presenters\Participant\SubmissionVersionPresenter;
 use App\Presenters\Participant\WeekPresenter;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Assignments as the participant sees them (PRD §9.11).

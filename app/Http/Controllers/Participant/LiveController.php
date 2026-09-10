@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
-use App\Services\Attendance\AttendanceRecorder;
-use App\Exceptions\AttendanceException;
 use App\Enums\SessionStatus;
+use App\Exceptions\AttendanceException;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
 use App\Models\Session;
@@ -15,6 +14,7 @@ use App\Presenters\Participant\LiveSessionPresenter;
 use App\Presenters\Participant\RecordingPresenter;
 use App\Presenters\Participant\SessionPresenter;
 use App\Presenters\Support\Options;
+use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Time\Clock;
 use App\Support\ScreenState;

@@ -71,6 +71,7 @@ final class LiveSessionPresenter extends ViewModel
             'joinOpensBeforeMinutes' => self::windowFor($session),
         ]);
     }
+
     /**
      * The trainer's own join window for this session, or the platform default.
      * Kept beside the presenter that uses it so the screen and the controller
@@ -82,5 +83,4 @@ final class LiveSessionPresenter extends ViewModel
 
         return is_int($minutes) ? $minutes : LiveController::JOIN_OPENS_BEFORE_START_MINUTES;
     }
-
 }

@@ -75,7 +75,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // (Article 10). A single cPanel cron entry calls `schedule:run` every
         // minute and every background job flows through it.
         $schedule->command(
-            'queue:work --stop-when-empty --tries=3 --backoff=30 --max-time=50 --timeout=45 --sleep=0 --memory=180'
+            'queue:work --stop-when-empty --tries=3 --backoff=30 --max-time=50 --timeout=45 --sleep=0 --memory=180',
         )
             ->everyMinute()
             ->withoutOverlapping(5);

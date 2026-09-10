@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
-use Illuminate\Support\Facades\DB;
-use App\Services\Storage\PrivateFileService;
 use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
@@ -17,10 +15,12 @@ use App\Models\User;
 use App\Presenters\Participant\EvaluationPresenter;
 use App\Presenters\Participant\FinalProjectPresenter;
 use App\Presenters\Participant\SubmissionPresenter;
+use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The final project (PRD §9.14).
