@@ -32,7 +32,6 @@ return [
         'completed' => 'You have completed every step of your journey. Congratulations.',
     ],
 
-
     /* The one-time welcome after an invited trainee sets their own password. */
     'welcome_first' => [
         'title' => 'Welcome, :name — this is where the impact begins',

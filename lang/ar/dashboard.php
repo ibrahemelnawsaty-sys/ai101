@@ -42,7 +42,6 @@ return [
         'completed' => 'أكملت كل خطوات رحلتك. مبارك لك.',
     ],
 
-
     /*
      * The one-time welcome after an invited trainee sets their own password
      * (D-63). Two titles because WelcomePresenter can only offer an e-mail
