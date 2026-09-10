@@ -110,7 +110,7 @@ final class ParticipantImportReader
         $table = $book->getActiveSheet()->toArray(null, true, false, false);
         $book->disconnectWorksheets();
 
-        return is_array($table) ? $table : [];
+        return $table;
     }
 
     /**

@@ -18,6 +18,7 @@ use App\Http\Requests\Admin\SuspendUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\AuditLog;
 use App\Models\Cohort;
+use App\Models\Enrollment;
 use App\Models\Profile;
 use App\Models\User;
 use App\Presenters\Admin\UserCounts;

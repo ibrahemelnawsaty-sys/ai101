@@ -105,6 +105,9 @@ final class TemporaryPassword
             [$characters[$i], $characters[$j]] = [$characters[$j], $characters[$i]];
         }
 
-        return $characters;
+        // array_values() for the declared list<string>: writing $characters[$i]
+        // leaves PHPStan with array<int<0, max>, string>, which is not a list as
+        // far as it can prove. The keys are already 0..n-1; this states it.
+        return array_values($characters);
     }
 }

@@ -87,8 +87,12 @@ it('BR-03: الحضور التلقائي يُصنَّف متأخرًا بعد S+
 
     // The classification is the recorder's, not this endpoint's — which is the
     // whole point of routing through it.
+    //
+    // Read through ->value: the column is cast to AttendanceStatus, so casting
+    // the enum to a string is a fatal error, not a failing comparison. This
+    // assertion had never run.
     expect($record)->not->toBeNull()
-        ->and((string) $record->getAttribute('status'))->toBe('late');
+        ->and($record->getAttribute('status')->value)->toBe('late');
 });
 
 it('BR-06: فتح الرابط مرتين لا يُنشئ سجلَّي حضور', function (): void {

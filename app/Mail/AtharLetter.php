@@ -157,7 +157,10 @@ final class AtharLetter extends Mailable implements ShouldBeEncrypted, ShouldQue
                 continue;
             }
 
-            $text = is_scalar($value) ? trim((string) $value) : '';
+            // No is_scalar() guard: $meta is declared array<string, string> and
+            // every caller honours it, so the guard could never be false and
+            // PHPStan says so at level 8.
+            $text = trim($value);
 
             if ($text === '') {
                 continue;

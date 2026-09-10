@@ -107,7 +107,12 @@ function authorizationMatrix(object $test): array
     return [
         // ---------------------------------------------------------- participant
         'participant.card' => ['get', [], ['participant']],
-        'participant.card.download' => ['get', [], ['participant']],
+        // Renamed from `participant.card.download` when the download was replaced
+        // by a print view (D-57). The matrix kept the old name, so every row in
+        // this table threw RouteNotFoundException before a single authorisation
+        // was checked — four authz tests reporting a routing error, which is why
+        // no 403 was verified for any route at all.
+        'participant.card.print' => ['get', [], ['participant']],
         'participant.journey' => ['get', [], ['participant']],
         'finalProject' => ['get', [], ['participant']],
         'grades' => ['get', [], ['participant']],
@@ -190,6 +195,15 @@ function authorizationMatrix(object $test): array
         'admin.users.create' => ['get', [], ['admin']],
         'admin.users.export' => ['get', [], ['admin']],
         'admin.users.store' => ['post', [], ['admin']],
+        // The participant-import routes, added with the invitation batch and
+        // never given matrix rows — so none of them had a 403 test, which is
+        // exactly what this file exists to make impossible. They bulk-create
+        // accounts, so an unauthorised caller here is worse than on any read.
+        'admin.users.import' => ['get', [], ['admin']],
+        'admin.users.import.template' => ['get', [], ['admin']],
+        'admin.users.import.templateCsv' => ['get', [], ['admin']],
+        'admin.users.import.preview' => ['post', [], ['admin']],
+        'admin.users.import.store' => ['post', [], ['admin']],
         'admin.users.show' => ['get', [$test->participant], ['admin']],
         'admin.users.update' => ['patch', [$test->participant], ['admin']],
         'admin.users.role' => ['put', [$test->participant], ['admin']],
