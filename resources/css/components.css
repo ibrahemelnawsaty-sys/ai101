@@ -338,10 +338,15 @@ border: var(--bw-hairline) solid var(--border-2);
 .ui-select__caret { color: var(--text-faint); transition: transform var(--t-base) var(--e-out); }
 .ui-select__button[aria-expanded="true"] .ui-select__caret { transform: rotate(180deg); }
 
+/* Fixed, not absolute: `.ui-card` has `overflow: hidden` and an absolutely
+   positioned panel is clipped by it whatever its z-index. `top`, `left` and
+   `width` are written by uiSelect::place() from the button's own rectangle
+   (D-64). The margin is the gap between button and list, and it flips sign
+   when the list opens upwards. */
 .ui-select__panel {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-start: calc(100% + var(--s1));
+  position: fixed;
+  inset-inline: auto;
+  margin-block-start: var(--s1);
   z-index: var(--z-float);
   background: var(--surface-raised);
 border: var(--bw-hairline) solid var(--border-2);
@@ -350,6 +355,8 @@ border: var(--bw-hairline) solid var(--border-2);
   overflow: hidden;
   animation: ui-rise var(--t-base) var(--e-out);
 }
+
+.ui-select__panel--up { margin-block-start: calc(var(--s1) * -1); }
 
 .ui-select__search { padding: var(--s2); border-block-end: var(--bw-hairline) solid var(--border-1); }
 

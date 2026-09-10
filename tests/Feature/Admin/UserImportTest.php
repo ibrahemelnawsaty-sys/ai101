@@ -73,8 +73,12 @@ it('D-63: القالب يُبنى بورقتين ويحفظ صفر الجوّا�
     $response->assertOk()
         ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
+    // getContent(), not streamedContent(): the endpoint builds the workbook in
+    // memory and returns a plain response. streamedContent() does not return
+    // null for a non-streamed response — it raises an assertion failure, so the
+    // `?:` fallback this line used to carry could never be reached.
     $path = tempnam(sys_get_temp_dir(), 'athar').'.xlsx';
-    file_put_contents($path, $response->streamedContent() ?: $response->getContent());
+    file_put_contents($path, $response->getContent());
 
     $book = IOFactory::createReaderForFile($path)->load($path);
 

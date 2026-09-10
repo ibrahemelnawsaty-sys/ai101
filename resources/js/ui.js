@@ -277,6 +277,12 @@ function uiSelect(options = {}) {
         searchable: options.searchable ?? (Array.isArray(options.items) && options.items.length > 8),
         placeholder: options.placeholder || '',
 
+        // Viewport coordinates for the open panel. See `place()`.
+        panelTop: 0,
+        panelLeft: 0,
+        panelWidth: 0,
+        dropUp: false,
+
         get filtered() {
             const q = this.query.trim();
             if (!q) return this.items;
@@ -292,11 +298,60 @@ function uiSelect(options = {}) {
             this.open ? this.close() : this.show();
         },
 
+        /**
+         * The panel's position, in viewport coordinates.
+         *
+         * WHY IT IS NOT SIMPLY ABSOLUTE ANY MORE
+         * `.ui-card` carries `overflow: hidden` — it has to, so a flush card's
+         * table cannot poke through its rounded corner — and an absolutely
+         * positioned panel is CLIPPED by that, whatever its z-index. Twenty-two
+         * screens put a select inside a card, and on every one of them a list
+         * opening near the card's lower edge was cut off mid-option. The owner
+         * hit it on the first screen they used.
+         *
+         * Fixed coordinates take the panel out of every ancestor's overflow.
+         * `left` and `width` are physical on purpose: they come from
+         * `getBoundingClientRect()`, which is physical in both directions, so
+         * the panel sits exactly over its button in RTL and LTR alike.
+         */
+        get panelStyle() {
+            if (!this.open || !this.panelWidth) return '';
+
+            return 'top:' + this.panelTop + 'px;'
+                + 'left:' + this.panelLeft + 'px;'
+                + 'width:' + this.panelWidth + 'px;';
+        },
+
+        /**
+         * Measure the button and decide which way the list opens.
+         *
+         * Called after the panel is visible, because a hidden element has no
+         * height and the flip decision needs one.
+         */
+        place() {
+            const button = this.$refs.button;
+            if (!button) return;
+
+            const box = button.getBoundingClientRect();
+            const panel = this.$refs.panel;
+            const height = panel ? panel.offsetHeight : 0;
+            const room = window.innerHeight - box.bottom;
+
+            // Open upwards only when there is genuinely no room below AND there
+            // is room above; otherwise a short viewport would flip a list into
+            // the same problem it was flipped out of.
+            this.dropUp = height > 0 && room < height && box.top > height;
+            this.panelTop = this.dropUp ? box.top - height : box.bottom;
+            this.panelLeft = box.left;
+            this.panelWidth = box.width;
+        },
+
         show() {
             this.open = true;
             this.query = '';
             this.activeIndex = this.filtered.findIndex((i) => String(i.value) === String(this.value));
             this.$nextTick(() => {
+                this.place();
                 const search = this.$refs.search;
                 if (search) search.focus();
             });

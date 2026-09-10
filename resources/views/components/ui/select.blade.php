@@ -79,7 +79,21 @@
                 <svg class="ui-icon ui-icon--sm ui-select__caret" aria-hidden="true" focusable="false"><use href="#i-chevdown"/></svg>
             </button>
 
-            <div class="ui-select__panel" x-show="open" x-cloak x-on:keydown="onListKeydown($event)">
+            {{-- Positioned in VIEWPORT coordinates, not against this box.
+                 `.ui-card` carries `overflow: hidden` so a flush card's table
+                 cannot poke through its rounded corner, and an absolutely
+                 positioned panel is clipped by that whatever its z-index —
+                 which cut every list short on the twenty-two screens that put
+                 a select inside a card (D-64). --}}
+            <div class="ui-select__panel"
+                 x-ref="panel"
+                 x-show="open"
+                 x-cloak
+                 x-bind:style="panelStyle"
+                 x-bind:class="dropUp ? 'ui-select__panel--up' : ''"
+                 x-on:scroll.window="open && place()"
+                 x-on:resize.window="open && place()"
+                 x-on:keydown="onListKeydown($event)">
                 <template x-if="searchable">
                     <div class="ui-select__search">
                         <input
