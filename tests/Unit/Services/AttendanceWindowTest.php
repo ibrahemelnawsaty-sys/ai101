@@ -31,10 +31,21 @@ use Carbon\CarbonImmutable;
 | the check-in window, so no status is defined and none is asserted.
 |
 */
+/*
+| The window opens an hour before the lecture and closes an hour after it
+| (D-103, an owner decision that supersedes the thirty minutes BR-01 and BR-04
+| were written with). The LATE threshold is untouched at S+30m: a wider door is
+| not a longer grace period, and BR-02/BR-03 were not part of that decision.
+|
+| The old thirty-minute bounds stay in the table as rows that must now be INSIDE
+| the window. They are the regression: if anyone narrows the door back, these
+| rows fail before the new outer bounds do.
+*/
 dataset('boundaries', [
-    'S-30m-1s' => ['S', -1801, false, false, null],
+    'S-60m-1s' => ['S', -3601, false, false, null],
+    'S-60m' => ['S', -3600, true,  false, 'present'],
+    'S-60m+1s' => ['S', -3599, true,  false, 'present'],
     'S-30m' => ['S', -1800, true,  false, 'present'],
-    'S-30m+1s' => ['S', -1799, true,  false, 'present'],
     'S-1s' => ['S', -1, true,  false, 'present'],
     'S' => ['S', 0, true,  false, 'present'],
     'S+30m-1s' => ['S', 1799, true,  false, 'present'],
@@ -46,9 +57,10 @@ dataset('boundaries', [
     'E-1s' => ['E', -1, true,  true,  'late'],
     'E' => ['E', 0, true,  true,  'late'],
     'E+1s' => ['E', 1, false, true,  null],
-    'E+30m-1s' => ['E', 1799, false, true,  null],
     'E+30m' => ['E', 1800, false, true,  null],
-    'E+30m+1s' => ['E', 1801, false, false, null],
+    'E+60m-1s' => ['E', 3599, false, true,  null],
+    'E+60m' => ['E', 3600, false, true,  null],
+    'E+60m+1s' => ['E', 3601, false, false, null],
 ]);
 
 beforeEach(function (): void {
@@ -70,8 +82,8 @@ function boundaryInstant(CarbonImmutable $start, CarbonImmutable $end, string $a
 |--------------------------------------------------------------------------
 */
 
-it('يفتح تسجيل الحضور قبل بداية الجلسة بثلاثين دقيقة بالضبط', function (): void {
-    expect($this->window->checkInOpensAt($this->session)->equalTo($this->start->subMinutes(30)))->toBeTrue();
+it('D-103: يفتح تسجيل الحضور قبل بداية الجلسة بساعة بالضبط', function (): void {
+    expect($this->window->checkInOpensAt($this->session)->equalTo($this->start->subMinutes(60)))->toBeTrue();
 });
 
 it('يغلق تسجيل الحضور عند نهاية الجلسة بالضبط', function (): void {
@@ -82,15 +94,15 @@ it('يفتح تسجيل الانصراف قبل نهاية الجلسة بثلا
     expect($this->window->checkOutOpensAt($this->session)->equalTo($this->end->subMinutes(30)))->toBeTrue();
 });
 
-it('يغلق تسجيل الانصراف بعد نهاية الجلسة بثلاثين دقيقة بالضبط', function (): void {
-    expect($this->window->checkOutClosesAt($this->session)->equalTo($this->end->addMinutes(30)))->toBeTrue();
+it('D-103: يغلق تسجيل الانصراف بعد نهاية الجلسة بساعة بالضبط', function (): void {
+    expect($this->window->checkOutClosesAt($this->session)->equalTo($this->end->addMinutes(60)))->toBeTrue();
 });
 
 it('يعلن الثوابت الأربعة كما نص عليها العقد', function (): void {
-    expect(AttendanceWindow::CHECK_IN_OPENS_BEFORE_START_MINUTES)->toBe(30)
+    expect(AttendanceWindow::CHECK_IN_OPENS_BEFORE_START_MINUTES)->toBe(60)
         ->and(AttendanceWindow::LATE_AFTER_START_MINUTES)->toBe(30)
         ->and(AttendanceWindow::CHECK_OUT_OPENS_BEFORE_END_MINUTES)->toBe(30)
-        ->and(AttendanceWindow::CHECK_OUT_CLOSES_AFTER_END_MINUTES)->toBe(30);
+        ->and(AttendanceWindow::CHECK_OUT_CLOSES_AFTER_END_MINUTES)->toBe(60);
 });
 
 /*
@@ -151,19 +163,21 @@ it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذه�
 
     $window = attendanceWindow();
 
-    expect($window->checkInOpensAt($session)->equalTo($start->subMinutes(30)))->toBeTrue()
+    expect($window->checkInOpensAt($session)->equalTo($start->subMinutes(60)))->toBeTrue()
         ->and($window->checkInClosesAt($session)->equalTo($end))->toBeTrue()
-        ->and($window->checkOutClosesAt($session)->equalTo($end->addMinutes(30)))->toBeTrue();
+        ->and($window->checkOutClosesAt($session)->equalTo($end->addMinutes(60)))->toBeTrue();
 
-    // 22:29:59 Riyadh, the second before the window opens, is still on 12 October.
-    expect($window->canCheckIn($session, $start->subMinutes(30)->subSecond()))->toBeFalse()
-        ->and($window->canCheckIn($session, $start->subMinutes(30)))->toBeTrue();
+    // 21:59:59 Riyadh, the second before the window opens, is still on 12 October —
+    // and with the hour-wide door (D-103) it is an hour earlier than it used to be,
+    // which is exactly the case a date-based implementation would get wrong.
+    expect($window->canCheckIn($session, $start->subMinutes(60)->subSecond()))->toBeFalse()
+        ->and($window->canCheckIn($session, $start->subMinutes(60)))->toBeTrue();
 
     // 00:30 Riyadh on 13 October is inside the session, and late.
     expect($window->classify($session, riyadhAt('2026-10-13 00:30:00'))->value)->toBe('late');
 
-    // 01:30:01 Riyadh is one second past the close of the check-out window.
-    expect($window->canCheckOut($session, $end->addMinutes(30)->addSecond()))->toBeFalse();
+    // 02:00:01 Riyadh is one second past the close of the check-out window (D-103).
+    expect($window->canCheckOut($session, $end->addMinutes(60)->addSecond()))->toBeFalse();
 })->skip(
     'D-35: PRD §14.1 يُلزم باختبار جلسة تعبر منتصف الليل، بينما قيد PRD §7.7 '
     .'CHECK (end_time > start_time) يمنع تخزينها أصلًا. تعارض في المصدر، والحضور '
@@ -177,8 +191,8 @@ it('BR-07: جلسة تمتد عبر منتصف الليل تحسب نوافذه�
 */
 
 it('BR-07: النوافذ تُحسب من توقيت الرياض وتُرجع بتوقيت UTC', function (): void {
-    // 6:00 pm Riyadh is 15:00 UTC; the window opens at 14:30 UTC.
-    expect($this->window->checkInOpensAt($this->session)->format('Y-m-d H:i:s'))->toBe('2026-10-12 14:30:00')
+    // 6:00 pm Riyadh is 15:00 UTC; the window opens an hour earlier, 14:00 UTC (D-103).
+    expect($this->window->checkInOpensAt($this->session)->format('Y-m-d H:i:s'))->toBe('2026-10-12 14:00:00')
         ->and($this->window->checkInOpensAt($this->session)->getTimezone()->getName())->toBe('UTC');
 });
 
@@ -204,8 +218,8 @@ it('نافذة الانصراف لجلسة قصيرة تبدأ قبل بداية
         ->and($window->canCheckOut($session, $start->subMinutes(10)->subSecond()))->toBeFalse()
         // 17:50 is inside the check-in window too: both windows overlap here.
         ->and($window->canCheckIn($session, $start->subMinutes(10)))->toBeTrue()
-        ->and($window->canCheckIn($session, $start->subMinutes(30)))->toBeTrue()
-        ->and($window->canCheckIn($session, $start->subMinutes(30)->subSecond()))->toBeFalse()
+        ->and($window->canCheckIn($session, $start->subMinutes(60)))->toBeTrue()
+        ->and($window->canCheckIn($session, $start->subMinutes(60)->subSecond()))->toBeFalse()
         ->and($window->canCheckIn($session, $end->addSecond()))->toBeFalse();
 
     // Everything inside a 20-minute session is still "present": S+30m is past E.
@@ -217,5 +231,5 @@ it('يقبل نموذج الجلسة كما هو بلا إعادة تحميل م
     $session = $this->session;
 
     expect($session)->toBeInstanceOf(Session::class)
-        ->and($this->window->checkInOpensAt($session)->equalTo($this->start->subMinutes(30)))->toBeTrue();
+        ->and($this->window->checkInOpensAt($session)->equalTo($this->start->subMinutes(60)))->toBeTrue();
 });

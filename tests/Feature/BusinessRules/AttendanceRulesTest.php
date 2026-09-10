@@ -47,14 +47,14 @@ beforeEach(function (): void {
 |--------------------------------------------------------------------------
 */
 
-it('BR-01: نافذة تسجيل الحضور تبدأ قبل بداية الجلسة بثلاثين دقيقة', function (): void {
-    freezeAt($this->start->subMinutes(30)->subSecond());
+it('BR-01, D-103: نافذة تسجيل الحضور تبدأ قبل بداية الجلسة بساعة', function (): void {
+    freezeAt($this->start->subMinutes(60)->subSecond());
 
     assertRefused($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
 
     expect(Attendance::query()->count())->toBe(0);
 
-    freezeAt($this->start->subMinutes(30));
+    freezeAt($this->start->subMinutes(60));
 
     assertAccepted($this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session)));
 
@@ -123,11 +123,11 @@ it('BR-04: نافذة الانصراف تبدأ قبل نهاية الجلسة �
     expect(Attendance::query()->sole()->check_out_at)->not->toBeNull();
 });
 
-it('BR-04: الانصراف بعد نهاية الجلسة بثلاثين دقيقة وثانية مرفوض', function (): void {
+it('BR-04, D-103: الانصراف بعد نهاية الجلسة بساعة وثانية مرفوض', function (): void {
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
-    freezeAt($this->end->addMinutes(30)->addSecond());
+    freezeAt($this->end->addMinutes(60)->addSecond());
 
     assertRefused($this->actingAs($this->participant)->post(route('attendance.checkOut', $this->session)));
 
@@ -273,7 +273,7 @@ it('BR-07: الجلسة الملغاة ترفض التسجيل في كل لحظ�
 */
 
 it('BR-08: من لم يسجّل حضورًا حتى انتهاء الجلسة يُحوَّل آليًا إلى غائب', function (): void {
-    freezeAt($this->end->addMinutes(31));
+    freezeAt($this->end->addMinutes(61));
 
     Artisan::call('attendance:reconcile');
 
@@ -298,7 +298,7 @@ it('BR-09: من سجّل حضورًا ولم يسجّل انصرافًا يُح�
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
-    freezeAt($this->end->addMinutes(30)->addSecond());
+    freezeAt($this->end->addMinutes(60)->addSecond());
     Artisan::call('attendance:reconcile');
 
     $attendance = Attendance::query()->where('user_id', $this->participant->id)->sole();
@@ -312,7 +312,7 @@ it('BR-09: المدرب يُنبَّه بالحضور غير المكتمل', fu
     freezeAt($this->start);
     $this->actingAs($this->participant)->post(route('attendance.checkIn', $this->session));
 
-    freezeAt($this->end->addMinutes(30)->addSecond());
+    freezeAt($this->end->addMinutes(60)->addSecond());
     Artisan::call('attendance:reconcile');
 
     expect(Notification::query()->where('user_id', $this->trainer->id)->count())->toBeGreaterThan(0);
@@ -332,7 +332,7 @@ it('BR-09: من سجّل حضوره وانصرافه لا تتغير حالته 
 });
 
 it('BR-08, BR-09: المعالجة الآلية قابلة لإعادة التشغيل بلا أثر جانبي', function (): void {
-    freezeAt($this->end->addMinutes(31));
+    freezeAt($this->end->addMinutes(61));
 
     Artisan::call('attendance:reconcile');
     Artisan::call('attendance:reconcile');

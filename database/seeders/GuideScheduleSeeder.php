@@ -42,7 +42,7 @@ use Illuminate\Support\Facades\DB;
  * inventing titles and splitting marks would be content this seeder has no source
  * for. Assignments stay an admin-panel job.
  *
- * @see BR-07, BR-31, BR-36 · PRD §9.1.1, §9.10 · D-61, D-62
+ * @see BR-07, BR-31, BR-36 · PRD §9.1.1, §9.10 · D-101, D-102
  */
 final class GuideScheduleSeeder extends Seeder
 {
@@ -153,7 +153,7 @@ final class GuideScheduleSeeder extends Seeder
      * One session per day, spanning the whole window the centre set.
      *
      * The guide publishes each training day as two blocks with a break between
-     * them. The centre chose to record one session per day instead (D-61), so a
+     * them. The centre chose to record one session per day instead (D-101), so a
      * participant checks in once rather than twice. Both block titles survive in
      * `topic`, so the page still tells the visitor what each day covers.
      *

@@ -1,10 +1,7 @@
 {
   "_source": "Transcribed from the centre's official programme guide at https://aifoundationprogram.athar-dev.edu.sa/ section 07 (الخط الزمني) and section 09 (جدول الأعمال). Every date, title and description below is verbatim from the guide; nothing here is derived or invented. Extracted and then verified field-by-field against the guide text.",
-
-  "_session_model": "ONE session per training day, 16:00–20:00 Riyadh, by the centre's decision (D-61). The guide publishes each day as TWO blocks (17:00–17:50 and 18:00–19:00) plus a 10-minute break; merging them into one session means ONE attendance check-in per day instead of two. The block titles are preserved in each session's `topic` so nothing the guide says is lost.",
-
-  "_guide_contradictions": "Two inconsistencies inside the guide itself, recorded rather than silently resolved (D-62): (1) the intro day's three blocks run back-to-back 17:00-17:30-18:15-19:00 with no gap, yet the guide shows break rows between them, while every other day leaves a real 10-minute gap; (2) the agenda lists only TWO days for week one (Mon 07, Wed 09) while «معلومات البرنامج» states three days per week and every other week has three. Neither affects the merged model, which uses neither block times nor a day count.",
-
+  "_session_model": "ONE session per training day, 17:00-19:00 Riyadh — the lecture times the guide publishes (D-101). The guide splits each day into two blocks with a break; merging them means ONE attendance check-in per day instead of two, and both block titles survive in the session topic. The ATTENDANCE window is separately one hour either side of the lecture (D-103), so a 5-7pm lecture accepts attendance from 4pm to 8pm without the published times having to lie.",
+  "_guide_contradictions": "Two inconsistencies inside the guide itself, recorded rather than silently resolved (D-102): (1) the intro day's three blocks run back-to-back 17:00-17:30-18:15-19:00 with no gap, yet the guide shows break rows between them, while every other day leaves a real 10-minute gap; (2) the agenda lists only TWO days for week one (Mon 07, Wed 09) while «معلومات البرنامج» states three days per week and every other week has three. Neither affects the merged model, which uses neither block times nor a day count.",
   "cohort": {
     "name": "الدفعة الأولى",
     "start_date": "2026-09-05",
@@ -12,19 +9,36 @@
     "registration_closes_at": "2026-09-04 23:59:00",
     "_note": "Registration closed on 4 September per the guide's own timeline, so the landing page will show the closed state and its waiting-list form. That is the guide's truth, not a defect. Opening it is an admin-panel change to registration_closes_at."
   },
-
   "session_window": {
-    "start_time": "16:00:00",
-    "end_time": "20:00:00"
+    "start_time": "17:00:00",
+    "end_time": "19:00:00"
   },
-
   "weeks": [
-    { "index": 1, "start_date": "2026-09-07", "end_date": "2026-09-09", "theme": "برمجة Python وعلوم البيانات" },
-    { "index": 2, "start_date": "2026-09-12", "end_date": "2026-09-16", "theme": "الرؤية بالحاسب" },
-    { "index": 3, "start_date": "2026-09-19", "end_date": "2026-09-22", "theme": "معالجة اللغات الطبيعية" },
-    { "index": 4, "start_date": "2026-09-26", "end_date": "2026-09-30", "theme": "الذكاء الاصطناعي التوليدي والتوكيلي" }
+    {
+      "index": 1,
+      "start_date": "2026-09-07",
+      "end_date": "2026-09-09",
+      "theme": "برمجة Python وعلوم البيانات"
+    },
+    {
+      "index": 2,
+      "start_date": "2026-09-12",
+      "end_date": "2026-09-16",
+      "theme": "الرؤية بالحاسب"
+    },
+    {
+      "index": 3,
+      "start_date": "2026-09-19",
+      "end_date": "2026-09-22",
+      "theme": "معالجة اللغات الطبيعية"
+    },
+    {
+      "index": 4,
+      "start_date": "2026-09-26",
+      "end_date": "2026-09-30",
+      "theme": "الذكاء الاصطناعي التوليدي والتوكيلي"
+    }
   ],
-
   "days": [
     {
       "date": "2026-09-05",
@@ -131,7 +145,6 @@
       "topic": "تعرض مشروعك الخاص أمام المدربين وباقي المشاركين، ونحتفل سوا بإنجازك."
     }
   ],
-
   "final_project": {
     "title": "المشروع الختامي — مشروعك الخاص من فكرتك إلى واقع ملموس",
     "brief": "تختار فكرة تهمك فعلًا، وتبنيها بنفسك من الصفر باستخدام كل المهارات التي اكتسبتها خلال الأسابيع الأربعة، بإشراف ومتابعة مباشرة من المدربين.",

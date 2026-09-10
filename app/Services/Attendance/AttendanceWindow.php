@@ -16,34 +16,54 @@ use Carbon\CarbonImmutable;
  * Let S be the session start and E the session end, both stored as a Riyadh
  * calendar date plus Riyadh wall-clock times and resolved to UTC by Clock.
  *
- *   check-in   : [S - 30m, E]          inclusive at both ends
+ *   check-in   : [S - 60m, E]          inclusive at both ends
  *   present    :  at <= S + 30m
  *   late       :  at >  S + 30m
- *   check-out  : [E - 30m, E + 30m]    inclusive at both ends
+ *   check-out  : [E - 30m, E + 60m]    inclusive at both ends
  *
  * Boundary table (CONTRACT §6, PRD §9.9.3):
  *
- *   S-30m-1s   check-in closed
- *   S-30m      check-in open, present
+ *   S-60m-1s   check-in closed
+ *   S-60m      check-in open, present
  *   S+30m      check-in open, present  (last instant)
  *   S+30m+1s   check-in open, late
  *   E-30m      check-in open, late, check-out opens
  *   E          check-in open (last instant), check-out open
  *   E+1s       check-in closed, check-out open
- *   E+30m      check-out open (last instant)
- *   E+30m+1s   check-out closed
+ *   E+60m      check-out open (last instant)
+ *   E+60m+1s   check-out closed
  *
- * @see BR-01, BR-02, BR-03, BR-04, BR-07 · PRD §9.9.2, §9.9.3 · CONTRACT §6
+ * @see BR-01, BR-02, BR-03, BR-04, BR-07 · D-103 · PRD §9.9.2, §9.9.3 · CONTRACT §6
  */
 final class AttendanceWindow
 {
-    public const CHECK_IN_OPENS_BEFORE_START_MINUTES = 30;   // BR-01
+    /*
+     | The door is an hour wide on each side, by the owner's decision of
+     | 10 September 2026 (D-103), which supersedes the thirty minutes BR-01 and
+     | BR-04 were written with. A lecture published as 5–7pm accepts attendance
+     | from 4pm to 8pm.
+     |
+     | These stay CONSTANTS rather than moving to config/athar.php, and that is
+     | deliberate. A value in `.env` can be mistyped, and a mistyped attendance
+     | window silently changes who counts as present, which changes attendance
+     | rates, which changes who gets a certificate (BR-26). Pinned here, the
+     | boundary table in tests/Unit/Services/AttendanceWindowTest.php asserts
+     | every edge at ±1 second and fails the moment anyone moves one.
+     */
+    public const CHECK_IN_OPENS_BEFORE_START_MINUTES = 60;   // BR-01, D-103
 
+    /*
+     | UNCHANGED at thirty minutes, and not part of D-103. A wider door is not a
+     | longer grace period: someone arriving at 5:31pm is still late, exactly as
+     | before. Widening this instead would have quietly reclassified latecomers
+     | as present and inflated attendance rates.
+     */
     public const LATE_AFTER_START_MINUTES = 30;              // BR-02, BR-03
 
+    /** Unchanged: when check-out becomes possible, not when it stops. */
     public const CHECK_OUT_OPENS_BEFORE_END_MINUTES = 30;    // BR-04
 
-    public const CHECK_OUT_CLOSES_AFTER_END_MINUTES = 30;    // BR-04
+    public const CHECK_OUT_CLOSES_AFTER_END_MINUTES = 60;    // BR-04, D-103
 
     /**
      * S — the session start, in UTC.
@@ -75,7 +95,7 @@ final class AttendanceWindow
         return $this->startsAt($session)->addMinutes(self::LATE_AFTER_START_MINUTES);
     }
 
-    /** S - 30m */
+    /** S - 60m */
     public function checkInOpensAt(Session $session): CarbonImmutable
     {
         return $this->startsAt($session)->subMinutes(self::CHECK_IN_OPENS_BEFORE_START_MINUTES);
@@ -93,7 +113,7 @@ final class AttendanceWindow
         return $this->endsAt($session)->subMinutes(self::CHECK_OUT_OPENS_BEFORE_END_MINUTES);
     }
 
-    /** E + 30m */
+    /** E + 60m */
     public function checkOutClosesAt(Session $session): CarbonImmutable
     {
         return $this->endsAt($session)->addMinutes(self::CHECK_OUT_CLOSES_AFTER_END_MINUTES);
@@ -101,7 +121,7 @@ final class AttendanceWindow
 
     /**
      * BR-01 — the check-in window is closed for a cancelled session, and is
-     * inclusive of both S-30m and E.
+     * inclusive of both S-60m and E (D-103).
      */
     public function canCheckIn(Session $session, CarbonImmutable $at): bool
     {
@@ -114,7 +134,7 @@ final class AttendanceWindow
     }
 
     /**
-     * BR-04 — inclusive of both E-30m and E+30m.
+     * BR-04 — inclusive of both E-30m and E+60m (D-103).
      */
     public function canCheckOut(Session $session, CarbonImmutable $at): bool
     {
@@ -164,7 +184,7 @@ final class AttendanceWindow
     }
 
     /**
-     * True once E+30m has passed — the trigger for BR-09.
+     * True once E+60m has passed — the trigger for BR-09 (D-103).
      */
     public function checkOutWindowHasClosed(Session $session, CarbonImmutable $at): bool
     {

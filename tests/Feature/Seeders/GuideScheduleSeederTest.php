@@ -19,7 +19,7 @@ declare(strict_types=1);
  * month of attendance would be the worst defect in this repository, and the only
  * way to know it does not is to put attendance in front of it and look after.
  *
- * @see BR-07, BR-31 · PRD §9.1.1, §9.10 · D-61, D-62
+ * @see BR-07, BR-31 · PRD §9.1.1, §9.10 · D-101, D-102
  */
 
 use App\Models\Attendance;
@@ -50,7 +50,7 @@ it('PRD §9.1.1: البذرة تُنشئ ثلاث عشرة جلسة بتواري
         ->and($cohort->sessions()->where('type', 'closing')->value('date')->format('Y-m-d'))->toBe('2026-10-01');
 });
 
-it('D-61: جلسة واحدة يوميًّا من 16:00 إلى 20:00 — حضور واحد لا اثنان', function (): void {
+it('D-101: جلسة واحدة يوميًّا بوقت المحاضرة المعلَن 17:00–19:00', function (): void {
     $this->seed(GuideScheduleSeeder::class);
 
     $cohort = Cohort::query()->where('name', 'الدفعة الأولى')->firstOrFail();
@@ -61,9 +61,35 @@ it('D-61: جلسة واحدة يوميًّا من 16:00 إلى 20:00 — حضو�
     expect($sessions->pluck('date')->map->format('Y-m-d')->duplicates())->toBeEmpty();
 
     foreach ($sessions as $session) {
-        expect((string) $session->getAttribute('start_time'))->toStartWith('16:00')
-            ->and((string) $session->getAttribute('end_time'))->toStartWith('20:00');
+        expect((string) $session->getAttribute('start_time'))->toStartWith('17:00')
+            ->and((string) $session->getAttribute('end_time'))->toStartWith('19:00');
     }
+});
+
+it('D-103: نافذة الحضور ساعة قبل المحاضرة وساعة بعدها', function (): void {
+    // The session carries the times the guide publishes; the door around it is
+    // an hour wider on each side. Both facts have to hold at once, or the
+    // participant reads one thing on the schedule and meets another at the door.
+    $this->seed(GuideScheduleSeeder::class);
+
+    $cohort = Cohort::query()->where('name', 'الدفعة الأولى')->firstOrFail();
+
+    /** @var Session $session */
+    $session = $cohort->sessions()->where('type', 'training')->orderBy('date')->firstOrFail();
+
+    $window = attendanceWindow();
+
+    // 16:00 opens, 15:59:59 does not.
+    expect($window->canCheckIn($session, riyadhAt('2026-09-07 16:00:00')))->toBeTrue()
+        ->and($window->canCheckIn($session, riyadhAt('2026-09-07 15:59:59')))->toBeFalse()
+        // 20:00 is the last instant to check out; 20:00:01 is not.
+        ->and($window->canCheckOut($session, riyadhAt('2026-09-07 20:00:00')))->toBeTrue()
+        ->and($window->canCheckOut($session, riyadhAt('2026-09-07 20:00:01')))->toBeFalse();
+
+    // And the wider door did NOT become a longer grace period: 17:31 is late.
+    expect($window->classify($session, riyadhAt('2026-09-07 16:30:00'))->value)->toBe('present')
+        ->and($window->classify($session, riyadhAt('2026-09-07 17:30:00'))->value)->toBe('present')
+        ->and($window->classify($session, riyadhAt('2026-09-07 17:30:01'))->value)->toBe('late');
 });
 
 it('المادة 29: تشغيلها مرّتين لا يُنشئ نسخة واحدة مكرّرة', function (): void {
