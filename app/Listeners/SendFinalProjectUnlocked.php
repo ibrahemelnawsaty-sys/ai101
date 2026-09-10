@@ -45,7 +45,9 @@ final class SendFinalProjectUnlocked implements ShouldQueue
                     'datetime' => $event->deadline,
                 ],
                 ctaUrl: $event->url,
-                meta: [(string) __('project.deadline') => $event->deadline],
+                // `project.deadline` does not exist in either locale.
+                // `assignments.deadline` does, and says exactly this (D-62).
+                meta: ['assignments.deadline' => $event->deadline],
             ));
         } catch (\Throwable $exception) {
             // One unreachable address must not stop the rest of the cohort

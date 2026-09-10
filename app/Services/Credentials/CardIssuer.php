@@ -16,9 +16,10 @@ use Illuminate\Support\Str;
  * Issues the digital participant card.
  *
  * WHY THIS CLASS DID NOT EXIST
- * The card screen has always told a trainee, in its own empty state:
- *
- *     "تُنشأ البطاقة تلقائيًا فور تفعيل حسابك والتحاقك بالدفعة"
+ * The card screen has always told a trainee, in its own empty state, that
+ * the card is issued automatically the moment the account is verified and
+ * enrolled in a cohort (the sentence is `card.empty_body` in lang/ar) --
+ * quoted here in English because Arabic inside a .php file fails G5.
  *
  * and nothing in `app/` ever created one. `DigitalCard` was written, its table
  * was migrated, its presenter renders a QR, its public verification page works

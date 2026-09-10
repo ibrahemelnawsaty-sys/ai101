@@ -74,20 +74,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // Shared hosting has no supervisor and no long-lived daemon
         // (Article 10). A single cPanel cron entry calls `schedule:run` every
         // minute and every background job flows through it.
-        $schedule->command('queue:work --stop-when-empty --tries=3 --max-time=50 --sleep=0')
+        $schedule->command(
+            'queue:work --stop-when-empty --tries=3 --backoff=30 --max-time=50 --timeout=45 --sleep=0 --memory=180'
+        )
             ->everyMinute()
             ->withoutOverlapping(5);
 
-        // PRD Â§9.9.5: a job runs every fifteen minutes and turns anyone who
-        // never checked in to a finished session into `absent` (BR-08), anyone
-        // who checked in but never out into `incomplete` and notifies the
-        // trainer (BR-09), then recomputes the attendance rates. The command
-        // existed and was never scheduled, so neither state was ever reached in
-        // production. withoutOverlapping because a long catch-up run must not be
-        // started twice by two cron ticks.
-        $schedule->command('attendance:reconcile')
-            ->everyFifteenMinutes()
-            ->withoutOverlapping(14);
+        // attendance:reconcile is NOT scheduled here. It lives in
+        // routes/console.php next to the business rule it serves, and it was
+        // registered in both files at once — same expression, same mutex — so
+        // it ran twice back-to-back every fifteen minutes (D-62).
 
         $schedule->command('queue:prune-failed --hours=336')->weeklyOn(1, '03:10');
         $schedule->command('queue:prune-batches --hours=336')->weeklyOn(1, '03:20');

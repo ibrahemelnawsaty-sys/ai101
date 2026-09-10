@@ -43,7 +43,7 @@
     $c = $palette;
 @endphp
 <!doctype html>
-<html lang="ar" dir="rtl" xmlns:v="urn:schemas-microsoft-com:vml">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -63,13 +63,21 @@
     &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
 </div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:{{ $c['surfaceAlt'] }};">
+{{-- dir and direction are repeated on the tables, not only on <html> and
+     <body>, because Gmail (webmail, Android and iOS) strips those two tags and
+     injects the body's inner HTML into its own container — discarding their
+     attributes and their style with them. Every RTL signal in this letter used
+     to live on exactly those two tags, so in Gmail, the client behind the very
+     SMTP relay this platform sends through, every Arabic letter rendered
+     left-aligned (D-62). --}}
+<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:{{ $c['surfaceAlt'] }}; direction:rtl; text-align:right;">
     <tr>
         <td align="center" style="padding:{{ $c['gapXl'] }} {{ $c['gapMd'] }};">
 
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="max-width:{{ $c['cardWidth'] }}; background:{{ $c['surface'] }}; border-radius:{{ $c['radiusCard'] }}; overflow:hidden;">
+            <!--[if mso]><table role="presentation" width="{{ (int) $c['cardWidth'] }}" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+            <table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="max-width:{{ $c['cardWidth'] }}; background:{{ $c['surface'] }}; border-radius:{{ $c['radiusCard'] }}; overflow:hidden; direction:rtl; text-align:right;">
 
                 {{-- ── The crown ─────────────────────────────────────────── --}}
                 <tr>
@@ -81,7 +89,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td style="padding-top:{{ $c['gapXs'] }}; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; color:{{ $c['brandLight'] }};">
+                                <td style="padding-top:{{ $c['gapXs'] }}; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; color:{{ $c['white'] }};">
                                     {{ $tagline }}
                                 </td>
                             </tr>
@@ -125,8 +133,8 @@
                 @if (filled($meta ?? []))
                     <tr>
                         <td style="padding:0 {{ $c['gapXl'] }} {{ $c['gapLg'] }} {{ $c['gapXl'] }};">
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                                   style="background:{{ $c['surfaceAlt'] }}; border:{{ $c['hairline'] }} solid {{ $c['line'] }}; border-radius:{{ $c['radius'] }};">
+                            <table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0"
+                                   style="background:{{ $c['surfaceAlt'] }}; border:{{ $c['hairline'] }} solid {{ $c['line'] }}; border-radius:{{ $c['radius'] }}; direction:rtl;">
                                 @foreach ($meta as $label => $value)
                                     <tr>
                                         <td style="padding:{{ $c['gapMd'] }} {{ $c['gapLg'] }}; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; color:{{ $c['muted'] }}; {{ $loop->last ? '' : 'border-bottom:'.$c['hairline'].' solid '.$c['line'].';' }}">
@@ -150,20 +158,15 @@
                                  renders a button and not a bare link. --}}
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
-                                    <td align="center" style="border-radius:{{ $c['radius'] }}; background:{{ $c['brand'] }};">
+                                    <td align="center" bgcolor="{{ $c['brand'] }}"
+                                        style="padding:{{ $c['gapMd'] }} {{ $c['gapHuge'] }}; border-radius:{{ $c['radius'] }}; background:{{ $c['brand'] }};">
                                         <a href="{{ $ctaUrl }}"
-                                           style="display:inline-block; padding:{{ $c['gapMd'] }} {{ $c['gapHuge'] }}; font-family:{{ $c['font'] }}; font-size:{{ $c['textSm'] }}; font-weight:700; color:{{ $c['white'] }}; text-decoration:none; border-radius:{{ $c['radius'] }};">
+                                           style="font-family:{{ $c['font'] }}; font-size:{{ $c['textSm'] }}; font-weight:700; color:{{ $c['white'] }}; text-decoration:none;">
                                             {{ $ctaLabel }}
                                         </a>
                                     </td>
                                 </tr>
                             </table>
-
-                            @if (filled($footNote ?? null))
-                                <p style="margin:{{ $c['gapMd'] }} 0 0 0; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; line-height:1.9; color:{{ $c['muted'] }};">
-                                    {{ $footNote }}
-                                </p>
-                            @endif
                         </td>
                     </tr>
 
@@ -174,6 +177,22 @@
                             </p>
                             <p dir="ltr" style="margin:0; font-size:{{ $c['textXs'] }}; line-height:1.7; color:{{ $c['brandDark'] }}; word-break:break-all; text-align:left;">
                                 {{ $ctaUrl }}
+                            </p>
+                        </td>
+                    </tr>
+                @endif
+
+                {{-- ── The note under the button — or standing alone ─────────
+                     This used to be nested inside the button block above, so a
+                     letter with no button lost it. That is exactly one letter:
+                     the rejection, whose own listener docblock says it carries
+                     no button because "the copy offers the next cohort in
+                     words" — and those words never reached anyone (D-62). --}}
+                @if (filled($footNote ?? null))
+                    <tr>
+                        <td style="padding:0 {{ $c['gapXl'] }} {{ $c['gapLg'] }} {{ $c['gapXl'] }};">
+                            <p style="margin:0; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; line-height:1.9; color:{{ $c['muted'] }};">
+                                {{ $footNote }}
                             </p>
                         </td>
                     </tr>
@@ -195,6 +214,7 @@
                 </tr>
 
             </table>
+            <!--[if mso]></td></tr></table><![endif]-->
 
             <p style="max-width:{{ $c['cardWidth'] }}; margin:{{ $c['gapLg'] }} auto 0 auto; font-family:{{ $c['font'] }}; font-size:{{ $c['textXs'] }}; line-height:1.8; color:{{ $c['muted'] }}; text-align:center;">
                 {{ __('emails.common.rights') }}

@@ -8,6 +8,7 @@ use App\Enums\EmailTokenType;
 use App\Models\User;
 use App\Services\Mail\EmailPalette;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -33,8 +34,22 @@ use Illuminate\Queue\SerializesModels;
  * (the wording is `EmailTokenIssued`'s own).
  *
  * @see BR-29, BR-30, BR-36 · PRD §9.2.3, §9.3.3, §9.16 · D-02, D-49
+ *
+ * Encrypted on the queue, not merely queued.
+ *
+ * A queued Mailable's constructor arguments are serialised into `jobs.payload`
+ * in cleartext and stay there until the per-minute cron drains them — and, if
+ * three delivery attempts fail, into `failed_jobs.payload` for the fourteen
+ * days `queue:prune-failed` allows. That payload carries the verification and
+ * password-reset URL WITH its token beside the recipient's address, so anyone
+ * who can read the application database — a phpMyAdmin session, a leaked
+ * DB_PASSWORD, a restored backup — could lift a live token and take over the
+ * account without leaving a row in audit_logs.
+ *
+ * ShouldBeEncrypted makes the framework encrypt the payload with APP_KEY in
+ * both tables. Nothing else changes (D-62).
  */
-final class EmailTokenLink extends Mailable implements ShouldQueue
+final class EmailTokenLink extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
     use SerializesModels;

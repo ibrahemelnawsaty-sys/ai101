@@ -44,7 +44,11 @@ final class SendAssignmentPublished implements ShouldQueue
                     'datetime' => $event->dueAt,
                 ],
                 ctaUrl: $event->url,
-                meta: [(string) __('assignments.due') => $event->dueAt],
+                // The key, not the resolved label: `assignments.due` is a
+                // GROUP, and casting it to string raised a warning Laravel
+                // throws and the catch below swallowed — so this letter had
+                // never been sent to anyone (D-62).
+                meta: ['assignments.deadline' => $event->dueAt],
             ));
         } catch (\Throwable $exception) {
             // One unreachable address must not stop the rest of the cohort

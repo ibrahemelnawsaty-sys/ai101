@@ -47,9 +47,10 @@ final class SendAccountVerifiedWelcome implements ShouldQueue
                     'cohort' => $cohort?->getAttribute('name') ?? '',
                 ],
                 ctaUrl: route('dashboard'),
-                meta: array_filter([
-                    (string) __('nav.schedule') => $cohort?->getAttribute('name') ?? '',
-                ]),
+                // `nav.schedule` labelled a COHORT NAME as "the timetable".
+                // AtharLetter now drops an empty value itself, so the
+                // array_filter that used to guard it is no longer needed.
+                meta: ['emails.common.cohort_label' => $cohort?->getAttribute('name') ?? ''],
                 eyebrow: (string) config('athar.program_short_name'),
             ));
         } catch (\Throwable $exception) {

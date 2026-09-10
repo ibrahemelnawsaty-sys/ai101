@@ -36,7 +36,12 @@ final class SendNewDeviceLogin implements ShouldQueue
                     'ip' => $event->ip,
                     'email' => (string) config('athar.email'),
                 ],
-                ctaUrl: route('profile.edit'),
+                // `profile.edit` is not a route name anywhere in the
+                // application; route() threw and the catch below swallowed
+                // it, so the one letter warning of an unknown sign-in could
+                // never be sent. The account screen carries the password
+                // form the copy tells the reader to use (D-62).
+                ctaUrl: route('profile'),
             ));
         } catch (\Throwable $exception) {
             // A letter that fails to leave changes nothing about the fact it was

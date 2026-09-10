@@ -16,6 +16,9 @@ return [
         'greeting_neutral' => 'أهلًا بك،',
         'sign_off' => 'فريق مركز أثر للتدريب',
         'tagline_note' => 'برنامج :program — الدفعة :cohort',
+        // A LABEL for the detail strip, not a sentence. The welcome letter
+        // used to label the cohort name with nav.schedule — "the timetable".
+        'cohort_label' => 'الدفعة',
         'view_in_platform' => 'افتح المنصة',
         'contact_line' => 'لأي استفسار راسلنا على :email',
         'why_receiving' => 'وصلتك هذه الرسالة لأنك مسجّل في :program.',

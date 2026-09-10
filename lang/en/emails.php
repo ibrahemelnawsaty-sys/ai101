@@ -15,6 +15,8 @@ return [
         'greeting_neutral' => 'Hello,',
         'sign_off' => 'The Athar Training Centre team',
         'tagline_note' => ':program — cohort :cohort',
+        // A LABEL for the detail strip, not a sentence.
+        'cohort_label' => 'Cohort',
         'view_in_platform' => 'Open the platform',
         'contact_line' => 'For any question, write to us at :email',
         'why_receiving' => 'You are receiving this because you are enrolled in :program.',
