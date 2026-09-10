@@ -28,6 +28,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use App\Services\Credentials\AccountInviter;
 use App\Services\Credentials\TemporaryPassword;
+use App\Services\Time\Clock;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function (): void {
@@ -270,4 +271,53 @@ it('المادة 17: شاشة إضافة مستخدم تُصيَّر فعلًا 
         ->assertSee('name="cohort_id"', false)
         // The administrator does not choose a trainee's password.
         ->assertDontSee('name="password"', false);
+});
+
+it('BR-29: التغيير الأول ينهي كل جلسة أخرى لهذا الحساب', function (): void {
+    Mail::fake();
+
+    $user = app(AccountInviter::class)->invite(
+        email: 'canary@example.com',
+        role: UserRole::Participant,
+        profileColumns: inviteProfileColumns(),
+        cohort: $this->cohort,
+    );
+
+    $temporary = null;
+    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
+        $temporary = $letter->password;
+
+        return true;
+    });
+
+    // A second live session for the same account. This is not a contrived case:
+    // the invitation carries a plaintext password to an inbox that gets
+    // forwarded, and the mundane version needs no intruder at all — the trainee
+    // opens the letter on a phone and again on a laptop.
+    $table = (string) config('session.table', 'user_sessions');
+
+    Illuminate\Support\Facades\DB::table($table)->insert([
+        'id' => 'CANARY-OTHER-SESSION',
+        'user_id' => $user->getKey(),
+        'ip_address' => '203.0.113.9',
+        'user_agent' => 'canary',
+        'payload' => base64_encode(serialize([])),
+        'last_activity' => Clock::now()->getTimestamp(),
+    ]);
+
+    $user->forceFill(['remember_token' => 'CANARY-REMEMBER'])->save();
+
+    $this->actingAs($user)->put(route('password.first.update'), [
+        'current_password' => $temporary,
+        'password' => 'Canary-Sets-This-1!',
+        'password_confirmation' => 'Canary-Sets-This-1!',
+    ])->assertRedirect(route('dashboard'));
+
+    // Until this moment the other session was trapped on the change screen by
+    // RequirePasswordChange and could see nothing. Clearing the flag frees the
+    // ACCOUNT, so a row left behind is promoted to a full trainee session.
+    expect(Illuminate\Support\Facades\DB::table($table)->where('id', 'CANARY-OTHER-SESSION')->count())->toBe(0);
+
+    // And a "remember me" cookie taken at that sign-in must die with it.
+    expect($user->fresh()?->getAttribute('remember_token'))->toBeNull();
 });

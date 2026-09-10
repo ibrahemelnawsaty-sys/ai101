@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Events\PasswordChanged;
+use App\Http\Controllers\Auth\Concerns\InvalidatesOtherSessions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\FirstPasswordRequest;
 use App\Models\User;
@@ -48,6 +49,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class FirstPasswordController extends Controller
 {
+    use InvalidatesOtherSessions;
+
     public function __construct(private readonly AuditLogger $audit) {}
 
     public function edit(Request $request): View
@@ -85,8 +88,26 @@ final class FirstPasswordController extends Controller
             $user->save();
         });
 
-        // BR-29: a password change ends every other session for that account.
-        $request->session()->regenerate();
+        // BR-29, and it needs the trait — not `session()->regenerate()`, which
+        // rotates THIS browser's id and deletes nothing.
+        //
+        // It matters more here than anywhere else in the platform. This letter
+        // carried the address and the password in plaintext to an inbox that in
+        // practice gets forwarded. Anyone else who signed in with it is trapped
+        // on this very screen by `RequirePasswordChange` and can see nothing —
+        // until the real trainee sets their password. At that instant
+        // `must_change_password` flips to false FOR THE ACCOUNT, and the
+        // intruder's still-live row in `user_sessions` is promoted from
+        // "trapped on one screen" to a full trainee session.
+        //
+        // The mundane version needs no intruder at all: the trainee opens the
+        // invitation on a phone and again on a laptop, sets the password on the
+        // laptop, and the phone stays signed in on a credential that no longer
+        // exists.
+        //
+        // The trait deletes the other rows and nulls `remember_token`, so a
+        // "remember me" cookie taken at that sign-in dies with them.
+        $this->invalidateOtherSessions($request, $user);
 
         PasswordChanged::dispatch($user, $at, 'invitation');
 

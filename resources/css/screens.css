@@ -975,8 +975,16 @@ block-size: var(--s19);
 }
 
 /* The burger exists only while the rail is hidden. */
+/* The burger opens the mobile drawer, and below 1024px that drawer is the ONLY
+   navigation there is — `.side` is `display: none` under that width. So it is
+   hidden on the desktop, never removed.
+
+   `.icb.appbar__burger`, not `.appbar__burger`: the button also carries `.icb`,
+   whose `display: grid` is declared LATER in the bundle. Equal specificity, so
+   the later rule won and the burger showed on every desktop screen beside a
+   sidebar that already had the same links (D-65). */
 .appbar__burger { display: grid; }
-@media (min-width: 1024px) { .appbar__burger { display: none; } }
+@media (min-width: 1024px) { .icb.appbar__burger { display: none; } }
 
 .appbar__menu { position: relative; }
 

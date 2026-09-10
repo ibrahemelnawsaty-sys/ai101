@@ -38,7 +38,17 @@
     @if ($drawer) x-ref="panel" role="dialog" aria-modal="true" aria-label="{{ __('nav.chrome.sidebar_label') }}" @endif
 >
     <div class="side__brand">
-        <x-ui.logo variant="wordmark" size="xs" tone="purple" />
+        {{-- Two logos, one shown at a time by CSS on `[data-collapsed]`.
+             The rail is 72px when collapsed and the wordmark is far wider than
+             that, so it used to push the collapse button out of the rail — and
+             the button is the only way back. The rule meant to hide it targeted
+             `.side__brand .logo` while `x-ui.logo` renders `ui-logo`, so it
+             never matched anything (D-65).
+
+             Swapped rather than hidden: a rail with no mark at all reads as a
+             column of loose icons belonging to nothing. --}}
+        <x-ui.logo variant="wordmark" size="xs" tone="purple" class="side__wordmark" />
+        <x-ui.logo variant="mark" size="xs" tone="purple" class="side__mark" />
 
         @if ($drawer)
             <button type="button" class="side__collapse" x-on:click="hide()">

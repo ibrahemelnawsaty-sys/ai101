@@ -525,7 +525,20 @@ border: var(--bw-hairline) solid var(--violet-100);
   .shell[data-collapsed="true"] .side__label,
   .shell[data-collapsed="true"] .side__t,
   .shell[data-collapsed="true"] .side__foot,
-  .shell[data-collapsed="true"] .side__brand .logo { display: none; }
+  .shell[data-collapsed="true"] .side__wordmark { display: none; }
+
+  /* The compact mark replaces the wordmark in the 72px rail, and the brand row
+     stacks so the collapse button keeps its full 44px touch target instead of
+     being squeezed beside it — or, as it was, pushed out of the rail entirely
+     by a wordmark the collapsed rule never managed to hide (D-65). */
+  .side__mark { display: none; }
+  .shell[data-collapsed="true"] .side__mark { display: inline-flex; }
+  .shell[data-collapsed="true"] .side__brand {
+    flex-direction: column;
+    gap: var(--s1);
+    padding-inline: 0;
+  }
+  .shell[data-collapsed="true"] .side__collapse { margin-inline-start: 0; }
   .shell[data-collapsed="true"] .side__b { justify-content: center; padding-inline: 0; }
   .shell[data-collapsed="true"] .side__badge {
     position: absolute;
