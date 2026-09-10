@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * The fourteen sessions of the cohort: one introductory meeting, twelve
- * training sessions on Sunday/Tuesday/Thursday 19:00–21:30 Riyadh, and the
+ * training sessions on Saturday/Monday/Wednesday 17:00–19:00 Riyadh, and the
  * closing ceremony.
  *
  * One week-three session is cancelled with a reason, because PRD §7.8 forbids

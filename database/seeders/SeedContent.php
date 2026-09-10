@@ -16,7 +16,7 @@ declare(strict_types=1);
  *
  *   day  -3   intro session (the Thursday before the cohort starts)
  *   day   0   cohort starts — always a Sunday, 4 weeks before the current week
- *   day 0..27 four weeks, sessions on Sun/Tue/Thu 19:00–21:30 Riyadh
+ *   day 0..27 four weeks, sessions on Sat/Mon/Wed 17:00–19:00 Riyadh
  *   day  35   closing ceremony — always 1 to 7 days in the FUTURE
  *
  * That fixed geometry is what guarantees every dashboard has both settled
