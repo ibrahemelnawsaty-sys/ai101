@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\CertificateController as AdminCertificateControll
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\UserImportController as AdminUserImportController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
@@ -449,6 +450,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])
 
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
+
+        /*
+         * Bulk import (D-63): download the sheet, upload it filled, SEE what
+         * will happen, then confirm. `preview` writes nothing; `store` queues
+         * one invitation per valid row and never creates an account inside the
+         * request -- two hundred bcrypt hashes at twelve rounds is fifty
+         * seconds of work, and shared hosting cuts a long request off rather
+         * than letting it finish.
+         */
+        Route::get('/users/import', [AdminUserImportController::class, 'create'])->name('users.import');
+        Route::get('/users/import/template', [AdminUserImportController::class, 'template'])
+            ->name('users.import.template');
+        Route::get('/users/import/template-csv', [AdminUserImportController::class, 'templateCsv'])
+            ->name('users.import.templateCsv');
+        Route::post('/users/import/preview', [AdminUserImportController::class, 'preview'])
+            ->middleware(['not.impersonating', 'throttle:upload'])
+            ->name('users.import.preview');
+        Route::post('/users/import', [AdminUserImportController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('users.import.store');
         Route::get('/users/export', [AdminUserController::class, 'export'])->name('users.export');
         Route::post('/users', [AdminUserController::class, 'store'])
             ->middleware('not.impersonating')

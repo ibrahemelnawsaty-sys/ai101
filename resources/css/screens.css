@@ -564,6 +564,17 @@ border: var(--bw-hairline) solid var(--border-1);
 }
 .row__url:hover,
 .row__url:focus-visible { color: var(--text-accent); }
+/* Why a row was rejected, listed under its status pill. Small, and in the
+   error colour, because it is the one thing on this screen the administrator
+   has to act on (D-63). */
+.row__why {
+  margin-block-start: var(--s2);
+  padding-inline-start: var(--s4);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-sm);
+  color: var(--status-bad-text);
+}
+.row__why li + li { margin-block-start: var(--s1); }
 .row__score { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); }
 
 /* ---------------------------------------------------------- FIRST WELCOME */

@@ -15,9 +15,12 @@
     seal and the button are identical in both cases; only the falling pieces are
     withheld.
 
-    NO ARABIC TEXT IS SPLIT. The heading animates as one element under a mask,
-    never per character: Arabic letters join, and splitting them renders
-    «ال ب رنامج» instead of «البرنامج» (Article 16-bis).
+    NO ARABIC TEXT IS SPLIT. The heading is one element; nothing here wraps a
+    span around each character. Arabic letters join to their neighbours, and a
+    per-character split severs those joins, so a word renders as a row of
+    disconnected shapes with visible gaps mid-word (Article 16-bis). An example
+    cannot be written here: Arabic in a comment is itself a G3/G5 failure, and
+    this very line was the one blocking row the gate reported.
 
     NO YELLOW AND NO GOLD. The pieces take their colours from `--confetti-1..4`,
     which resolve to violet-500, teal-500, violet-300 and teal-700 — checked

@@ -57,6 +57,8 @@
                 <div class="toolbar__end">
                     <x-ui.button variant="secondary" size="sm"
                         :href="route('admin.users.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                    <x-ui.button variant="secondary" size="sm"
+                        :href="route('admin.users.import')">{{ __('admin.users.import.button') }}</x-ui.button>
                     <x-ui.button variant="primary" size="sm"
                         :href="route('admin.users.create')">{{ __('admin.users.create') }}</x-ui.button>
                 </div>
