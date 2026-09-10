@@ -59,3 +59,8 @@ desktop.ini
 
 # Sample dataset from the Python training day - not part of this application.
 /مبيعات_متجر_أثر.csv
+
+# Probe artefacts written by tools/offline-checks. Never committed.
+/public/create-probe.html
+/public/create-probe.png
+/public/build/select-probe.html
