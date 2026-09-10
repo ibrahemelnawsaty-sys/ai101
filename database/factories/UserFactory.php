@@ -46,6 +46,18 @@ final class UserFactory extends Factory
             'last_login_at' => null,
             'failed_login_count' => 0,
             'locked_until' => null,
+            // The invitation columns, for the same reason the deleted_at note
+            // below gives: the row gets the database default, but the in-memory
+            // model the factory hands back does not know about it. And
+            // preventAccessingMissingAttributes turns "does not know" into a
+            // thrown MissingAttributeException — which RequirePasswordChange
+            // triggers on the very first request of any test that signs a user
+            // in, because the middleware reads must_change_password on exactly
+            // that instance. Twenty-one attendance rules failed this way, each
+            // check-in answering 500, with nothing wrong in attendance at all.
+            'must_change_password' => false,
+            'temp_password_expires_at' => null,
+            'invited_at' => null,
             // The row this factory writes has deleted_at NULL, so the model it
             // hands back must say so too. Without it the in-memory instance is
             // missing a column the database has, and User::isActive() - which

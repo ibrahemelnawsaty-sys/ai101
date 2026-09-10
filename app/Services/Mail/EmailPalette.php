@@ -66,8 +66,14 @@ final class EmailPalette
         'hairline' => 'bw-hairline',
         'textSm' => 'fs-sm',
         'textXs' => 'fs-xs',
-        // A flat 16px, not one of the clamp() heading sizes: the Word engine
+        // A flat length, not one of the clamp() heading sizes: the Word engine
         // cannot parse clamp() and would drop the declaration entirely.
+        //
+        // The size is NOT written here, not even inside this comment. The
+        // Article 13 scan in tests/Feature/Mail/EmailTokenLinkTest.php greps
+        // this file for a raw px length and does not care whether it sits in
+        // code or in prose — which is right: a number in a comment is the first
+        // step towards a number in the code beside it.
         'textBody' => 'fs-body',
         'cardWidth' => 'd-9',
         'gapHuge' => 's12',
