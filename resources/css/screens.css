@@ -566,6 +566,50 @@ border: var(--bw-hairline) solid var(--border-1);
 .row__url:focus-visible { color: var(--text-accent); }
 .row__score { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); }
 
+/* ---------------------------------------------------------- FIRST WELCOME */
+/* Shown once, on the first dashboard after an invited trainee sets their own
+   password (D-63). `position: relative` is load-bearing: `.cf` is `inset: 0`
+   and would otherwise resolve against the page instead of this panel, throwing
+   its pieces across the whole screen. `overflow: hidden` keeps them inside it.
+
+   The tint is violet and teal. There is no yellow and no gold here, and the
+   confetti takes --confetti-1..4, which resolve to the same two hues. */
+.wel {
+  position: relative;
+  overflow: hidden;
+  margin-block-end: var(--s6);
+  padding: var(--s8) var(--s6);
+  border-radius: var(--r-lg);
+  border: var(--bw-hairline) solid var(--border-2);
+  background: linear-gradient(160deg, var(--violet-050), var(--sf-01) 62%, var(--teal-100));
+  text-align: center;
+}
+.wel__in { position: relative; z-index: 1; }
+.wel__seal { margin-inline: auto; margin-block-end: var(--s4); }
+.wel__ttl {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+.wel__lead {
+  margin-block-start: var(--s3);
+  margin-inline: auto;
+  max-inline-size: var(--measure);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  color: var(--text-muted);
+}
+.wel__acts {
+  margin-block-start: var(--s6);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  justify-content: center;
+}
+
 .tagrow { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .segmented { display: inline-flex; gap: var(--s1); padding: var(--s1); border-radius: var(--r-md); background: var(--surface-3); }
 .segmented__b {

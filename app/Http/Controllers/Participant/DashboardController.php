@@ -14,6 +14,7 @@ use App\Models\Evaluation;
 use App\Models\Notification;
 use App\Models\Resource;
 use App\Models\Session;
+use App\Models\Profile;
 use App\Models\User;
 use App\Presenters\Participant\AnnouncementPresenter;
 use App\Presenters\Participant\AttendanceRatePresenter;
@@ -73,6 +74,42 @@ final class DashboardController extends Controller
         private readonly AttendanceWindow $window,
     ) {}
 
+    /**
+     * Whether this render is the one that celebrates.
+     *
+     * A session flash, not a query parameter and not a column. A parameter can
+     * be typed by anybody, so `?welcome=1` would let a trainee replay the
+     * celebration forever and let anyone fake it. A column would have to be
+     * reset for the next cohort and would still be read on a refresh. A flash
+     * is spent by the render that reads it and survives nothing — which is the
+     * lifetime this belongs to.
+     */
+    private function takeWelcome(Request $request): bool
+    {
+        return (bool) $request->session()->pull('athar.welcome', false);
+    }
+
+    /**
+     * The name to greet by, or an empty string.
+     *
+     * NOT `WelcomePresenter::firstName()`. That falls back to the e-mail
+     * address when a profile carries no Arabic first name, which is right for a
+     * dense dashboard line and wrong for a greeting: "welcome, <at-sign
+     * address>" is a reachable sentence, and the celebration carries a
+     * name-less title written for exactly this case
+     * (`dashboard.welcome_first.title_plain`).
+     */
+    private function greetingName(User $user): string
+    {
+        $profile = $user->relationLoaded('profile') ? $user->getRelation('profile') : null;
+
+        if (! $profile instanceof Profile) {
+            return '';
+        }
+
+        return trim((string) $profile->getAttribute('first_name_ar'));
+    }
+
     public function __invoke(Request $request): View|RedirectResponse
     {
         /** @var User $user */
@@ -98,6 +135,8 @@ final class DashboardController extends Controller
 
         if ($cohort === null) {
             return view('participant.dashboard', [
+                'celebrate' => $this->takeWelcome($request),
+                'celebrateName' => $this->greetingName($user),
                 'failedBlocks' => [],
                 'cohortLabel' => null,
                 'serverNow' => $now,
@@ -123,6 +162,12 @@ final class DashboardController extends Controller
         $session = $this->nextSession($cohort->getKey(), $now);
 
         return view('participant.dashboard', [
+            // Pulled HERE, after the two calls above that can throw. Read at the
+            // top of the method, one exception on the first render would spend
+            // the flash on a page the trainee never saw — and the celebration
+            // is a once-ever thing (D-63).
+            'celebrate' => $this->takeWelcome($request),
+            'celebrateName' => $this->greetingName($user),
             'failedBlocks' => [],
             'cohortLabel' => $cohort->getAttribute('name'),
             'serverNow' => $now,

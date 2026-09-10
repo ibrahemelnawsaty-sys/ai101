@@ -27,6 +27,24 @@ return [
         'time_note' => 'All times are Riyadh time.',
     ],
 
+    /*
+     * The invitation. Key parity with lang/ar/emails.php is enforced by
+     * tests/Feature/Mail/LetterContractTest.php.
+     */
+    'invitation' => [
+        'subject' => 'Your account for :program is ready',
+        'preheader' => 'Your sign-in details for :program, and one step between you and the start.',
+        'heading' => 'Welcome to Athar',
+        'body' => 'An account has been created for you on :program, in :cohort, and your place is confirmed. Your timetable, your assignments, the programme material and your digital card are waiting for you inside.',
+        'program_label' => 'Programme',
+        'credentials_title' => 'Sign-in details',
+        'email_label' => 'E-mail address',
+        'password_label' => 'Temporary password',
+        'temporary_note' => 'This is a one-time temporary password. You will be asked to set your own the moment you first sign in. It stops working on :date.',
+        'cta' => 'Sign in to Athar',
+        'next_steps' => 'If it stops working before you have used it, choose "Forgot your password" on the sign-in page and a fresh link reaches you straight away.',
+        'not_you' => 'You received this because the programme administration created an account for this address. If you were not expecting it, do not use the password and tell us at :email.',
+    ],
     'verify' => [
         'subject' => 'Activate your account on the Athar platform',
         'preheader' => 'The activation link is valid for 24 hours and works once.',

@@ -42,6 +42,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             App\Http\Middleware\SetLocaleAndDirection::class,
             App\Http\Middleware\EnsureActiveAccount::class,
+            // 2-bis. An invited account holding a temporary password that was
+            //      mailed to it reaches nothing until it has replaced it. On
+            //      the whole stack, not on one route and not as a redirect
+            //      after sign-in: a redirect is a suggestion, and the back
+            //      button, a typed URL or yesterday's open tab walks straight
+            //      past it (Article 5, D-63).
+            App\Http\Middleware\RequirePasswordChange::class,
             App\Http\Middleware\ImpersonationReadOnly::class,
             App\Http\Middleware\SecurityHeaders::class,
         ]);

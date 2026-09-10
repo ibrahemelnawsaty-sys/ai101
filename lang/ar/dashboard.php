@@ -42,4 +42,18 @@ return [
         'completed' => 'أكملت كل خطوات رحلتك. مبارك لك.',
     ],
 
+
+    /*
+     * The one-time welcome after an invited trainee sets their own password
+     * (D-63). Two titles because WelcomePresenter can only offer an e-mail
+     * address when a profile has no Arabic first name, and a greeting is not a
+     * place for an address.
+     */
+    'welcome_first' => [
+        'title' => 'أهلًا بك يا :name، من هنا يبدأ الأثر',
+        'title_plain' => 'أهلًا بك، من هنا يبدأ الأثر',
+        'lead' => 'حسابك جاهز وكلمة مرورك صارت لك وحدك. الجدول والمهام ومواد البرنامج وبطاقتك الرقمية في انتظارك.',
+        'cta' => 'استكمِل ملفك الشخصي',
+        'dismiss' => 'إخفاء',
+    ],
 ];

@@ -66,6 +66,9 @@ final class EmailPalette
         'hairline' => 'bw-hairline',
         'textSm' => 'fs-sm',
         'textXs' => 'fs-xs',
+        // A flat 16px, not one of the clamp() heading sizes: the Word engine
+        // cannot parse clamp() and would drop the declaration entirely.
+        'textBody' => 'fs-body',
         'cardWidth' => 'd-9',
         'gapHuge' => 's12',
         'radiusPill' => 's11',
@@ -121,6 +124,17 @@ final class EmailPalette
         }
 
         $theme['font'] = $tokens['font'];
+
+        // The invitation prints a temporary password. It has to be read one
+        // character at a time by somebody retyping it, so it is set in the
+        // monospaced stack: proportional type makes `rn` look like `m` and puts
+        // `1`, `l` and `I` on the same width. The generator already drops the
+        // worst of those pairs; the typeface removes the rest.
+        if (! isset($tokens['font-mono'])) {
+            throw new \RuntimeException('tokens.css does not define --font-mono.');
+        }
+
+        $theme['fontMono'] = $tokens['font-mono'];
 
         return $theme;
     }

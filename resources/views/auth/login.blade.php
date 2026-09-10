@@ -10,7 +10,7 @@
 
     Variables from App\Http\Controllers\Auth\LoginController@create:
       $state            string  'ok' | 'loading' | 'empty' | 'error'
-      $accountState     string|null  'unverified' | 'suspended' | 'locked' | null
+      $accountState     string|null  'unverified' | 'suspended' | 'locked' | 'invitation_expired' | null
       $lockedUntilIso   string|null  Clock instant the temporary lock lifts, ISO-8601 UTC
 --}}
 @extends('layouts.auth')
@@ -92,6 +92,20 @@
                         {{ __('auth.login.suspended_body') }}
                         <a href="mailto:{{ config('athar.email') }}" dir="ltr">{{ config('athar.email') }}</a>
                     </p>
+                </div>
+            </div>
+        @elseif (($accountState ?? null) === 'invitation_expired')
+            {{-- The temporary password from an invitation has lapsed. The
+                 refusal happens at sign-in rather than after it, because
+                 recovery lives behind the `guest` middleware: let this person
+                 in and the only screen they can reach is the forced-change one,
+                 which cannot send them anywhere useful (D-63). --}}
+            <div class="note note--warn" role="alert">
+                <svg aria-hidden="true"><use href="#i-lock"/></svg>
+                <div>
+                    <b>{{ __('auth.login.invitation_expired_title') }}</b>
+                    <p>{{ __('auth.login.invitation_expired_body') }}</p>
+                    <a href="{{ route('password.request') }}">{{ __('auth.login.invitation_expired_action') }}</a>
                 </div>
             </div>
         @elseif (($accountState ?? null) === 'locked')

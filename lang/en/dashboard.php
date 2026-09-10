@@ -32,4 +32,13 @@ return [
         'completed' => 'You have completed every step of your journey. Congratulations.',
     ],
 
+
+    /* The one-time welcome after an invited trainee sets their own password. */
+    'welcome_first' => [
+        'title' => 'Welcome, :name — this is where the impact begins',
+        'title_plain' => 'Welcome — this is where the impact begins',
+        'lead' => 'Your account is ready and the password is yours alone now. Your timetable, your assignments, the programme material and your digital card are waiting.',
+        'cta' => 'Complete your profile',
+        'dismiss' => 'Dismiss',
+    ],
 ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\EmailTokenType;
+use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
@@ -16,7 +17,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\SuspendUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\AuditLog;
-use App\Models\Enrollment;
+use App\Models\Cohort;
 use App\Models\Profile;
 use App\Models\User;
 use App\Presenters\Admin\UserCounts;
@@ -24,7 +25,7 @@ use App\Presenters\Admin\UserProfile;
 use App\Presenters\Admin\UserRow;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
-use App\Services\Time\Clock;
+use App\Services\Credentials\AccountInviter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,10 @@ final class UserController extends Controller
     /** How many trail entries the profile page shows before "view all". */
     private const AUDIT_LIMIT = 10;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly AccountInviter $inviter,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -151,37 +155,27 @@ final class UserController extends Controller
         ]);
     }
 
+    /**
+     * Create one account and invite it.
+     *
+     * This used to create a User and a Profile and then simply redirect: no
+     * letter, no cohort, and nothing anywhere that could put the account in one
+     * (D-63). Every part of that now lives in AccountInviter, which the bulk
+     * import calls too — the seating, the temporary password and its expiry are
+     * exactly the details that drift when they are written twice.
+     */
     public function store(StoreUserRequest $request): RedirectResponse
     {
-        $created = DB::transaction(function () use ($request): User {
-            /** @var User $user */
-            $user = User::query()->create([
-                'email' => (string) $request->validated('email'),
-                'password_hash' => (string) $request->validated('password'),
-                'role' => (string) $request->validated('role'),
-                'status' => (string) $request->validated('status'),
-                'email_verified_at' => Clock::now(),
-                'locale' => (string) config('athar.locales.default', 'ar'),
-                'failed_login_count' => 0,
-                'locked_until' => null,
-            ]);
-
-            Profile::query()->create(array_merge(
-                $request->profileAttributes(),
-                ['user_id' => $user->getKey()],
-            ));
-
-            $this->audit->log('user.created', $user, null, [
-                'email' => (string) $user->getAttribute('email'),
-                'role' => (string) $user->getAttribute('role')?->value,
-            ]);
-
-            return $user;
-        });
+        $created = $this->inviter->invite(
+            email: (string) $request->validated('email'),
+            role: UserRole::from((string) $request->validated('role')),
+            profileColumns: $request->profileAttributes(),
+            cohort: $request->cohort(),
+        );
 
         return redirect()
             ->route('admin.users.show', $created)
-            ->with('status', __('admin.users.created'));
+            ->with('status', __('admin.users.invited'));
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
@@ -240,10 +234,20 @@ final class UserController extends Controller
         /** @var User $viewer */
         $viewer = $request->user();
 
-        return view('admin.users.index', array_merge($this->listing($request, $viewer), [
-            'creating' => true,
+        // It used to return `admin.users.index` with `'creating' => true`, and
+        // that template never read the flag — so the "add a user" button
+        // rendered the list again and appeared to do nothing. There was no
+        // create form in the platform at all (D-63).
+        return view('admin.users.create', [
+            'contextLabel' => null,
+            'roleOptions' => Options::fromEnum(UserRole::class),
+            'genderOptions' => Options::fromEnum(Gender::class),
+            'cohortOptions' => Options::fromModels(
+                Cohort::query()->with('program')->orderByDesc('start_date')->get(),
+                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
+            ),
             'errorState' => null,
-        ]));
+        ]);
     }
 
     /**

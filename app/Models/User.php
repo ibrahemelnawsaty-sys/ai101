@@ -59,6 +59,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'failed_login_count',
         'locked_until',
+        // An account created FOR someone: it signs in once with a temporary
+        // password and cannot go anywhere until that password is replaced.
+        'must_change_password',
+        'temp_password_expires_at',
+        'invited_at',
     ];
 
     /** @var list<string> */
@@ -88,6 +93,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_login_at' => 'datetime',
             'locked_until' => 'datetime',
             'failed_login_count' => 'integer',
+            'must_change_password' => 'boolean',
+            'temp_password_expires_at' => 'datetime',
+            'invited_at' => 'datetime',
         ];
     }
 

@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\FirstPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -159,6 +160,34 @@ Route::post('/verify-email/resend', [EmailVerificationController::class, 'send']
 Route::post('/logout', [LoginController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| The forced first password (D-63)
+|--------------------------------------------------------------------------
+|
+| An invited account signs in with a temporary password that was mailed to it
+| and can reach nothing else until it has been replaced. `RequirePasswordChange`
+| runs on the whole `web` stack and exempts these two names, so they are the
+| only way out of that state.
+|
+| NO `throttle:password` HERE, DELIBERATELY. That limiter is
+| `Limit::perHour(3)->by(emailKey($request))`, and `emailKey()` falls back to
+| the IP whenever the request carries no `email` field — which this form does
+| not. A cohort sitting in one training room behind one connection would share
+| a single bucket of three attempts an hour, and the fourth trainee to set a
+| password would be refused entry to the platform with nothing explaining why.
+| `PUT /profile/password`, the same act from inside the account, carries no
+| throttle either.
+|
+*/
+Route::middleware('auth')->group(function (): void {
+    Route::get('/first-password', [FirstPasswordController::class, 'edit'])
+        ->name('password.first');
+
+    Route::put('/first-password', [FirstPasswordController::class, 'update'])
+        ->name('password.first.update');
+});
 
 /*
 |--------------------------------------------------------------------------

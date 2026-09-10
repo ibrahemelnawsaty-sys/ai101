@@ -8,6 +8,7 @@ use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Requests\Concerns\ProfileFieldRules;
+use App\Models\Cohort;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,22 @@ use Illuminate\Validation\Rule;
  * not be created through the public form must not become creatable through the
  * admin panel either (PRD §9.2.1).
  *
- * @see BR-22, BR-32, BR-33 · PRD §4.2, §9.2.1 · CONSTITUTION Art. 5
+ * TWO FIELDS CHANGED WHEN REGISTRATION CLOSED (D-63).
+ *
+ * `cohort_id` is new and required for a participant. Without it this form
+ * produced an account belonging to NO cohort: no assignments, no sessions, no
+ * card, no path to a certificate -- and no screen anywhere could put it in one,
+ * because the only code in the whole application that creates an `Enrollment`
+ * is the e-mail-verification controller, on the self-registration path the
+ * administrator is not using. `athar:make-user` even prints "create that from
+ * the admin panel", naming a feature that did not exist.
+ *
+ * `password` is GONE. The administrator no longer chooses a trainee's password:
+ * the platform generates a temporary one, mails it, and forces a change at the
+ * first sign-in. An administrator who knows a trainee's password can sign in as
+ * them without leaving the impersonation record BR-34 requires.
+ *
+ * @see BR-22, BR-32, BR-33, BR-34 · PRD §4.2, §9.2.1 · CONSTITUTION Art. 5 · D-63
  */
 final class StoreUserRequest extends FormRequest
 {
@@ -66,7 +82,16 @@ final class StoreUserRequest extends FormRequest
             'gender' => ['required', Rule::enum(Gender::class)],
             'role' => ['required', Rule::enum(UserRole::class)],
             'status' => ['required', Rule::enum(UserStatus::class)],
-            'password' => ['required', 'string', 'confirmed', $this->passwordRules()],
+            // A participant with no cohort is an account that can do nothing.
+            // Required only for participants: a trainer is attached to a cohort
+            // through AdminCohortController::attachTrainer, and an
+            // administrator belongs to none.
+            'cohort_id' => [
+                Rule::requiredIf(fn (): bool => $this->input('role') === UserRole::Participant->value),
+                'nullable',
+                'string',
+                Rule::exists('cohorts', 'id'),
+            ],
         ];
 
         foreach ($this->arabicNameFields() as $field) {
@@ -86,5 +111,36 @@ final class StoreUserRequest extends FormRequest
     public function profileAttributes(): array
     {
         return $this->toProfileColumns($this->validated());
+    }
+
+    /** The cohort to seat this account in, or null for a trainer or admin. */
+    public function cohortId(): ?string
+    {
+        $id = $this->validated('cohort_id');
+
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+
+    /**
+     * The cohort itself, locked for update.
+     *
+     * Locked because seating increments `cohorts.seats_taken`, and two
+     * administrators working the same list at the same moment would otherwise
+     * both read the old count and both write old+1 -- overselling a seat, which
+     * is the exact failure the verification controller's own seating code takes
+     * a lock to prevent.
+     */
+    public function cohort(): ?Cohort
+    {
+        $id = $this->cohortId();
+
+        if ($id === null) {
+            return null;
+        }
+
+        /** @var Cohort|null $cohort */
+        $cohort = Cohort::query()->whereKey($id)->lockForUpdate()->first();
+
+        return $cohort;
     }
 }

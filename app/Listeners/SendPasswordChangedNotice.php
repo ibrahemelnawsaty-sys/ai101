@@ -28,8 +28,28 @@ use Illuminate\Support\Facades\Mail;
  */
 final class SendPasswordChangedNotice implements ShouldQueue
 {
+    /**
+     * The one source this letter is NOT sent for is the forced first change.
+     *
+     * `$event->source` had three writers and no reader, so an invited trainee
+     * who replaced their temporary password — because the platform stopped them
+     * and made them — received a security warning about it moments later. The
+     * queue is drained by a per-minute cron, so it arrived after the invitation
+     * and out of order with it: sixty invitations would have meant a hundred
+     * and twenty letters through one shared mailbox on day one, half of them
+     * telling people something they had just been ordered to do (D-63).
+     *
+     * A change made anywhere else still notifies. That is the whole point of
+     * the letter: the owner learns about a change they did not make.
+     */
+    private const SUPPRESSED_SOURCES = ['invitation'];
+
     public function handle(PasswordChanged $event): void
     {
+        if (in_array($event->source, self::SUPPRESSED_SOURCES, true)) {
+            return;
+        }
+
         $address = (string) $event->user->getAttribute('email');
 
         if ($address === '') {

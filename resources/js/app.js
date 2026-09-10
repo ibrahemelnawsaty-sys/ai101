@@ -943,6 +943,41 @@ function atharCardTilt() {
     });
 }
 
+/**
+ * The one-time welcome after an invited trainee sets their own password.
+ *
+ * REDUCED MOTION IS HONOURED BY NOT BINDING THE EFFECT. `confetti()` already
+ * returns early when the preference is set, but the guard is repeated here so
+ * the intent is readable at the call site: a reader who asked for stillness is
+ * not given a shortened animation, they are given none, and the panel around it
+ * is the whole welcome on its own.
+ *
+ * The panel dismisses itself after the pieces have fallen, so nobody has to
+ * clear it — and `dismiss()` exists because somebody will want it gone sooner.
+ */
+function atharWelcome() {
+    return (config = {}) => ({
+        open: true,
+        // Long enough to read the two lines, and it is a status region rather
+        // than a dialog: nothing is trapped and nothing waits on it.
+        life: Number(config.ms || 9000),
+        timer: null,
+
+        start() {
+            if (!reduced()) {
+                confetti(this.$refs.stage);
+            }
+
+            this.timer = window.setTimeout(() => { this.open = false; }, this.life);
+        },
+
+        dismiss() {
+            if (this.timer) window.clearTimeout(this.timer);
+            this.open = false;
+        },
+    });
+}
+
 Alpine.store('toast', toastStore);
 Alpine.data('countdown', countdown());
 Alpine.data('drawer', drawer());
@@ -956,6 +991,7 @@ Alpine.data('impersonation', impersonation());
 Alpine.data('atharCopy', atharCopy());
 Alpine.data('atharShare', atharShare());
 Alpine.data('atharCardTilt', atharCardTilt());
+Alpine.data('atharWelcome', atharWelcome());
 
 window.Alpine = Alpine;
 

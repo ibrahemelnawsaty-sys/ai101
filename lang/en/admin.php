@@ -106,6 +106,22 @@ return [
     ],
 
     'users' => [
+        /* Creating and inviting an account (D-63). */
+        'create_title' => 'Invite a trainee',
+        'create_subtitle' => 'The account is created, seated in its cohort, and the invitation goes out straight away.',
+        'section_identity' => 'Name',
+        'section_contact' => 'Contact details',
+        'section_placement' => 'Role and cohort',
+        'cohort' => 'Cohort',
+        'cohort_hint' => 'Required for a trainee. An account outside a cohort sees no timetable, no assignments, and is issued no card.',
+        'email_hint' => 'The invitation goes here, and this is what they sign in with. Check it carefully.',
+        'invite_submit' => 'Create the account and send the invitation',
+        'invite_note' => 'You do not choose a password. The platform generates a temporary one, mails it to them, and requires them to replace it at their first sign-in. It is never shown to you.',
+        'invited' => 'The account was created and the invitation was sent to their address.',
+        'no_cohort_title' => 'No cohort yet',
+        'no_cohort_body' => 'A trainee is seated in a cohort, and none has been created yet. Create one first, then come back to this screen.',
+        'no_cohort_action' => 'Create a cohort',
+
         'already_verified' => 'This email address is already verified, so no new activation link was sent.',
         'reset_password_sent' => 'A password reset link was sent to the account owner.',
         'sessions_revoked' => 'All sessions for this account were ended on every device. The owner must sign in again.',

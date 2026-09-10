@@ -83,6 +83,20 @@ final class LoginController extends Controller
             return $this->accountState($request, 'suspended');
         }
 
+        // A temporary password that has lapsed is not a password any more, and
+        // the refusal has to happen HERE rather than on the forced-change
+        // screen. Password recovery lives behind the `guest` middleware, so a
+        // signed-in holder sent to it is bounced to the dashboard and from
+        // there straight back to the change screen — a loop with no exit. Kept
+        // out, they are still a guest, and recovery simply works (D-63).
+        $tempExpiresAt = $user->getAttribute('temp_password_expires_at');
+
+        if ((bool) $user->getAttribute('must_change_password')
+            && $tempExpiresAt !== null
+            && $now->greaterThan($tempExpiresAt)) {
+            return $this->accountState($request, 'invitation_expired');
+        }
+
         $user->forceFill([
             'failed_login_count' => 0,
             'locked_until' => null,
