@@ -89,7 +89,6 @@
                  x-ref="panel"
                  x-show="open"
                  x-cloak
-                 x-bind:style="panelStyle"
                  x-bind:class="dropUp ? 'ui-select__panel--up' : ''"
                  x-on:scroll.window="open && place()"
                  x-on:resize.window="open && place()"

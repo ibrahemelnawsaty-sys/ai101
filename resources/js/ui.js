@@ -277,10 +277,8 @@ function uiSelect(options = {}) {
         searchable: options.searchable ?? (Array.isArray(options.items) && options.items.length > 8),
         placeholder: options.placeholder || '',
 
-        // Viewport coordinates for the open panel. See `place()`.
-        panelTop: 0,
-        panelLeft: 0,
-        panelWidth: 0,
+        // Which way the open panel points. The coordinates themselves are
+        // written straight onto the element by `place()` — see why there.
         dropUp: false,
 
         get filtered() {
@@ -299,51 +297,45 @@ function uiSelect(options = {}) {
         },
 
         /**
-         * The panel's position, in viewport coordinates.
+         * Measure the button and place the panel over it, in viewport coordinates.
          *
-         * WHY IT IS NOT SIMPLY ABSOLUTE ANY MORE
+         * WHY IT IS NOT SIMPLY ABSOLUTE
          * `.ui-card` carries `overflow: hidden` — it has to, so a flush card's
          * table cannot poke through its rounded corner — and an absolutely
-         * positioned panel is CLIPPED by that, whatever its z-index. Twenty-two
+         * positioned panel is CLIPPED by that whatever its z-index. Twenty-two
          * screens put a select inside a card, and on every one of them a list
-         * opening near the card's lower edge was cut off mid-option. The owner
-         * hit it on the first screen they used.
+         * opening near the card's lower edge was cut off mid-option.
          *
-         * Fixed coordinates take the panel out of every ancestor's overflow.
-         * `left` and `width` are physical on purpose: they come from
-         * `getBoundingClientRect()`, which is physical in both directions, so
-         * the panel sits exactly over its button in RTL and LTR alike.
-         */
-        get panelStyle() {
-            if (!this.open || !this.panelWidth) return '';
-
-            return 'top:' + this.panelTop + 'px;'
-                + 'left:' + this.panelLeft + 'px;'
-                + 'width:' + this.panelWidth + 'px;';
-        },
-
-        /**
-         * Measure the button and decide which way the list opens.
+         * WHY `setProperty` AND NOT `x-bind:style`
+         * Because binding the style ATTRIBUTE broke every select on the
+         * platform. `x-show` hides the panel by writing `display: none` into
+         * that same attribute, and Alpine's string form of `x-bind:style` calls
+         * `setAttribute('style', …)`, which REPLACES it — wiping the
+         * `display: none` a moment after `x-show` wrote it. Every list on every
+         * page rendered open, on load, before anyone clicked anything.
+         * `setProperty` mutates one declaration and leaves the rest alone, so
+         * the two directives stop fighting over one attribute (D-64).
          *
          * Called after the panel is visible, because a hidden element has no
          * height and the flip decision needs one.
          */
         place() {
             const button = this.$refs.button;
-            if (!button) return;
+            const panel = this.$refs.panel;
+            if (!button || !panel) return;
 
             const box = button.getBoundingClientRect();
-            const panel = this.$refs.panel;
-            const height = panel ? panel.offsetHeight : 0;
+            const height = panel.offsetHeight;
             const room = window.innerHeight - box.bottom;
 
             // Open upwards only when there is genuinely no room below AND there
             // is room above; otherwise a short viewport would flip a list into
             // the same problem it was flipped out of.
             this.dropUp = height > 0 && room < height && box.top > height;
-            this.panelTop = this.dropUp ? box.top - height : box.bottom;
-            this.panelLeft = box.left;
-            this.panelWidth = box.width;
+
+            panel.style.setProperty('top', (this.dropUp ? box.top - height : box.bottom) + 'px');
+            panel.style.setProperty('left', box.left + 'px');
+            panel.style.setProperty('width', box.width + 'px');
         },
 
         show() {

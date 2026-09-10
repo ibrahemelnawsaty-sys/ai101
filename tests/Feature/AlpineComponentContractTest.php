@@ -569,3 +569,54 @@ it('D-61: كل عضو يطلبه القالب موجود فعلًا على ال�
     // fixed. A new entry here is a screen that has stopped working.
     expect(array_values(array_unique($offenders)))->toBe([]);
 });
+
+it('D-64: لا عنصر يحمل x-show و x-bind:style معًا', function (): void {
+    // They fight over ONE attribute. `x-show` hides an element by writing
+    // `display: none` into `style`; Alpine's string form of `x-bind:style`
+    // calls `setAttribute('style', …)`, which replaces the whole attribute and
+    // wipes that `display: none` a moment after it was written.
+    //
+    // The element then renders VISIBLE. On the select component that meant
+    // every dropdown on every screen of the platform was open on page load,
+    // before anyone clicked anything — and the owner saw it on the first page
+    // they opened. Both directives are individually correct; only their
+    // combination is wrong, which is why nothing caught it.
+    //
+    // Position an element from JavaScript with `style.setProperty()`, which
+    // mutates one declaration and leaves the rest alone.
+    $offenders = [];
+
+    foreach (File::allFiles(resource_path('views')) as $file) {
+        if (! str_ends_with($file->getFilename(), '.blade.php')) {
+            continue;
+        }
+
+        $source = (string) preg_replace_callback(
+            '/\{\{--[\s\S]*?--\}\}/',
+            static fn (array $m): string => (string) preg_replace('/[^\n]/', ' ', $m[0]),
+            (string) File::get($file->getPathname()),
+        );
+
+        // Each opening tag, whole, so the two attributes are only compared
+        // when they sit on the SAME element.
+        if (preg_match_all('/<[a-zA-Z][^>]*>/s', $source, $tags, PREG_OFFSET_CAPTURE) === 0) {
+            continue;
+        }
+
+        foreach ($tags[0] as $tag) {
+            $markup = (string) $tag[0];
+
+            if (! str_contains($markup, 'x-show') || ! preg_match('/x-bind:style|(?<![\w:-]):style\s*=/', $markup)) {
+                continue;
+            }
+
+            $offenders[] = sprintf(
+                '%s:%d — x-show and a bound style on one element; the binding wipes display:none',
+                str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname()),
+                substr_count(substr($source, 0, (int) $tag[1]), "\n") + 1,
+            );
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
