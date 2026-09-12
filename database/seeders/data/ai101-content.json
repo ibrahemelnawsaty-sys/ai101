@@ -494,13 +494,13 @@
       "link": "/dashboard/assignments"
     },
     {
-      "type": "grade_published",
+      "type": "grade_recorded",
       "title": "رُصدت درجتك",
       "body": "رصد المدرب درجة تسليمك مع ملاحظة. اطّلع عليها من صفحة التقييم والدرجات.",
       "link": "/dashboard/grades"
     },
     {
-      "type": "project_unlocked",
+      "type": "final_project_unlocked",
       "title": "فُتح المشروع الختامي",
       "body": "أصبح بإمكانك الاطّلاع على المشروع الختامي والبدء في تنفيذه.",
       "link": "/dashboard/final-project"

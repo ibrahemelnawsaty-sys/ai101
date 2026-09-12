@@ -177,7 +177,6 @@ return [
             'training_weeks' => 'الأسابيع التدريبية',
             'final_project' => 'تسليم المشروع الختامي',
             'closing_session' => 'الحفل الختامي',
-            'range' => ':from — :to',
         ],
         'certificates' => [
             'kicker' => 'الشهادات',

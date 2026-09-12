@@ -71,7 +71,7 @@
 @else
     <div {{ $attributes->only('class')->class(['ui-field']) }}>
         @if ($name && $withFalse)
-            <input type="hidden" name="{{ $name }}" value="0">
+            <input type="hidden" name="{{ $name }}" value="{{ $hiddenValue }}">
         @endif
 
         <label class="ui-check @if ($isDisabled) ui-check--disabled @endif" for="{{ $baseId }}">

@@ -712,7 +712,7 @@ final class HomeController extends Controller
             return null;
         }
 
-        return __('landing.headings.timeline.range', [
+        return __('landing.sections.date_range', [
             'from' => $formatter->shortDate($start),
             'to' => $formatter->shortDate($end),
         ]);

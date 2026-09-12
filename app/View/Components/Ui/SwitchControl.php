@@ -34,6 +34,14 @@ final class SwitchControl extends UiComponent
 
     public bool $withFalse;
 
+    /**
+     * What the companion hidden input posts. "Off", except for a locked switch
+     * that is ON: a disabled checkbox is not submitted, so its hidden companion
+     * is all that arrives — and it said off. A certificate switch shown locked
+     * on posted 0 on every save (D-78).
+     */
+    public mixed $hiddenValue;
+
     public function __construct(
         public string $variant = 'default',
         public string $size = 'md',
@@ -48,10 +56,16 @@ final class SwitchControl extends UiComponent
         public mixed $value = 1,
         public mixed $offValue = 0,
         mixed $withFalse = true,
+        mixed $disabled = false,
     ) {
         $this->checked = (bool) $checked;
         $this->withFalse = (bool) $withFalse;
-        $this->isDisabled = $state === 'disabled';
+        // `disabled` is a parameter so it is bound here and stripped from the
+        // attribute bag. It was not: `:disabled` spilled onto the checkbox
+        // while the component never knew, so no disabled class and a hidden
+        // input still saying off (D-78).
+        $this->isDisabled = (bool) $disabled || $state === 'disabled';
+        $this->hiddenValue = $this->isDisabled && $this->checked ? $this->value : $this->offValue;
         $this->message = self::errorFor($name, $error);
         $this->fieldId = self::fieldId('w', $name, $id);
 

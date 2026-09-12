@@ -144,7 +144,7 @@
             @disabled($isDisabled)
             {{ $attributes->except('class') }}
         >
-            @if ($placeholder !== false)
+            @if ($withPlaceholder)
                 <option value="">{{ $placeholderText }}</option>
             @endif
             {{ $slot }}

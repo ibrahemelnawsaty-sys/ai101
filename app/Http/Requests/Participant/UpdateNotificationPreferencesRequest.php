@@ -6,6 +6,7 @@ namespace App\Http\Requests\Participant;
 
 use App\Models\Notification;
 use App\Presenters\Participant\PreferencePresenter;
+use App\Support\NotificationTypes;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -78,9 +79,9 @@ final class UpdateNotificationPreferencesRequest extends FormRequest
      *
      * A type that must always reach the account is forced on here, not merely
      * rendered as a disabled switch: a disabled control is a browser hint, and
-     * the hidden off-value the switch posts beside it would otherwise turn off a
-     * certificate or an enrolment decision for anyone who edited the form
-     * (Article 5 — hiding a control is not protection).
+     * a hand-edited form could post it off. Since D-78 the switch posts its
+     * displayed state for a locked row, but the forcing stays here as the
+     * authority (Article 5 — hiding a control is not protection).
      *
      * @return array<string, array{platform: bool, email: bool}>
      */
@@ -115,8 +116,6 @@ final class UpdateNotificationPreferencesRequest extends FormRequest
      */
     private static function knownTypes(): array
     {
-        $types = __('notifications.types');
-
-        return is_array($types) ? array_map('strval', array_keys($types)) : [];
+        return NotificationTypes::keys();
     }
 }

@@ -17,8 +17,10 @@ use App\Presenters\Participant\DevicePresenter;
 use App\Presenters\Participant\PreferencePresenter;
 use App\Presenters\Participant\ProfilePresenter;
 use App\Services\Audit\AuditLogger;
+use App\Services\Permissions\RoleResolver;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
+use App\Support\NotificationTypes;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +43,10 @@ final class ProfileController extends Controller
 {
     use InvalidatesOtherSessions;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly RoleResolver $roles,
+    ) {}
 
     public function show(Request $request): View
     {
@@ -50,11 +55,7 @@ final class ProfileController extends Controller
 
         return view('participant.profile', [
             'profile' => ProfilePresenter::from($user, $user->profile()->first()),
-            'preferences' => NotificationPreference::query()
-                ->where('user_id', $user->getKey())
-                ->orderBy('type')
-                ->get()
-                ->map(static fn (NotificationPreference $row): PreferencePresenter => PreferencePresenter::from($row)),
+            'preferences' => $this->preferences($user),
             'sessions' => $this->activeSessions($user, $request)
                 ->map(static fn (object $row): DevicePresenter => DevicePresenter::from($row)),
             'isImpersonating' => ImpersonationContext::isActive(),
@@ -110,6 +111,39 @@ final class ProfileController extends Controller
         PasswordChanged::dispatch($user, $at, 'profile');
 
         return back()->with('status', __('profile.password_changed'));
+    }
+
+    /**
+     * One row for every type this account receives (PRD §9.16.1), each showing
+     * the stored choice or — with no row — on, which is what every sender does
+     * for a missing row (D-66).
+     *
+     * It listed the stored rows only, and only seeded demo accounts ever had
+     * any: every real, invited trainee opened an empty table and could switch
+     * nothing. Rows of a type the catalogue does not know are left out, so the
+     * table can never post a key its own request refuses (D-78).
+     *
+     * @return \Illuminate\Support\Collection<int, PreferencePresenter>
+     */
+    private function preferences(User $user): \Illuminate\Support\Collection
+    {
+        $stored = NotificationPreference::query()
+            ->where('user_id', $user->getKey())
+            ->get()
+            ->keyBy(static fn (NotificationPreference $row): string => (string) $row->getAttribute('type'));
+
+        return collect(NotificationTypes::forRole($this->roles->shellRole($user)))
+            ->map(static function (string $type) use ($stored, $user): PreferencePresenter {
+                $row = $stored->get($type) ?? new NotificationPreference([
+                    'user_id' => $user->getKey(),
+                    'type' => $type,
+                    'in_app_enabled' => true,
+                    'email_enabled' => true,
+                ]);
+
+                return PreferencePresenter::from($row);
+            })
+            ->values();
     }
 
     public function notifications(UpdateNotificationPreferencesRequest $request): RedirectResponse

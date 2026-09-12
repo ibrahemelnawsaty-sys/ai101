@@ -1,6 +1,7 @@
 {{--
-    Bare shell: the two public verification pages (digital card, certificate).
-    An employer or a door steward opens these, so the page is small, printable,
+    Bare shell: the two public verification pages (digital card, certificate)
+    and the participant's own two print sheets (card, timetable). An employer
+    or a door steward opens the first two, so the page is small, printable,
     carries no navigation and shows nothing beyond what BR-25 permits.
 
     @see BR-25 · PRD §9.17, §9.6 · CONSTITUTION Articles 16, 18, 24
@@ -11,6 +12,16 @@
     Expected variables (all optional):
       $pageTitle        string  document title without the platform suffix
       $pageDescription  string  meta description
+
+    Sections (both optional):
+      title      the document title without the platform suffix; wins over
+                 $pageTitle, which wins over the issuer line. The layout had no
+                 yield for it, so the print sheets' own titles never reached the
+                 tab or the saved file name (D-78).
+      ownSheet   set by a participant's own print sheet. It hides the
+                 "verified by" issuer line and the public-page privacy note,
+                 which labelled a trainee's preview of their own card as an
+                 official verification page (D-78).
 --}}
 <!DOCTYPE html>
 {{-- data-server-now anchors every countdown to Clock::now(); the browser
@@ -24,7 +35,7 @@
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta name="referrer" content="no-referrer">
 
-    <title>{{ $pageTitle ?? __('verify.shared.verified_by') }} · {{ config('athar.platform_name') }}</title>
+    <title>@yield('title', $pageTitle ?? __('verify.shared.verified_by')) · {{ config('athar.platform_name') }}</title>
     <meta name="description" content="{{ $pageDescription ?? '' }}">
 
     <link rel="icon" href="{{ asset('brand/icons/favicon-mark.svg') }}" type="image/svg+xml">
@@ -45,14 +56,18 @@
         <a class="logo" href="{{ route('home') }}" aria-label="{{ __('verify.shared.issuer') }}">
             <svg viewBox="0 0 242.186 102.814" fill="currentColor" role="img" aria-label="{{ __('verify.shared.issuer') }}"><use href="#athar-wordmark"/></svg>
         </a>
-        <span class="bare__issuer">{{ __('verify.shared.verified_by') }}</span>
+        @sectionMissing('ownSheet')
+            <span class="bare__issuer">{{ __('verify.shared.verified_by') }}</span>
+        @endif
     </header>
 
     {{ $slot ?? '' }}
     @yield('content')
 
     <footer class="bare__foot">
-        <p class="bare__privacy">{{ __('verify.shared.privacy_note') }}</p>
+        @sectionMissing('ownSheet')
+            <p class="bare__privacy">{{ __('verify.shared.privacy_note') }}</p>
+        @endif
         <p class="bare__contact">
             <a href="mailto:{{ config('athar.email') }}" dir="ltr">{{ config('athar.email') }}</a>
         </p>

@@ -23,6 +23,9 @@
 --}}
 @extends('layouts.bare')
 
+@section('title', __('schedule.print_title'))
+@section('ownSheet', '1')
+
 @section('content')
     <div class="sheet">
         <header class="sheet__head">

@@ -46,6 +46,15 @@ final class Select extends UiComponent
 
     public string $placeholderText;
 
+    /**
+     * Whether the native select leads with the empty option. The template read
+     * `$placeholder`, which the class never published, so the native branch
+     * was a 500 for every caller (D-78). A required select always keeps it: a
+     * single-value select marked required must start empty, or the browser
+     * preselects the first real option and `required` can never fire.
+     */
+    public bool $withPlaceholder;
+
     public string $listId;
 
     public bool $required;
@@ -64,7 +73,7 @@ final class Select extends UiComponent
         ?string $error = null,
         mixed $options = null,
         mixed $value = null,
-        ?string $placeholder = null,
+        mixed $placeholder = null,
         mixed $required = false,
         mixed $searchable = null,
     ) {
@@ -86,7 +95,12 @@ final class Select extends UiComponent
             : (bool) $searchable;
 
         $this->current = (string) ($value ?? ($name !== null && $name !== '' ? old($name, '') : ''));
-        $this->placeholderText = $placeholder ?? (string) __('ui.select.placeholder');
+        // mixed, not ?string: `:placeholder="false"` must stay false rather
+        // than be coerced to an empty string and lose its meaning.
+        $this->withPlaceholder = $placeholder !== false || $this->required;
+        $this->placeholderText = is_string($placeholder) && $placeholder !== ''
+            ? $placeholder
+            : (string) __('ui.select.placeholder');
 
         $this->listId = $this->fieldId.'-list';
     }

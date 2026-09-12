@@ -344,7 +344,7 @@ lang/ar/{app,auth,validation,nav,attendance,assignments,grades,certificates,
          journey,messages,notifications,admin,errors,emails,enums}.php
 lang/en/…   نفس المفاتيح
 ```
-`ar` هي المرجع. أي مفتاح في `ar` بلا مقابل في `en` → بوابة G5 تُنبّه (لا تمنع، لأن الترجمة الكاملة خارج نطاق الإصدار الأول).
+`ar` هي المرجع. **تطابق المفاتيح بين `ar` و`en` في الاتجاهين يمنع الدمج** عبر `tests/Feature/LangKeyParityTest.php` تحت G7؛ وبوابة G5 ما زالت تُنبّه به (D-78). السبب: اللغة الاحتياطية عربية، فمفتاح إنجليزي ناقص يظهر عربيًّا داخل صفحة من اليسار يوم تُفعَّل الإنجليزية — ولا يفشل شيء.
 
 ---
 

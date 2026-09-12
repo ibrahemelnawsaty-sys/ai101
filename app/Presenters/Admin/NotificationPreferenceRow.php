@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presenters\Admin;
 
+use App\Support\NotificationTypes;
 use App\Support\ViewModel;
 
 /**
@@ -32,7 +33,11 @@ final class NotificationPreferenceRow extends ViewModel
         return new self([
             'key' => $key,
             'label' => is_string($type['label'] ?? null) ? $type['label'] : $key,
-            'description' => is_string($type['body'] ?? null) ? $type['body'] : '',
+            // The body is a template with :placeholders the matrix has no
+            // values for; it printed "Session :session starts soon" (D-78).
+            'description' => is_string($type['body'] ?? null)
+                ? (string) preg_replace('/:[a-z_]+/', '…', $type['body'])
+                : '',
             'platform' => true,
             'email' => true,
             'platformEditable' => true,
@@ -47,18 +52,10 @@ final class NotificationPreferenceRow extends ViewModel
      */
     public static function all(): \Illuminate\Support\Collection
     {
-        $types = __('notifications.types');
-
-        if (! is_array($types)) {
-            return collect();
-        }
-
         $rows = [];
 
-        foreach ($types as $key => $type) {
-            if (is_string($key) && is_array($type)) {
-                $rows[] = self::of($key, $type);
-            }
+        foreach (NotificationTypes::all() as $key => $type) {
+            $rows[] = self::of($key, $type);
         }
 
         return collect($rows);

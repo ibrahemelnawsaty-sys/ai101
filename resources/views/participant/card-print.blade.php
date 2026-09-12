@@ -33,6 +33,7 @@
 @extends('layouts.bare')
 
 @section('title', __('card.title'))
+@section('ownSheet', '1')
 
 @section('content')
     <div class="sheet">

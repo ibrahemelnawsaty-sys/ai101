@@ -10,6 +10,8 @@
 
     A companion hidden input carries the "off" value, so turning the switch off
     reaches the server as a real value rather than a missing key (Article 5).
+    A locked switch that is ON posts its on value there instead — a disabled
+    checkbox is not submitted, so the companion is all that arrives (D-78).
 
     @see PRD §5.8, §5.9 · CONSTITUTION Articles 5, 15, 16, 18
 
@@ -23,7 +25,7 @@
 
 <div {{ $attributes->only('class')->class(['ui-field']) }}>
     @if ($name && $withFalse)
-        <input type="hidden" name="{{ $name }}" value="{{ $offValue }}">
+        <input type="hidden" name="{{ $name }}" value="{{ $hiddenValue }}">
     @endif
 
     <label

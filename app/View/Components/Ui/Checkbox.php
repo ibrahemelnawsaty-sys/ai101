@@ -45,6 +45,9 @@ final class Checkbox extends UiComponent
 
     public bool $withFalse;
 
+    /** What the hidden companion posts — see SwitchControl::$hiddenValue (D-78). */
+    public mixed $hiddenValue;
+
     /**
      * @param  array<int, array<string, mixed>>|null  $options
      */
@@ -65,12 +68,14 @@ final class Checkbox extends UiComponent
         mixed $indeterminate = false,
         mixed $required = false,
         mixed $withFalse = true,
+        mixed $disabled = false,
     ) {
         $this->checked = (bool) $checked;
         $this->indeterminate = (bool) $indeterminate;
         $this->required = (bool) $required;
         $this->withFalse = (bool) $withFalse;
-        $this->isDisabled = $state === 'disabled';
+        $this->isDisabled = (bool) $disabled || $state === 'disabled';
+        $this->hiddenValue = $this->isDisabled && $this->checked ? ($value ?? 1) : 0;
         $this->message = self::errorFor($name, $error);
         $this->baseId = self::fieldId('c', $name, $id);
 
