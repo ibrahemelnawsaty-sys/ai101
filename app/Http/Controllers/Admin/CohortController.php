@@ -9,6 +9,7 @@ use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignTrainerRequest;
+use App\Http\Requests\Admin\DetachTrainerRequest;
 use App\Http\Requests\Admin\StoreCohortRequest;
 use App\Http\Requests\Admin\UpdateCohortRequest;
 use App\Models\Cohort;
@@ -211,10 +212,8 @@ final class CohortController extends Controller
      * deleted, so the record that they once taught it survives; their reach
      * ends immediately because every scope query counts active rows only.
      */
-    public function detachTrainer(Cohort $cohort, User $trainer): RedirectResponse
+    public function detachTrainer(DetachTrainerRequest $request, Cohort $cohort, User $trainer): RedirectResponse
     {
-        $this->authorize('assignTrainer', $cohort);
-
         $enrollment = Enrollment::query()
             ->where('cohort_id', $cohort->getKey())
             ->where('user_id', $trainer->getKey())

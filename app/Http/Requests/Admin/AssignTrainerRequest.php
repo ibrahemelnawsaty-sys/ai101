@@ -31,18 +31,49 @@ final class AssignTrainerRequest extends FormRequest
     }
 
     /**
+     * Accounts that may hold a trainer enrolment (BR-23). One list, read by the
+     * rule and by the lookup, so the two cannot disagree about who qualifies.
+     */
+    private const ASSIGNABLE_ROLES = [UserRole::Trainer, UserRole::Admin];
+
+    /**
+     * The cohorts screen asks for the trainer's e-mail address — the one thing
+     * an administrator knows about a colleague. This request validated a
+     * `user_id` the form never sent, so every attempt failed on a field that
+     * does not exist, the error was keyed where nothing rendered it, and the
+     * page reloaded in silence. No trainer could be given a cohort from the
+     * panel, and under BR-23 that enrolment IS their permission (D-69).
+     */
+    protected function prepareForValidation(): void
+    {
+        $email = $this->input('email');
+
+        if (is_string($email)) {
+            $this->merge(['email' => mb_strtolower(trim($email))]);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'user_id' => [
-                'required', 'string', 'uuid',
-                Rule::exists('users', 'id')
+            'email' => [
+                'bail', 'required', 'string', 'email:rfc', 'max:190',
+                Rule::exists('users', 'email')
                     ->whereNull('deleted_at')
-                    ->whereIn('role', [UserRole::Trainer->value, UserRole::Admin->value]),
+                    ->whereIn('role', self::assignableRoles()),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['email.exists' => (string) __('admin.cohorts.trainer_not_found')];
     }
 
     public function cohort(): Cohort
@@ -56,8 +87,19 @@ final class AssignTrainerRequest extends FormRequest
     public function trainer(): User
     {
         /** @var User $trainer */
-        $trainer = User::query()->findOrFail($this->validated('user_id'));
+        $trainer = User::query()
+            ->where('email', (string) $this->validated('email'))
+            ->whereIn('role', self::assignableRoles())
+            ->sole();
 
         return $trainer;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function assignableRoles(): array
+    {
+        return array_map(static fn (UserRole $role): string => $role->value, self::ASSIGNABLE_ROLES);
     }
 }

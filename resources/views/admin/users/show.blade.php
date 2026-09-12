@@ -149,12 +149,16 @@
 
         {{-- Enrolments ---------------------------------------------------------------- --}}
         <x-ui.card class="dc--span u-mt-4" icon="users" :title="__('admin.users.enrollments_title')">
-            @if ($user->enrollments->isEmpty())
+            @if ($user->enrollments->isEmpty() && $user->attachesFromCohorts)
                 <x-ui.empty-state icon="users"
                     :title="__('admin.users.enrollments_empty_title')"
                     :description="__('admin.users.enrollments_empty_body')"
                     :action-label="__('admin.cohorts.title')"
                     :action-href="route('admin.cohorts.index')" />
+            @elseif ($user->enrollments->isEmpty())
+                <x-ui.empty-state icon="users"
+                    :title="__('admin.users.enrollments_empty_title')"
+                    :description="__('admin.users.enrollments_empty_participant_body')" />
             @else
                 <div class="tscroll">
                     <table class="atable">

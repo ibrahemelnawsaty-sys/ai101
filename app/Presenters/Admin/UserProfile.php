@@ -75,6 +75,11 @@ final class UserProfile extends ViewModel
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
 
             'isSelf' => $viewer->is($subject),
+            // Only a trainer or an administrator can be given a cohort from
+            // the cohorts screen. A participant is seated when the account is
+            // created, and pointing their empty state at that screen sent the
+            // administrator to look for a control that is not there (D-69).
+            'attachesFromCohorts' => in_array($role?->value, ['trainer', 'admin'], true),
             'isSuspended' => $isSuspended,
             'toggleStatusValue' => $isSuspended ? UserStatus::Active->value : UserStatus::Suspended->value,
 

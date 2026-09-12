@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
+use App\Enums\EnrollmentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -133,11 +134,21 @@ class Cohort extends Model
     }
 
     /**
+     * The trainers who teach this cohort NOW.
+     *
+     * Active enrolments only. Removing a trainer withdraws the row rather than
+     * deleting it, and this relation did not filter on status — so a removed
+     * trainer stayed on the landing page, in the session trainer picker, and
+     * on the cohorts screen with a remove button that seemed to do nothing
+     * (D-69).
+     *
      * @return BelongsToMany<User, $this>
      */
     public function trainers(): BelongsToMany
     {
-        return $this->users()->wherePivot('role_in_cohort', EnrollmentRole::Trainer->value);
+        return $this->users()
+            ->wherePivot('role_in_cohort', EnrollmentRole::Trainer->value)
+            ->wherePivot('status', EnrollmentStatus::Active->value);
     }
 
     /**
