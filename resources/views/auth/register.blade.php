@@ -238,14 +238,15 @@
                                 :placeholder="__('auth.register.email_confirm_placeholder')"
                                 :hint="__('auth.register.email_confirm_hint')"
                                 :error="$errors->first('email_confirmation')" data-rule="email_confirm"
-                                @paste.prevent @drop.prevent
+                                @paste.prevent="" @drop.prevent=""
                                 @blur="lowercase($event)"/>
 
                     {{-- Gender is a required choice with no default: an unanswered radio
                          group is rejected by the FormRequest, not pre-filled here.
-                         x-ui.radio does not forward attributes to its inputs, so the
-                         wizard listens for the change event as it bubbles out instead. --}}
-                    <div @change="data.gender = $event.target.value">
+                         Nothing on the client reads the choice, so nothing listens
+                         for it: the change handler that used to sit on this wrapper
+                         wrote to a `data` member the wizard never had (D-67). --}}
+                    <div>
                         <x-ui.radio
                             name="gender"
                             required

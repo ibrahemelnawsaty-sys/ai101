@@ -122,16 +122,36 @@ it('D-55: كل مكوّن يطلبه القالب مُسجَّل في JavaScript
         }
     }
 
-    // A RATCHET, not a clean sheet. Eleven call sites were broken when this was
-    // written; seven are fixed and four remain, all of them enhancements on
-    // screens that render and work without them:
-    //
-    //   passwordStrength · resendCooldown · atharThread · atharSchedule
-    //
-    // The number was MEASURED, not guessed. Lower it as each is written or
-    // removed; never raise it. A new one fails the build, which is the whole
-    // point — every one of these was found by a human opening a console.
-    expect(count($offenders))->toBeLessThanOrEqual(4, implode(PHP_EOL, $offenders));
+    // Zero. This was a ratchet at four — passwordStrength, resendCooldown,
+    // atharThread, atharSchedule — described as "enhancements on screens that
+    // render and work without them". That description was wrong: an x-data
+    // that throws leaves an empty scope, every child x-show is then undefined,
+    // and the wrapped content is HIDDEN. The participant schedule showed no
+    // schedule. All four are written now (D-67), and a new one fails the build.
+    expect($offenders)->toBe([], implode(PHP_EOL, $offenders));
+});
+
+it('D-67: Alpine يبدأ بعد أن تسجّل كل حزمة دخول مكوّناتها', function (): void {
+    // The entry bundles import app.js first, and ES modules evaluate their
+    // dependencies before themselves. A synchronous Alpine.start() at the end
+    // of app.js fired alpine:init before auth.js had attached its listener, so
+    // registerWizard was never registered and the registration wizard rendered
+    // with every pane, field and button hidden. Registration by NAME was
+    // correct — the ratchet above passed — and the order was not.
+    $source = (string) File::get(resource_path('js/app.js'));
+
+    expect($source)->toContain('queueMicrotask(() => Alpine.start())')
+        ->and(preg_match('/^\s*Alpine\.start\(\);/m', $source))->toBe(0);
+
+    // Every entry that registers on alpine:init must reach Alpine through
+    // app.js, never by starting it itself.
+    foreach (['auth.js', 'dashboard.js', 'public.js'] as $entry) {
+        $path = resource_path('js/'.$entry);
+
+        if (File::exists($path)) {
+            expect((string) File::get($path))->not->toMatch('/Alpine\.start\(/');
+        }
+    }
 });
 
 it('D-54: لا نموذج يُلغي إرساله الأصلي لصالح معالِج JavaScript', function (): void {

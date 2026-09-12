@@ -978,6 +978,162 @@ function atharWelcome() {
     });
 }
 
+/* ==========================================================================
+   Three components the templates called and nothing defined (D-67)
+   ==========================================================================
+   When an x-data expression throws, Alpine still gives the element an empty
+   scope, every child x-show then evaluates to undefined, and the element is
+   HIDDEN. So a missing component is not a missing enhancement: it hides the
+   content it wraps. The participant's schedule rendered its toolbar and no
+   schedule at all. */
+
+/**
+ * The schedule's two views (PRD §9.8) — weekly accordion or calendar — with the
+ * choice remembered in this browser.
+ *
+ * `initial` is the server's answer: the `view` query parameter when the URL
+ * names one (the calendar's week arrows do), otherwise what the session
+ * remembered. The URL wins over local storage, so a link to the calendar opens
+ * the calendar; storage only fills in when the URL is silent.
+ */
+function atharSchedule() {
+    const VIEWS = ['accordion', 'calendar'];
+
+    return (config = {}) => ({
+        view: VIEWS.includes(config.initial) ? config.initial : 'accordion',
+
+        init() {
+            const fromUrl = new URLSearchParams(window.location.search).get('view');
+            if (VIEWS.includes(fromUrl)) return;
+            try {
+                const stored = window.localStorage.getItem(config.storageKey || '');
+                if (VIEWS.includes(stored)) this.view = stored;
+            } catch (error) {
+                /* Storage can be blocked; the server's default stands. */
+            }
+        },
+
+        select(view) {
+            if (!VIEWS.includes(view)) return;
+            this.view = view;
+            try {
+                window.localStorage.setItem(config.storageKey || '', view);
+            } catch (error) {
+                /* Remembering is a convenience, never a requirement. */
+            }
+        },
+    });
+}
+
+/**
+ * A conversation that updates without a reload (PRD §9.13.2).
+ *
+ * The server renders the message list — the same Blade partial the page was
+ * built from — and this only swaps it in when the newest message changed. So
+ * there is one source of presentation, and user content is escaped by Blade,
+ * never assembled here. A failed poll changes nothing on screen: the next one
+ * tries again, and a hidden tab does not poll at all.
+ */
+function atharThread() {
+    return (config = {}) => ({
+        latest: '',
+        busy: false,
+        timer: null,
+        onVisible: null,
+
+        init() {
+            const stream = this.$refs.stream;
+            this.latest = stream ? stream.getAttribute('data-latest') || '' : '';
+            this.$nextTick(() => this.scrollToEnd());
+
+            const seconds = Number(config.pollSeconds) || 0;
+            if (!config.pollUrl || seconds <= 0) return;
+
+            this.timer = window.setInterval(() => this.poll(), seconds * 1000);
+            this.onVisible = () => {
+                if (!document.hidden) this.poll();
+            };
+            document.addEventListener('visibilitychange', this.onVisible);
+        },
+
+        destroy() {
+            window.clearInterval(this.timer);
+            if (this.onVisible) document.removeEventListener('visibilitychange', this.onVisible);
+        },
+
+        nearEnd() {
+            const stream = this.$refs.stream;
+            if (!stream) return false;
+            return stream.scrollHeight - stream.scrollTop - stream.clientHeight < 120;
+        },
+
+        scrollToEnd() {
+            const stream = this.$refs.stream;
+            if (stream) stream.scrollTop = stream.scrollHeight;
+        },
+
+        async poll() {
+            if (this.busy || document.hidden) return;
+            this.busy = true;
+            try {
+                const response = await window.fetch(config.pollUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data || typeof data.html !== 'string') return;
+                const latest = typeof data.latest === 'string' ? data.latest : '';
+                if (latest === this.latest) return;
+
+                // Follow the conversation only if the reader was already at its
+                // end; someone scrolled up to reread is not yanked away.
+                const follow = this.nearEnd();
+                this.$refs.stream.innerHTML = data.html;
+                this.$refs.stream.setAttribute('data-latest', latest);
+                this.latest = latest;
+                if (follow) this.$nextTick(() => this.scrollToEnd());
+            } catch (error) {
+                /* Offline or a server hiccup: keep what is on screen. */
+            } finally {
+                this.busy = false;
+            }
+        },
+    });
+}
+
+/**
+ * The wait before "send the link again" is offered (PRD §9.2.3). The instant
+ * comes from the server and is counted against server time (BR-07); the server
+ * enforces the limit again when the form arrives — this only avoids offering a
+ * button that would be refused.
+ */
+function resendCooldown() {
+    return (config = {}) => ({
+        availableMs: Date.parse(config.availableAt || ''),
+        remaining: 0,
+        ready: true,
+        timer: null,
+
+        init() {
+            if (Number.isNaN(this.availableMs)) return;
+            this.tick();
+            if (!this.ready) this.timer = window.setInterval(() => this.tick(), 1000);
+        },
+
+        destroy() {
+            window.clearInterval(this.timer);
+        },
+
+        tick() {
+            const left = Math.max(0, this.availableMs - serverNow());
+            this.remaining = Math.ceil(left / 1000);
+            this.ready = left <= 0;
+            if (this.ready) window.clearInterval(this.timer);
+        },
+    });
+}
+
 Alpine.store('toast', toastStore);
 Alpine.data('countdown', countdown());
 Alpine.data('drawer', drawer());
@@ -992,6 +1148,9 @@ Alpine.data('atharCopy', atharCopy());
 Alpine.data('atharShare', atharShare());
 Alpine.data('atharCardTilt', atharCardTilt());
 Alpine.data('atharWelcome', atharWelcome());
+Alpine.data('atharSchedule', atharSchedule());
+Alpine.data('atharThread', atharThread());
+Alpine.data('resendCooldown', resendCooldown());
 
 window.Alpine = Alpine;
 
@@ -1047,4 +1206,15 @@ if (document.readyState === 'loading') {
     boot();
 }
 
-Alpine.start();
+/* Started on the next microtask, never synchronously.
+   The entry bundles (auth.js, dashboard.js, public.js) import THIS module first,
+   and ES modules evaluate their dependencies before themselves. A synchronous
+   start therefore fired `alpine:init` while the entry's own listener did not
+   exist yet: registerWizard was never registered, and the registration wizard
+   rendered with every pane, field and button hidden (D-67). Every module in the
+   graph finishes evaluating before the first microtask runs, so each entry's
+   listener is in place when Alpine asks.
+   Do not "fix" this by registering in a module imported before app.js: the
+   bundler inlines that module into the entry chunk and hoists this import
+   above it, which restores the original order. */
+queueMicrotask(() => Alpine.start());

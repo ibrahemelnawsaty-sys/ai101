@@ -14,7 +14,7 @@
     "isEntry": true
   },
   "resources/js/auth.js": {
-    "file": "assets/auth-DWHSZ1o1.js",
+    "file": "assets/auth-MNSiPN7C.js",
     "name": "auth",
     "src": "resources/js/auth.js",
     "isEntry": true,
@@ -24,7 +24,7 @@
     ]
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-DjJDAnLu.js",
+    "file": "assets/dashboard-wsDNSp0s.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
     "isEntry": true,
@@ -33,7 +33,7 @@
     ]
   },
   "resources/js/public.js": {
-    "file": "assets/public-CbLhnnWl.js",
+    "file": "assets/public-CrywNZb-.js",
     "name": "public",
     "src": "resources/js/public.js",
     "isEntry": true,

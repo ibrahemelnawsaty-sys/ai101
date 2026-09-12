@@ -173,6 +173,53 @@ function registerWizard(options = {}) {
 }
 
 /* ==========================================================================
+   Alpine component: the live checklist on the reset screen
+   ========================================================================== */
+
+/**
+ * The password half of the registration wizard, for the one screen that has a
+ * new password and nothing else — reset-password (PRD §9.3.3). Same rules, same
+ * meter, same words: the copy island is built by the same PHP method.
+ *
+ * The template called `passwordStrength(...)` and nothing defined it, so the
+ * submit label and the whole checklist were dead on the screen (D-67).
+ *
+ * The template passes `{ minLength: 8 }`. It is deliberately not read: the
+ * rule set is the server's (ResetPasswordRequest), mirrored once in RULES above,
+ * and a second source of the minimum here is how the two would drift.
+ */
+function passwordStrength() {
+    const copy = readCopy('passwordCopy');
+
+    return {
+        submitting: false,
+        password: '',
+        passwordConfirmation: '',
+        strength: 0,
+        rules: { length: false, upper: false, lower: false, digit: false, symbol: false },
+
+        metLabel: copy.met || '',
+        unmetLabel: copy.unmet || '',
+
+        get strengthLabel() {
+            const labels = Array.isArray(copy.strength) ? copy.strength : [];
+            const index = Math.max(0, Math.min(this.strength - 1, labels.length - 1));
+            return labels[index] || '';
+        },
+
+        scorePassword() {
+            const result = scoreOf(this.password || '');
+            this.strength = result.score;
+            this.rules = result.rules;
+        },
+
+        onSubmit() {
+            this.submitting = true;
+        },
+    };
+}
+
+/* ==========================================================================
    Show / hide password
    ========================================================================== */
 
@@ -205,7 +252,9 @@ function initPasswordToggles() {
    ========================================================================== */
 
 document.addEventListener('alpine:init', () => {
-    if (window.Alpine) window.Alpine.data('registerWizard', registerWizard);
+    if (!window.Alpine) return;
+    window.Alpine.data('registerWizard', registerWizard);
+    window.Alpine.data('passwordStrength', passwordStrength);
 });
 
 if (document.readyState === 'loading') {
@@ -214,4 +263,4 @@ if (document.readyState === 'loading') {
     initPasswordToggles();
 }
 
-export { registerWizard, scoreOf };
+export { passwordStrength, registerWizard, scoreOf };
