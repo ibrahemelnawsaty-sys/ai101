@@ -6,6 +6,7 @@ namespace App\Listeners;
 
 use App\Events\GradeRecorded;
 use App\Mail\AtharLetter;
+use App\Services\Mail\MailPreferences;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -20,11 +21,19 @@ use Illuminate\Support\Facades\Mail;
  */
 final class SendGradeRecorded implements ShouldQueue
 {
+    public function __construct(private readonly MailPreferences $preferences) {}
+
     public function handle(GradeRecorded $event): void
     {
         $address = (string) $event->user->getAttribute('email');
 
         if ($address === '') {
+            return;
+        }
+
+        // The recipient's own choice, read at send time — not when the event
+        // fired: this is queued, and the preference may change in between.
+        if (! $this->preferences->allows($event->user, 'grade_recorded')) {
             return;
         }
 

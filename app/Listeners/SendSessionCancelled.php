@@ -31,7 +31,7 @@ final class SendSessionCancelled implements ShouldQueue
 
     public function handle(SessionCancelled $event): void
     {
-        foreach ($this->audience->reachable($event->cohortId) as $user) {
+        foreach ($this->audience->reachable($event->cohortId, 'session_cancelled') as $user) {
             $this->writeTo($user, $event);
         }
     }

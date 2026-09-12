@@ -6,6 +6,7 @@ namespace App\Listeners;
 
 use App\Events\GradeRevised;
 use App\Mail\AtharLetter;
+use App\Services\Mail\MailPreferences;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -21,11 +22,19 @@ use Illuminate\Support\Facades\Mail;
  */
 final class SendGradeRevised implements ShouldQueue
 {
+    public function __construct(private readonly MailPreferences $preferences) {}
+
     public function handle(GradeRevised $event): void
     {
         $address = (string) $event->user->getAttribute('email');
 
         if ($address === '') {
+            return;
+        }
+
+        // The recipient's own choice, read at send time — not when the event
+        // fired: this is queued, and the preference may change in between.
+        if (! $this->preferences->allows($event->user, 'grade_revised')) {
             return;
         }
 

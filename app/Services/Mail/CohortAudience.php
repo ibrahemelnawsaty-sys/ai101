@@ -62,10 +62,15 @@ final class CohortAudience
      *
      * @return Collection<int, User>
      */
-    public function reachable(string $cohortId): Collection
+    public function reachable(string $cohortId, ?string $type = null): Collection
     {
-        return $this->participants($cohortId)
+        $users = $this->participants($cohortId)
             ->filter(fn (User $user): bool => (string) $user->getAttribute('email') !== '')
             ->values();
+
+        // A letter type, when given, drops everyone who switched e-mail off for
+        // it. Every cohort-wide sender passes its type; before D-66 none did,
+        // and the preferences screen changed nothing that was ever sent.
+        return $type === null ? $users : app(MailPreferences::class)->filter($users, $type);
     }
 }

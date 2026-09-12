@@ -28,7 +28,7 @@ final class SendAssignmentPublished implements ShouldQueue
 
     public function handle(AssignmentPublished $event): void
     {
-        foreach ($this->audience->reachable($event->cohortId) as $user) {
+        foreach ($this->audience->reachable($event->cohortId, 'assignment_published') as $user) {
             $this->writeTo($user, $event);
         }
     }
