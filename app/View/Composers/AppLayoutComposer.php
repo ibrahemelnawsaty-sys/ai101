@@ -71,6 +71,10 @@ final class AppLayoutComposer
             static fn (): int => Notification::query()->forUser($user)->unread()->count(), 0);
 
         if ($role === 'trainer') {
+            // A trainer has conversations too (D-82): the badge counts theirs.
+            $values['navBadges']['messages'] = $this->guard('badge.messages', $user,
+                static fn (): int => Message::query()->unreadBy($user)->count(), 0);
+
             // Trainer screens run behind cohort.scope, which names the cohort
             // they act on. No switcher here: the trainer area does not read the
             // key the switcher writes (D-74).

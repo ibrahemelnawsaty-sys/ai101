@@ -21,6 +21,7 @@ use App\Presenters\Admin\CohortRow;
 use App\Presenters\Admin\TrainerAssignment;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
+use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +44,10 @@ final class CohortController extends Controller
 {
     private const PER_PAGE = 25;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly ThreadProvisioner $threads,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -203,6 +207,10 @@ final class CohortController extends Controller
         ]);
 
         $enrollment->save();
+
+        // The announcement channel, the group, and a direct line to each
+        // participant (PRD §9.13, D-82).
+        $this->threads->seatTrainer($trainer, $cohort);
 
         return back()->with('status', __('admin.cohorts.trainer_attached'));
     }

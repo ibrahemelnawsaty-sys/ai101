@@ -60,7 +60,7 @@ final class MessageController extends Controller
         $this->authorize('viewAny', Thread::class);
 
         $threads = Thread::query()
-            ->with(['latestMessage.sender.profile', 'cohort'])
+            ->with(['latestMessage.sender.profile', 'cohort', 'users.profile'])
             ->whereIn('id', ThreadParticipant::query()
                 ->where('user_id', $user->getKey())
                 ->select('thread_id'))
@@ -84,12 +84,27 @@ final class MessageController extends Controller
                 ->update(['last_read_at' => $now]);
         }
 
+        // One grouped count for every thread, not one query per thread: a
+        // trainer has a direct line to every participant (D-82).
+        $unread = Message::query()
+            ->unreadBy($user)
+            ->whereIn('messages.thread_id', $threads->modelKeys())
+            ->reorder()
+            ->toBase()
+            ->select('messages.thread_id')
+            ->selectRaw('count(*) as unread')
+            ->groupBy('messages.thread_id')
+            ->pluck('unread', 'thread_id')
+            ->map(static fn (mixed $count): int => (int) $count)
+            ->all();
+
         return view('participant.messages', [
             'threads' => $threads->map(
                 fn (Thread $thread): ThreadPresenter => ThreadPresenter::from(
                     $thread,
                     // BR-22 — this account's own unread count, and no one else's.
-                    $this->unreadCount($thread, $user),
+                    $unread[(string) $thread->getKey()] ?? 0,
+                    $user,
                 ),
             ),
             'activeThread' => $active === null
@@ -100,6 +115,7 @@ final class MessageController extends Controller
                     // property of the thread, not of a line in it (art. 19).
                     $this->presentMessages($active, $user, $now),
                     $isImpersonating,
+                    $user,
                 ),
             'isImpersonating' => $isImpersonating,
             'pollSeconds' => max(0, (int) config('athar.messages.poll_seconds')),
@@ -124,22 +140,6 @@ final class MessageController extends Controller
                 $readAt,
             ),
         );
-    }
-
-    /**
-     * How many messages in this thread arrived after this account last read it.
-     * A thread it has never opened counts every message in it.
-     *
-     * One COUNT per thread. PRD §9.13 gives a participant three threads — the
-     * trainer DM, the cohort group and the announcements channel — so the loop
-     * is bounded by the product, not by the data.
-     */
-    private function unreadCount(Thread $thread, User $user): int
-    {
-        return Message::query()
-            ->unreadBy($user)
-            ->where('messages.thread_id', $thread->getKey())
-            ->count();
     }
 
     /**

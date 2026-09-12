@@ -194,6 +194,9 @@ final class Sidebar extends UiComponent
                 ['route' => 'trainer.submissions', 'icon' => 'i-check', 'label' => __('nav.trainer.submissions')],
                 ['route' => 'trainer.finalProject', 'icon' => 'i-spark', 'label' => __('nav.trainer.final_project')],
                 ['route' => 'trainer.reports', 'icon' => 'i-chart', 'label' => __('nav.trainer.reports')],
+                // The announcement channel, the cohort group and a direct line
+                // to each participant (PRD §9.13, D-82).
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
             ]],
         ];
     }

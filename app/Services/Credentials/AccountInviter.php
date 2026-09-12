@@ -15,6 +15,7 @@ use App\Models\Profile;
 use App\Models\Program;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
 use App\Support\Dates;
 use Carbon\CarbonImmutable;
@@ -64,6 +65,7 @@ final class AccountInviter
         private readonly TemporaryPassword $passwords,
         private readonly AuditLogger $audit,
         private readonly CardIssuer $cards,
+        private readonly ThreadProvisioner $threads,
     ) {}
 
     /**
@@ -188,6 +190,9 @@ final class AccountInviter
 
         $locked->setAttribute('seats_taken', (int) $locked->getAttribute('seats_taken') + 1);
         $locked->save();
+
+        // Their three conversations (PRD §9.13, D-82).
+        $this->threads->seatParticipant($user, $locked);
     }
 
     /**

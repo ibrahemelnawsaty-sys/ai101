@@ -46,6 +46,11 @@ git pull --ff-only
 # does not have is a 500 on every page.
 php artisan migrate --force
 
+# Every enrolled account's conversations — the announcement channel, the cohort
+# group and the trainer DMs (D-82). Idempotent: on a deploy that adds nobody it
+# changes nothing, so it is safe to run every time.
+php artisan athar:provision-messages
+
 # THE STEP THAT IS ALWAYS FORGOTTEN.
 rsync -a --delete "$APP/public/build/" "$WEB/build/"
 rsync -a --delete "$APP/public/fonts/"  "$WEB/fonts/"  2>/dev/null || true

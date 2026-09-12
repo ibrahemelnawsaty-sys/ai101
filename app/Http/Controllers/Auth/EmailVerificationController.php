@@ -17,6 +17,7 @@ use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -41,7 +42,10 @@ final class EmailVerificationController extends Controller
 {
     use IssuesEmailTokens;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly ThreadProvisioner $threads,
+    ) {}
 
     public function verify(string $token): RedirectResponse
     {
@@ -151,5 +155,8 @@ final class EmailVerificationController extends Controller
 
         $cohort->setAttribute('seats_taken', (int) $cohort->seats_taken + 1);
         $cohort->save();
+
+        // Their three conversations (PRD §9.13, D-82).
+        $this->threads->seatParticipant($user, $cohort);
     }
 }

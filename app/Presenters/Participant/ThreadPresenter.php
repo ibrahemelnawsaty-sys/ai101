@@ -7,6 +7,7 @@ namespace App\Presenters\Participant;
 use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\Thread;
+use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
 
@@ -21,13 +22,13 @@ use App\Support\ViewModel;
  */
 final class ThreadPresenter extends ViewModel
 {
-    public static function from(Thread $thread, int $unreadCount): self
+    public static function from(Thread $thread, int $unreadCount, ?User $viewer = null): self
     {
         $type = self::typeOf($thread);
 
         return new self([
             'id' => (string) $thread->getKey(),
-            'title' => self::titleOf($thread, $type),
+            'title' => self::titleFor($thread, $type, $viewer),
             'avatarVariant' => self::avatarVariant($type),
             'icon' => self::icon($type),
             'previewLine' => self::preview($thread),
@@ -45,6 +46,28 @@ final class ThreadPresenter extends ViewModel
     public static function titleOf(Thread $thread, ?ThreadType $type): string
     {
         return Present::text($thread->getAttribute('title')) ?? ($type?->label() ?? '');
+    }
+
+    /**
+     * A direct thread is titled by the OTHER person: a trainer's list of sixty
+     * conversations all labelled "trainer conversation" is not a list (D-82).
+     * Needs `users.profile` loaded; without it, or for any other type, the
+     * type's own title.
+     */
+    public static function titleFor(Thread $thread, ?ThreadType $type, ?User $viewer): string
+    {
+        if ($type === ThreadType::TrainerDm && $viewer instanceof User && $thread->relationLoaded('users')) {
+            foreach ($thread->getRelation('users') as $member) {
+                if ($member instanceof User && ! $member->is($viewer)) {
+                    $profile = $member->relationLoaded('profile') ? $member->getRelation('profile') : null;
+                    $name = $profile instanceof \App\Models\Profile ? Present::text($profile->getAttribute('full_name_ar')) : null;
+
+                    return $name ?? (string) $member->getAttribute('email');
+                }
+            }
+        }
+
+        return self::titleOf($thread, $type);
     }
 
     /** The avatar component accepts default | teal | neutral only. */

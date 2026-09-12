@@ -7,6 +7,7 @@ namespace App\Presenters\Participant;
 use App\Enums\ThreadType;
 use App\Models\Cohort;
 use App\Models\Thread;
+use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
 use Illuminate\Support\Collection;
@@ -30,7 +31,7 @@ final class ActiveThreadPresenter extends ViewModel
     /**
      * @param  Collection<int, MessagePresenter>  $messages
      */
-    public static function from(Thread $thread, Collection $messages, bool $isImpersonating): self
+    public static function from(Thread $thread, Collection $messages, bool $isImpersonating, ?User $viewer = null): self
     {
         $type = ThreadPresenter::typeOf($thread);
         $isLocked = (bool) $thread->getAttribute('is_locked');
@@ -38,7 +39,7 @@ final class ActiveThreadPresenter extends ViewModel
 
         return new self([
             'id' => (string) $thread->getKey(),
-            'title' => ThreadPresenter::titleOf($thread, $type),
+            'title' => ThreadPresenter::titleFor($thread, $type, $viewer),
             'subtitle' => self::subtitle($thread, $type),
             'avatarVariant' => ThreadPresenter::avatarVariant($type),
             'type' => $type->value ?? ThreadType::Group->value,

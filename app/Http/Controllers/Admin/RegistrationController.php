@@ -17,6 +17,7 @@ use App\Presenters\Admin\RegistrationReview;
 use App\Presenters\Admin\RegistrationRow;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
+use App\Services\Messages\ThreadProvisioner;
 use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
@@ -50,6 +51,7 @@ final class RegistrationController extends Controller
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly InAppNotifier $notifier,
+        private readonly ThreadProvisioner $threads,
     ) {}
 
     public function index(Request $request): View
@@ -170,6 +172,12 @@ final class RegistrationController extends Controller
             ])->save();
 
             $cohort->forceFill(['seats_taken' => (int) $cohort->seats_taken + 1])->save();
+
+            // Their three conversations (PRD §9.13, D-82).
+            $user = $locked->user;
+            if ($user instanceof User) {
+                $this->threads->seatParticipant($user, $cohort);
+            }
 
             return $cohort;
         });
