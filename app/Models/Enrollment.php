@@ -94,6 +94,29 @@ class Enrollment extends Model
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
+    /**
+     * A request still waiting for an administrator's decision — the ONE
+     * definition the review panel, the decision endpoints and the list's
+     * "pending" badge share, so the panel cannot open on a row the endpoints
+     * refuse, or the reverse (D-69).
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAwaitingDecision(Builder $query): Builder
+    {
+        return $query->where('status', EnrollmentStatus::Pending->value);
+    }
+
+    public function awaitsDecision(): bool
+    {
+        return $this->getAttribute('status') === EnrollmentStatus::Pending;
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
     public function scopeParticipants(Builder $query): Builder
     {
         return $query->where('role_in_cohort', EnrollmentRole::Participant->value);

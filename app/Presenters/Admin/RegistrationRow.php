@@ -40,7 +40,7 @@ final class RegistrationRow extends ViewModel
             'email' => $user?->getAttribute('email') ?? '—',
             'cohortName' => $cohort?->getAttribute('name') ?? '—',
             'requestedAt' => $enrollment->getAttribute('created_at'),
-            'isPending' => $status === EnrollmentStatus::Pending,
+            'isPending' => $enrollment->awaitsDecision(),
             'stateLabel' => $status?->label() ?? '—',
             'stateVariant' => self::enrollmentVariantOf($status),
             'stateIcon' => self::enrollmentIconOf($status),

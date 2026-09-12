@@ -48,6 +48,7 @@ return [
     ],
 
     'cohorts' => [
+        'trainer_not_found' => 'No trainer or administrator account uses this address. Check the spelling. If the person is new, add them from Users with the trainer role first; if they are registered as a participant, change their role first.',
         'trainer_attached' => 'The trainer is attached to this cohort and can now see its sessions, participants and assignments.',
         'trainer_detached' => 'The trainer is detached from this cohort and can no longer see any of its data.',
         'title' => 'Cohorts',
@@ -232,7 +233,8 @@ return [
         'change_reason_hint' => 'A reason is required, and is stored with your name and the time in the audit log.',
         'enrollments_title' => 'Their cohort enrolments',
         'enrollments_empty_title' => 'No enrolments for this account',
-        'enrollments_empty_body' => 'This account is not enrolled in any cohort yet.',
+        'enrollments_empty_body' => 'This account is not enrolled in any cohort yet. Attach it to one from the Cohorts screen using its email address.',
+        'enrollments_empty_participant_body' => 'A trainee is placed in a cohort when they are added from Users or from the import. This account was created without one, and no screen can place an existing account in a cohort yet.',
         'role_changed' => 'The role was changed and the change was written to the audit log.',
         'status_changed' => 'The account status was updated.',
         'created' => 'The account was created and an activation link was sent to it.',
@@ -287,6 +289,7 @@ return [
         'requested_at' => 'Requested on',
         'approve_hint' => 'Approving takes a seat in the cohort, creates the participant card and journey steps, and sends them a notification and an email.',
         'no_free_seat' => 'There are no free seats in this cohort. Raise the capacity in the cohort settings before approving.',
+        'already_decided' => 'This request was already decided, so nothing changed and no letter was sent.',
         'approved_done' => 'The request was approved and the applicant was notified.',
         'rejected_done' => 'The request was declined and the applicant was notified with the reason.',
         'approved' => 'The request was approved, the seat was taken, and the applicant received a notification and an email.',
