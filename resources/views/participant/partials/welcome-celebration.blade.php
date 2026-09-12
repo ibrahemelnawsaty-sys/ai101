@@ -2,11 +2,12 @@
     The one-time welcome, shown on the first dashboard after an invited trainee
     has set their own password.
 
-    IT FIRES ONCE, AND ONLY ONCE. The controller reads a session flash with
-    `pull()`, so the render that shows this consumes it: a refresh, a back
-    button, a second visit and a pasted URL all get nothing. That is why it is
-    not a query parameter — `?welcome=1` would be replayable by anyone — and not
-    a column, which would have to be reset for the next cohort.
+    IT FIRES ONCE, AND ONLY ONCE. The controller reads a session value and
+    removes it once this page has rendered, so a refresh, a back button, a
+    second visit and a pasted URL all get nothing — while a first render that
+    FAILED keeps it for the next visit, which a flash could not (D-75). That is
+    why it is not a query parameter — `?welcome=1` would be replayable by anyone
+    — and not a column, which would have to be reset for the next cohort.
 
     prefers-reduced-motion IS HONOURED BY NOT BINDING THE EFFECT AT ALL, not by
     shortening it. `atharWelcome` checks `reduced()` before it ever calls

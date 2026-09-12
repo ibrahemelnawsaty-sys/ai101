@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Events\PasswordChanged;
 use App\Http\Controllers\Auth\Concerns\InvalidatesOtherSessions;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Participant\DashboardController;
 use App\Http\Requests\Auth\FirstPasswordRequest;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
@@ -111,14 +112,13 @@ final class FirstPasswordController extends Controller
 
         PasswordChanged::dispatch($user, $at, 'invitation');
 
-        // The celebration is a one-shot flash rather than a query parameter or
-        // a column: a parameter can be pasted into a browser by anybody, and a
-        // column would have to be reset for a second cohort. A flash is spent
-        // by the render that reads it and survives no refresh, which is exactly
-        // the lifetime this belongs to.
-        return redirect()
-            ->route('dashboard')
-            ->with('athar.welcome', true);
+        // A plain session value, not a flash. A flash is aged out when the next
+        // request ends, even a request that failed, so a dashboard that threw
+        // on its first render spent the once-ever celebration on an error page.
+        // Only the dashboard render that shows it removes it (D-75).
+        $request->session()->put(DashboardController::WELCOME_KEY, true);
+
+        return redirect()->route('dashboard');
     }
 
     /** A temporary password that has lapsed is not a password any more. */

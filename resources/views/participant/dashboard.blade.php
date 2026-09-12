@@ -14,7 +14,8 @@
 @section('content')
     {{-- The one-time welcome, above the grid rather than inside it: it is not a
          dashboard card, it is a moment, and it is gone on the next request
-         (D-63). `$celebrate` is a session flash the controller consumed. --}}
+         (D-63). `$celebrate` is a session value the controller removes only
+         after this page has rendered (D-75). --}}
     @if ($celebrate ?? false)
         @include('participant.partials.welcome-celebration', [
             'name' => $celebrateName ?? '',
@@ -103,7 +104,7 @@
                         :href="route('schedule.session.ics', $nextSession->id)">{{ __('schedule.add_to_calendar') }}</x-ui.button>
                     <p class="hint">
                         <x-ui.icon name="lock" />
-                        {{ __('dashboard.next_session.link_hint', ['minutes' => $nextSession->joinOpensBeforeMinutes]) }}
+                        {{ trans_choice('dashboard.next_session.link_hint', $nextSession->joinOpensBeforeMinutes, ['minutes' => $nextSession->joinOpensBeforeMinutes]) }}
                     </p>
                 </div>
             @endif

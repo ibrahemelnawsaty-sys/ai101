@@ -183,7 +183,7 @@ it('D-63: تعيين كلمة المرور الأولى يمسح العَلَم 
             'password_confirmation' => 'Canary-Sets-This-1!',
         ])
         ->assertRedirect(route('dashboard'))
-        ->assertSessionHas('athar.welcome', true);
+        ->assertSessionHas(App\Http\Controllers\Participant\DashboardController::WELCOME_KEY, true);
 
     $user->refresh();
 
@@ -192,8 +192,69 @@ it('D-63: تعيين كلمة المرور الأولى يمسح العَلَم 
     expect((bool) $user->getAttribute('must_change_password'))->toBeFalse()
         ->and($user->getAttribute('temp_password_expires_at'))->toBeNull();
 
-    // The celebration is a flash: the render that reads it spends it.
-    $this->actingAs($user)->get(route('dashboard'))->assertSessionMissing('athar.welcome');
+    // The celebration shows on the first render, is removed by it, and never
+    // shows again (D-75: a session value removed after the render, not a flash).
+    $key = App\Http\Controllers\Participant\DashboardController::WELCOME_KEY;
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('wel__ttl', false)
+        ->assertViewHas('celebrate', true)
+        ->assertSessionMissing($key);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('wel__ttl', false)
+        ->assertViewHas('celebrate', false);
+});
+
+it('D-75: عرضٌ فاشل للّوحة يُبقي الترحيب للزيارة التالية', function (): void {
+    Mail::fake();
+    $key = App\Http\Controllers\Participant\DashboardController::WELCOME_KEY;
+
+    $user = app(AccountInviter::class)->invite(
+        email: 'welcome@example.com',
+        role: UserRole::Participant,
+        profileColumns: inviteProfileColumns(),
+        cohort: $this->cohort,
+    );
+
+    $temporary = null;
+    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
+        $temporary = $letter->password;
+
+        return true;
+    });
+
+    $this->actingAs($user)->put(route('password.first.update'), [
+        'current_password' => $temporary,
+        'password' => 'Canary-Sets-This-1!',
+        'password_confirmation' => 'Canary-Sets-This-1!',
+    ]);
+
+    // The first render throws — a template, a presenter, the layout.
+    $fail = true;
+    Illuminate\Support\Facades\View::composer('participant.dashboard', function () use (&$fail): void {
+        if ($fail) {
+            throw new RuntimeException('render');
+        }
+    });
+
+    $this->actingAs($user)->get(route('dashboard'))->assertStatus(500)->assertSessionHas($key, true);
+
+    $fail = false;
+    $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('wel__ttl', false)->assertSessionMissing($key);
+    $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee('wel__ttl', false);
+});
+
+it('D-75: المدرّب المدعوّ لا يبقى مفتاح الترحيب في جلسته', function (): void {
+    $key = App\Http\Controllers\Participant\DashboardController::WELCOME_KEY;
+    $trainer = makeTrainer($this->cohort);
+
+    $this->actingAs($trainer)->withSession([$key => true])
+        ->get(route('dashboard'))
+        ->assertRedirect(route('trainer.submissions'))
+        ->assertSessionMissing($key);
 });
 
 it('D-63: التغيير الأول لا يُرسل تحذير «غُيّرت كلمة مرورك»', function (): void {

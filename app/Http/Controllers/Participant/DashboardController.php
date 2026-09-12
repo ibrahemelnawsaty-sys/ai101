@@ -36,6 +36,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -59,6 +60,13 @@ use Illuminate\Support\Facades\Log;
  */
 final class DashboardController extends Controller
 {
+    /**
+     * The session key that marks the one render which celebrates a first
+     * password (D-63). Written by FirstPasswordController, removed here only
+     * after a successful render (D-75).
+     */
+    public const WELCOME_KEY = 'athar.welcome';
+
     use ResolvesActiveCohort;
 
     /** How many items each list card shows. */
@@ -111,18 +119,36 @@ final class DashboardController extends Controller
     }
 
     /**
-     * Whether this render is the one that celebrates.
+     * Whether this render is the one that celebrates. It reads; it never spends.
      *
-     * A session flash, not a query parameter and not a column. A parameter can
-     * be typed by anybody, so `?welcome=1` would let a trainee replay the
-     * celebration forever and let anyone fake it. A column would have to be
-     * reset for the next cohort and would still be read on a refresh. A flash
-     * is spent by the render that reads it and survives nothing — which is the
-     * lifetime this belongs to.
+     * A session value, not a query parameter and not a column: a parameter can
+     * be typed by anybody, and a column would have to be reset for the next
+     * cohort. It is NOT a flash any more. A flash is aged out when the request
+     * that sees it ends — even a request that failed — so the first dashboard
+     * render that threw spent the once-ever welcome on an error page, whatever
+     * line the read sat on (D-75). respond() removes it only after the page has
+     * rendered.
      */
-    private function takeWelcome(Request $request): bool
+    private function wantsWelcome(Request $request): bool
     {
-        return (bool) $request->session()->pull('athar.welcome', false);
+        return (bool) $request->session()->get(self::WELCOME_KEY, false);
+    }
+
+    /**
+     * Render now, then spend the welcome — in that order. `new Response($view)`
+     * renders inside its constructor and keeps the View as its original, so a
+     * render that throws leaves the key for the next visit, and tests can still
+     * read the view's data.
+     */
+    private function respond(Request $request, bool $celebrate, View $view): Response
+    {
+        $response = new Response($view);
+
+        if ($celebrate) {
+            $request->session()->forget(self::WELCOME_KEY);
+        }
+
+        return $response;
     }
 
     /**
@@ -146,7 +172,7 @@ final class DashboardController extends Controller
         return trim((string) $profile->getAttribute('first_name_ar'));
     }
 
-    public function __invoke(Request $request): View|RedirectResponse
+    public function __invoke(Request $request): View|Response|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -156,11 +182,18 @@ final class DashboardController extends Controller
         // administrator's dashboard home. So an administrator opening
         // /dashboard is served that console home here rather than bounced to
         // another URL; /admin still serves the same screen directly.
-        if ($this->roles->isAdmin($user)) {
+        $shell = $this->roles->shellRole($user);
+
+        // Those roles never celebrate; the key must not linger for them.
+        if ($shell === 'admin') {
+            $request->session()->forget(self::WELCOME_KEY);
+
             return app(AdminDashboardController::class)();
         }
 
-        if (! $this->roles->hasRole($user, 'participant') && $this->roles->hasRole($user, 'trainer')) {
+        if ($shell === 'trainer') {
+            $request->session()->forget(self::WELCOME_KEY);
+
             return redirect()->route('trainer.submissions');
         }
 
@@ -169,9 +202,11 @@ final class DashboardController extends Controller
 
         $user->loadMissing('profile');
 
+        $celebrate = $this->wantsWelcome($request);
+
         if ($cohort === null) {
-            return view('participant.dashboard', [
-                'celebrate' => $this->takeWelcome($request),
+            return $this->respond($request, $celebrate, view('participant.dashboard', [
+                'celebrate' => $celebrate,
                 'celebrateName' => $this->greetingName($user),
                 'failedBlocks' => [],
                 'cohortLabel' => null,
@@ -189,7 +224,7 @@ final class DashboardController extends Controller
                 // No cohort to belong to yet: the nine cards have nothing to
                 // say, and the screen says so rather than showing nine blanks.
                 'screenState' => ScreenState::EMPTY,
-            ]);
+            ]));
         }
 
         // Every card is built behind its own guard, and a card that throws is
@@ -215,7 +250,11 @@ final class DashboardController extends Controller
             static fn (): WelcomePresenter => WelcomePresenter::from(
                 $user, $now, $overview['completed'], $overview['total'], $overview['percent'],
             ),
-            WelcomePresenter::from($user, $now, 0, 0, 0.0));
+            // Null, not a second WelcomePresenter::from(): a fallback is
+            // evaluated OUTSIDE the guard, so a throwing presenter here took
+            // the whole page down anyway. The template renders the error branch
+            // for a failed card before it ever reads the value.
+            null);
 
         $nextSession = $this->block('nextSession', $failed, $user,
             fn (): NextSessionPresenter => $session === null
@@ -257,12 +296,11 @@ final class DashboardController extends Controller
                 ->map(static fn (Notification $item): AnnouncementPresenter => AnnouncementPresenter::from($item)),
             new Collection);
 
-        return view('participant.dashboard', [
-            // Pulled HERE, after everything above that can throw. Read at the
-            // top of the method, one exception on the first render would spend
-            // the flash on a page the trainee never saw — and the celebration
-            // is a once-ever thing (D-63).
-            'celebrate' => $this->takeWelcome($request),
+        return $this->respond($request, $celebrate, view('participant.dashboard', [
+            // Removed only after the page rendered (respond()). The old
+            // "pulled after everything that can throw" protected nothing: a
+            // flash is aged out at the end of a failed request anyway (D-75).
+            'celebrate' => $celebrate,
             'celebrateName' => $this->greetingName($user),
             'failedBlocks' => array_values(array_unique($failed)),
             'cohortLabel' => $cohort->getAttribute('name'),
@@ -278,7 +316,7 @@ final class DashboardController extends Controller
             'announcements' => $announcements,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::NORMAL,
-        ]);
+        ]));
     }
 
     /**
