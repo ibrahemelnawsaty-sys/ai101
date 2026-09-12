@@ -20,6 +20,7 @@ use Illuminate\Queue\SerializesModels;
 final class CertificateIssued
 {
     use Dispatchable;
+
     /*
      * The queue stores this object, so it must not store a whole model.
      *

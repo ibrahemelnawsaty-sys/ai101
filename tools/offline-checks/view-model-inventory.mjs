@@ -20,7 +20,7 @@ const map = {};
 for (const f of views) {
   const s = fs.readFileSync(f, 'utf8');
   const rel = f.split(path.sep).join('/');
-  const re = /\$([a-zA-Z_][a-zA-Z0-9_]*)->([a-zA-Z_][a-zA-Z0-9_]*)(?!\s*\()/g;
+  const re = /\$([a-zA-Z_][a-zA-Z0-9_]*)->([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\s*\()/g;
   let m;
   while ((m = re.exec(s))) {
     const v = m[1], p = m[2];

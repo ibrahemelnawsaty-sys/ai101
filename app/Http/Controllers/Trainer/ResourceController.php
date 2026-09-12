@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Trainer;
 
 use App\Enums\ResourceType;
+use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreResourceRequest;
@@ -15,7 +16,6 @@ use App\Models\User;
 use App\Models\Week;
 use App\Presenters\Support\Options;
 use App\Presenters\Trainer\ResourceRow;
-use App\Exceptions\FileException;
 use App\Services\Audit\AuditLogger;
 use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;

@@ -294,7 +294,17 @@ it('BR-29: التغيير الأول ينهي كل جلسة أخرى لهذا ا
     // the invitation carries a plaintext password to an inbox that gets
     // forwarded, and the mundane version needs no intruder at all — the trainee
     // opens the letter on a phone and again on a laptop.
-    $table = (string) config('session.table', 'user_sessions');
+    //
+    // phpunit.xml runs the suite on the `array` driver, where
+    // InvalidatesOtherSessions has no rows to delete and rightly does nothing.
+    // This case is ABOUT the rows, so it turns the production driver on for
+    // itself — as SecurityRulesTest's BR-29 case does. Without it the assertion
+    // below fails for the wrong reason, or would pass observing nothing.
+    config([
+        'session.driver' => 'database',
+        'session.table' => 'user_sessions',
+    ]);
+    $table = 'user_sessions';
 
     Illuminate\Support\Facades\DB::table($table)->insert([
         'id' => 'CANARY-OTHER-SESSION',

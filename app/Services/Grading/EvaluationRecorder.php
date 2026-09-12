@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Grading;
 
-use App\Events\GradeRecorded;
-use App\Events\GradeRevised;
 use App\Enums\EvaluationEntity;
 use App\Enums\SubmissionStatus;
+use App\Events\GradeRecorded;
+use App\Events\GradeRevised;
 use App\Exceptions\GradingException;
 use App\Models\Assignment;
 use App\Models\Cohort;
