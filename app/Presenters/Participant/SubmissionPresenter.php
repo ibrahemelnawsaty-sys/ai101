@@ -10,6 +10,7 @@ use App\Models\ProjectSubmission;
 use App\Models\Submission;
 use App\Models\User;
 use App\Presenters\Support\Present;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 
 /**
@@ -55,7 +56,12 @@ final class SubmissionPresenter extends ViewModel
             'submittedAt' => Present::toDateTime($submission->getAttribute('submitted_at')),
             'isLate' => (bool) $submission->getAttribute('is_late'),
             'hasSubmission' => true,
-            'files' => FilePresenter::collect($submission->getAttribute('files')),
+            'files' => FilePresenter::collect(
+                $submission->getAttribute('files'),
+                $submission instanceof ProjectSubmission
+                    ? SignedFiles::for('files.projectSubmission', 'projectSubmission', $submission)
+                    : SignedFiles::for('files.submission', 'submission', $submission),
+            ),
             'githubUrl' => Present::text($submission->getAttribute('github_url')),
             'isGraded' => $evaluation !== null,
             'score' => $evaluation === null ? null : Present::decimal($evaluation->getAttribute('score')),

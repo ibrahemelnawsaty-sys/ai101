@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Presenters\Concerns\PresentsVariants;
 use App\Presenters\Shared\FileLink;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 
 /**
@@ -62,7 +63,10 @@ final class GradingForm extends ViewModel
             'fullNameEn' => self::personNameEn($user),
             'assignmentTitle' => self::text($assignment, 'title'),
 
-            'files' => FileLink::collection($submission->getAttribute('files')),
+            'files' => FileLink::collection(
+                $submission->getAttribute('files'),
+                SignedFiles::for('files.submission', 'submission', $submission),
+            ),
             'githubUrl' => self::stringOrNull($submission->getAttribute('github_url')),
             'note' => self::stringOrNull($submission->getAttribute('note')),
             'version' => (int) $submission->getAttribute('version'),

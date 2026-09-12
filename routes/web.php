@@ -41,6 +41,7 @@ use App\Http\Controllers\Auth\FirstPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\FileDownloadController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
 use App\Http\Controllers\Participant\CardController;
@@ -195,6 +196,24 @@ Route::middleware('auth')->group(function (): void {
 | Dashboard — any signed-in account
 |--------------------------------------------------------------------------
 */
+
+/*
+|--------------------------------------------------------------------------
+| Stored files (PRD §12.5, D-80)
+|--------------------------------------------------------------------------
+| Signed links that expire, minted on pages that passed their permission
+| check — and each file's own policy asked again on arrival.
+*/
+Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.')->group(function (): void {
+    Route::get('/submissions/{submission}/{index}', [FileDownloadController::class, 'submission'])
+        ->whereNumber('index')->name('submission');
+    Route::get('/project-submissions/{projectSubmission}/{index}', [FileDownloadController::class, 'projectSubmission'])
+        ->whereNumber('index')->name('projectSubmission');
+    Route::get('/assignments/{assignment}/{index}', [FileDownloadController::class, 'assignment'])
+        ->whereNumber('index')->name('assignment');
+    Route::get('/final-projects/{project}/{index}', [FileDownloadController::class, 'finalProject'])
+        ->whereNumber('index')->name('finalProject');
+});
 
 Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');

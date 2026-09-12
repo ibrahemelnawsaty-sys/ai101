@@ -32,6 +32,7 @@ use App\Services\Grading\EvaluationRecorder;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Mail\CohortAudience;
 use App\Services\Notifications\InAppNotifier;
+use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use App\Support\Dates;
 use App\Support\ScreenState;
@@ -42,6 +43,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * The submissions board and the grading form (PRD §9.11.3, §9.15).
@@ -88,6 +90,7 @@ final class SubmissionController extends Controller
         private readonly AuditLogger $audit,
         private readonly CohortAudience $audience,
         private readonly InAppNotifier $notifier,
+        private readonly PrivateFileService $files,
     ) {}
 
     public function index(Request $request): View
@@ -439,23 +442,94 @@ final class SubmissionController extends Controller
     }
 
     /**
-     * Every file handed in for one assignment, as a single archive.
+     * Every participant's NEWEST version of one assignment, as one archive.
      *
-     * The archive is built by App\Services\Storage, which is the only part that
-     * knows where a submitted file lives; that service is not in this slice, so
-     * until it lands the endpoint authorises correctly and then says plainly
-     * that the download is unavailable rather than sending an empty archive.
+     * It answered "unavailable" to everyone (D-80). Now: the newest version
+     * per participant (BR-19 keeps every version; grading reads the newest),
+     * each file under that participant's name, stored uncompressed so building
+     * the archive is a copy, not a compression job, inside a web request on
+     * shared hosting (art. 10). The file paths come from PrivateFileService,
+     * the one part that knows where a stored file lives.
      */
-    public function bulkDownload(Assignment $assignment): RedirectResponse
+    public function bulkDownload(Assignment $assignment): BinaryFileResponse|RedirectResponse
     {
         $this->authorize('downloadAll', $assignment);
 
-        $this->audit->log('assignment.bulk_download', $assignment);
+        $newest = Submission::query()
+            ->with('user.profile')
+            ->where('assignment_id', $assignment->getKey())
+            ->orderByDesc('version')
+            ->get()
+            ->unique(static fn (Submission $row): string => (string) $row->getAttribute('user_id'));
 
-        // `error`, not withErrors(['files' => …]): the board has no field named
-        // files, and the layout toasts only status, error and warning — so the
-        // message was never shown (D-68).
-        return back()->with('error', __('trainer.submissions.bulk_unavailable'));
+        $entries = [];
+        $used = [];
+
+        foreach ($newest as $submission) {
+            $folder = $this->archiveFolder($submission);
+            $files = $submission->getAttribute('files');
+
+            foreach (is_array($files) ? array_values($files) : [] as $descriptor) {
+                if (! is_array($descriptor) || ! is_string($descriptor['path'] ?? null)) {
+                    continue;
+                }
+
+                $disk = is_string($descriptor['disk'] ?? null) && $descriptor['disk'] !== '' ? $descriptor['disk'] : null;
+
+                try {
+                    $absolute = $this->files->absolutePath($descriptor['path'], $disk);
+                } catch (\Throwable) {
+                    continue; // a missing file is left out, not a failed archive
+                }
+
+                $name = is_string($descriptor['original_name'] ?? null) && $descriptor['original_name'] !== ''
+                    ? $descriptor['original_name']
+                    : basename($descriptor['path']);
+                $inside = $folder.'/'.str_replace(['/', '\\'], '_', $name);
+
+                // Two files of the same name in one folder would overwrite.
+                for ($n = 2; isset($used[$inside]); $n++) {
+                    $inside = $folder.'/'.$n.'-'.str_replace(['/', '\\'], '_', $name);
+                }
+
+                $used[$inside] = true;
+                $entries[] = [$absolute, $inside];
+            }
+        }
+
+        if ($entries === []) {
+            return back()->with('warning', __('trainer.submissions.bulk_empty'));
+        }
+
+        $archive = (string) tempnam(sys_get_temp_dir(), 'athar-zip-');
+        $zip = new \ZipArchive;
+        $zip->open($archive, \ZipArchive::OVERWRITE);
+
+        foreach ($entries as [$absolute, $inside]) {
+            $zip->addFile($absolute, $inside);
+            $zip->setCompressionName($inside, \ZipArchive::CM_STORE);
+        }
+
+        $zip->close();
+
+        $this->audit->log('assignment.bulk_download', $assignment, null, ['files' => count($entries)]);
+
+        return response()
+            ->download($archive, 'submissions-'.$assignment->getKey().'.zip', ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend();
+    }
+
+    /** One folder per participant, named so a trainer can read it. */
+    private function archiveFolder(Submission $submission): string
+    {
+        $user = $submission->getRelation('user');
+        $name = $user instanceof User
+            ? (string) ($user->profile?->getAttribute('full_name_ar') ?: $user->getAttribute('email'))
+            : (string) $submission->getAttribute('user_id');
+
+        $clean = trim((string) preg_replace('/[\\\\\/:*?"<>|]+/u', '_', $name));
+
+        return $clean !== '' ? $clean : (string) $submission->getAttribute('user_id');
     }
 
     /** The board as a CSV, scoped and filtered exactly like the board itself. */

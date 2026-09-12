@@ -38,11 +38,13 @@ final class FileLink extends ViewModel
     }
 
     /**
-     * Every file of a `files` JSON column.
+     * Every file of a `files` JSON column, each with its signed link when a
+     * builder is given (App\Support\SignedFiles, D-80).
      *
+     * @param  (callable(int): string)|null  $urlFor
      * @return list<self>
      */
-    public static function collection(mixed $files): array
+    public static function collection(mixed $files, ?callable $urlFor = null): array
     {
         if (! is_array($files)) {
             return [];
@@ -50,9 +52,9 @@ final class FileLink extends ViewModel
 
         $links = [];
 
-        foreach ($files as $entry) {
+        foreach (array_values($files) as $index => $entry) {
             if (is_array($entry)) {
-                $links[] = self::fromStored($entry);
+                $links[] = self::fromStored($entry, $urlFor === null ? null : $urlFor($index));
             }
         }
 

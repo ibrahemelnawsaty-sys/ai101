@@ -23,7 +23,7 @@ final class FilePresenter extends ViewModel
     /**
      * @param  array<array-key, mixed>  $stored  one entry of a `files` or `attachments` column
      */
-    public static function fromStored(array $stored): self
+    public static function fromStored(array $stored, ?string $downloadUrl = null): self
     {
         $name = Present::text($stored['original_name'] ?? null)
             ?? Present::text($stored['name'] ?? null)
@@ -32,16 +32,18 @@ final class FilePresenter extends ViewModel
         return new self([
             'name' => $name,
             'sizeLabel' => Present::fileSize($stored['size_bytes'] ?? $stored['size'] ?? null),
-            // No signed-download route exists for hand-ins yet; a link is only
-            // published when the stored entry already carries a guarded one.
-            'downloadUrl' => Present::text($stored['url'] ?? null),
+            // The signed link the caller minted (D-80), or one the entry
+            // already carries. There was no download route for a stored file
+            // at all, so this was null for every hand-in and attachment.
+            'downloadUrl' => $downloadUrl ?? Present::text($stored['url'] ?? null),
         ]);
     }
 
     /**
+     * @param  (callable(int): string)|null  $urlFor  builds the signed link for a position
      * @return Collection<int, self>
      */
-    public static function collect(mixed $column): Collection
+    public static function collect(mixed $column, ?callable $urlFor = null): Collection
     {
         if (! is_array($column)) {
             return new Collection;
@@ -49,9 +51,9 @@ final class FilePresenter extends ViewModel
 
         $files = [];
 
-        foreach ($column as $entry) {
+        foreach (array_values($column) as $index => $entry) {
             if (is_array($entry)) {
-                $files[] = self::fromStored($entry);
+                $files[] = self::fromStored($entry, $urlFor === null ? null : $urlFor($index));
             }
         }
 

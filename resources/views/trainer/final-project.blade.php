@@ -202,13 +202,12 @@
                             <ul class="filelist">
                                 @foreach ($selected->files as $file)
                                     <li>
-                                        {{-- No signed-download route for a submitted file exists yet,
-                                             so the name is shown plainly rather than as a dead link. --}}
-                                        <span>
+                                        {{-- A signed link that expires in fifteen minutes (D-80). --}}
+                                        <a href="{{ $file->downloadUrl }}">
                                             <x-ui.icon name="file" />
                                             <span dir="ltr">{{ $file->name }}</span>
                                             <small class="u-num">{{ $file->sizeLabel }}</small>
-                                        </span>
+                                        </a>
                                     </li>
                                 @endforeach
                             </ul>

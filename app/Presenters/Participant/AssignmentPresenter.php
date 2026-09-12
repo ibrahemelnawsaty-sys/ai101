@@ -9,6 +9,7 @@ use App\Models\Evaluation;
 use App\Models\Submission;
 use App\Models\Week;
 use App\Presenters\Support\Present;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -56,7 +57,10 @@ final class AssignmentPresenter extends ViewModel
             // isNotEmpty() guard hides the heading rather than repeating the
             // description under a second title.
             'requirements' => new Collection,
-            'attachments' => FilePresenter::collect($assignment->getAttribute('attachments')),
+            'attachments' => FilePresenter::collect(
+                $assignment->getAttribute('attachments'),
+                SignedFiles::for('files.assignment', 'assignment', $assignment),
+            ),
             'weekTitle' => self::weekTitle($assignment),
             'dueAt' => $dueAt,
             'isMandatory' => (bool) $assignment->getAttribute('is_mandatory'),

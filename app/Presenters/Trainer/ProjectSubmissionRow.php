@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Presenters\Concerns\PresentsVariants;
 use App\Presenters\Shared\FileLink;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 
 /**
@@ -49,7 +50,10 @@ final class ProjectSubmissionRow extends ViewModel
             'email' => self::personEmail($user),
 
             'hasSubmission' => true,
-            'files' => FileLink::collection($submission->getAttribute('files')),
+            'files' => FileLink::collection(
+                $submission->getAttribute('files'),
+                SignedFiles::for('files.projectSubmission', 'projectSubmission', $submission),
+            ),
             'githubUrl' => self::stringOrNull($submission->getAttribute('github_url')),
             // `project_submissions` names this column `description`, not
             // `note` as `submissions` does (PROJECT-CONTRACT §4).

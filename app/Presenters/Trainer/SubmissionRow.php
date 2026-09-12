@@ -9,6 +9,7 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 
 /**
@@ -66,7 +67,9 @@ final class SubmissionRow extends ViewModel
             'version' => (int) $submission->getAttribute('version'),
             'hasSubmission' => true,
             'fileLabel' => is_string($fileName) && $fileName !== '' ? $fileName : null,
-            'downloadUrl' => null,
+            // The first file, signed (D-80). It was null by design: no route
+            // existed, and a trainer could not open a single hand-in.
+            'downloadUrl' => $first === null ? null : SignedFiles::for('files.submission', 'submission', $submission)(0),
             'isGraded' => $isGraded,
             'hasScore' => $isGraded,
             'score' => $isGraded ? self::score((float) $rawScore) : '—',

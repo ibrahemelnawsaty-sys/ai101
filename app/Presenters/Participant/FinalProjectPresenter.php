@@ -6,6 +6,7 @@ namespace App\Presenters\Participant;
 
 use App\Models\FinalProject;
 use App\Presenters\Support\Present;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 use Illuminate\Support\Collection;
 
@@ -36,7 +37,10 @@ final class FinalProjectPresenter extends ViewModel
             // empty state until one exists — see the batch report.
             'criteria' => new Collection,
             'maxScore' => (int) $project->getAttribute('max_score'),
-            'attachments' => FilePresenter::collect($project->getAttribute('attachments')),
+            'attachments' => FilePresenter::collect(
+                $project->getAttribute('attachments'),
+                SignedFiles::for('files.finalProject', 'project', $project),
+            ),
             'dueAt' => Present::toDateTime($project->getAttribute('due_at')),
             'maxFiles' => $maxFiles,
             'maxFileBytes' => $maxBytes,

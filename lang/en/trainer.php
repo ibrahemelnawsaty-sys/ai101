@@ -200,6 +200,7 @@ return [
         'remind_none' => 'Everyone in the cohort has already submitted this assignment, so no reminder was sent.',
         'remind_recent' => 'A reminder for this assignment was sent a short while ago. You can send another one later.',
         'bulk_unavailable' => 'Bulk download is unavailable right now. Download the submissions one by one, and try again shortly.',
+        'bulk_empty' => 'Nobody has handed in a file for this assignment yet, so there is nothing to download.',
 
         // Column headings for the exported submissions report
         'export' => [
