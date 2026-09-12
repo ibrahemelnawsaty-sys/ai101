@@ -15,13 +15,13 @@ $selected   (3 files, 28 properties)
   properties: attendancePercent, attendanceVariant, attendedSessions, currentStepTitle, email, enrolledAt, evaluationId, feedback, files, fullNameAr, fullNameEn, githubUrl, id, isGraded, isRevision, journeyPercent, maxScore, name, note, participantName, passScore, phone, score, scoreMax, submissions, submittedAt, totalSessions, version
   files: resources/views/trainer/final-project.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
 
+$user   (2 files, 25 properties)
+  properties: attachesFromCohorts, auditEntries, awaitingVerification, canBeAdministered, canBePreviewed, canChangeRole, canChangeStatus, email, enrollments, fullNameAr, fullNameEn, id, isSelf, isSuspended, lastLoginAt, name, phone, registeredAt, role, roleLabel, roleVariant, statusIcon, statusLabel, statusVariant, toggleStatusValue
+  files: resources/views/admin/users/index.blade.php, resources/views/admin/users/show.blade.php
+
 $summary   (4 files, 24 properties)
   properties: absentCount, assignmentsTotal, attendanceVariant, averageAttendance, averageScore, completionRate, earnedScore, excusedCount, incompleteCount, isNearMinimum, lateCount, mandatoryCompleted, mandatoryTotal, minimumRatePercent, participants, pendingCount, presentCount, ratePercent, rateVariant, registrations, scoreMax, submissionRate, submissionRateVariant, totalSessions
   files: resources/views/admin/reports.blade.php, resources/views/participant/assignments/index.blade.php, resources/views/participant/attendance.blade.php, resources/views/trainer/reports.blade.php
-
-$user   (2 files, 24 properties)
-  properties: auditEntries, awaitingVerification, canBeAdministered, canBePreviewed, canChangeRole, canChangeStatus, email, enrollments, fullNameAr, fullNameEn, id, isSelf, isSuspended, lastLoginAt, name, phone, registeredAt, role, roleLabel, roleVariant, statusIcon, statusLabel, statusVariant, toggleStatusValue
-  files: resources/views/admin/users/index.blade.php, resources/views/admin/users/show.blade.php
 
 $assignment   (3 files, 23 properties)
   properties: attachments, cohortSize, description, dueAt, headline, id, isGraded, isMandatory, isSubmitted, maxFileSizeLabel, maxFiles, maxScore, remainingLabel, requirements, score, statusIcon, statusLabel, statusVariant, submittedCount, title, urgencyIcon, urgencyVariant, weekTitle

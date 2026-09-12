@@ -34,13 +34,19 @@ use Illuminate\Support\Facades\Validator;
  * own docblock names "admin-created accounts" as one of the four callers it
  * exists to keep identical.
  *
- * `email_verified_at` is set at creation. That is deliberate and it is not a
- * shortcut: `D-02` is open, no mail provider is approved, and MAIL_MAILER
- * discards every message. An account left unverified here could never be
- * verified by any means available today.
+ * `email_verified_at` is set at creation. That is deliberate: the account
+ * belongs to the operator, who is at the server, and the resend path refuses
+ * a verified account anyway.
+ *
+ * ADMINS AND TRAINERS ONLY. A trainee made here belonged to no cohort, and the
+ * command then told the operator to "create the enrolment from the admin panel"
+ * — a screen that does not exist: the panel seats only accounts it creates
+ * itself, and refuses this address and mobile as taken (D-63, D-69). Trainees
+ * come from the admin panel's add-user screen or its import, which create the
+ * account, seat it and send the invitation in one step.
  *
  * @see BR-31, BR-36 · PRD §9.2.1, §4.2 · CONSTITUTION art. 5, art. 6, art. 8
- * @see D-02 (mail provider, open) · D-11 (registration mechanism, open)
+ * @see D-11 (registration mechanism, open) · D-63, D-69
  */
 final class MakeUser extends Command
 {
@@ -48,7 +54,7 @@ final class MakeUser extends Command
 
     /** @var string */
     protected $signature = 'athar:make-user
-        {--role= : admin, trainer or participant}
+        {--role= : admin or trainer. Trainees are added from the admin panel}
         {--email= : Login address}
         {--password= : Omit to be prompted without echo, which is preferred}
         {--phone= : Saudi mobile, 05XXXXXXXX or 9665XXXXXXXX}
@@ -63,7 +69,7 @@ final class MakeUser extends Command
         {--family-en= : Family name, Latin}';
 
     /** @var string */
-    protected $description = 'Create an admin, trainer or participant account. Needed on a fresh deploy, where no account exists.';
+    protected $description = 'Create an admin or trainer account. Needed on a fresh deploy, where no account exists.';
 
     public function handle(AuditLogger $audit): int
     {
@@ -140,14 +146,9 @@ final class MakeUser extends Command
                 ['email', (string) $user->getAttribute('email')],
                 ['role', $role->value],
                 ['status', UserStatus::Active->value],
-                ['email verified', 'yes - set at creation, see D-02'],
+                ['email verified', 'yes - set at creation'],
             ],
         );
-
-        if ($role === UserRole::Participant) {
-            $this->newLine();
-            $this->warn('A participant account alone cannot use the platform: it still needs an enrolment in a cohort. Create that from the admin panel.');
-        }
 
         return self::SUCCESS;
     }
@@ -162,17 +163,39 @@ final class MakeUser extends Command
         if (is_string($given) && $given !== '') {
             $value = $given;
         } else {
-            $chosen = $this->choice('Role', UserRole::values(), 'admin');
+            $chosen = $this->choice('Role', $this->consoleRoles(), 'admin');
             $value = is_array($chosen) ? (string) reset($chosen) : (string) $chosen;
         }
 
         $role = UserRole::tryFrom($value);
 
         if ($role === null) {
-            $this->error('Unknown role: '.$value.'. Expected one of: '.implode(', ', UserRole::values()));
+            $this->error('Unknown role: '.$value.'. Expected one of: '.implode(', ', $this->consoleRoles()));
+
+            return null;
+        }
+
+        // Refused BEFORE anything is asked or written.
+        if ($role === UserRole::Participant) {
+            $this->error('Trainees are not created from the console: an account made here belongs to no cohort.');
+            $this->line('Add them in the admin panel, which seats each one in the cohort you pick and sends the invitation:');
+            $this->line('  one person: '.route('admin.users.create'));
+            $this->line('  a list:     '.route('admin.users.import'));
+
+            return null;
         }
 
         return $role;
+    }
+
+    /**
+     * The roles this command may create.
+     *
+     * @return list<string>
+     */
+    private function consoleRoles(): array
+    {
+        return [UserRole::Admin->value, UserRole::Trainer->value];
     }
 
     /**

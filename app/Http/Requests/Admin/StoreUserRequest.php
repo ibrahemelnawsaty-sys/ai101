@@ -27,8 +27,9 @@ use Illuminate\Validation\Rule;
  * card, no path to a certificate -- and no screen anywhere could put it in one,
  * because the only code in the whole application that creates an `Enrollment`
  * is the e-mail-verification controller, on the self-registration path the
- * administrator is not using. `athar:make-user` even prints "create that from
- * the admin panel", naming a feature that did not exist.
+ * administrator is not using. `athar:make-user` even printed "create that from
+ * the admin panel", naming a feature that did not exist; it now refuses the
+ * participant role and points here instead (D-69).
  *
  * `password` is GONE. The administrator no longer chooses a trainee's password:
  * the platform generates a temporary one, mails it, and forces a change at the
@@ -122,13 +123,12 @@ final class StoreUserRequest extends FormRequest
     }
 
     /**
-     * The cohort itself, locked for update.
+     * The cohort itself, for the letter and the audit entry.
      *
-     * Locked because seating increments `cohorts.seats_taken`, and two
-     * administrators working the same list at the same moment would otherwise
-     * both read the old count and both write old+1 -- overselling a seat, which
-     * is the exact failure the verification controller's own seating code takes
-     * a lock to prevent.
+     * Not locked. It used to be, and the docblock said the lock prevented
+     * overselling — but this runs in its own SELECT before the inviter's
+     * transaction opens, so the lock ended with the statement. Seating and its
+     * lock live in AccountInviter::seat(), inside the transaction (D-69).
      */
     public function cohort(): ?Cohort
     {
@@ -139,7 +139,7 @@ final class StoreUserRequest extends FormRequest
         }
 
         /** @var Cohort|null $cohort */
-        $cohort = Cohort::query()->whereKey($id)->lockForUpdate()->first();
+        $cohort = Cohort::query()->with('program')->whereKey($id)->first();
 
         return $cohort;
     }

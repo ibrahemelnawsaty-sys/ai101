@@ -22,10 +22,11 @@ use Illuminate\Support\Str;
  * Provision the three accounts a reviewer needs to walk the platform: an admin,
  * a trainer and an enrolled participant.
  *
- * `athar:make-user` already creates a single account, but it stops short of the
- * two things a participant needs before any screen has anything on it — an
- * enrolment in a cohort and journey state — and says so itself, pointing at the
- * admin panel. On a fresh deploy that is a chicken-and-egg: you cannot open the
+ * `athar:make-user` creates a single admin or trainer, and refuses the
+ * participant role (D-69): a trainee needs an enrolment in a cohort and journey
+ * state before any screen has anything on it, and this command is the only
+ * console path that seats one — for the demo account only. On a fresh deploy
+ * that is a chicken-and-egg: you cannot open the
  * admin panel until an admin exists, and the participant screens are empty until
  * someone enrols them. This does all of it in one step.
  *

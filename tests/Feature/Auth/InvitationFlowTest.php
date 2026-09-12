@@ -331,3 +331,31 @@ it('BR-29: التغيير الأول ينهي كل جلسة أخرى لهذا ا
     // And a "remember me" cookie taken at that sign-in must die with it.
     expect($user->fresh()?->getAttribute('remember_token'))->toBeNull();
 });
+
+it('D-69: دعوتان إلى دفعة واحدة تأخذ كلٌّ منهما مقعدًا واحدًا بالضبط', function (): void {
+    Mail::fake();
+    $before = (int) $this->cohort->fresh()?->seats_taken;
+
+    // Two instances loaded BEFORE either invite, as two administrators' requests
+    // would hold them. Seating used to write "the count I read + 1" from the
+    // instance it was handed, under a lock already released — so the second
+    // invite overwrote the first one's seat.
+    $first = App\Models\Cohort::query()->findOrFail($this->cohort->getKey());
+    $second = App\Models\Cohort::query()->findOrFail($this->cohort->getKey());
+
+    app(AccountInviter::class)->invite(
+        email: 'one@example.com',
+        role: UserRole::Participant,
+        profileColumns: array_merge(inviteProfileColumns(), ['phone' => '0512345671']),
+        cohort: $first,
+    );
+    app(AccountInviter::class)->invite(
+        email: 'two@example.com',
+        role: UserRole::Participant,
+        profileColumns: array_merge(inviteProfileColumns(), ['phone' => '0512345672']),
+        cohort: $second,
+    );
+
+    expect((int) $this->cohort->fresh()?->seats_taken)->toBe($before + 2)
+        ->and(Enrollment::query()->where('cohort_id', $this->cohort->getKey())->participants()->count())->toBe(2);
+});

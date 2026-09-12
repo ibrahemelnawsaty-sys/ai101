@@ -34,8 +34,8 @@ use Illuminate\Support\Facades\Mail;
  * and a Profile, dispatched nothing, and — because `StoreUserRequest` had no
  * cohort field — left the account in NO cohort: no assignments, no sessions, no
  * card, no route to a certificate. `athar:make-user` printed "create that from
- * the admin panel", naming a screen that did not exist. Sixty trainees had no
- * way to reach the platform.
+ * the admin panel", naming a screen that did not exist (it now refuses the
+ * participant role, D-69). Sixty trainees had no way to reach the platform.
  *
  * ONE PLACE, TWO CALLERS. The single-account form and the bulk import both come
  * through here, because the interesting parts — seating, the temporary
@@ -150,11 +150,27 @@ final class AccountInviter
      * The `exists` check is not decoration: this service is reachable twice for
      * the same person if an administrator retries a timed-out import, and
      * `enrollments` has no unique index to catch it.
+     *
+     * THE LOCK IS TAKEN HERE, FIRST. It used to be taken by the form request,
+     * in its own SELECT before this transaction began — so it was released the
+     * moment it was taken, and two invitations into one cohort each read the
+     * old count and wrote old+1 (D-69). And it must come before the enrolment
+     * insert: `enrollments.cohort_id` is a foreign key, so the insert takes a
+     * shared lock on the cohort row, and the counter update after it needs an
+     * exclusive one — two concurrent invites would deadlock. increment() after
+     * the insert does not avoid that. firstOrFail() rolls the new account back
+     * if its cohort has vanished: D-63 exists to end accounts in no cohort.
+     *
+     * Whether an invitation may seat a trainee past capacity is an open
+     * question (D-69); today it may, as it always could.
      */
     private function seat(User $user, Cohort $cohort, CarbonImmutable $at): void
     {
+        /** @var Cohort $locked */
+        $locked = Cohort::query()->whereKey($cohort->getKey())->lockForUpdate()->firstOrFail();
+
         $already = Enrollment::query()
-            ->where('cohort_id', $cohort->getKey())
+            ->where('cohort_id', $locked->getKey())
             ->where('user_id', $user->getKey())
             ->exists();
 
@@ -163,15 +179,15 @@ final class AccountInviter
         }
 
         Enrollment::query()->create([
-            'cohort_id' => $cohort->getKey(),
+            'cohort_id' => $locked->getKey(),
             'user_id' => $user->getKey(),
             'role_in_cohort' => EnrollmentRole::Participant->value,
             'enrolled_at' => $at,
             'status' => EnrollmentStatus::Active->value,
         ]);
 
-        $cohort->setAttribute('seats_taken', (int) $cohort->getAttribute('seats_taken') + 1);
-        $cohort->save();
+        $locked->setAttribute('seats_taken', (int) $locked->getAttribute('seats_taken') + 1);
+        $locked->save();
     }
 
     /**
