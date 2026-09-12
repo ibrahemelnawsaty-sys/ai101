@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
+use App\Events\FinalProjectUnlocked;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreProjectEvaluationRequest;
@@ -137,6 +138,7 @@ final class FinalProjectController extends Controller
         $trainer = $request->user();
 
         $unlocks = $request->unlocks();
+        $wasUnlocked = (bool) $project->getAttribute('is_unlocked');
 
         $before = $this->audit->snapshot($project, ['is_unlocked', 'unlocked_at', 'unlocked_by']);
 
@@ -154,8 +156,16 @@ final class FinalProjectController extends Controller
 
         $project->save();
 
-        if ($unlocks) {
+        // Only the move from locked to unlocked announces. Every save with the
+        // flag set used to write the cohort another notice, and no letter was
+        // ever sent (D-77).
+        if ($unlocks && ! $wasUnlocked) {
             $this->notifyCohort($project);
+
+            FinalProjectUnlocked::dispatch(
+                (string) $project->getAttribute('cohort_id'),
+                Dates::dateTime($project->getAttribute('due_at')),
+            );
         }
 
         return back()->with('status', __('project.unlock_saved'));

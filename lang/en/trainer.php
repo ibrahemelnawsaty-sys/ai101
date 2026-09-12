@@ -101,7 +101,7 @@ return [
         'cancel_reason' => 'Reason for cancelling',
         'cancel_reason_hint' => 'Write a clear reason of at least :min characters. Participants see it with the notification.',
         'cancel_notice_title' => 'A cancellation reaches every participant',
-        'cancel_notice_body' => 'A notification and an email go out on save, and the reason and replacement date appear in their schedule.',
+        'cancel_notice_body' => 'A notification and an email go out on save, and the reason appears in their schedule.',
         'replacement_at' => 'Replacement date',
         'replacement_hint' => 'Leave it empty if no replacement is set yet — you can add it later.',
         'created' => 'The session was added to the schedule.',

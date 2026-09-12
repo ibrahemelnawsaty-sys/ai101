@@ -363,6 +363,25 @@ final class CertificateEligibility
     }
 
     /**
+     * How far along the cohort is: how many countable sessions have ended, and
+     * how many non-cancelled ones have not. The same session set the rate is
+     * counted over, so the low-attendance notice cannot measure a rate this
+     * service would not (D-77).
+     *
+     * @return array{ended: int, remaining: int}
+     */
+    public function sessionProgress(Cohort $cohort, CarbonImmutable $at): array
+    {
+        $ended = count($this->countableSessionIds($cohort, $at));
+        $total = Session::query()
+            ->where('cohort_id', $cohort->getKey())
+            ->where('status', '!=', SessionStatus::Cancelled)
+            ->count();
+
+        return ['ended' => $ended, 'remaining' => max(0, $total - $ended)];
+    }
+
+    /**
      * Non-cancelled sessions of the cohort that have already ended.
      *
      * @return list<string>

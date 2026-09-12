@@ -75,7 +75,6 @@ final class StoreSessionRequest extends FormRequest
             'join_opens_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
             // A new session is scheduled; cancelling and completing are their
             // own endpoints, so the editor never posts a status.
-            'status' => ['nullable', Rule::enum(SessionStatus::class)],
         ];
     }
 
@@ -100,7 +99,9 @@ final class StoreSessionRequest extends FormRequest
             'zoom_url' => $data['meeting_url'] ?? null,
             'zoom_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
-            'status' => $data['status'] ?? SessionStatus::Scheduled->value,
+            // A new session is scheduled. Creating one already cancelled
+            // skipped the reason, the audit and the letter (D-77).
+            'status' => SessionStatus::Scheduled->value,
         ];
     }
 }

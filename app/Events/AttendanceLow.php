@@ -35,7 +35,12 @@ final class AttendanceLow
 
     public function __construct(
         public readonly User $user,
-        public readonly int $currentRate,
-        public readonly int $requiredRate,
+        // Formatted as the attendance screen formats them. They were ints,
+        // and the rate is a decimal: a strict call threw a TypeError, and a
+        // loose one truncated 66.67 to 66 (D-77).
+        public readonly string $currentRate,
+        public readonly string $requiredRate,
+        // Whether a session remains to raise it — the letter's words differ.
+        public readonly bool $sessionsRemain = true,
     ) {}
 }

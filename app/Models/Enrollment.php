@@ -53,6 +53,7 @@ class Enrollment extends Model
             'enrolled_at' => 'datetime',
             'final_score' => 'decimal:2',
             'attendance_rate' => 'decimal:2',
+            'attendance_low_notified_at' => 'datetime',
         ];
     }
 

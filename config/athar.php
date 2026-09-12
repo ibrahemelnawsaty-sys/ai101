@@ -286,6 +286,10 @@ return [
 
         // Temporary signed URLs for private downloads (PRD §12.5).
         'signed_url_ttl_minutes' => 15,
+
+        // How long a browser stays "known" after its last sign-in, for the
+        // new-device letter (PRD §9.16.1). A temporary assumption (D-77).
+        'device_cookie_days' => (int) env('DEVICE_COOKIE_DAYS', 400),
     ],
 
     /*

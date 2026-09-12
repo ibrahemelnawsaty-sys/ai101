@@ -9,33 +9,28 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * A certificate was issued.
+ * A certificate was issued to this person — the PRD §9.16.1 row "certificate
+ * issued: the trainee, at issue, platform and e-mail".
  *
- * The serial travels with the event because it is the one fact the letter must
- * state exactly (PRD §9.17) and the one the reader will quote back when
- * verifying it.
+ * Dispatched by the certificate controller after the serial has been
+ * allocated and the row committed — never inside the allocation callback,
+ * which may be retried with a different serial. Nothing dispatched it before
+ * D-77, so no certificate letter was ever sent.
  *
- * @see BR-20, BR-25 · PRD §9.17, §9.16.1 · D-51
+ * `$url` is the holder's certificate page, not the download route: nothing
+ * generates a certificate file yet, so that route answers 404 (D-77).
+ *
+ * @see BR-25 · PRD §9.16.1, §9.17 · D-51, D-77
  */
 final class CertificateIssued
 {
     use Dispatchable;
-
-    /*
-     * The queue stores this object, so it must not store a whole model.
-     *
-     * Without SerializesModels, Laravel PHP-serializes the event into
-     * `jobs.payload` — and a User's $attributes carries `password_hash` and
-     * `remember_token`. A failed send keeps that row in `failed_jobs` for the
-     * fourteen days `queue:prune-failed` allows, and the nightly dump carries it
-     * further. With the trait only the class and the key are written, and the
-     * row is re-read when the job runs (D-65).
-     */
     use SerializesModels;
 
     public function __construct(
         public readonly User $user,
         public readonly string $serial,
-        public readonly string $downloadUrl,
+        public readonly string $url,
+        public readonly string $verifyUrl,
     ) {}
 }

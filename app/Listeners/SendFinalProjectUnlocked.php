@@ -44,7 +44,7 @@ final class SendFinalProjectUnlocked implements ShouldQueue
                 values: [
                     'datetime' => $event->deadline,
                 ],
-                ctaUrl: $event->url,
+                ctaUrl: route('finalProject'),
                 // `project.deadline` does not exist in either locale.
                 // `assignments.deadline` does, and says exactly this (D-62).
                 meta: ['assignments.deadline' => $event->deadline],

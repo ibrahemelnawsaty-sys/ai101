@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Mail;
  *
  * `app/Listeners` did not exist. Four events — `EmailTokenIssued`,
  * `AccountRegistered`, `AccountVerified`, `PasswordChanged` — were dispatched
- * into a room with nobody in it. This one closes the seam that
+ * into a room with nobody in it (the registration one, which no requirement
+ * consumed, was later removed — D-77). This one closes the seam that
  * `IssuesEmailTokens` describes in its own comment: the controller mints the
  * token and announces it, and the mail layer listens and sends.
  *

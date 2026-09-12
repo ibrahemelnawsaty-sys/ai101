@@ -29,6 +29,10 @@
     </source>
 
     <php>
+        <!-- The suite holds ~700 cases in one process, and the Excel export
+             cases stream archives through zipstream: at PHP's default 128M the
+             whole run died mid-way on memory, not on an assertion (D-77). -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <!--
             APP_DEBUG must stay false: the mandatory "error" state of every screen

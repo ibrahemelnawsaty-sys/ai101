@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Trainer;
 
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
+use App\Events\SessionCancelled;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\CancelSessionRequest;
@@ -19,6 +20,8 @@ use App\Presenters\Trainer\SessionForm;
 use App\Presenters\Trainer\SessionRow;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Audit\AuditLogger;
+use App\Services\Mail\CohortAudience;
+use App\Services\Notifications\InAppNotifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +46,8 @@ final class SessionController extends Controller
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly AttendanceWindow $window,
+        private readonly InAppNotifier $notifier,
+        private readonly CohortAudience $audience,
     ) {}
 
     public function index(Request $request): View
@@ -175,6 +180,7 @@ final class SessionController extends Controller
     public function cancel(CancelSessionRequest $request, Session $session): RedirectResponse
     {
         $before = $this->audit->snapshot($session, ['status', 'cancellation_reason']);
+        $wasCancelled = $session->getAttribute('status') === SessionStatus::Cancelled;
 
         $session->setAttribute('status', SessionStatus::Cancelled->value);
         $session->setAttribute('cancellation_reason', $request->reason());
@@ -187,6 +193,24 @@ final class SessionController extends Controller
         );
 
         $session->save();
+
+        // The screen promised "a notification and an email go out on save",
+        // and nothing went out (D-77). Only the move into cancelled announces.
+        if (! $wasCancelled) {
+            $cohortId = (string) $session->getAttribute('cohort_id');
+            $title = (string) $session->getAttribute('title');
+            $values = ['session' => $title, 'reason' => $request->reason()];
+
+            $this->notifier->notify(
+                $this->audience->participants($cohortId)->map(static fn (User $user): string => (string) $user->getKey()),
+                'session_cancelled',
+                (string) __('notifications.types.session_cancelled.title', $values),
+                (string) __('notifications.types.session_cancelled.body', $values),
+                route('schedule'),
+            );
+
+            SessionCancelled::dispatch($cohortId, $title, $request->reason());
+        }
 
         return back()->with('status', __('trainer.sessions.cancelled'));
     }

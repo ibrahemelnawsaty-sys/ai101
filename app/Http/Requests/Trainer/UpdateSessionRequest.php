@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Trainer;
 
-use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Models\Session;
 use Illuminate\Foundation\Http\FormRequest;
@@ -62,7 +61,6 @@ final class UpdateSessionRequest extends FormRequest
             'recording_url' => ['nullable', 'string', 'url:https', 'max:500'],
             // Cancelling is its own endpoint because it demands a reason and
             // notifies the cohort, so the editor leaves the status alone.
-            'status' => ['nullable', Rule::enum(SessionStatus::class)],
         ];
     }
 
@@ -95,7 +93,12 @@ final class UpdateSessionRequest extends FormRequest
             'zoom_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             'recording_url' => $data['recording_url'] ?? null,
-            'status' => $data['status'] ?? $this->trainingSession()->getAttribute('status')?->value,
+            // The editor does not change status in either direction. It
+            // accepted any value, so a crafted PATCH could cancel a session
+            // with no reason, no audit and no letter — or silently reverse a
+            // cancellation the cohort had just been told of (D-77). Cancelling
+            // is the cancel endpoint's alone.
+            'status' => $this->trainingSession()->getAttribute('status')?->value,
         ];
     }
 }

@@ -40,12 +40,15 @@ final class SendSessionCancelled implements ShouldQueue
     {
         try {
             Mail::to((string) $user->getAttribute('email'))->send(new AtharLetter(
-                copyKey: 'emails.session_changed',
+                // Its own words. It borrowed session_changed, whose subject says
+                // the session "has moved" — sending people to look for a new
+                // time that does not exist (D-77).
+                copyKey: 'emails.session_cancelled',
                 values: [
                     'session' => $event->sessionTitle,
                     'reason' => $event->reason,
                 ],
-                ctaUrl: $event->url,
+                ctaUrl: route('schedule'),
             ));
         } catch (\Throwable $exception) {
             // One unreachable address must not stop the rest of the cohort

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserStatus;
+use App\Events\NewDeviceLogin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResendVerificationRequest;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Security\KnownDevices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
 use Illuminate\Contracts\View\View;
@@ -42,7 +44,10 @@ final class LoginController extends Controller
     /** PRD §9.3.1 — the lock lasts fifteen minutes. */
     public const LOCK_MINUTES = 15;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly KnownDevices $devices,
+    ) {}
 
     public function create(Request $request): View
     {
@@ -134,6 +139,13 @@ final class LoginController extends Controller
         $request->session()->forget(['auth.account_state', 'auth.locked_until']);
 
         $this->audit->log('account.login', $user, null, null, $user);
+
+        // PRD §9.16.1 — a sign-in from a browser this account has not used,
+        // told to its owner. After every refusal above: a wrong password
+        // registers no device and sends nothing (D-77).
+        if ($this->devices->recordSignIn($user, $request, $now)) {
+            NewDeviceLogin::dispatch($user, (string) $request->ip(), $now);
+        }
 
         return redirect()->intended(route('dashboard'));
     }

@@ -34,10 +34,13 @@ final class SendCertificateIssued implements ShouldQueue
                 values: [
                     'serial' => $event->serial,
                 ],
-                ctaUrl: $event->downloadUrl,
+                ctaUrl: $event->url,
                 // `certificates.serial` does not exist; the reader saw that
                 // literal string beside their serial number (D-62).
-                meta: ['certificates.serial_number' => $event->serial],
+                meta: [
+                    'certificates.serial_number' => $event->serial,
+                    'certificates.fields.verify_url' => $event->verifyUrl,
+                ],
             ));
         } catch (\Throwable $exception) {
             // A letter that fails to leave changes nothing about the fact it was

@@ -198,12 +198,28 @@ return [
         'cta' => 'View my attendance log',
     ],
 
+    'attendance_low_final' => [
+        'subject' => 'Your attendance ended below the required rate',
+        'preheader' => 'No sessions remain in this programme.',
+        'heading' => 'A note about your attendance',
+        'body' => 'Your attendance is :current% and the certificate requires :required%. No sessions remain in this programme. If an absence was excused, raise it with your trainer.',
+        'cta' => 'View my attendance log',
+    ],
+
+    'session_cancelled' => [
+        'subject' => 'Session :session has been cancelled',
+        'preheader' => 'The reason is inside.',
+        'heading' => 'A session in your cohort was cancelled',
+        'body' => 'Session «:session» has been cancelled. Reason: :reason. Any replacement will appear in your schedule.',
+        'cta' => 'Open the schedule',
+    ],
+
     'certificate_issued' => [
         'subject' => 'Your certificate from Athar has been issued',
         'preheader' => 'Download it and share the verification link.',
         'heading' => 'Congratulations on completing the programme',
         'body' => 'You met both the attendance and the score condition, and your certificate has been issued with serial number :serial.',
-        'cta' => 'Download my certificate',
+        'cta' => 'Open my certificate',
     ],
 
     'waitlist_confirmation' => [

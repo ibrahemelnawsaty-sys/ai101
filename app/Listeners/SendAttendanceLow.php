@@ -38,15 +38,20 @@ final class SendAttendanceLow implements ShouldQueue
             return;
         }
 
+        $values = [
+            'current' => $event->currentRate,
+            'required' => $event->requiredRate,
+        ];
+
+        // "Attending the coming sessions raises it" is false after the last
+        // session, so that case has its own words (D-77). Two literal copy
+        // keys, so LetterContractTest checks both.
+        $letter = $event->sessionsRemain
+            ? new AtharLetter(copyKey: 'emails.attendance_low', values: $values, ctaUrl: route('attendance.index'))
+            : new AtharLetter(copyKey: 'emails.attendance_low_final', values: $values, ctaUrl: route('attendance.index'));
+
         try {
-            Mail::to($address)->send(new AtharLetter(
-                copyKey: 'emails.attendance_low',
-                values: [
-                    'current' => $event->currentRate,
-                    'required' => $event->requiredRate,
-                ],
-                ctaUrl: route('attendance.index'),
-            ));
+            Mail::to($address)->send($letter);
         } catch (\Throwable $exception) {
             // A letter that fails to leave changes nothing about the fact it was
             // announcing. Logged without the address or any personal data

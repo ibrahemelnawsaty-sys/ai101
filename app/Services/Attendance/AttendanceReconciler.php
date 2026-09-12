@@ -52,6 +52,7 @@ final class AttendanceReconciler
         private readonly AttendanceWindow $window,
         private readonly AuditLogger $audit,
         private readonly InAppNotifier $notifier,
+        private readonly LowAttendanceWarning $lowAttendance,
     ) {}
 
     /**
@@ -111,6 +112,10 @@ final class AttendanceReconciler
 
         foreach ($cohorts as $cohort) {
             $enrollments += $this->recomputeAttendanceRate($cohort, $now);
+
+            // PRD §9.16.1 — the drop below the threshold is told once, here,
+            // where a finished session has just changed the rates (D-77).
+            $this->lowAttendance->check($cohort, $now);
         }
 
         return [

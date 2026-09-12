@@ -7,12 +7,14 @@ namespace App\Events;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
- * The final project became available to a cohort.
+ * The final project was opened to a cohort — the PRD §9.16.1 row "final
+ * project opened: the whole cohort, at opening, platform and e-mail".
  *
- * Half the marks live here (BR-11), so this is the one schedule change that
- * every participant must hear about rather than discover.
+ * Addressed to a cohort; the listener resolves who is actively enrolled when
+ * it runs (D-51) and builds the link itself. Dispatched only on the move from
+ * locked to unlocked — re-saving an open project announces nothing (D-77).
  *
- * @see BR-11 · PRD §9.13, §9.16.1 · D-51
+ * @see PRD §9.14, §9.16.1 · D-51, D-77
  */
 final class FinalProjectUnlocked
 {
@@ -21,6 +23,5 @@ final class FinalProjectUnlocked
     public function __construct(
         public readonly string $cohortId,
         public readonly string $deadline,
-        public readonly string $url,
     ) {}
 }

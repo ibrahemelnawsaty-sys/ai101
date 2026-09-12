@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Events\CertificateIssued;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BulkIssueCertificateRequest;
@@ -26,12 +27,14 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Certificates\SerialNumberGenerator;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Issuing and revoking certificates (PRD §9.17).
@@ -62,6 +65,7 @@ final class CertificateController extends Controller
         private readonly ScoreCalculator $scores,
         private readonly SerialNumberGenerator $serials,
         private readonly AuditLogger $audit,
+        private readonly InAppNotifier $notifier,
     ) {}
 
     public function index(Request $request): View
@@ -448,10 +452,11 @@ final class CertificateController extends Controller
         User $admin,
         string $action,
         ?string $reason,
-    ): void {
+    ): Certificate {
         $at = Clock::now();
 
-        $this->serials->allocate($cohort, function (string $serial) use ($holder, $cohort, $admin, $at, $action, $reason): Certificate {
+        /** @var Certificate $issued */
+        $issued = $this->serials->allocate($cohort, fn (string $serial): Certificate => DB::transaction(function () use ($serial, $holder, $cohort, $admin, $at, $action, $reason): Certificate {
             /** @var Certificate $certificate */
             $certificate = Certificate::query()->create([
                 'user_id' => $holder->getKey(),
@@ -474,6 +479,28 @@ final class CertificateController extends Controller
             );
 
             return $certificate;
-        });
+        }));
+
+        // After allocation returns, never inside it: a retried allocation
+        // discards its serial, and a letter must name the one that was kept.
+        // Both channels (PRD §9.16.1); nothing announced a certificate before
+        // D-77.
+        $this->notifier->notify(
+            [(string) $holder->getKey()],
+            'certificate_issued',
+            (string) __('notifications.types.certificate_issued.title'),
+            (string) __('notifications.types.certificate_issued.body', ['serial' => (string) $issued->getAttribute('serial_number')]),
+            route('certificate'),
+            $at,
+        );
+
+        CertificateIssued::dispatch(
+            $holder,
+            (string) $issued->getAttribute('serial_number'),
+            route('certificate'),
+            route('certificate.verify', ['code' => (string) $issued->getAttribute('verify_code')]),
+        );
+
+        return $issued;
     }
 }

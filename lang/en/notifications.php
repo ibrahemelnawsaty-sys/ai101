@@ -55,7 +55,7 @@ return [
         'session_cancelled' => [
             'label' => 'Session cancelled',
             'title' => 'Session :session was cancelled',
-            'body' => 'Reason: :reason. You will be notified once a replacement date is set.',
+            'body' => 'Reason: :reason. Any replacement will appear in your schedule.',
         ],
         'assignment_published' => [
             'label' => 'New assignment published',
@@ -111,6 +111,7 @@ return [
             'label' => 'Attendance dropped',
             'title' => 'Your attendance rate has dropped',
             'body' => 'You are at :current% and the certificate requires :required%. Make sure you attend the coming sessions.',
+            'body_final' => 'You are at :current% and the certificate requires :required%. No sessions remain; if an absence was excused, raise it with your trainer.',
         ],
         'attendance_incomplete' => [
             'label' => 'Incomplete attendance',
@@ -120,7 +121,7 @@ return [
         'certificate_issued' => [
             'label' => 'Certificate issued',
             'title' => 'Your certificate has been issued',
-            'body' => 'Congratulations on completing the programme. Download it and share the verification link from the certificate tab.',
+            'body' => 'Congratulations on completing the programme. Open it and share the verification link from the certificate tab.',
         ],
         'enrollment_approved' => [
             'label' => 'Enrolment approved',

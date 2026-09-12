@@ -9,7 +9,6 @@ use App\Enums\EmailTokenType;
 use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use App\Events\AccountRegistered;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
 use App\Http\Controllers\Auth\Concerns\PasswordMeterCopy;
 use App\Http\Controllers\Controller;
@@ -96,8 +95,6 @@ final class RegisterController extends Controller
         });
 
         $this->issueToken($user, EmailTokenType::Verify);
-
-        AccountRegistered::dispatch($user);
 
         return redirect()
             ->route('login')
