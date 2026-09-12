@@ -270,13 +270,44 @@ final class AttendanceController extends Controller
         $status = $request->status();
         $reason = $request->reason();
 
+        $requested = $request->userIds();
+
         $records = Attendance::query()
             ->where('session_id', $session->getKey())
-            ->whereIn('user_id', $request->userIds())
+            ->whereIn('user_id', $requested)
             ->get();
 
         foreach ($records as $record) {
             $this->recorder->manualOverride($editor, $record, $status, $reason);
+        }
+
+        // The ones with no row at all — and they are the POINT of marking by
+        // hand. A row exists only once somebody has checked in, so anyone who
+        // never opened the link has none, and this loop used to skip them in
+        // silence and still flash success. A trainer ticked twelve no-shows,
+        // read the `attendance.bulk_saved` confirmation, and nothing was
+        // written (D-65).
+        //
+        // Scoped, not trusted: the ids come from a form, so each is re-read as a
+        // participant actually enrolled in THIS session's cohort before anything
+        // is written for them (art. 5).
+        $missing = array_values(array_diff($requested, $records->pluck('user_id')->all()));
+
+        if ($missing !== []) {
+            $participants = User::query()
+                ->whereKey($missing)
+                ->whereIn(
+                    'id',
+                    Enrollment::query()
+                        ->where('cohort_id', $session->getAttribute('cohort_id'))
+                        ->where('role_in_cohort', EnrollmentRole::Participant->value)
+                        ->select('user_id'),
+                )
+                ->get();
+
+            foreach ($participants as $participant) {
+                $this->recorder->markWithoutRecord($editor, $session, $participant, $status, $reason);
+            }
         }
 
         return back()->with('status', __('attendance.bulk_saved'));

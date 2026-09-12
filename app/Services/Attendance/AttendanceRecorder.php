@@ -227,6 +227,65 @@ final class AttendanceRecorder
         });
     }
 
+    /**
+     * Mark a participant who has no attendance row at all.
+     *
+     * WHY THIS EXISTS
+     * `manualOverride` amends a row. Bulk marking fetched the rows for the
+     * chosen participants and amended those — and a no-show has NO row, because
+     * a row is created when somebody checks in. So the single most valuable
+     * case, a trainer ticking the twelve people who never opened the link, wrote
+     * nothing at all and still reported success.
+     *
+     * `updateOrCreate` on the unique `(session_id, user_id)` pair rather than an
+     * insert: two trainers marking the same roster, or one pressing apply twice,
+     * must not collide on that index.
+     *
+     * `check_in_at` stays null on purpose. Nobody arrived; the mark records a
+     * judgement, not an arrival, and BR-09's incomplete rule keys off a check-in
+     * without a check-out. Writing a false instant here would make the
+     * reconciler convert a hand-marked absence into "incomplete".
+     */
+    public function markWithoutRecord(
+        User $actor,
+        Session $session,
+        User $participant,
+        AttendanceStatus $status,
+        string $reason,
+    ): Attendance {
+        $trimmed = trim($reason);
+
+        if (mb_strlen($trimmed) < self::MIN_EDIT_REASON_LENGTH) {
+            throw AttendanceException::reasonTooShort(self::MIN_EDIT_REASON_LENGTH);
+        }
+
+        return DB::transaction(function () use ($actor, $session, $participant, $status, $trimmed): Attendance {
+            /** @var Attendance $attendance */
+            $attendance = Attendance::query()->updateOrCreate(
+                [
+                    'session_id' => $session->getKey(),
+                    'user_id' => $participant->getKey(),
+                ],
+                [
+                    'status' => $status,
+                    'is_manual' => true,
+                    'edited_by' => $actor->getKey(),
+                    'edit_reason' => $trimmed,
+                ],
+            );
+
+            $this->audit->log(
+                action: AuditLogger::ATTENDANCE_MANUAL_EDIT,
+                entity: $attendance,
+                before: null,
+                after: $this->audit->snapshot($attendance, $this->auditedColumns()),
+                actor: $actor,
+            );
+
+            return $attendance;
+        });
+    }
+
     public function findRecord(User $user, Session $session): ?Attendance
     {
         return Attendance::query()

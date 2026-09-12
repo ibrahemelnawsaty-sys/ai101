@@ -6,6 +6,7 @@ namespace App\Listeners;
 
 use App\Events\EmailTokenIssued;
 use App\Mail\EmailTokenLink;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -32,8 +33,23 @@ use Illuminate\Support\Facades\Mail;
  *
  * @see BR-30 · PRD §9.2.3, §9.3.3 · D-02, D-49
  */
-final class SendEmailTokenLink implements ShouldQueue
+final class SendEmailTokenLink implements ShouldBeEncrypted, ShouldQueue
 {
+    /*
+     * ENCRYPTED, because this listener's payload carries a LIVE credential.
+     *
+     * `EmailTokenIssued` holds `plainToken` and `url` — the single-use value
+     * that resets a password — and a queued listener is stored whole in
+     * `jobs.payload` until the per-minute cron reaches it, then in
+     * `failed_jobs.payload` for fourteen days if delivery fails. The event's own
+     * docblock promises the plaintext is never stored. It was, in a table that
+     * a phpMyAdmin session, a leaked DB_PASSWORD or a restored backup all read.
+     *
+     * `SerializesModels` does not help here: the token is a string, not a model.
+     * `Dispatcher::createListenerAndJob` sets `$job->shouldBeEncrypted` from
+     * this interface, and `Queue::jobShouldBeEncrypted` honours it — verified in
+     * vendor, not assumed (D-65).
+     */
     public function handle(EmailTokenIssued $event): void
     {
         $address = (string) $event->user->getAttribute('email');
