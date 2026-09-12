@@ -17,8 +17,9 @@ use Illuminate\Validation\Rule;
  * row is never rewritten silently — the previous values go into audit_logs
  * before the change lands.
  *
- * The two instants are optional; when supplied they are Riyadh wall time and
- * are converted by App\Services\Time\Clock, never parsed here (BR-07).
+ * No time is accepted: PRD §9.9.4 takes no time value from the client. The
+ * two optional instants this used to validate were never applied by anything,
+ * and their format rule refused what the form sent (D-72).
  *
  * @see BR-07, BR-10, BR-23, BR-27 · PRD §9.9.7 · CONSTITUTION Art. 8, Art. 11
  */
@@ -53,8 +54,6 @@ final class UpdateAttendanceRequest extends FormRequest
     {
         return [
             'attendance_status' => ['required', Rule::enum(AttendanceStatus::class)],
-            'checked_in_at' => ['nullable', 'date_format:Y-m-d H:i'],
-            'checked_out_at' => ['nullable', 'date_format:Y-m-d H:i'],
             'edit_reason' => ['required', 'string', 'min:'.self::MIN_REASON_LENGTH, 'max:1000'],
         ];
     }
@@ -75,19 +74,5 @@ final class UpdateAttendanceRequest extends FormRequest
     public function reason(): string
     {
         return (string) $this->validated('edit_reason');
-    }
-
-    public function checkedInAtRiyadh(): ?string
-    {
-        $value = $this->validated('checked_in_at');
-
-        return is_string($value) && $value !== '' ? $value : null;
-    }
-
-    public function checkedOutAtRiyadh(): ?string
-    {
-        $value = $this->validated('checked_out_at');
-
-        return is_string($value) && $value !== '' ? $value : null;
     }
 }

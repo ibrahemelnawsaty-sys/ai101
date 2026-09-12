@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Support\Dates;
 use App\Support\ViewModel;
 
 /**
@@ -20,7 +21,10 @@ use App\Support\ViewModel;
  * hide exactly the people the trainer is looking for.
  *
  * `attendanceId` is what the manual-edit endpoint addresses; it is null until
- * a row exists, and the edit button is only offered when it does.
+ * a row exists. `canEdit` is the one question the template asks: the edit
+ * button is offered only when there is a row to correct. The template ignored
+ * `attendanceId` and offered it on every row, and the panel refused to open
+ * for the ones without — a button that did nothing (D-72).
  *
  * @see BR-08, BR-09, BR-10, BR-23 · PRD §9.9.7 · CONSTITUTION art. 17, art. 18
  */
@@ -29,7 +33,7 @@ final class RosterEntry extends ViewModel
     use PresentsFormValues;
     use PresentsVariants;
 
-    public static function from(User $participant, ?Attendance $record): self
+    public static function from(User $participant, ?Attendance $record, ?string $editHref = null): self
     {
         $profile = self::related($participant, 'profile');
 
@@ -42,11 +46,23 @@ final class RosterEntry extends ViewModel
                 $profile?->getAttribute('full_name_ar') ?? $participant->getAttribute('email')
             ),
             'attendanceId' => $record === null ? null : (string) $record->getKey(),
+            'canEdit' => $record !== null,
+            // Built by the roster, which knows the cohort and the session: the
+            // same href whether the row is drawn by the page or by the live
+            // refresh, which has no page query string to borrow from.
+            'editHref' => $editHref,
+            'checkedInLabel' => self::timeLabel($record?->getAttribute('check_in_at')),
+            'checkedOutLabel' => self::timeLabel($record?->getAttribute('check_out_at')),
             'checkedInAt' => $record?->getAttribute('check_in_at'),
             'checkedOutAt' => $record?->getAttribute('check_out_at'),
             'statusLabel' => $status?->label() ?? __('attendance.status.not_recorded'),
             'statusVariant' => self::attendanceVariantOf($status),
             'statusIcon' => self::attendanceIconOf($status),
         ]);
+    }
+
+    private static function timeLabel(mixed $at): string
+    {
+        return $at instanceof \DateTimeInterface ? Dates::time12($at) : '—';
     }
 }

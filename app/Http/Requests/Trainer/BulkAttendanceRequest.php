@@ -62,7 +62,8 @@ final class BulkAttendanceRequest extends FormRequest
                 'required', 'string', 'uuid',
                 Rule::exists('enrollments', 'user_id')
                     ->where('cohort_id', $cohortId)
-                    ->where('role_in_cohort', 'participant'),
+                    ->where('role_in_cohort', 'participant')
+                    ->where('status', 'active'),
             ],
         ];
     }

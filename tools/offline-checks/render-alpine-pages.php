@@ -120,4 +120,31 @@ $thread = Thread::query()->whereIn('id', ThreadParticipant::query()
 $request = $as($participant, '/dashboard/messages'.($thread ? '?thread='.$thread->getKey() : ''));
 $write('messages-probe.html', app(App\Http\Controllers\Participant\MessageController::class)->index($request)->render());
 
+// 5 · the trainer's live roster — a session running NOW, polling every second,
+// and the poll answer the endpoint gives once one participant has checked in.
+$trainer = User::query()->where('role', 'trainer')->orderBy('email')->firstOrFail();
+$session = App\Models\Session::query()
+    ->where('cohort_id', (string) $participant->enrollments()->value('cohort_id'))
+    ->orderBy('date')
+    ->firstOrFail();
+$window = app(App\Services\Attendance\AttendanceWindow::class);
+Clock::fake($window->startsAt($session)->addMinutes(10));
+config(['athar.attendance.roster_poll_seconds' => 1]);
+App\Models\Attendance::query()->where('session_id', $session->getKey())->delete();
+
+$request = $as($trainer, '/trainer/attendance?session='.$session->getKey());
+$request->attributes->set(App\Http\Middleware\EnsureCohortScope::ATTRIBUTE, (string) $session->getAttribute('cohort_id'));
+$write('roster-probe.html', app(App\Http\Controllers\Trainer\AttendanceController::class)->index($request)->render());
+
+App\Models\Attendance::query()->create([
+    'session_id' => $session->getKey(),
+    'user_id' => $participant->getKey(),
+    'status' => 'present',
+    'check_in_at' => Clock::now()->subMinutes(3),
+]);
+$json = (string) app(App\Http\Controllers\Trainer\AttendanceController::class)->poll($session)->getContent();
+file_put_contents($root.'/public/roster-probe.json', $json);
+file_put_contents($root.'/public/roster-probe.meta', (string) $participant->getKey());
+printf("%-22s %7d bytes\n", 'roster-probe.json', strlen($json));
+
 printf("participant           %s\n", $participant->getAttribute('email'));

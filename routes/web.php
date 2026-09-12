@@ -356,7 +356,11 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
         Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
             ->name('attendance.export');
+        // The live roster (PRD §9.9.7), asked every few seconds while a session
+        // runs: throttled, so a stuck tab cannot become a stream of PHP
+        // processes on shared hosting.
         Route::get('/attendance/{session}/poll', [TrainerAttendanceController::class, 'poll'])
+            ->middleware('throttle:30,1')
             ->name('attendance.poll');
         Route::patch('/attendance/{attendance}', [TrainerAttendanceController::class, 'update'])
             ->middleware('not.impersonating')

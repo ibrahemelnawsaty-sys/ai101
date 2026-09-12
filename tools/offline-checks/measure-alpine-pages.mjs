@@ -17,6 +17,13 @@ const TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  // The roster's poll endpoint, answered with what the real endpoint returned
+  // once a participant had checked in (render-alpine-pages.php writes it).
+  if (/^\/trainer\/attendance\/[^/]+\/poll/.test(req.url)) {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(fs.readFileSync(path.join(ROOT, 'roster-probe.json')));
+    return;
+  }
   const file = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
   fs.readFile(file, (err, body) => {
     if (err) { res.writeHead(404); res.end(); return; }
@@ -119,6 +126,44 @@ const check = (label, ok, detail = '') => {
     };
   });
   check('atharThread is running on the conversation', thread.component, JSON.stringify(thread));
+  check('no script errors', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+// 5 · the trainer's live roster
+{
+  const { tab, errors, ctx } = await open('roster-probe.html');
+  console.log('trainer roster (live)');
+  const id = fs.readFileSync(path.join(ROOT, 'roster-probe.meta'), 'utf8').trim();
+  const row = `tr[data-participant="${id}"]`;
+  const read = () => tab.evaluate((sel) => {
+    const r = document.querySelector(sel);
+    return {
+      inCell: r?.querySelector('[data-cell="in"]')?.textContent.trim(),
+      status: r?.querySelector('[data-cell="status"]')?.textContent.trim(),
+      edit: !!r?.querySelector('[data-cell="edit"] a'),
+      present: document.querySelector('[data-cell="present"]')?.textContent.trim(),
+    };
+  }, row);
+
+  const before = await read();
+  // Tick a DIFFERENT row's checkbox, as a trainer mid-way through bulk marking.
+  const other = await tab.evaluate((sel) => {
+    const box = [...document.querySelectorAll('tr[data-participant] input[type="checkbox"]')]
+      .find((b) => !b.closest(sel));
+    if (box) { box.checked = true; return box.value; }
+    return null;
+  }, row);
+
+  await tab.waitForTimeout(2600);
+  const after = await read();
+  const stillTicked = await tab.evaluate((v) => !!document.querySelector(`input[type="checkbox"][value="${v}"]`)?.checked, other);
+
+  check('before the poll: no check-in shown', before.inCell === '—' && !before.edit, JSON.stringify(before));
+  check('after the poll: the check-in time appears', after.inCell && after.inCell !== '—', JSON.stringify(after));
+  check('after the poll: the status and the edit button update', after.status !== before.status && after.edit);
+  check('after the poll: the present count moves', Number(after.present) === Number(before.present) + 1, `${before.present} -> ${after.present}`);
+  check('a ticked checkbox elsewhere survives the refresh', other !== null && stillTicked);
   check('no script errors', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }

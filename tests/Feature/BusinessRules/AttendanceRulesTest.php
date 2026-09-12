@@ -407,3 +407,128 @@ it('BR-10: سجل التدقيق يحفظ القيمة قبل التعديل و�
         ->and($log->after)->not->toBeNull()
         ->and($log->ip_address)->not->toBeNull();
 });
+
+/*
+|--------------------------------------------------------------------------
+| BR-10 — the single-row panel and the bulk marking (D-72)
+|--------------------------------------------------------------------------
+*/
+
+it('BR-10: صفّ «غير مكتمل» يُصحَّح إلى «حاضر» من اللوحة، واللوحة لا تحمل حقول وقت', function (): void {
+    $row = makeAttendance($this->session, $this->participant, 'incomplete', [
+        'check_in_at' => $this->start->addMinutes(5),
+    ]);
+    freezeAt($this->end->addHour());
+
+    $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['session' => $this->session->id, 'edit' => $this->participant->id]))
+        ->assertOk()
+        ->assertSee(route('trainer.attendance.update', $row), false)
+        ->assertDontSee('name="checked_in_at"', false)
+        ->assertDontSee('name="checked_out_at"', false);
+
+    assertAccepted($this->actingAs($this->trainer)->patch(route('trainer.attendance.update', $row), [
+        'attendance_status' => 'present',
+        'edit_reason' => 'Stayed to the end; the check-out link failed on their phone.',
+    ]));
+
+    expect($row->fresh()->status->value)->toBe('present')
+        ->and(AuditLog::query()->where('entity_id', $row->id)->count())->toBe(1);
+});
+
+it('BR-10: كل حقل تُصيِّره لوحة التعديل يتحقّق منه UpdateAttendanceRequest', function (): void {
+    $row = makeAttendance($this->session, $this->participant, 'incomplete', [
+        'check_in_at' => $this->start->addMinutes(5),
+    ]);
+    freezeAt($this->end->addHour());
+
+    $html = (string) $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['session' => $this->session->id, 'edit' => $this->participant->id]))
+        ->getContent();
+
+    $action = route('trainer.attendance.update', $row);
+    expect(preg_match('#<form[^>]*action="'.preg_quote($action, '#').'"[^>]*>(.*?)</form>#s', $html, $form))->toBe(1);
+    preg_match_all('/name="([a-z_]+)"/', $form[1], $names);
+
+    $known = ['_token', '_method', ...array_keys((new App\Http\Requests\Trainer\UpdateAttendanceRequest)->rules())];
+
+    expect(array_values(array_diff(array_unique($names[1]), $known)))->toBe([]);
+});
+
+it('BR-10: لا زرّ تعديل لمتدرّب بلا سجلّ حضور، وله زرّ حين يوجد', function (): void {
+    $other = makeParticipant($this->cohort);
+    makeAttendance($this->session, $other, 'absent');
+    freezeAt($this->start->addMinutes(10));
+
+    $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['session' => $this->session->id]))
+        ->assertOk()
+        ->assertSee('edit='.$other->id, false)
+        ->assertDontSee('edit='.$this->participant->id, false)
+        ->assertSee(e((string) __('trainer.attendance.edit_needs_record')), false);
+});
+
+it('BR-10: التحضير الجماعي لمتدرّب بلا سجلّ يكتب صفًّا يدويًّا وسطر تدقيق واحدًا', function (): void {
+    freezeAt($this->end->addHour());
+
+    $this->actingAs($this->trainer)
+        ->post(route('trainer.attendance.bulk', $this->session), [
+            'user_id' => [$this->participant->id],
+            'attendance_status' => 'absent',
+            'edit_reason' => 'Did not attend and sent no notice beforehand.',
+        ])
+        ->assertSessionHas('status', __('attendance.manual_saved'));
+
+    $row = Attendance::query()->where('session_id', $this->session->id)->where('user_id', $this->participant->id)->sole();
+
+    expect($row->check_in_at)->toBeNull()
+        ->and($row->is_manual)->toBeTrue()
+        ->and($row->edited_by)->toBe($this->trainer->id)
+        ->and(AuditLog::query()->where('entity_id', $row->id)->count())->toBe(1);
+});
+
+it('BR-10: التحضير الجماعي لا يكتب لمتدرّب منسحب ولو أُرسل معرّفه', function (): void {
+    $withdrawn = makeParticipant($this->cohort);
+    App\Models\Enrollment::query()->where('user_id', $withdrawn->id)->update(['status' => 'withdrawn']);
+    freezeAt($this->end->addHour());
+
+    $this->actingAs($this->trainer)->post(route('trainer.attendance.bulk', $this->session), [
+        'user_id' => [$withdrawn->id],
+        'attendance_status' => 'absent',
+        'edit_reason' => 'Did not attend and sent no notice beforehand.',
+    ])->assertSessionHasErrors('user_id.0');
+
+    expect(Attendance::query()->where('user_id', $withdrawn->id)->exists())->toBeFalse();
+});
+
+it('BR-27: الوسم اليدوي فوق صفّ ظهر للتوّ يحفظ قيمه السابقة في سجل التدقيق', function (): void {
+    freezeAt($this->end->addHour());
+    $recorder = app(App\Services\Attendance\AttendanceRecorder::class);
+
+    // No row: the first call creates it, and there is nothing before it.
+    $first = $recorder->markWithoutRecord($this->trainer, $this->session, $this->participant,
+        App\Enums\AttendanceStatus::Absent, 'Did not attend and sent no notice beforehand.');
+
+    // A row now exists (as if the participant had checked in between the read
+    // and the write); the second call must record what it overwrote.
+    $second = $recorder->markWithoutRecord($this->trainer, $this->session, $this->participant,
+        App\Enums\AttendanceStatus::Excused, 'A medical note arrived after the session ended.');
+
+    $logs = AuditLog::query()->where('entity_id', $first->id)->orderBy('created_at')->orderBy('id')->get();
+
+    expect($second->id)->toBe($first->id)
+        ->and(Attendance::query()->where('session_id', $this->session->id)->count())->toBe(1)
+        ->and($logs)->toHaveCount(2)
+        ->and($logs->first()?->before)->toBeNull()
+        ->and($logs->last()?->before)->toMatchArray(['status' => 'absent']);
+});
+
+it('BR-10: سبب أقصر من عشرة أحرف يُرفض ولا يكتب شيئًا', function (): void {
+    freezeAt($this->end->addHour());
+
+    expect(fn () => app(App\Services\Attendance\AttendanceRecorder::class)->markWithoutRecord(
+        $this->trainer, $this->session, $this->participant, App\Enums\AttendanceStatus::Absent, 'short',
+    ))->toThrow(App\Exceptions\AttendanceException::class);
+
+    expect(Attendance::query()->count())->toBe(0);
+});

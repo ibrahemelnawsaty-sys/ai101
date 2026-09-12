@@ -57,14 +57,16 @@
                 :description="__('trainer.attendance.no_session_body')"
                 :action-label="__('trainer.sessions.title')" :action-href="route('trainer.sessions')" />
         @else
-            <x-ui.card class="dc--span" flush
-                {{-- The live-poll component was removed in D-55: atharRoster was
-                     never registered, so the auto-refresh never ran, and nothing
-                     else on this screen consumed its state. The roster renders
-                     from the server and the bulk-marking form is a plain form,
-                     so removing it costs a refresh button nobody had. The poll
-                     endpoint still exists for when it is written and tested. --}}
-                >
+            <x-ui.card class="dc--span" flush>
+                {{-- The roster refreshes itself while the session is live (PRD §9.9.7):
+                     the server re-renders the four cells that can change, and only
+                     those are replaced — never the checkboxes or the reason being
+                     typed, because this table is also the bulk-marking form. --}}
+                <div x-data="atharRoster({
+                        pollUrl: '{{ route('trainer.attendance.poll', $roster->sessionId) }}',
+                        pollSeconds: @js($rosterPollSeconds),
+                        live: @js($roster->isLive)
+                    })">
 
                 <div class="tablebar">
                     <div>
@@ -79,7 +81,7 @@
                             <x-ui.pill variant="live" icon="clock">{{ __('trainer.attendance.live_now') }}</x-ui.pill>
                         @endif
                         <b class="roster__count">
-                            <span class="u-num">{{ $roster->presentCount }}</span>
+                            <span class="u-num" data-cell="present">{{ $roster->presentCount }}</span>
                             <small class="u-num"> / {{ $roster->totalCount }}</small>
                         </b>
                         <span class="u-muted">{{ __('trainer.attendance.checked_in_of_total') }}</span>
@@ -109,9 +111,9 @@
                                         <th scope="col">{{ __('trainer.attendance.col_edit') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody x-ref="rows">
+                                <tbody>
                                     @foreach ($roster->entries as $entry)
-                                        <tr>
+                                        <tr data-participant="{{ $entry->participantId }}">
                                             <td>
                                                 <x-ui.checkbox name="user_id[]" :value="$entry->participantId"
                                                     :label="__('trainer.attendance.select_participant', ['name' => $entry->participantName])"
@@ -123,17 +125,10 @@
                                                     {{ $entry->participantName }}
                                                 </span>
                                             </th>
-                                            <td class="u-num">{{ $entry->checkedInAt ? \App\Support\Dates::time12($entry->checkedInAt) : '—' }}</td>
-                                            <td class="u-num">{{ $entry->checkedOutAt ? \App\Support\Dates::time12($entry->checkedOutAt) : '—' }}</td>
-                                            <td>
-                                                <x-ui.pill :variant="$entry->statusVariant" :icon="$entry->statusIcon">{{ $entry->statusLabel }}</x-ui.pill>
-                                            </td>
-                                            <td>
-                                                <x-ui.button variant="secondary" size="sm"
-                                                    :href="route('trainer.attendance', array_merge(request()->query(), ['edit' => $entry->participantId]))">
-                                                    {{ __('app.edit') }}
-                                                </x-ui.button>
-                                            </td>
+                                            <td class="u-num" data-cell="in">{{ $entry->checkedInLabel }}</td>
+                                            <td class="u-num" data-cell="out">{{ $entry->checkedOutLabel }}</td>
+                                            <td data-cell="status">@include('trainer.partials.roster-status', ['entry' => $entry])</td>
+                                            <td data-cell="edit">@include('trainer.partials.roster-edit', ['entry' => $entry])</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -149,6 +144,7 @@
                         </div>
                     </form>
                 @endif
+                </div>
             </x-ui.card>
         @endif
 
@@ -172,12 +168,6 @@
                             :label="__('attendance.col_status')"
                             :options="$statusOptions"
                             :value="old('attendance_status', $editing->status)" />
-                        <x-ui.input name="checked_in_at" type="time" dir="ltr"
-                            :label="__('attendance.col_check_in')"
-                            :value="old('checked_in_at', $editing->checkedInTimeValue)" />
-                        <x-ui.input name="checked_out_at" type="time" dir="ltr"
-                            :label="__('attendance.col_check_out')"
-                            :value="old('checked_out_at', $editing->checkedOutTimeValue)" />
                     </div>
 
                     <x-ui.textarea name="edit_reason" rows="3" required minlength="10"

@@ -20,8 +20,11 @@ use App\Support\ViewModel;
  * field and the live hint beside it are mirrors of the rule, never the rule
  * (art. 5, art. 8).
  *
- * `id` is the attendance row the PATCH endpoint addresses. The two times are
- * Riyadh wall clock, which is what the trainer reads off the session.
+ * `id` is the attendance row the PATCH endpoint addresses. The form carries no
+ * times: PRD §9.9.4 accepts no time value from the client, and the two time
+ * inputs it used to render pre-filled "18:05" against a rule demanding
+ * "Y-m-d H:i" — so a checked-in row could never be saved until the trainer
+ * blanked both, and the server discarded any time it was given anyway (D-72).
  *
  * @see BR-07, BR-10, BR-23, BR-27 · PRD §9.9.7 · CONSTITUTION art. 5, art. 8, art. 11
  */
@@ -43,8 +46,6 @@ final class AttendanceEditForm extends ViewModel
                 $profile?->getAttribute('full_name_ar') ?? $participant->getAttribute('email')
             ),
             'status' => $status instanceof AttendanceStatus ? $status->value : (string) $status,
-            'checkedInTimeValue' => self::timeInput($record->getAttribute('check_in_at')),
-            'checkedOutTimeValue' => self::timeInput($record->getAttribute('check_out_at')),
         ]);
     }
 }

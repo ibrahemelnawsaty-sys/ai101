@@ -65,3 +65,5 @@ desktop.ini
 /public/create-probe.png
 /public/build/select-probe.html
 /public/*-probe.html
+/public/roster-probe.json
+/public/roster-probe.meta

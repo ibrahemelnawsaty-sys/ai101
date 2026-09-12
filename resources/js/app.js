@@ -1103,6 +1103,79 @@ function atharThread() {
 }
 
 /**
+ * The trainer's live roster (PRD §9.9.7).
+ *
+ * The table is also the bulk-marking form, so it is never replaced: each poll
+ * patches only the cells named by `data-cell` — the two times, the status pill
+ * and the edit control — plus the present count. The checkboxes and the reason
+ * a trainer is typing are left alone. The markup comes from the server's own
+ * partials. Polling runs only while the server says the session is live, stops
+ * by itself when it ends, and a hidden tab does not poll.
+ */
+function atharRoster() {
+    return (config = {}) => ({
+        busy: false,
+        timer: null,
+        onVisible: null,
+
+        init() {
+            const seconds = Number(config.pollSeconds) || 0;
+            if (!config.pollUrl || !config.live || seconds <= 0) return;
+
+            this.timer = window.setInterval(() => this.poll(), seconds * 1000);
+            this.onVisible = () => {
+                if (!document.hidden) this.poll();
+            };
+            document.addEventListener('visibilitychange', this.onVisible);
+        },
+
+        destroy() {
+            this.stop();
+        },
+
+        stop() {
+            window.clearInterval(this.timer);
+            this.timer = null;
+            if (this.onVisible) document.removeEventListener('visibilitychange', this.onVisible);
+        },
+
+        async poll() {
+            if (this.busy || document.hidden) return;
+            this.busy = true;
+            try {
+                const response = await window.fetch(config.pollUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data || typeof data.rows !== 'object' || data.rows === null) return;
+
+                Object.keys(data.rows).forEach((id) => {
+                    const row = this.$el.querySelector(`tr[data-participant="${CSS.escape(id)}"]`);
+                    if (!row) return;
+                    const cells = data.rows[id];
+                    const text = (name) => row.querySelector(`[data-cell="${name}"]`);
+                    if (text('in')) text('in').textContent = cells.in;
+                    if (text('out')) text('out').textContent = cells.out;
+                    if (text('status')) text('status').innerHTML = cells.status;
+                    if (text('edit')) text('edit').innerHTML = cells.edit;
+                });
+
+                const present = this.$el.querySelector('[data-cell="present"]');
+                if (present && Number.isFinite(data.present)) present.textContent = String(data.present);
+
+                if (data.isLive === false) this.stop();
+            } catch (error) {
+                /* Offline or a server hiccup: keep what is on screen. */
+            } finally {
+                this.busy = false;
+            }
+        },
+    });
+}
+
+/**
  * The wait before "send the link again" is offered (PRD §9.2.3). The instant
  * comes from the server and is counted against server time (BR-07); the server
  * enforces the limit again when the form arrives — this only avoids offering a
@@ -1150,6 +1223,7 @@ Alpine.data('atharCardTilt', atharCardTilt());
 Alpine.data('atharWelcome', atharWelcome());
 Alpine.data('atharSchedule', atharSchedule());
 Alpine.data('atharThread', atharThread());
+Alpine.data('atharRoster', atharRoster());
 Alpine.data('resendCooldown', resendCooldown());
 
 window.Alpine = Alpine;

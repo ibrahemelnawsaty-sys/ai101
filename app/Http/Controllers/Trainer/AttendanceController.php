@@ -23,11 +23,11 @@ use App\Presenters\Trainer\AttendanceEditForm;
 use App\Presenters\Trainer\AttendanceMatrix;
 use App\Presenters\Trainer\AttendanceRoster;
 use App\Presenters\Trainer\MatrixRow;
+use App\Presenters\Trainer\RosterEntry;
 use App\Presenters\Trainer\SessionRow;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
-use App\Services\Time\Clock;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -127,6 +127,7 @@ final class AttendanceController extends Controller
             'statusOptions' => Options::fromEnum(AttendanceStatus::class),
             'atRisk' => $this->atRisk($cohort, $participants, $rates),
             'editing' => $this->editing($request, $session, $records, $participants),
+            'rosterPollSeconds' => max(0, (int) config('athar.attendance.roster_poll_seconds')),
             'errorState' => null,
             'screen' => self::SCREEN,
             // No session has been held yet, so there is no attendance board to
@@ -221,24 +222,41 @@ final class AttendanceController extends Controller
     }
 
     /**
-     * Live roster for one session, for the page that refreshes itself while a
-     * session is running. Same authorisation as the page it feeds.
+     * The live roster of one session (PRD §9.9.7): the four cells of each row
+     * that can change, rendered by the same partials the page uses, and the
+     * present count.
+     *
+     * It returned raw status values nobody read — its client had been removed
+     * in D-55 — and it asked manageAttendance, a WRITE ability, for a read, so
+     * a preview was refused. Now a read ability, throttled, and the markup is
+     * the server's: the browser never re-implements a label or a variant.
      */
     public function poll(Session $session): JsonResponse
     {
-        $this->authorize('manageAttendance', $session);
+        $this->authorize('viewAttendance', $session);
+
+        /** @var Cohort $cohort */
+        $cohort = Cohort::query()->findOrFail($session->getAttribute('cohort_id'));
+        $roster = AttendanceRoster::of($session, $this->participants($cohort), $this->records($session), $this->window);
+
+        $rows = [];
+
+        /** @var iterable<int, RosterEntry> $entries */
+        $entries = $roster->get('entries', []);
+
+        foreach ($entries as $entry) {
+            $rows[(string) $entry->get('participantId')] = [
+                'in' => (string) $entry->get('checkedInLabel'),
+                'out' => (string) $entry->get('checkedOutLabel'),
+                'status' => view('trainer.partials.roster-status', ['entry' => $entry])->render(),
+                'edit' => view('trainer.partials.roster-edit', ['entry' => $entry])->render(),
+            ];
+        }
 
         return new JsonResponse([
-            'server_now' => Clock::now()->toIso8601String(),
-            'rows' => $this->records($session)
-                ->map(static fn (Attendance $row): array => [
-                    'user_id' => (string) $row->getAttribute('user_id'),
-                    'status' => $row->getAttribute('status')?->value,
-                    'checked_in' => $row->getAttribute('check_in_at') !== null,
-                    'checked_out' => $row->getAttribute('check_out_at') !== null,
-                ])
-                ->values()
-                ->all(),
+            'isLive' => (bool) $roster->get('isLive'),
+            'present' => (int) $roster->get('presentCount'),
+            'rows' => $rows,
         ]);
     }
 
@@ -301,6 +319,10 @@ final class AttendanceController extends Controller
                     Enrollment::query()
                         ->where('cohort_id', $session->getAttribute('cohort_id'))
                         ->where('role_in_cohort', EnrollmentRole::Participant->value)
+                        // The roster this form came from lists ACTIVE
+                        // participants; a crafted id for a pending or withdrawn
+                        // one is not on it and is not written for (D-72).
+                        ->where('status', EnrollmentStatus::Active->value)
                         ->select('user_id'),
                 )
                 ->get();
@@ -310,7 +332,9 @@ final class AttendanceController extends Controller
             }
         }
 
-        return back()->with('status', __('attendance.bulk_saved'));
+        return back()->with('status', count($requested) === 1
+            ? __('attendance.manual_saved')
+            : __('attendance.bulk_saved'));
     }
 
     /** The cohort's attendance matrix as a CSV. */

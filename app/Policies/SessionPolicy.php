@@ -64,6 +64,16 @@ final class SessionPolicy
         return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
+    /**
+     * Reading a session's roster — the live refresh of the attendance screen.
+     * Staff of the cohort only, and NOT writesAllowed(): it changes nothing, so
+     * an administrator previewing as a trainer sees it refresh too (D-72).
+     */
+    public function viewAttendance(User $user, Session $session): bool
+    {
+        return $this->staffOf($user, (string) $session->cohort_id);
+    }
+
     public function manageAttendance(User $user, Session $session): bool
     {
         return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();

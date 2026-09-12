@@ -125,6 +125,7 @@ return [
 
         'edit_title' => 'Edit the record of :name',
         'reason' => 'Reason for the change',
+        'edit_needs_record' => 'No record yet — tick the row and use bulk marking',
         'reason_placeholder' => 'For example: they could not check in because the connection dropped, and attendance was confirmed in the session',
         'reason_hint' => 'A reason is required and must be at least :min characters.',
         'reason_ok' => 'The reason meets the minimum length.',

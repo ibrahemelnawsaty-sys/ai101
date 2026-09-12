@@ -138,6 +138,13 @@ return [
         | inside a single PHP execution slot on shared hosting (art. 10).
         */
         'reconcile_lookback_days' => 3,
+
+        /*
+        | How often the trainer's live roster asks for fresh cells while a
+        | session is running (PRD §9.9.7). It stops by itself when the session
+        | ends, and a hidden tab does not ask. Zero switches it off.
+        */
+        'roster_poll_seconds' => (int) env('ROSTER_POLL_SECONDS', 20),
     ],
 
     /*

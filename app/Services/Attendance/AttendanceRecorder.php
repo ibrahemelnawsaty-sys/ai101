@@ -260,24 +260,35 @@ final class AttendanceRecorder
         }
 
         return DB::transaction(function () use ($actor, $session, $participant, $status, $trimmed): Attendance {
+            // Read under a lock first. A row can appear between the caller's
+            // read and this write — the participant checks in — and the audit
+            // entry used to say `before: null` whatever it overwrote, losing
+            // the previous values BR-27 requires (D-72).
+            $existing = Attendance::query()
+                ->where('session_id', $session->getKey())
+                ->where('user_id', $participant->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            $before = $existing === null ? null : $this->audit->snapshot($existing, $this->auditedColumns());
+
             /** @var Attendance $attendance */
-            $attendance = Attendance::query()->updateOrCreate(
-                [
-                    'session_id' => $session->getKey(),
-                    'user_id' => $participant->getKey(),
-                ],
-                [
-                    'status' => $status,
-                    'is_manual' => true,
-                    'edited_by' => $actor->getKey(),
-                    'edit_reason' => $trimmed,
-                ],
-            );
+            $attendance = $existing ?? new Attendance([
+                'session_id' => $session->getKey(),
+                'user_id' => $participant->getKey(),
+            ]);
+
+            $attendance->fill([
+                'status' => $status,
+                'is_manual' => true,
+                'edited_by' => $actor->getKey(),
+                'edit_reason' => $trimmed,
+            ])->save();
 
             $this->audit->log(
                 action: AuditLogger::ATTENDANCE_MANUAL_EDIT,
                 entity: $attendance,
-                before: null,
+                before: $before,
                 after: $this->audit->snapshot($attendance, $this->auditedColumns()),
                 actor: $actor,
             );

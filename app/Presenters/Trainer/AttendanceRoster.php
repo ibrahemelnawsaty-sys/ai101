@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presenters\Trainer;
 
+use App\Http\Middleware\EnsureCohortScope;
 use App\Models\Attendance;
 use App\Models\Session;
 use App\Models\User;
@@ -56,10 +57,18 @@ final class AttendanceRoster extends ViewModel
         Collection $records,
         AttendanceWindow $window,
     ): self {
+        $cohortId = (string) $session->getAttribute('cohort_id');
+        $sessionId = (string) $session->getKey();
+
         $entries = $participants
             ->map(static fn (User $participant): RosterEntry => RosterEntry::from(
                 $participant,
                 $records->get((string) $participant->getKey()),
+                route('trainer.attendance', [
+                    EnsureCohortScope::QUERY_KEY => $cohortId,
+                    'session' => $sessionId,
+                    'edit' => (string) $participant->getKey(),
+                ]),
             ))
             ->values();
 
