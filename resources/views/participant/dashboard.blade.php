@@ -154,6 +154,14 @@
             @elseif (is_null($journey))
                 <x-ui.skeleton height="var(--s9)" width="40%" />
                 <x-ui.skeleton height="var(--s2)" width="100%" class="u-mt-4" />
+            @elseif ($journey->totalSteps === 0)
+                {{-- The only one of the nine cards that had no empty state, so on a
+                     trainee's first day it printed «0 / 0» and a dash for the
+                     current step as though they were facts. Nothing is measured
+                     yet; the card says so, in copy written for it (D-65). --}}
+                <x-ui.empty-state icon="route"
+                    :title="__('journey.empty_title')"
+                    :description="__('journey.empty_body')" />
             @else
                 <div class="stat">
                     <div>

@@ -117,12 +117,16 @@ final class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        foreach ($request->validated() as $type => $enabled) {
+        // One row per event type, each channel from its own switch. The old
+        // loop wrote a single value into BOTH columns, so switching e-mail off
+        // silenced the bell as well — and it iterated keys the form never sent,
+        // so it never ran at all (D-65).
+        foreach ($request->preferences() as $type => $channels) {
             NotificationPreference::query()->updateOrCreate(
                 ['user_id' => $user->getKey(), 'type' => $type],
                 [
-                    'in_app_enabled' => (bool) $enabled,
-                    'email_enabled' => (bool) $enabled,
+                    'in_app_enabled' => $channels['platform'],
+                    'email_enabled' => $channels['email'],
                 ],
             );
         }

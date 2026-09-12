@@ -205,7 +205,18 @@ return [
     */
 
     'routes' => [
-        'trainer_session' => 'trainer.sessions',
+        /*
+         * Where an incomplete-attendance notice (BR-09) sends the trainer.
+         *
+         * `trainer.attendance`, not `trainer.sessions`. The notice carries
+         * ?session=<id>, and SessionController never reads that key — it
+         * renders a paginated board of up to fifty sessions with nothing saying
+         * which one the notice was about. AttendanceController does read it
+         * (line 361). D-62 replaced a route name that did not exist with one
+         * that exists and discards the identifier, so Route::has() passed and
+         * nothing errored (D-65).
+         */
+        'trainer_session' => 'trainer.attendance',
     ],
 
     /*

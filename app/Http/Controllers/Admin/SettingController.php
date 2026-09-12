@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateNotificationDefaultsRequest;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
 use App\Models\LandingSetting;
 use App\Presenters\Admin\GeneralSettings;
@@ -66,7 +67,7 @@ final class SettingController extends Controller
      * slice would have had to invent (Art. 4). The gap is raised with this
      * slice for a product decision.
      */
-    public function notifications(UpdateSettingsRequest $request): RedirectResponse
+    public function notifications(UpdateNotificationDefaultsRequest $request): RedirectResponse
     {
         $this->audit->record(
             action: 'settings.notifications_updated',

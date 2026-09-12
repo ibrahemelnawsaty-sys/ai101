@@ -23,7 +23,7 @@ final class PreferencePresenter extends ViewModel
      *
      * @var list<string>
      */
-    private const ALWAYS_ON = [
+    public const ALWAYS_ON = [
         'enrollment_approved',
         'enrollment_rejected',
         'certificate_issued',

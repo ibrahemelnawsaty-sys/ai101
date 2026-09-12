@@ -15,12 +15,15 @@ use App\Models\User;
 use App\Models\Week;
 use App\Presenters\Support\Options;
 use App\Presenters\Trainer\ResourceRow;
+use App\Exceptions\FileException;
 use App\Services\Audit\AuditLogger;
+use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 /**
  * The training kit as the trainer manages it (PRD §9.12).
@@ -45,7 +48,10 @@ final class ResourceController extends Controller
 
     private const PER_PAGE = 50;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly PrivateFileService $files,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -178,7 +184,36 @@ final class ResourceController extends Controller
         /** @var User $uploader */
         $uploader = $request->user();
 
-        Resource::query()->create(array_merge($request->columns(), [
+        $columns = $request->columns();
+
+        // The upload was validated and then THROWN AWAY: nothing here ever
+        // touched $request->file('file'). The row was created with
+        // `file_url = null`, the trainer read the success message, the bytes
+        // were deleted with the temp file at the end of the request, and on
+        // the participant side ResourcePresenter hides the download of any
+        // file resource whose `file_url` is null. Teaching material, uploaded
+        // and gone (D-65).
+        //
+        // Through PrivateFileService, the same path submissions take since
+        // D-56: the MIME type is sniffed from the file's own bytes (PRD
+        // §12.5), the name on disk is random, and it lives outside the web
+        // root. Participants reach it only through the download route, which
+        // checks the policy and reads `file_url` from the `private` disk --
+        // the disk the service writes to.
+        $file = $request->file('file');
+
+        if ($file instanceof UploadedFile) {
+            try {
+                $stored = $this->files->store($file, 'resources/'.$columns['cohort_id'], $uploader);
+            } catch (FileException $failure) {
+                return back()->withErrors(['file' => $failure->getMessage()])->withInput();
+            }
+
+            $columns['file_url'] = $stored['path'];
+            $columns['size'] = $stored['size_bytes'];
+        }
+
+        Resource::query()->create(array_merge($columns, [
             'uploaded_by' => $uploader->getKey(),
             'download_count' => 0,
         ]));
