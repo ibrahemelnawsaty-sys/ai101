@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Presenters\Participant\EvaluationPresenter;
 use App\Presenters\Participant\FinalProjectPresenter;
 use App\Presenters\Participant\SubmissionPresenter;
+use App\Services\Notifications\CohortNotices;
 use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
@@ -36,7 +37,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class FinalProjectController extends Controller
 {
-    public function __construct(private readonly PrivateFileService $files) {}
+    public function __construct(
+        private readonly PrivateFileService $files,
+        private readonly CohortNotices $notices,
+    ) {}
 
     use ResolvesActiveCohort;
 
@@ -171,6 +175,16 @@ final class FinalProjectController extends Controller
             // DomainException). The same slip lived in AssignmentController.
             return back()->withErrors(['files' => $failure->localizedMessage()]);
         }
+
+        // The same two notices an assignment hand-in sends (D-83).
+        $cohortId = (string) $project->getAttribute('cohort_id');
+        $this->notices->handedIn(
+            $user,
+            $cohortId,
+            (string) $project->getAttribute('title'),
+            route('finalProject'),
+            route('trainer.finalProject', ['cohort' => $cohortId]),
+        );
 
         return redirect()
             ->route('finalProject')

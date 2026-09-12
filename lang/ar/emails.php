@@ -150,15 +150,23 @@ return [
         'cta' => 'افتح تبويب المحاضرات',
         'when_24h' => 'غدًا',
         'when_1h' => 'بعد ساعة',
+        'trainer_fallback' => 'مدربك',
     ],
 
     'session_changed' => [
         'subject' => 'تغيّر موعد جلسة :session',
         'preheader' => 'راجع الموعد الجديد في الجدول.',
         'heading' => 'تحديث على جدول الدفعة',
-        'body' => 'تغيّر موعد جلسة «:session». السبب: :reason',
-        'replacement' => 'الموعد البديل: :datetime',
+        'body' => 'تغيّر موعد جلسة «:session»، وموعدها الجديد :datetime بتوقيت الرياض.',
         'cta' => 'افتح الجدول',
+    ],
+
+    'announcement_published' => [
+        'subject' => 'إعلان جديد من إدارة البرنامج',
+        'preheader' => ':excerpt',
+        'heading' => 'إعلان جديد لدفعتك',
+        'body' => 'نُشر إعلان جديد في قناة إعلانات الدفعة: «:excerpt»',
+        'cta' => 'افتح الإعلان',
     ],
 
     'assignment_published' => [

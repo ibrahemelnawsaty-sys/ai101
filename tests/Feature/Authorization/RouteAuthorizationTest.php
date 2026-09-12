@@ -40,6 +40,9 @@ beforeEach(function (): void {
     $this->admin = makeAdmin();
     $this->trainer = makeTrainer($this->cohort);
     $this->participant = makeParticipant($this->cohort);
+    // Graded and certified, the participant above may not be deleted (PRD
+    // §7.8, D-84); the delete route is exercised on an account that may.
+    $this->deletable = makeParticipant($this->cohort);
 
     $this->enrollment = Enrollment::query()
         ->where('cohort_id', $this->cohort->id)
@@ -211,7 +214,8 @@ function authorizationMatrix(object $test): array
         'admin.users.resetPassword' => ['post', [$test->participant], ['admin']],
         'admin.users.resendVerification' => ['post', [$test->participant], ['admin']],
         'admin.users.logoutEverywhere' => ['post', [$test->participant], ['admin']],
-        'admin.users.destroy' => ['delete', [$test->participant], ['admin']],
+        'admin.users.destroy' => ['delete', [$test->deletable], ['admin']],
+        'admin.users.enroll' => ['post', [$test->participant], ['admin']],
         // Starting a preview creates a row and rewrites the session; it is a POST.
         'admin.users.preview' => ['post', [$test->participant], ['admin']],
 

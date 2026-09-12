@@ -21,6 +21,7 @@ declare(strict_types=1);
  */
 
 use App\Console\Commands\ReconcileAttendance;
+use App\Console\Commands\SendScheduledNotices;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -45,3 +46,20 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command(ReconcileAttendance::class)
     ->everyFifteenMinutes()
     ->withoutOverlapping(10);
+
+/*
+|--------------------------------------------------------------------------
+| Reminders - every minute (PRD §9.16.1, D-83)
+|--------------------------------------------------------------------------
+|
+| A session tomorrow, in an hour, starting now; an assignment due in two days
+| and in six hours. Every minute because the start notice says "live now":
+| a five-minute cadence would say it five minutes late. The pass is a handful
+| of indexed queries, and each notice is claimed once in scheduled_notices, so
+| an overlapping run sends nothing twice.
+|
+*/
+
+Schedule::command(SendScheduledNotices::class)
+    ->everyMinute()
+    ->withoutOverlapping(5);

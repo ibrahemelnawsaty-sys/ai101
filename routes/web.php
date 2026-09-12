@@ -523,6 +523,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/users/{user}/logout-everywhere', [AdminUserController::class, 'logoutEverywhere'])
             ->middleware('not.impersonating')
             ->name('users.logoutEverywhere');
+        // Seat an existing participant account in a cohort (D-84).
+        Route::post('/users/{user}/enrollments', [AdminUserController::class, 'enroll'])
+            ->middleware('not.impersonating')
+            ->name('users.enroll');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
             ->middleware('not.impersonating')
             ->name('users.destroy');

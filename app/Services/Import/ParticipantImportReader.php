@@ -236,7 +236,7 @@ final class ParticipantImportReader
         // and would otherwise fail halfway through, leaving half a cohort made.
         if ($email !== '' && array_key_exists($email, $seenEmails)) {
             $errors[] = (string) __('admin.users.import.errors.duplicate_in_file', ['row' => $seenEmails[$email]]);
-        } elseif ($email !== '' && User::query()->where('email', $email)->whereNull('deleted_at')->exists()) {
+        } elseif ($email !== '' && User::withTrashed()->where('email', $email)->exists()) {
             $errors[] = (string) __('admin.users.import.errors.email_taken');
         }
 

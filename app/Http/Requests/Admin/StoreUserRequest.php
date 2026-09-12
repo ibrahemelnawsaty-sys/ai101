@@ -77,7 +77,10 @@ final class StoreUserRequest extends FormRequest
         $rules = [
             'email' => [
                 'required', 'string', 'email:rfc', 'max:255',
-                Rule::unique('users', 'email')->whereNull('deleted_at'),
+                // Deleted accounts included: `users.email` is unique across
+                // them in the database, so letting their address through here
+                // ended in an insert error — a 500 — instead of a message (D-84).
+                Rule::unique('users', 'email'),
             ],
             'phone' => array_merge($this->phoneRules(), [Rule::unique('profiles', 'phone')]),
             'gender' => ['required', Rule::enum(Gender::class)],

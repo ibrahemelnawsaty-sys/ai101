@@ -147,6 +147,35 @@ final class AccountInviter
     }
 
     /**
+     * Seat an account that already exists — the administrator's "add to a
+     * cohort" on the user page (D-84). The same seat, card and conversations
+     * an invitation gives, in one transaction, and no letter: the person has
+     * their credentials already.
+     *
+     * @return bool false when the account was already in that cohort
+     */
+    public function enrollExisting(User $user, Cohort $cohort): bool
+    {
+        return DB::transaction(function () use ($user, $cohort): bool {
+            // The answer comes from seat(), read AFTER the cohort lock. A read
+            // here, before it, fixed MySQL's snapshot: a double-clicked second
+            // request then could not see the first one's row, inserted again,
+            // and met the unique key as a 500.
+            if (! $this->seat($user, $cohort, Clock::now())) {
+                return false;
+            }
+
+            $this->cards->issueFor($user);
+
+            $this->audit->log('enrollment.seated', $user, null, [
+                'cohort_id' => $cohort->getKey(),
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
      * Seat the account in its cohort, exactly as the verification path does.
      *
      * The `exists` check is not decoration: this service is reachable twice for
@@ -165,8 +194,10 @@ final class AccountInviter
      *
      * Whether an invitation may seat a trainee past capacity is an open
      * question (D-69); today it may, as it always could.
+     *
+     * @return bool true when this call created the enrolment
      */
-    private function seat(User $user, Cohort $cohort, CarbonImmutable $at): void
+    private function seat(User $user, Cohort $cohort, CarbonImmutable $at): bool
     {
         /** @var Cohort $locked */
         $locked = Cohort::query()->whereKey($cohort->getKey())->lockForUpdate()->firstOrFail();
@@ -177,7 +208,7 @@ final class AccountInviter
             ->exists();
 
         if ($already) {
-            return;
+            return false;
         }
 
         Enrollment::query()->create([
@@ -193,6 +224,8 @@ final class AccountInviter
 
         // Their three conversations (PRD §9.13, D-82).
         $this->threads->seatParticipant($user, $locked);
+
+        return true;
     }
 
     /**

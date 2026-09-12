@@ -161,6 +161,15 @@ return [
 
     'messages' => [
         'poll_seconds' => (int) env('MESSAGES_POLL_SECONDS', 15),
+
+        // "E-mail if the recipient is offline" (PRD §9.16.1). Offline means no
+        // request from any of their sessions in this many minutes; an open
+        // conversation polls every poll_seconds, so a reader is never offline.
+        // And at most one letter per conversation per email_every_minutes,
+        // however many messages arrive. Both from AMB-14; the values are a
+        // temporary assumption awaiting the owner's sign-off (D-83).
+        'offline_after_minutes' => (int) env('MESSAGES_OFFLINE_AFTER_MINUTES', 5),
+        'email_every_minutes' => (int) env('MESSAGES_EMAIL_EVERY_MINUTES', 15),
     ],
 
     /*

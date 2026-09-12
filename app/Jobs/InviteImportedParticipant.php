@@ -61,9 +61,12 @@ final class InviteImportedParticipant implements ShouldQueue
         // an earlier request, and an address that was free then may have been
         // taken since — by the other half of a double-clicked import, by the
         // single-account form, or by this very job on a previous attempt.
-        $exists = \App\Models\User::query()
+        //
+        // Deleted accounts count: `users.email` is unique across them, so a
+        // deleted address slipped past this check and failed the insert, and
+        // the job went to failed_jobs three times over (D-84).
+        $exists = \App\Models\User::withTrashed()
             ->where('email', $this->email)
-            ->whereNull('deleted_at')
             ->exists();
 
         if ($exists) {

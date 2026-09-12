@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CohortStatus;
 use App\Enums\EmailTokenType;
 use App\Enums\Gender;
 use App\Enums\UserRole;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ChangeUserRoleRequest;
 use App\Http\Requests\Admin\ChangeUserStatusRequest;
+use App\Http\Requests\Admin\EnrollUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\SuspendUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
@@ -152,8 +154,37 @@ final class UserController extends Controller
             ),
             'roleOptions' => Options::fromEnum(UserRole::class),
             'statusOptions' => Options::fromEnum(UserStatus::class),
+            // The cohorts this account may still be seated in: not finished,
+            // and not one it already has an enrolment in (D-84).
+            'enrollOptions' => Options::fromModels(
+                Cohort::query()
+                    ->whereIn('status', array_map(
+                        static fn (CohortStatus $s): string => $s->value,
+                        EnrollUserRequest::SEATABLE,
+                    ))
+                    ->whereNotIn('id', $enrollments->map(static fn (Enrollment $e): string => (string) $e->getAttribute('cohort_id'))->all())
+                    ->orderByDesc('start_date')
+                    ->get(),
+                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
+            ),
             'errorState' => null,
         ]);
+    }
+
+    /**
+     * Seat an existing participant account in a cohort: the enrolment, the
+     * card and the cohort's conversations, as an invitation gives them
+     * (D-84). Before this, an account created without a cohort had no way in
+     * from the interface (D-69).
+     */
+    public function enroll(EnrollUserRequest $request, User $user): RedirectResponse
+    {
+        $seated = $this->inviter->enrollExisting($request->subject(), $request->cohort());
+
+        return back()->with(
+            $seated ? 'status' : 'warning',
+            __($seated ? 'admin.users.enrolled' : 'admin.users.enroll_already'),
+        );
     }
 
     /**

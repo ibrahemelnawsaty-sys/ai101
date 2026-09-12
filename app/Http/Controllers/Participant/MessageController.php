@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Participant;
 
 use App\Enums\ThreadType;
-use App\Events\MessageReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\ReportMessageRequest;
 use App\Http\Requests\Participant\SendMessageRequest;
@@ -18,6 +17,7 @@ use App\Presenters\Participant\ActiveThreadPresenter;
 use App\Presenters\Participant\MessagePresenter;
 use App\Presenters\Participant\ThreadPresenter;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\CohortNotices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
 use App\Support\ScreenState;
@@ -25,7 +25,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /**
  * Internal messaging (PRD §9.13).
@@ -50,7 +49,10 @@ final class MessageController extends Controller
     /** The Article 17 screen name, and the name of its loading skeleton. */
     private const SCREEN = 'messages';
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly CohortNotices $notices,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -213,29 +215,11 @@ final class MessageController extends Controller
 
         $thread->touch();
 
-        // Everyone on the thread except the person who just wrote. An excerpt
-        // only: reproducing a conversation by e-mail defeats the point of
-        // holding it inside the platform, where it is scoped, reportable and
-        // audited.
-        //
-        // `counterpartFor()` and `displayName()` were assumed and do not exist;
-        // the thread's own `users` relation and the profile's `full_name_ar`
-        // are what the project actually has.
-        $sender = $request->user();
-        $senderName = (string) ($sender?->profile?->getAttribute('full_name_ar') ?? '');
-
-        foreach ($thread->users as $participant) {
-            if ($sender !== null && $participant->is($sender)) {
-                continue;
-            }
-
-            MessageReceived::dispatch(
-                $participant,
-                $senderName,
-                (string) $thread->getAttribute('title'),
-                Str::limit((string) $request->validated('body'), 120),
-            );
-        }
+        // In the announcement channel, an announcement to the cohort; anywhere
+        // else, a message to the other members — on the platform now, and by
+        // letter to whoever is offline (PRD §9.16.1, D-83). It only ever sent
+        // the letter, to everyone, with the thread's empty title in it.
+        $this->notices->posted($thread, $user, (string) $request->validated('body'));
 
         return back()->with('status', __('messages.sent'));
     }

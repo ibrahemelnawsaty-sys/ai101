@@ -17,6 +17,7 @@ use App\Models\Week;
 use App\Presenters\Support\Options;
 use App\Presenters\Trainer\ResourceRow;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\CohortNotices;
 use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
@@ -51,6 +52,7 @@ final class ResourceController extends Controller
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly PrivateFileService $files,
+        private readonly CohortNotices $notices,
     ) {}
 
     public function index(Request $request): View
@@ -217,6 +219,9 @@ final class ResourceController extends Controller
             'uploaded_by' => $uploader->getKey(),
             'download_count' => 0,
         ]));
+
+        // PRD §9.16.1: the whole cohort, on the platform (D-83).
+        $this->notices->resourceAdded((string) $columns['cohort_id'], (string) $columns['title']);
 
         return back()->with('status', __('trainer.resources.created'));
     }

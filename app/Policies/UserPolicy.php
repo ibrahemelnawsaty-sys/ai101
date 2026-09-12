@@ -6,6 +6,8 @@ namespace App\Policies;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Certificate;
+use App\Models\Evaluation;
 use App\Models\User;
 use App\Policies\Concerns\InteractsWithScope;
 
@@ -100,7 +102,28 @@ final class UserPolicy
             return false;
         }
 
+        // PRD §7.8: "no user with evaluation records or an issued certificate
+        // is deleted". The policy never asked, so a graded trainee — or one
+        // holding a certificate a verify page vouches for — could be deleted
+        // like any other account (D-84). Suspending stays available.
+        if ($this->holdsAcademicRecords($subject)) {
+            return false;
+        }
+
         return $subject->role !== UserRole::Admin || $this->otherActiveAdminsExist($subject);
+    }
+
+    /**
+     * Seat an EXISTING participant account in a cohort. Accounts created
+     * without one — from the command line, before D-63 — had no way in from
+     * the interface (D-69, D-84).
+     */
+    public function enroll(User $user, User $subject): bool
+    {
+        return $this->admin($user)
+            && $this->writesAllowed()
+            && $subject->role === UserRole::Participant
+            && $subject->status !== UserStatus::Deleted;
     }
 
     /** Hard deletes are forbidden platform-wide (CONSTITUTION Art. 13 §11). */
@@ -133,6 +156,13 @@ final class UserPolicy
     public function viewAuditTrail(User $user): bool
     {
         return $this->admin($user);
+    }
+
+    /** Graded, or holding a certificate — revoked ones included: it was issued. */
+    private function holdsAcademicRecords(User $subject): bool
+    {
+        return Evaluation::query()->where('user_id', $subject->getKey())->exists()
+            || Certificate::query()->where('user_id', $subject->getKey())->exists();
     }
 
     private function otherActiveAdminsExist(User $subject): bool

@@ -21,7 +21,9 @@ use App\Presenters\Trainer\SessionRow;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Audit\AuditLogger;
 use App\Services\Mail\CohortAudience;
+use App\Services\Notifications\CohortNotices;
 use App\Services\Notifications\InAppNotifier;
+use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,6 +50,7 @@ final class SessionController extends Controller
         private readonly AttendanceWindow $window,
         private readonly InAppNotifier $notifier,
         private readonly CohortAudience $audience,
+        private readonly CohortNotices $notices,
     ) {}
 
     public function index(Request $request): View
@@ -167,7 +170,24 @@ final class SessionController extends Controller
 
     public function update(UpdateSessionRequest $request, Session $session): RedirectResponse
     {
+        $before = $this->window->startsAt($session);
+
         $session->fill($request->columns())->save();
+
+        // A new start is a postponement, and PRD §9.16.1 tells the whole cohort
+        // at the change, on both channels (D-83). A new topic or link is not;
+        // a cancelled session has already been announced as cancelled; and a
+        // start that is now in the past is a correction to the record, not a
+        // time anybody can still attend.
+        $after = $this->window->startsAt($session);
+
+        if (! $after->equalTo($before) && ! $session->isCancelled() && $after->greaterThan(Clock::now())) {
+            $this->notices->sessionMoved(
+                (string) $session->getAttribute('cohort_id'),
+                (string) $session->getAttribute('title'),
+                $after,
+            );
+        }
 
         return back()->with('status', __('trainer.sessions.updated'));
     }

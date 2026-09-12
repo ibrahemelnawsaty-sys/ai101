@@ -50,7 +50,7 @@ return [
         'session_changed' => [
             'label' => 'Session moved or cancelled',
             'title' => 'Session :session has moved',
-            'body' => 'Check the schedule for the new time and the reason for the change.',
+            'body' => 'Its new time is :datetime Riyadh time. Check the schedule for the details.',
         ],
         'session_cancelled' => [
             'label' => 'Session cancelled',

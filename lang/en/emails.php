@@ -124,15 +124,23 @@ return [
         'cta' => 'Open the live sessions tab',
         'when_24h' => 'tomorrow',
         'when_1h' => 'in an hour',
+        'trainer_fallback' => 'your trainer',
     ],
 
     'session_changed' => [
         'subject' => 'Session :session has moved',
         'preheader' => 'Check the new time in the schedule.',
         'heading' => 'An update to your cohort schedule',
-        'body' => 'Session «:session» has moved. Reason: :reason',
-        'replacement' => 'Replacement date: :datetime',
+        'body' => 'Session «:session» has moved. Its new time is :datetime Riyadh time.',
         'cta' => 'Open the schedule',
+    ],
+
+    'announcement_published' => [
+        'subject' => 'A new announcement from the programme team',
+        'preheader' => ':excerpt',
+        'heading' => 'A new announcement for your cohort',
+        'body' => 'A new announcement was posted in your cohort\'s announcement channel: «:excerpt»',
+        'cta' => 'Open the announcement',
     ],
 
     'assignment_published' => [

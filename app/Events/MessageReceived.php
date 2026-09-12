@@ -38,5 +38,8 @@ final class MessageReceived
         public readonly string $senderName,
         public readonly string $threadTitle,
         public readonly string $excerpt,
+        // So the listener can ask, when the queue runs, whether the member muted
+        // this conversation or was already e-mailed about it (D-83).
+        public readonly string $threadId,
     ) {}
 }

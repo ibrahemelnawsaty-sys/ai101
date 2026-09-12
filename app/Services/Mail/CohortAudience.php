@@ -58,6 +58,30 @@ final class CohortAudience
     }
 
     /**
+     * The ids of a cohort's active trainers whose accounts are active — who is
+     * told a new submission is waiting (PRD §9.16.1, D-83). Only the cohort's
+     * own: a trainer of another cohort has no business with this work (BR-23).
+     *
+     * @return list<string>
+     */
+    public function trainerIds(string $cohortId): array
+    {
+        return array_values(User::query()
+            ->whereIn(
+                'id',
+                Enrollment::query()
+                    ->where('cohort_id', $cohortId)
+                    ->where('role_in_cohort', EnrollmentRole::Trainer->value)
+                    ->where('status', EnrollmentStatus::Active->value)
+                    ->select('user_id'),
+            )
+            ->where('status', 'active')
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all());
+    }
+
+    /**
      * The addresses to write to, skipping anyone without one rather than
      * failing the whole batch for a single incomplete record.
      *

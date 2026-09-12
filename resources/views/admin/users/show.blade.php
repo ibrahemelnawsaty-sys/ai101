@@ -159,7 +159,9 @@
                 <x-ui.empty-state icon="users"
                     :title="__('admin.users.enrollments_empty_title')"
                     :description="__('admin.users.enrollments_empty_participant_body')" />
-            @else
+            @endif
+
+            @if ($user->enrollments->isNotEmpty())
                 <div class="tscroll">
                     <table class="atable">
                         <caption class="sr">{{ __('admin.users.enrollments_title') }}</caption>
@@ -194,6 +196,23 @@
                         </tbody>
                     </table>
                 </div>
+            @endif
+
+            @if ($user->canEnroll)
+                @if ($enrollOptions === [])
+                    <p class="footnote">{{ __('admin.users.enroll_none') }}</p>
+                @else
+                    <form method="POST" action="{{ route('admin.users.enroll', $user->id) }}" class="u-mt-4">
+                        @csrf
+                        <x-ui.select name="cohort_id" required :label="__('admin.users.enroll_label')"
+                            :hint="__('admin.users.enroll_hint')"
+                            :options="$enrollOptions" :value="old('cohort_id')" />
+
+                        <div class="row__acts">
+                            <x-ui.button variant="primary" size="sm" type="submit">{{ __('admin.users.enroll_submit') }}</x-ui.button>
+                        </div>
+                    </form>
+                @endif
             @endif
         </x-ui.card>
 

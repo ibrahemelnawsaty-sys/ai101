@@ -21,6 +21,7 @@ use App\Presenters\Participant\SubmissionPresenter;
 use App\Presenters\Participant\SubmissionVersionPresenter;
 use App\Presenters\Participant\WeekPresenter;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Notifications\CohortNotices;
 use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
 use App\Support\ScreenState;
@@ -54,6 +55,7 @@ final class AssignmentController extends Controller
     public function __construct(
         private readonly ScoreCalculator $scores,
         private readonly PrivateFileService $files,
+        private readonly CohortNotices $notices,
     ) {}
 
     /**
@@ -346,6 +348,18 @@ final class AssignmentController extends Controller
             // has always claimed Arabic; only this line makes it true.
             return back()->withErrors(['files' => $failure->localizedMessage()]);
         }
+
+        // "We received it" to the trainee, "it is waiting" to the cohort's
+        // trainers (PRD §9.16.1, D-83). After the commit: the hand-in stands
+        // whether or not a notice can be written.
+        $cohortId = (string) $assignment->getAttribute('cohort_id');
+        $this->notices->handedIn(
+            $user,
+            $cohortId,
+            (string) $assignment->getAttribute('title'),
+            route('assignments.show', $assignment),
+            route('trainer.submissions', ['cohort' => $cohortId, 'assignment' => $assignment->getKey()]),
+        );
 
         return redirect()
             ->route('assignments.show', $assignment)

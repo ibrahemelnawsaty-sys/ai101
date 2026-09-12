@@ -87,6 +87,7 @@ final class UserProfile extends ViewModel
             'canChangeRole' => $gate->allows('changeRole', $subject),
             'canChangeStatus' => $gate->allows('suspend', $subject),
             'canBePreviewed' => $gate->allows('preview', $subject),
+            'canEnroll' => $gate->allows('enroll', $subject),
 
             'enrollments' => $enrollments->map(
                 static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row),
