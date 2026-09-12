@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Services\Grading\ScoreCalculator;
+use App\Support\QrSvg;
 use App\Support\ViewModel;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,9 @@ final class CertificatePresenter extends ViewModel
                 ? ''
                 : 'https://www.linkedin.com/sharing/share-offsite/?'.http_build_query(['url' => $verifyUrl]),
             'isRevoked' => $certificate->getAttribute('revoked_at') !== null,
+            // The printed certificate carries its verification link as a code,
+            // like the card (D-81).
+            'qrSvg' => QrSvg::of($verifyUrl),
         ]);
     }
 

@@ -67,6 +67,8 @@ return [
     'final_score' => 'Final score',
 
     'download_pdf' => 'Download the certificate as PDF',
+    'print_note' => 'Print this page, or save it as a PDF from the print dialogue — choose landscape. The code opens the public verification page.',
+    'qr_alt' => 'A code that opens the public verification page of this certificate',
     'copy_verify_link' => 'Copy the verification link',
     'share_linkedin' => 'Share on LinkedIn',
     'share_text' => 'I completed the Foundations of Artificial Intelligence programme at Athar Training Centre.',

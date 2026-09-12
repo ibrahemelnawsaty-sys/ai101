@@ -18,6 +18,7 @@ use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -132,7 +133,14 @@ final class CertificateController extends Controller
         return (int) round($seconds / 3600);
     }
 
-    public function download(Request $request): StreamedResponse
+    /**
+     * The certificate as a printable sheet the browser saves as PDF (D-81).
+     *
+     * Nothing on the platform generates a certificate file, so the download
+     * read a column no code writes and answered 404 for every holder. The
+     * card solved the same problem the same way (D-57).
+     */
+    public function print(Request $request): View
     {
         /** @var User $user */
         $user = $request->user();
@@ -141,16 +149,31 @@ final class CertificateController extends Controller
 
         $this->authorize('download', $certificate);
 
-        $path = $certificate->getAttribute('file_url');
+        $certificate->loadMissing(['cohort.program', 'user.profile']);
+        $cohort = $certificate->getRelation('cohort');
 
-        if (! is_string($path) || $path === '' || ! Storage::disk('generated')->exists($path)) {
-            abort(HttpResponse::HTTP_NOT_FOUND);
-        }
+        return view('participant.certificate-print', [
+            'certificate' => CertificatePresenter::from(
+                $certificate,
+                $cohort instanceof Cohort ? $this->trainingHours($cohort) : 0,
+            ),
+        ]);
+    }
 
-        return Storage::disk('generated')->download(
-            $path,
-            (string) $certificate->getAttribute('serial_number').'.pdf',
-        );
+    /**
+     * The old download address, kept for every link and letter that already
+     * points at it: it now leads to the printable sheet (D-81).
+     */
+    public function download(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Looked up first, so an account with no certificate is still refused
+        // here with a 404 rather than sent on to be refused there.
+        $this->authorize('download', $this->ownCertificate($user));
+
+        return redirect()->route('certificate.print');
     }
 
     /**

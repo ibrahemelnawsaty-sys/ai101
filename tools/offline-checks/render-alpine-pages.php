@@ -147,4 +147,15 @@ file_put_contents($root.'/public/roster-probe.json', $json);
 file_put_contents($root.'/public/roster-probe.meta', (string) $participant->getKey());
 printf("%-22s %7d bytes\n", 'roster-probe.json', strlen($json));
 
+// 6 · the printed certificate — a certificate issued to the seeded participant.
+Clock::fake(null);
+$certificate = App\Models\Certificate::query()->where('user_id', $participant->getKey())->first()
+    ?? App\Models\Certificate::factory()->create([
+        'user_id' => $participant->getKey(),
+        'cohort_id' => (string) $participant->enrollments()->value('cohort_id'),
+        'revoked_at' => null,
+    ]);
+$request = $as($participant, '/dashboard/certificate/print');
+$write('certificate-probe.html', app(App\Http\Controllers\Participant\CertificateController::class)->print($request)->render());
+
 printf("participant           %s\n", $participant->getAttribute('email'));

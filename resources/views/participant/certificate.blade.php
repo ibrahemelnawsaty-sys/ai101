@@ -31,33 +31,11 @@
             <div>
                 @if ($certificate)
                     {{-- Live preview of the issued certificate. --}}
-                    <div class="certdoc">
-                        <div class="certdoc__in">
-                            <div class="certdoc__logo">
-                                <x-ui.icon name="athar-wordmark" :label="__('app.brand_name')" />
-                            </div>
-                            <h4>{{ __('certificates.doc_heading') }}</h4>
-                            <div class="certdoc__name">{{ $certificate->holderNameAr }}</div>
-                            <div class="certdoc__en" dir="ltr">{{ $certificate->holderNameEn }}</div>
-                            <div class="certdoc__for">
-                                {{ __('certificates.doc_completed') }}<br>
-                                <b>{{ $certificate->programName }}</b><br>
-                                {{ $certificate->cohortName }} ·
-                                <span class="u-num">{{ $certificate->trainingHours }}</span>
-                                {{ trans_choice('certificates.hours', $certificate->trainingHours) }}
-                            </div>
-                            <div class="certdoc__rule"></div>
-                            <div class="certdoc__ft">
-                                <div><b class="u-num"><bdi>{{ $certificate->serialNumber }}</bdi></b>{{ __('certificates.serial_number') }}</div>
-                                <div><b class="u-num">{{ \App\Support\Dates::longDate($certificate->issuedAt) }}</b>{{ __('certificates.issued_on') }}</div>
-                                <div><b class="u-num">{{ $certificate->finalScore }} / {{ $certificate->grandTotal }}</b>{{ __('certificates.final_score') }}</div>
-                            </div>
-                        </div>
-                    </div>
+                    @include('participant.partials.certificate-document', ['certificate' => $certificate])
 
                     <div class="idacts">
                         <x-ui.button variant="primary" size="sm" icon="down"
-                            :href="route('certificate.download')">{{ __('certificates.download_pdf') }}</x-ui.button>
+                            :href="route('certificate.print')">{{ __('certificates.download_pdf') }}</x-ui.button>
                         <x-ui.button variant="secondary" size="sm"
                             x-data="atharCopy({ value: '{{ $certificate->verifyUrl }}' })"
                             x-on:click="copy()">

@@ -889,7 +889,7 @@ border: var(--bw-hairline) solid var(--n-200);
 .certdoc__logo svg { block-size: var(--s8); inline-size: auto; }
 .certdoc h4 { font-size: var(--fs-xs); letter-spacing: 0.14em; color: var(--violet-700); font-weight: var(--fw-bold); }
 .certdoc__name { font-size: var(--fs-h2); font-weight: var(--fw-bold); color: var(--n-900); margin-block: var(--s4) var(--s2); }
-.certdoc__en { font-size: var(--fs-xs); color: var(--n-400); direction: ltr; unicode-bidi: isolate; }
+.certdoc__en { font-size: var(--fs-xs); color: var(--n-400); direction: ltr; unicode-bidi: isolate; text-align: center; }
 .certdoc__for { font-size: var(--fs-sm); color: var(--n-600); margin-block-start: var(--s4); line-height: 1.9; }
 .certdoc__for b { color: var(--violet-700); }
 .certdoc__rule { block-size: var(--s1); inline-size: var(--d-1); margin: var(--s5) auto; background: linear-gradient(-90deg, var(--violet-500), var(--teal-500)); border-radius: var(--r-xs); }
@@ -1188,4 +1188,34 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .sheet__table thead { display: table-header-group; }
   .sheet__row { break-inside: avoid; page-break-inside: avoid; }
   .sheet__foot { break-inside: avoid; }
+}
+
+/* ==========================================================================
+   The printed certificate (D-81). The browser makes the PDF; a named page
+   gives this sheet A4 landscape and leaves the card and the timetable alone.
+   ========================================================================== */
+
+.certsheet { max-inline-size: var(--d-9); margin-inline: auto; padding-block: var(--s6); }
+.certsheet__note { font-size: var(--fs-sm); color: var(--text-subtle); text-align: center; margin-block-end: var(--s4); }
+.certsheet__verify { display: flex; align-items: center; justify-content: center; gap: var(--s4); margin-block-start: var(--s4); }
+.certsheet__qr { inline-size: var(--s16); block-size: var(--s16); flex: none; }
+.certsheet__qr svg { inline-size: 100%; block-size: 100%; }
+.certsheet__url { font-size: var(--fs-2xs); color: var(--text-subtle); unicode-bidi: isolate; }
+
+@page certificate { size: A4 landscape; }
+
+@media print {
+  /* On the body, not the sheet: a named page takes effect where a box starts a
+     page, and the first page starts with the body — so naming only the sheet
+     left page one at the default size. */
+  .page--bare:has(.certsheet) { page: certificate; }
+  .page--bare:has(.certsheet) .bare { max-inline-size: none; min-block-size: 0; padding: 0; }
+  /* Full width: auto side margins in the bare layout's flex column shrank the
+     sheet to its content. */
+  .certsheet { max-inline-size: none; inline-size: 100%; margin-inline: 0; padding: 0; }
+  .certsheet .certdoc { padding: var(--s12) var(--s16); }
+  .certsheet .certdoc__name { font-size: var(--fs-h1); }
+  .certsheet .certdoc__for { font-size: var(--fs-body); }
+  .certsheet__note { display: none; }
+  .certsheet .certdoc { box-shadow: none; }
 }

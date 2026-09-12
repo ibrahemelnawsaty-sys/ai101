@@ -339,6 +339,9 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
         Route::get('/certificate/download', [CertificateController::class, 'download'])
             ->name('certificate.download');
+        // The browser makes the PDF, as for the card (D-57, D-81).
+        Route::get('/certificate/print', [CertificateController::class, 'print'])
+            ->name('certificate.print');
         Route::get('/certificate/accredited', [CertificateController::class, 'accredited'])
             ->name('certificate.tvtc');
     });
