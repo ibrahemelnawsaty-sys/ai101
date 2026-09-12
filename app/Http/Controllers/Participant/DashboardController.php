@@ -37,6 +37,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The dashboard home (PRD §9.5.3).
@@ -73,6 +74,41 @@ final class DashboardController extends Controller
         private readonly JourneyEvaluator $journey,
         private readonly AttendanceWindow $window,
     ) {}
+
+    /**
+     * Build one dashboard card, or record that it could not be built.
+     *
+     * The failure is logged WITHOUT its message: an exception from a query can
+     * carry bound values — addresses, names — and the dashboard is the one
+     * screen every participant opens. The class and the line are what a
+     * maintainer needs to find it; the trainee's data is not.
+     *
+     * @template T
+     *
+     * @param  list<string>  $failed  appended to when the card fails
+     * @param  callable(): T  $build
+     * @param  T  $fallback  the card's own empty form, so the template receives a
+     *                       value of the right shape even though it shows the
+     *                       error branch first
+     * @return T
+     */
+    private function block(string $key, array &$failed, User $user, callable $build, mixed $fallback): mixed
+    {
+        try {
+            return $build();
+        } catch (\Throwable $failure) {
+            Log::error('dashboard.block_failed', [
+                'block' => $key,
+                'user_id' => $user->getKey(),
+                'exception' => $failure::class,
+                'at' => $failure->getFile().':'.$failure->getLine(),
+            ]);
+
+            $failed[] = $key;
+
+            return $fallback;
+        }
+    }
 
     /**
      * Whether this render is the one that celebrates.
@@ -156,47 +192,90 @@ final class DashboardController extends Controller
             ]);
         }
 
+        // Every card is built behind its own guard, and a card that throws is
+        // named in $failed so the template shows ITS error state and leaves the
+        // other eight standing. The template had nine such error branches and
+        // the controller passed `'failedBlocks' => []` as a literal, so every
+        // one was dead code: a single presenter throwing took the trainee's
+        // whole first screen to a 500 (D-66).
+        $failed = [];
+
         // BR-21 — completion is JourneyEvaluator's answer, read once and used by
-        // both the greeting and the progress card.
-        $overview = $this->journey->overview($user, $cohort);
-        $session = $this->nextSession($cohort->getKey(), $now);
+        // both the greeting and the progress card. These two ran BEFORE the view
+        // array and could throw the page down on their own.
+        $overview = $this->block('journey', $failed, $user,
+            fn (): array => $this->journey->overview($user, $cohort),
+            ['steps' => new Collection, 'statuses' => [], 'completed' => 0, 'total' => 0, 'percent' => 0.0, 'current' => null]);
+
+        $session = $this->block('nextSession', $failed, $user,
+            fn (): ?Session => $this->nextSession($cohort->getKey(), $now),
+            null);
+
+        $welcome = $this->block('welcome', $failed, $user,
+            static fn (): WelcomePresenter => WelcomePresenter::from(
+                $user, $now, $overview['completed'], $overview['total'], $overview['percent'],
+            ),
+            WelcomePresenter::from($user, $now, 0, 0, 0.0));
+
+        $nextSession = $this->block('nextSession', $failed, $user,
+            fn (): NextSessionPresenter => $session === null
+                ? NextSessionPresenter::missing()
+                : NextSessionPresenter::from($session, $this->window, $now),
+            NextSessionPresenter::missing());
+
+        $attendance = $this->block('attendance', $failed, $user,
+            fn (): AttendanceRatePresenter => AttendanceRatePresenter::from($user, $cohort, $this->eligibility, $now),
+            AttendanceRatePresenter::none());
+
+        $journey = $this->block('journey', $failed, $user,
+            static fn (): JourneyProgressPresenter => JourneyProgressPresenter::from($overview),
+            JourneyProgressPresenter::none());
+
+        $gradeSummary = $this->block('grades', $failed, $user,
+            fn (): GradeSummaryPresenter => GradeSummaryPresenter::from(
+                $user, $cohort, $this->scores, $this->evaluations($user, $cohort),
+            ),
+            GradeSummaryPresenter::none());
+
+        $dueAssignments = $this->block('dueAssignments', $failed, $user,
+            fn (): Collection => $this->dueAssignments($user, (string) $cohort->getKey(), $now)
+                ->map(static fn (Assignment $item): DueAssignmentPresenter => DueAssignmentPresenter::from($item, $now)),
+            new Collection);
+
+        $latestGrades = $this->block('latestGrades', $failed, $user,
+            fn (): Collection => $this->latestGrades($user)
+                ->map(static fn (Evaluation $item): LatestGradePresenter => LatestGradePresenter::from($item)),
+            new Collection);
+
+        $newResources = $this->block('resources', $failed, $user,
+            fn (): Collection => $this->newResources((string) $cohort->getKey())
+                ->map(static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now)),
+            new Collection);
+
+        $announcements = $this->block('announcements', $failed, $user,
+            fn (): Collection => $this->announcements($user)
+                ->map(static fn (Notification $item): AnnouncementPresenter => AnnouncementPresenter::from($item)),
+            new Collection);
 
         return view('participant.dashboard', [
-            // Pulled HERE, after the two calls above that can throw. Read at the
+            // Pulled HERE, after everything above that can throw. Read at the
             // top of the method, one exception on the first render would spend
             // the flash on a page the trainee never saw — and the celebration
             // is a once-ever thing (D-63).
             'celebrate' => $this->takeWelcome($request),
             'celebrateName' => $this->greetingName($user),
-            'failedBlocks' => [],
+            'failedBlocks' => array_values(array_unique($failed)),
             'cohortLabel' => $cohort->getAttribute('name'),
             'serverNow' => $now,
-            'welcome' => WelcomePresenter::from(
-                $user,
-                $now,
-                $overview['completed'],
-                $overview['total'],
-                $overview['percent'],
-            ),
-            'nextSession' => $session === null
-                ? NextSessionPresenter::missing()
-                : NextSessionPresenter::from($session, $this->window, $now),
-            'attendance' => AttendanceRatePresenter::from($user, $cohort, $this->eligibility, $now),
-            'journey' => JourneyProgressPresenter::from($overview),
-            'gradeSummary' => GradeSummaryPresenter::from(
-                $user,
-                $cohort,
-                $this->scores,
-                $this->evaluations($user, $cohort),
-            ),
-            'dueAssignments' => $this->dueAssignments($user, (string) $cohort->getKey(), $now)
-                ->map(static fn (Assignment $item): DueAssignmentPresenter => DueAssignmentPresenter::from($item, $now)),
-            'latestGrades' => $this->latestGrades($user)
-                ->map(static fn (Evaluation $item): LatestGradePresenter => LatestGradePresenter::from($item)),
-            'newResources' => $this->newResources((string) $cohort->getKey())
-                ->map(static fn (Resource $item): ResourcePresenter => ResourcePresenter::from($item, $now)),
-            'announcements' => $this->announcements($user)
-                ->map(static fn (Notification $item): AnnouncementPresenter => AnnouncementPresenter::from($item)),
+            'welcome' => $welcome,
+            'nextSession' => $nextSession,
+            'attendance' => $attendance,
+            'journey' => $journey,
+            'gradeSummary' => $gradeSummary,
+            'dueAssignments' => $dueAssignments,
+            'latestGrades' => $latestGrades,
+            'newResources' => $newResources,
+            'announcements' => $announcements,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::NORMAL,
         ]);
