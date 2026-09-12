@@ -19,6 +19,31 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Message extends Model
 {
+    /**
+     * Messages this account has not read: in a thread it belongs to, written
+     * by someone else, and sent after it last read that thread (or at any time,
+     * if it never has). ONE definition for the thread list and the rail's
+     * badge, so the badge is always the sum of the list (D-75).
+     *
+     * The per-thread count used to include the reader's OWN messages, and the
+     * marker it compared against was never written, so every thread counted
+     * every message forever.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeUnreadBy(Builder $query, User $user): Builder
+    {
+        return $query
+            ->join('thread_participants as tp', 'tp.thread_id', '=', 'messages.thread_id')
+            ->where('tp.user_id', $user->getKey())
+            ->where('messages.sender_id', '!=', $user->getKey())
+            ->where(static fn (Builder $unread) => $unread
+                ->whereNull('tp.last_read_at')
+                ->orWhereColumn('messages.sent_at', '>', 'tp.last_read_at'))
+            ->select('messages.*');
+    }
+
     /** @use HasFactory<\Database\Factories\MessageFactory> */
     use HasFactory;
 

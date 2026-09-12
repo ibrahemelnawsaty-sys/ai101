@@ -8,6 +8,7 @@ use App\Models;
 use App\Services\Time\Clock;
 use App\Support\ConfiguredUrlGenerator;
 use App\View\Components\Ui\SwitchControl;
+use App\View\Composers\AppLayoutComposer;
 use App\View\Composers\PublicLayoutComposer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -122,6 +123,9 @@ final class AppServiceProvider extends ServiceProvider
         // The public shell prints meta tags and a Schema.org graph it must not
         // assemble itself (art. 13, rule 13). The composer hands it the values.
         ViewFacade::composer('layouts.public', PublicLayoutComposer::class);
+
+        // The application shell's footer, switcher, badges and bell (D-75).
+        ViewFacade::composer('layouts.app', AppLayoutComposer::class);
 
         // BR-36: APP_URL is the source of every absolute link - certificate
         // verification URLs, digital-card QR targets and e-mail buttons all

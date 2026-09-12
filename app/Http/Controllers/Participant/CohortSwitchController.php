@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\SwitchCohortRequest;
+use App\Models\Cohort;
 use Illuminate\Http\RedirectResponse;
 
 /**
@@ -22,6 +23,10 @@ final class CohortSwitchController extends Controller
 {
     public function __invoke(SwitchCohortRequest $request): RedirectResponse
     {
+        // The third leg of Article 5: the request validated and scoped the id,
+        // and nothing asked a policy (D-75).
+        $this->authorize('switchTo', Cohort::query()->whereKey($request->cohortId())->firstOrFail());
+
         $request->session()->put(SwitchCohortRequest::SESSION_KEY, $request->cohortId());
 
         return back();

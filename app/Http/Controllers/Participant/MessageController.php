@@ -71,19 +71,25 @@ final class MessageController extends Controller
         $isImpersonating = ImpersonationContext::isActive();
         $now = Clock::now();
 
-        // BR-22 — the unread tally is read from this account's own participation
-        // rows and from no one else's.
-        $participation = ThreadParticipant::query()
-            ->where('user_id', $user->getKey())
-            ->whereIn('thread_id', $threads->modelKeys())
-            ->get()
-            ->keyBy(static fn (ThreadParticipant $row): string => (string) $row->getAttribute('thread_id'));
+        // Opening a conversation is reading it. Nothing wrote this marker, so
+        // every unread count counted everything forever and the trainer's
+        // "read" receipt never appeared (D-75). Never during a preview: the
+        // policy's markRead refuses writes there, and a preview is not the
+        // person reading (BR-33). Written before the counts below, so the
+        // thread on screen does not show itself as unread.
+        if ($active !== null && $user->can('markRead', $active)) {
+            ThreadParticipant::query()
+                ->where('thread_id', $active->getKey())
+                ->where('user_id', $user->getKey())
+                ->update(['last_read_at' => $now]);
+        }
 
         return view('participant.messages', [
             'threads' => $threads->map(
                 fn (Thread $thread): ThreadPresenter => ThreadPresenter::from(
                     $thread,
-                    $this->unreadCount($thread, $participation->get((string) $thread->getKey())),
+                    // BR-22 — this account's own unread count, and no one else's.
+                    $this->unreadCount($thread, $user),
                 ),
             ),
             'activeThread' => $active === null
@@ -128,17 +134,12 @@ final class MessageController extends Controller
      * trainer DM, the cohort group and the announcements channel — so the loop
      * is bounded by the product, not by the data.
      */
-    private function unreadCount(Thread $thread, ?ThreadParticipant $participation): int
+    private function unreadCount(Thread $thread, User $user): int
     {
-        $lastReadAt = $participation?->getAttribute('last_read_at');
-
-        $query = Message::query()->where('thread_id', $thread->getKey());
-
-        if ($lastReadAt !== null) {
-            $query->where('sent_at', '>', $lastReadAt);
-        }
-
-        return $query->count();
+        return Message::query()
+            ->unreadBy($user)
+            ->where('messages.thread_id', $thread->getKey())
+            ->count();
     }
 
     /**

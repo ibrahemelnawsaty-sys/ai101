@@ -61,7 +61,7 @@
                 class="side__collapse"
                 x-on:click="toggle()"
                 x-bind:aria-expanded="(! collapsed).toString()"
-                aria-controls="side-nav"
+                aria-controls="{{ $navId }}"
             >
                 <svg aria-hidden="true"><use href="#i-panel"></use></svg>
                 <span class="sr">{{ __('nav.chrome.toggle_sidebar') }}</span>
@@ -69,7 +69,7 @@
         @endif
     </div>
 
-    <nav id="side-nav" class="side__nav">
+    <nav id="{{ $navId }}" class="side__nav">
         @forelse ($resolvedGroups as $group)
             <div class="side__g">
                 @isset($group['label'])
@@ -118,18 +118,23 @@
 
             {{-- `POST /dashboard/cohort` → `cohort.switch`, PROJECT-CONTRACT §10.
                  The route guard lives in the component class: the switcher is
-                 pointless with a single cohort, and the check costs nothing. --}}
+                 pointless with a single cohort, and the check costs nothing.
+                 A plain form with a submit button. It auto-submitted from an
+                 inline onchange, which the CSP blocks, which fires on a keyboard
+                 arrow before the choice is made, and which left the form
+                 unsendable without JavaScript (D-75). --}}
             @if ($showSwitcher)
                 <form method="POST" action="{{ $switchUrl }}">
                     @csrf
-                    <label class="sr" for="cohort-switch">{{ __('nav.chrome.switch_cohort') }}</label>
-                    <select id="cohort-switch" name="cohort_id" class="side__switch" onchange="this.form.submit()">
+                    <label class="sr" for="{{ $switchId }}">{{ __('nav.chrome.switch_cohort') }}</label>
+                    <select id="{{ $switchId }}" name="cohort_id" class="side__switch">
                         @foreach ($cohorts as $option)
                             <option value="{{ $option['id'] }}" @selected($option['is_current'] ?? false)>
                                 {{ $option['name'] }}
                             </option>
                         @endforeach
                     </select>
+                    <x-ui.button type="submit" variant="secondary" size="sm">{{ __('nav.chrome.switch_cohort') }}</x-ui.button>
                 </form>
             @endif
         </div>

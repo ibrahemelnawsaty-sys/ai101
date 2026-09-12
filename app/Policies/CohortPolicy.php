@@ -19,6 +19,19 @@ final class CohortPolicy
 {
     use InteractsWithScope;
 
+    /**
+     * Making a cohort the one the participant screens show. The same list the
+     * request validates against and ResolvesActiveCohort reads — not view(),
+     * whose narrower reach would refuse options the switcher offers (D-75).
+     * Whether that list should be narrower is open (D-76).
+     */
+    public function switchTo(User $user, Cohort $cohort): bool
+    {
+        return $this->roles->isActive($user)
+            && $this->writesAllowed()
+            && in_array((string) $cohort->getKey(), $user->accessibleCohortIds(), true);
+    }
+
     public function viewAny(User $user): bool
     {
         return $this->roles->isActive($user);

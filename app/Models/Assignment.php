@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\AssignmentStatus;
 use App\Services\Time\Clock;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,6 +78,26 @@ class Assignment extends Model
     public function isPastDueAt(\DateTimeInterface $at): bool
     {
         return Clock::toUtc($at)->greaterThan(Clock::toUtc($this->due_at));
+    }
+
+    /**
+     * Work this participant can still hand in: published, nothing submitted
+     * yet, and either before the deadline or accepting late work — the same
+     * two conditions the submit endpoint applies. What the rail's badge
+     * counts; the predicate is a temporary assumption awaiting sign-off (D-75).
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeOpenFor(Builder $query, User $user, CarbonImmutable $now): Builder
+    {
+        return $query
+            ->where('status', AssignmentStatus::Published->value)
+            ->whereDoesntHave('submissions', static fn (Builder $submissions) => $submissions
+                ->where('user_id', $user->getKey()))
+            ->where(static fn (Builder $open) => $open
+                ->where('due_at', '>=', $now)
+                ->orWhere('allow_late', true));
     }
 
     public function isPublished(): bool

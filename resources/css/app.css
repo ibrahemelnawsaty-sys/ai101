@@ -508,7 +508,9 @@ block-size: var(--s5);
 border: var(--bw-hairline) solid var(--violet-100);
   }
   .side__foot b { display: block; font-size: var(--fs-xs); color: var(--violet-900); font-weight: var(--fw-semi); }
-  .side__foot span { font-size: var(--fs-xs); color: var(--n-600); }
+  .side__foot > span { font-size: var(--fs-xs); color: var(--n-600); }
+  /* The switcher's own submit button (D-75): full width under the select. */
+  .side__foot form { display: grid; gap: var(--s2); }
   .side__switch {
     margin-block-start: var(--s2);
     inline-size: 100%;

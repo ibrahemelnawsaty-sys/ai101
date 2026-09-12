@@ -20,18 +20,13 @@
       @section('content')   required
     Stacks: @push('head') · @push('body')
 
-    Optional variables, all with a safe default so a controller that has not
-    been written yet still renders (Article 7):
-      $sidebarGroups  array  overrides the participant rail
-      $navBadges      array  ['assignments' => int, 'messages' => int]
-      $cohortName     string
-      $cohorts        array
-      $unreadNotifications int
+    The shell's own values come from App\View\Composers\AppLayoutComposer, on
+    every render, each behind a guard so one failing count cannot take the page
+    down: $cohortName, $sidebarCohorts, $navBadges, $unreadNotifications. No
+    controller set them before D-75, so the footer, the switcher, the badges
+    and the bell count had never once appeared.
+      $sidebarGroups  array  the one optional override — a controller's own rail
 --}}
-@php
-    $badges = $navBadges ?? [];
-    $unread = (int) ($unreadNotifications ?? 0);
-@endphp
 <!DOCTYPE html>
 {{-- data-server-now anchors every countdown to Clock::now(); the browser clock
      is never trusted (BR-07, Article 11). --}}
@@ -74,16 +69,16 @@
 
     <x-layout.sidebar
         :groups="$sidebarGroups ?? null"
-        :badges="$badges"
-        :cohort="$cohortName ?? null"
-        :cohorts="$cohorts ?? []" />
+        :badges="$navBadges"
+        :cohort="$cohortName"
+        :cohorts="$sidebarCohorts" />
 
     <div class="shell__main">
         <x-layout.header
             :title="\Illuminate\Support\Facades\View::yieldContent('title')"
             :subtitle="\Illuminate\Support\Facades\View::yieldContent('subtitle')"
-            :badges="$badges"
-            :unread="$unread" />
+            :badges="$navBadges"
+            :unread="$unreadNotifications" />
 
         {{-- The Article 17 state marker. Both values are decided by the
              controller (App\Support\ScreenState) and only reflected here; a
@@ -114,9 +109,9 @@
         <x-layout.sidebar
             drawer
             :groups="$sidebarGroups ?? null"
-            :badges="$badges"
-            :cohort="$cohortName ?? null"
-            :cohorts="$cohorts ?? []" />
+            :badges="$navBadges"
+            :cohort="$cohortName"
+            :cohorts="$sidebarCohorts" />
     </div>
 </div>
 

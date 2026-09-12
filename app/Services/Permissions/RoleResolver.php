@@ -35,6 +35,27 @@ final class RoleResolver
         return $user->role;
     }
 
+    /**
+     * Which shell this account gets: 'admin', 'trainer' or 'participant'.
+     *
+     * The one statement of the precedence the dashboard, the rail and the
+     * layout composer all need — an administrator first; a trainer who is not
+     * also a participant; everyone else a participant. It was written out in
+     * two places and was about to be a third (D-75).
+     */
+    public function shellRole(User $user): string
+    {
+        if ($this->isAdmin($user)) {
+            return 'admin';
+        }
+
+        if (! $this->hasRole($user, 'participant') && $this->hasRole($user, 'trainer')) {
+            return 'trainer';
+        }
+
+        return 'participant';
+    }
+
     public function isAdmin(User $user): bool
     {
         return $user->role === UserRole::Admin;

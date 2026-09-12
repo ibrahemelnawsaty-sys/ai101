@@ -80,6 +80,12 @@ final class Sidebar extends UiComponent
      * means "use the participant rail", which is not the same answer as an
      * empty rail.
      */
+    /** The nav element's id, unique between the rail and the drawer. */
+    public string $navId = 'side-nav';
+
+    /** The cohort select's id, unique between the rail and the drawer. */
+    public string $switchId = 'cohort-switch';
+
     public function __construct(
         mixed $groups = null,
         mixed $badges = [],
@@ -99,6 +105,12 @@ final class Sidebar extends UiComponent
         // guard stays: the switcher is pointless with a single cohort.
         $this->switchUrl = Route::has('cohort.switch') ? route('cohort.switch') : null;
         $this->showSwitcher = count($this->cohorts) > 1 && $this->switchUrl !== null;
+
+        // The rail is rendered twice — in the page and in the mobile drawer —
+        // so every id in it needs two spellings, or the label of one points at
+        // the control of the other (D-75).
+        $this->navId = $this->drawer ? 'side-nav-drawer' : 'side-nav';
+        $this->switchId = $this->drawer ? 'cohort-switch-drawer' : 'cohort-switch';
     }
 
     /**
@@ -118,17 +130,11 @@ final class Sidebar extends UiComponent
             return $this->participantGroups();
         }
 
-        $roles = app(RoleResolver::class);
-
-        if ($roles->isAdmin($user)) {
-            return $this->adminGroups();
-        }
-
-        if (! $roles->hasRole($user, 'participant') && $roles->hasRole($user, 'trainer')) {
-            return $this->trainerGroups();
-        }
-
-        return $this->participantGroups();
+        return match (app(RoleResolver::class)->shellRole($user)) {
+            'admin' => $this->adminGroups(),
+            'trainer' => $this->trainerGroups(),
+            default => $this->participantGroups(),
+        };
     }
 
     /**

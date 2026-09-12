@@ -106,6 +106,11 @@ const check = (label, ok, detail = '') => {
   const after = await state();
   const cal = after.find((s) => s.expr.includes('calendar'));
   check('the toggle switches to the calendar', !!cal && cal.shown, JSON.stringify(after));
+  const foot = await tab.evaluate(() => {
+    const el = document.querySelector('aside .side__foot');
+    return el && getComputedStyle(el).display !== 'none' ? el.querySelector('b')?.textContent.trim() : null;
+  });
+  check('the rail footer names the cohort (D-75)', !!foot, String(foot));
   const remembered = await tab.evaluate(() => window.localStorage.getItem('athar.schedule.view'));
   check('the choice is remembered', remembered === 'calendar', String(remembered));
   check('no script errors', errors.length === 0, errors.join(' | '));
