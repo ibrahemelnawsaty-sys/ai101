@@ -258,7 +258,11 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
      * Messaging.
      */
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
-    Route::get('/messages/{thread}/poll', [MessageController::class, 'poll'])->name('messages.poll');
+    // Asked every few seconds by an open conversation: throttled, so a stuck
+    // tab cannot become a stream of PHP processes on shared hosting.
+    Route::get('/messages/{thread}/poll', [MessageController::class, 'poll'])
+        ->middleware('throttle:30,1')
+        ->name('messages.poll');
     Route::post('/messages/{thread}', [MessageController::class, 'store'])
         ->middleware(['not.impersonating', 'throttle:messages'])
         ->name('messages.store');

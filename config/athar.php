@@ -142,6 +142,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Messages (PRD §9.13.2)
+    |--------------------------------------------------------------------------
+    |
+    | How often an open conversation asks for new messages. A hidden tab does
+    | not ask at all. Fifteen seconds is four requests a minute per open
+    | thread — sized for shared hosting, where every request is a PHP process.
+    | Zero switches live updates off; the page then refreshes on reload only.
+    |
+    */
+
+    'messages' => [
+        'poll_seconds' => (int) env('MESSAGES_POLL_SECONDS', 15),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------
     |

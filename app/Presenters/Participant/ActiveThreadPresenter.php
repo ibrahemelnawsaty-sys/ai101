@@ -46,6 +46,9 @@ final class ActiveThreadPresenter extends ViewModel
             'canPost' => ! $isAnnouncement && ! $isLocked && ! $isImpersonating,
             'readOnlyReason' => self::readOnlyReason($isAnnouncement, $isLocked, $isImpersonating),
             'messages' => $messages,
+            // What the live update compares: when the newest message is the
+            // same, nothing on screen needs to change (PRD §9.13.2).
+            'latestMessageId' => (string) ($messages->last()?->get('id') ?? ''),
         ]);
     }
 

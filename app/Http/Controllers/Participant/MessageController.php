@@ -96,6 +96,7 @@ final class MessageController extends Controller
                     $isImpersonating,
                 ),
             'isImpersonating' => $isImpersonating,
+            'pollSeconds' => max(0, (int) config('athar.messages.poll_seconds')),
             'errorState' => null,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::of($threads->isEmpty()),
@@ -164,20 +165,35 @@ final class MessageController extends Controller
      * Poll for new messages in one thread. Same authorisation as the page: the
      * policy is asked before a single row is read.
      */
-    public function poll(Thread $thread): JsonResponse
+    /**
+     * The live half of a conversation (PRD §9.13.2): the same message list the
+     * page renders, rendered again, plus the id of the newest message so the
+     * client swaps the list only when something changed.
+     *
+     * It returned raw rows before, and nothing called it — the client component
+     * was never written (D-67). Raw rows would also have made the browser
+     * re-implement authorship, the read stamp and the edit window; returning
+     * the server's own markup keeps those decisions here.
+     *
+     * Read-only by design: it does not mark anything read, so a tab left open
+     * does not tell a trainer a message was seen when nobody looked at it.
+     */
+    public function poll(Request $request, Thread $thread): JsonResponse
     {
         $this->authorize('view', $thread);
 
+        /** @var User $user */
+        $user = $request->user();
+
+        $active = ActiveThreadPresenter::from(
+            $thread->loadMissing('cohort'),
+            $this->presentMessages($thread, $user, Clock::now()),
+            ImpersonationContext::isActive(),
+        );
+
         return new JsonResponse([
-            'messages' => $this->messages($thread)
-                ->map(static fn (Message $message): array => [
-                    'id' => (string) $message->getKey(),
-                    'body' => (string) $message->getAttribute('body'),
-                    'sent_at' => Clock::toUtc($message->getAttribute('sent_at'))->toIso8601String(),
-                    'sender_id' => (string) $message->getAttribute('sender_id'),
-                ])
-                ->values()
-                ->all(),
+            'latest' => (string) $active->get('latestMessageId'),
+            'html' => view('participant.partials.message-stream', ['activeThread' => $active])->render(),
         ]);
     }
 
