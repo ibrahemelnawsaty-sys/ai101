@@ -13,7 +13,7 @@ return [
     'next_title' => 'Your next session',
     'starts_in' => 'Starts in',
     'join' => 'Join the session',
-    'join_locked' => 'Joining opens :minutes minutes before the session starts, and the link is not sent to your browser before then.',
+    'join_locked' => '{0} Joining opens when the session starts, and the link is not sent to your browser before then.|{1} Joining opens 1 minute before the session starts, and the link is not sent to your browser before then.|[2,*] Joining opens :minutes minutes before the session starts, and the link is not sent to your browser before then.',
     'passcode' => 'Meeting passcode',
 
     'errors' => [

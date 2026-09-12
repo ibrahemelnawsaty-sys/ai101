@@ -16,8 +16,11 @@ use Carbon\CarbonImmutable;
  * `joinWindowOpen` mirrors the server decision and nothing more: the meeting
  * URL is not in this object, is not in the page, and is handed over only by the
  * guarded join endpoint, which re-checks the same window on arrival (BR-24).
- * The window itself is PRD §9.10's quarter of an hour, taken from the single
- * constant that endpoint uses.
+ * The window itself is the session's own `join_opens_minutes`, falling back to
+ * the platform default, asked of LiveController::joinWindowOpen() so the card,
+ * the live page and the endpoint cannot disagree. This card kept its own copy
+ * on the fixed default and contradicted the other two whenever a trainer set
+ * a window (D-52, D-75).
  *
  * A cohort with nothing scheduled yields `isMissing`, which is an empty state
  * and not an error (art. 17).
@@ -44,7 +47,6 @@ final class NextSessionPresenter extends ViewModel
     {
         $startsAt = $window->startsAt($session);
         $endsAt = $window->endsAt($session);
-        $opensAt = $startsAt->subMinutes(LiveController::JOIN_OPENS_BEFORE_START_MINUTES);
 
         return new self([
             'isMissing' => false,
@@ -53,10 +55,8 @@ final class NextSessionPresenter extends ViewModel
             'startsAt' => $startsAt,
             'endsAt' => $endsAt,
             'trainerName' => SessionPresenter::trainerName($session),
-            'joinWindowOpen' => ! $window->isCancelled($session)
-                && $now->greaterThanOrEqualTo($opensAt)
-                && $now->lessThanOrEqualTo($endsAt),
-            'joinOpensBeforeMinutes' => LiveController::JOIN_OPENS_BEFORE_START_MINUTES,
+            'joinWindowOpen' => LiveController::joinWindowOpen($session, $window, $now),
+            'joinOpensBeforeMinutes' => LiveController::joinWindowMinutes($session),
         ]);
     }
 }

@@ -37,8 +37,8 @@ final class LiveSessionPresenter extends ViewModel
             'statusVariant' => 'neutral',
             'joinWindowOpen' => false,
             // There is no session here to ask, so the platform default is the
-            // only honest answer. A blind search-and-replace put windowFor(
-            // $session) in this method, which has no $session — and the whole
+            // only honest answer. A blind search-and-replace once put a
+            // per-session lookup in this method, which has no $session — and the whole
             // live screen returned 500 for exactly the case it exists to
             // handle: a cohort with no session yet (D-52 correction).
             'joinOpensBeforeMinutes' => LiveController::JOIN_OPENS_BEFORE_START_MINUTES,
@@ -49,7 +49,6 @@ final class LiveSessionPresenter extends ViewModel
     {
         $startsAt = $window->startsAt($session);
         $endsAt = $window->endsAt($session);
-        $opensAt = $startsAt->subMinutes(self::windowFor($session));
         $isLive = $window->isLive($session, $now);
 
         $status = $session->getAttribute('status');
@@ -65,22 +64,9 @@ final class LiveSessionPresenter extends ViewModel
             'trainerName' => SessionPresenter::trainerName($session),
             'statusLabel' => $isLive ? SessionStatus::Live->label() : ($status?->label() ?? ''),
             'statusVariant' => $isLive ? 'live' : ($status === SessionStatus::Cancelled ? 'error' : 'info'),
-            'joinWindowOpen' => ! $window->isCancelled($session)
-                && $now->greaterThanOrEqualTo($opensAt)
-                && $now->lessThanOrEqualTo($endsAt),
-            'joinOpensBeforeMinutes' => self::windowFor($session),
+            // The endpoint's own rule, asked rather than copied (D-52, D-75).
+            'joinWindowOpen' => LiveController::joinWindowOpen($session, $window, $now),
+            'joinOpensBeforeMinutes' => LiveController::joinWindowMinutes($session),
         ]);
-    }
-
-    /**
-     * The trainer's own join window for this session, or the platform default.
-     * Kept beside the presenter that uses it so the screen and the controller
-     * cannot disagree about when a link appears (D-52).
-     */
-    private static function windowFor(Session $session): int
-    {
-        $minutes = $session->getAttribute('join_opens_minutes');
-
-        return is_int($minutes) ? $minutes : LiveController::JOIN_OPENS_BEFORE_START_MINUTES;
     }
 }

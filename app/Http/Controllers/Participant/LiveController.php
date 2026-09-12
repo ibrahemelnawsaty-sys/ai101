@@ -18,6 +18,7 @@ use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Time\Clock;
 use App\Support\ScreenState;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -33,8 +34,13 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  * merely looks at the schedule. `join` is the only way to it, and it re-checks
  * membership and the window on the server before answering with a redirect.
  *
- * The join window opens fifteen minutes before the start and closes at the end
- * (PRD §9.10); like every other window it is measured against Clock::now().
+ * The join window opens `join_opens_minutes` before the start — the trainer's
+ * figure for the session, or JOIN_OPENS_BEFORE_START_MINUTES when they set none
+ * (D-52) — and closes at the end (PRD §9.10); like every other window it is
+ * measured against Clock::now(). joinWindowOpen() is the one statement of it:
+ * this endpoint, the live page and the dashboard card all ask it, because the
+ * card kept its own copy on the fixed default and disagreed with the other two
+ * whenever a trainer set a window (D-75).
  *
  * @see BR-07, BR-22, BR-23, BR-24 · PRD §9.10 · CONSTITUTION Art. 5, Art. 11
  */
@@ -122,16 +128,10 @@ final class LiveController extends Controller
         $this->authorize('revealJoinLink', $session);
 
         $now = Clock::now();
-        $start = $this->window->startsAt($session);
-        $end = $this->window->endsAt($session);
 
-        // The trainer's own figure for this session, falling back to the
-        // platform default when they did not set one (D-52). Read here rather
-        // than in the window service: this is a presentation rule about when a
-        // link appears, not an attendance rule — BR-01 is untouched by it.
-        $opensAt = $start->subMinutes($this->joinWindowMinutes($session));
-
-        if ($now->lessThan($opensAt) || $now->greaterThan($end)) {
+        // A presentation rule about when a link appears, not an attendance
+        // rule — BR-01 is untouched by it (D-52).
+        if (! self::joinWindowOpen($session, $this->window, $now)) {
             return back()->withErrors(['session' => __('live.errors.window_closed')]);
         }
 
@@ -170,11 +170,23 @@ final class LiveController extends Controller
      * treating it as zero would hide every link until the minute a session
      * starts (D-52).
      */
-    private function joinWindowMinutes(Session $session): int
+    public static function joinWindowMinutes(Session $session): int
     {
         $minutes = $session->getAttribute('join_opens_minutes');
 
         return is_int($minutes) ? $minutes : self::JOIN_OPENS_BEFORE_START_MINUTES;
+    }
+
+    /**
+     * Whether the join link is offered at `$now`: from joinWindowMinutes()
+     * before the start, to the end, inclusive at both edges, and never for a
+     * cancelled session.
+     */
+    public static function joinWindowOpen(Session $session, AttendanceWindow $window, CarbonImmutable $now): bool
+    {
+        return ! $window->isCancelled($session)
+            && $now->greaterThanOrEqualTo($window->startsAt($session)->subMinutes(self::joinWindowMinutes($session)))
+            && $now->lessThanOrEqualTo($window->endsAt($session));
     }
 
     /** The recording, once the session is over and a recording exists. */

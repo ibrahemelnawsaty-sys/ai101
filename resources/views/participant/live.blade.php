@@ -74,7 +74,7 @@
                     @unless ($featured->joinWindowOpen)
                         <p class="hint">
                             <x-ui.icon name="lock" />
-                            {{ __('live.join_locked', ['minutes' => $featured->joinOpensBeforeMinutes]) }}
+                            {{ trans_choice('live.join_locked', $featured->joinOpensBeforeMinutes, ['minutes' => $featured->joinOpensBeforeMinutes]) }}
                         </p>
                     @endunless
 
