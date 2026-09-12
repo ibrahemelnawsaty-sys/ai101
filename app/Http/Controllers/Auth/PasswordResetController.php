@@ -8,6 +8,7 @@ use App\Enums\EmailTokenType;
 use App\Events\PasswordChanged;
 use App\Http\Controllers\Auth\Concerns\InvalidatesOtherSessions;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
+use App\Http\Controllers\Auth\Concerns\PasswordMeterCopy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
@@ -32,6 +33,7 @@ final class PasswordResetController extends Controller
 {
     use InvalidatesOtherSessions;
     use IssuesEmailTokens;
+    use PasswordMeterCopy;
 
     public function __construct(private readonly AuditLogger $audit) {}
 
@@ -57,9 +59,18 @@ final class PasswordResetController extends Controller
 
     public function reset(string $token): View
     {
+        // Resolved on arrival, so a spent, expired or unknown link opens the
+        // screen that offers a fresh one instead of a form that fails only
+        // after the new password has been typed twice. Which of the three it
+        // was is never said: that would make the page a probe (BR-30).
+        $user = $this->findUsableToken($token, EmailTokenType::Reset)?->user;
+
         return view('auth.reset-password', [
             'state' => 'ok',
             'token' => $token,
+            'tokenValid' => $user instanceof User,
+            'email' => $user instanceof User ? (string) $user->getAttribute('email') : '',
+            'passwordCopy' => $this->passwordMeterCopy(),
         ]);
     }
 
@@ -86,6 +97,13 @@ final class PasswordResetController extends Controller
             $user->setAttribute('failed_login_count', 0);
             $user->setAttribute('locked_until', null);
 
+            // A password chosen through the holder's own inbox is not the
+            // temporary one an invitation carried. Left set, a lapsed
+            // invitation refused the NEW password at sign-in and sent the
+            // trainee back here — a loop with no exit (D-67).
+            $user->setAttribute('must_change_password', false);
+            $user->setAttribute('temp_password_expires_at', null);
+
             $this->audit->log('account.password_reset', $user, null, null, $user);
 
             $user->save();
@@ -93,6 +111,10 @@ final class PasswordResetController extends Controller
 
         // BR-29 — the old sessions die with the old password.
         $this->invalidateOtherSessions($request, $user);
+
+        // The sign-in screen keeps its last verdict in the session. Whatever it
+        // said before this reset — locked, invitation expired — is now false.
+        $request->session()->forget(['auth.account_state', 'auth.locked_until']);
 
         PasswordChanged::dispatch($user, $at, 'reset');
 

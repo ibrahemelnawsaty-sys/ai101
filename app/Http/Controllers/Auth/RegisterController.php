@@ -11,6 +11,7 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Events\AccountRegistered;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
+use App\Http\Controllers\Auth\Concerns\PasswordMeterCopy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Cohort;
@@ -38,6 +39,7 @@ use Illuminate\Support\Facades\DB;
 final class RegisterController extends Controller
 {
     use IssuesEmailTokens;
+    use PasswordMeterCopy;
 
     public function __construct(private readonly AuditLogger $audit) {}
 
@@ -125,14 +127,7 @@ final class RegisterController extends Controller
     {
         return [
             'errors' => __('auth.register.errors'),
-            'met' => __('auth.register.rule_met'),
-            'unmet' => __('auth.register.rule_unmet'),
-            'strength' => [
-                __('auth.register.strength_0'),
-                __('auth.register.strength_1'),
-                __('auth.register.strength_2'),
-                __('auth.register.strength_3'),
-            ],
+            ...$this->passwordMeterCopy(),
             'step_of' => __('auth.register.step_of', ['current' => '{current}', 'total' => '{total}']),
         ];
     }

@@ -116,9 +116,12 @@
                     <p>{{ __('auth.login.locked_body') }}</p>
                     {{-- The lock is a server fact. This counter only shows how long is
                          left, ticking against `<html data-server-now>` (BR-07); when it
-                         reaches zero the page still has to ask the server. --}}
+                         reaches zero the page asks the server again by reloading — a moment
+                         after, since the server clock is read to the second — and
+                         the server — not this counter — releases the button (D-67). --}}
                     <p class="note__timer"
-                       x-data="countdown({ target: '{{ $lockedUntilIso ?? '' }}' })">
+                       x-data="countdown({ target: '{{ $lockedUntilIso ?? '' }}' })"
+                       x-on:countdown-finished="window.setTimeout(() => window.location.reload(), 1500)">
                         {{ __('auth.login.locked_remaining') }}
                         <b class="u-num"><span x-text="minutes">--</span>:<span x-text="seconds">--</span></b>
                     </p>

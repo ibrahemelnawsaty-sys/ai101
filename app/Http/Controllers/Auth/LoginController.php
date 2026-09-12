@@ -46,10 +46,33 @@ final class LoginController extends Controller
 
     public function create(Request $request): View
     {
+        $session = $request->session();
+        $accountState = $session->get('auth.account_state');
+        $lockedUntilIso = null;
+
+        // The lock is re-read against the server clock on every visit. It used
+        // to be stored as "seconds left" at the moment of refusal and never
+        // compared again, so the note — and the disabled sign-in button with
+        // it — outlived the lock until the session itself expired, and the
+        // countdown read a variable nothing set and sat at 00:00 (D-67).
+        // Same strict predicate as User::isLockedAt(): locked while the instant
+        // is still in the future, released AT it.
+        if ($accountState === 'locked') {
+            $until = (int) $session->get('auth.locked_until', 0);
+            $now = Clock::now();
+
+            if ($until > $now->getTimestamp()) {
+                $lockedUntilIso = $now->setTimestamp($until)->toIso8601ZuluString();
+            } else {
+                $session->forget(['auth.account_state', 'auth.locked_until']);
+                $accountState = null;
+            }
+        }
+
         return view('auth.login', [
             'state' => 'ok',
-            'accountState' => $request->session()->get('auth.account_state'),
-            'lockedForSeconds' => $request->session()->get('auth.locked_for_seconds'),
+            'accountState' => $accountState,
+            'lockedUntilIso' => $lockedUntilIso,
         ]);
     }
 
@@ -72,7 +95,7 @@ final class LoginController extends Controller
         $now = Clock::now();
 
         if ($user->isLockedAt($now)) {
-            return $this->lockedOut($request, $user, $now);
+            return $this->lockedOut($request, $user);
         }
 
         if ($user->getAttribute('email_verified_at') === null) {
@@ -108,7 +131,7 @@ final class LoginController extends Controller
         // A fresh session id on every sign-in, against session fixation
         // (PRD §12.1).
         $request->session()->regenerate();
-        $request->session()->forget(['auth.account_state', 'auth.locked_for_seconds']);
+        $request->session()->forget(['auth.account_state', 'auth.locked_until']);
 
         $this->audit->log('account.login', $user, null, null, $user);
 
@@ -170,15 +193,17 @@ final class LoginController extends Controller
             ->withErrors(['email' => __('auth.login.failed')]);
     }
 
-    private function lockedOut(LoginRequest $request, User $user, \DateTimeInterface $now): RedirectResponse
+    private function lockedOut(LoginRequest $request, User $user): RedirectResponse
     {
         $lockedUntil = $user->getAttribute('locked_until');
-        $seconds = $lockedUntil === null
-            ? 0
-            : max(0, $lockedUntil->getTimestamp() - $now->getTimestamp());
 
+        // The absolute server instant, not a duration: create() compares it
+        // with the clock on every visit, so the screen releases itself.
         $request->session()->put('auth.account_state', 'locked');
-        $request->session()->put('auth.locked_for_seconds', $seconds);
+        $request->session()->put(
+            'auth.locked_until',
+            $lockedUntil instanceof \DateTimeInterface ? $lockedUntil->getTimestamp() : 0,
+        );
 
         return back()
             ->withInput($request->only('email'))
@@ -198,7 +223,7 @@ final class LoginController extends Controller
             ResendVerificationRequest::PENDING_EMAIL_KEY,
             (string) $request->validated('email'),
         );
-        $request->session()->forget('auth.locked_for_seconds');
+        $request->session()->forget('auth.locked_until');
 
         return back()->withInput($request->only('email'));
     }

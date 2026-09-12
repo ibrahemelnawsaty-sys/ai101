@@ -12,12 +12,17 @@
 
     @see BR-29, BR-30 · PRD §9.3.3 · Constitution art. 5, 15, 17, 18, 24
 
-    Variables from App\Http\Controllers\Auth\NewPasswordController@create:
-      $state       string  'ok' | 'loading' | 'empty' | 'error'
-                           'empty' = recovery temporarily switched off by the admin
-      $token       string  the single-use reset token from the signed link
-      $email       string  the address the token was issued for (read-only echo)
-      $tokenValid  bool    false once the token is spent, expired or unknown
+    Variables from App\Http\Controllers\Auth\PasswordResetController@reset:
+      $state         string  'ok' | 'loading' | 'empty' | 'error'
+                             'empty' = recovery temporarily switched off by the admin
+      $token         string  the single-use reset token from the signed link
+      $email         string  the address the token was issued for (read-only echo)
+      $tokenValid    bool    false once the token is spent, expired or unknown
+      $passwordCopy  array   the checklist and meter words, built by the
+                             PasswordMeterCopy trait. Passed as ONE variable on
+                             purpose: a nested multi-line array written inside
+                             the json directive compiles to broken PHP, and this
+                             screen was a 500 for everyone because of it (D-67).
 
     Alpine component (resources/js/auth.js, shared with the registration wizard):
       passwordStrength({ minLength: 8 }) exposing
@@ -102,16 +107,7 @@
         @endif
 
         {{-- Live client-side copy, read from a JSON island so no Arabic sits in a .js file --}}
-        <script type="application/json" id="passwordCopy">@json([
-            'met' => __('auth.register.rule_met'),
-            'unmet' => __('auth.register.rule_unmet'),
-            'strength' => [
-                __('auth.register.strength_0'),
-                __('auth.register.strength_1'),
-                __('auth.register.strength_2'),
-                __('auth.register.strength_3'),
-            ],
-        ], JSON_UNESCAPED_UNICODE)</script>
+        <script type="application/json" id="passwordCopy">@json($passwordCopy ?? [], JSON_UNESCAPED_UNICODE)</script>
 
         <form method="POST"
               action="{{ route('password.update', ['token' => $token ?? '']) }}"
