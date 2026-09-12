@@ -732,10 +732,14 @@ account serves. It is not reversible within its `max-age` for visitors who have 
 ## 11 · Cron
 
 See **`deploy/cron.md`** for the full explanation and **`deploy/cron-setup.txt`** for the lines to paste
-into hPanel. Two entries, both every minute:
+into hPanel. **One application entry, every minute:**
 
-- `schedule:run` — every scheduled task in the application runs through this one entry (Article 10).
-- `queue:work --stop-when-empty --max-time=55` — drains the `database` queue. **No daemon, ever.**
+- `schedule:run` — every scheduled task in the application runs through this one entry (Article 10),
+  including the queue worker (`queue:work --stop-when-empty --max-time=50`, scheduled in
+  `bootstrap/app.php`). **No separate worker entry, and no daemon, ever.**
+
+If cron was not running for a while — including before the first time it was installed — backfill
+attendance once: `php artisan attendance:reconcile --days=30` (`deploy/cron.md` §9).
 
 Backups add two more entries; see `deploy/backup.md`.
 

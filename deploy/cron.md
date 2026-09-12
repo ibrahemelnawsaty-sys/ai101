@@ -6,15 +6,20 @@
 
 ---
 
-## 1 · What runs, and why exactly two entries
+## 1 · What runs, and why exactly one application entry
 
 Shared hosting gives no `supervisor`, no long-lived processes and no root. Everything the platform needs
-to do on a schedule therefore reaches the server through **two cron entries, both every minute**:
+to do on a schedule therefore reaches the server through **one cron entry, every minute**:
 
 | Entry | Command | Purpose |
 |---|---|---|
-| 1 | `php artisan schedule:run` | The single entry point for **every** scheduled task defined in `routes/console.php`. Laravel decides internally which of them is due this minute. |
-| 2 | `php artisan queue:work --stop-when-empty --max-time=55` | Drains the `database` queue and **exits**. Never a daemon. |
+| 1 | `php artisan schedule:run` | The single entry point for **every** scheduled task — `routes/console.php` and `bootstrap/app.php`. Laravel decides internally which of them is due this minute. |
+
+**The queue worker is one of those scheduled tasks**, not a cron entry of its own:
+`bootstrap/app.php` schedules `queue:work --stop-when-empty …` `->everyMinute()->withoutOverlapping(5)`.
+Earlier revisions of this document asked for a second, separate `queue:work` entry. The code never needed
+it, and the account runs without one (D-66). Its flags live in `bootstrap/app.php` and are changed there,
+in a commit — never in hPanel.
 
 Backups add two more entries — see `deploy/backup.md`.
 
@@ -39,32 +44,35 @@ one minute, that is a blocking constraint to escalate, not something to absorb q
 
 `queue:work` without a bound runs forever. On shared hosting a forever-process is killed by the host's
 process reaper at an arbitrary moment, mid-job, leaving the job reserved and invisible until its timeout.
-The flags below make the worker a well-behaved cron task:
+The flags below — exactly as `bootstrap/app.php` passes them — make the worker a well-behaved scheduled task:
 
 | Flag | Effect | Why this value |
 |---|---|---|
 | `--stop-when-empty` | Exits as soon as the queue is drained | No idle process consuming the account's process allowance |
-| `--max-time=55` | Exits after 55 seconds regardless | Bounded to less than the one-minute cron period, so overlapping instances stay rare |
+| `--max-time=50` | Exits after 50 seconds regardless | Bounded to less than the one-minute cron period, so the next minute's run finds the lock free |
 | `--tries=3` | Three attempts, then `failed_jobs` | A failed email retries; it does not vanish |
 | `--backoff=30` | 30 s before a retry | Avoids hammering an SMTP host that is rate-limiting us |
-| `--timeout=50` | Kills a single job after 50 s | Must stay below `--max-time`; `pcntl` is unavailable, so this is enforced by the worker loop, not by a signal |
-| `--sleep=1` | Poll interval while waiting | Only relevant in the moment before `--stop-when-empty` triggers |
+| `--timeout=45` | Kills a single job after 45 s | Must stay below `--max-time`; `pcntl` is unavailable, so this is enforced by the worker loop, not by a signal |
+| `--sleep=0` | No pause between polls | `--stop-when-empty` exits on the first empty poll anyway |
 | `--memory=180` | Restart threshold in MB | Below the 256 MB PHP limit set in `deploy/README.md` §2.4 |
-| `--quiet` | Suppresses per-job output | Cron mails output otherwise; real problems go to `storage/logs/` |
 
 > **`--timeout` note:** Laravel's per-job timeout uses `pcntl_alarm` when available. `pcntl` is absent on
 > shared hosting (Article 10), so a genuinely hung job is bounded by `--max-time` instead. Long work
 > (PDF generation, bulk certificate issuance, Excel export) must be written to complete well inside
-> 50 seconds or be split into smaller jobs. **Do not raise these numbers to make a slow job fit.**
+> 45 seconds or be split into smaller jobs. **Do not raise these numbers to make a slow job fit.**
 
 ### 1.3 Overlap
 
-Two `queue:work` processes running at once is safe — jobs are reserved atomically in the database, so no
-job is processed twice. `--max-time=55` keeps overlap to the rare case where a job runs past the minute
-boundary. If the account's process allowance is tight, wrap the entry in `flock` (§4.3).
+The scheduled worker carries `->withoutOverlapping(5)`: while one worker holds the lock, the next
+minute's `schedule:run` skips it rather than starting a second. The lock expires after five minutes, so a
+worker killed mid-job cannot block the queue for longer than that.
 
-`schedule:run` overlap is prevented per-task in application code with `->withoutOverlapping()`, which uses
-the `cache_locks` table. That is a code concern, not a cron concern.
+Were two workers ever to run at once, it would still be safe — jobs are reserved atomically in the
+database, so no job is processed twice. It would only waste a process from the account's allowance, which
+is why a separate `queue:work` cron entry must not be added (§4.3).
+
+Every other scheduled task is guarded the same way in application code, with the lock in the
+`cache_locks` table. That is a code concern, not a cron concern.
 
 ---
 
@@ -165,35 +173,21 @@ change it consistently in every line.
 - The log is **rotated by `deploy/backup.md`'s housekeeping entry**, not by Laravel. It is a cron log, not
   an application log; application logging goes to `storage/logs/laravel-*.log` via the `daily` channel.
 
-### 4.2 Queue worker
+### 4.2 Queue worker — no entry of its own
 
-```cron
-* * * * * /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
-```
-
-The flags are explained in §1.2. Do not remove `--stop-when-empty`.
-
-### 4.3 Optional: prevent overlap with `flock`
-
-Only if the account's process allowance is being hit. Check that `flock` exists first:
+There is nothing to paste. The worker runs inside 4.1 (§1, §1.3). To confirm it is scheduled:
 
 ```sh
-command -v flock
+php artisan schedule:list | grep queue:work
 ```
 
-If it does:
+### 4.3 What must **not** be added
 
-```cron
-* * * * * /usr/bin/flock -n /home/u123456789/athar-app/storage/framework/queue.lock /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
-```
+- **A separate `queue:work` entry.** The scheduler already starts one every minute behind a lock; a cron
+  entry beside it runs a second, unlocked worker in parallel. Safe, because reservation is atomic — and a
+  second process spent every minute for nothing.
 
-`-n` means "if the lock is held, exit immediately" — the next minute's run picks the work up.
-If `flock` is not installed, do not emulate it with a lock file written by a shell script; use the
-unwrapped line and rely on the database's atomic job reservation instead.
-
-### 4.4 What must **not** be added
-
-- Any `queue:work` **without** `--stop-when-empty` or `--max-time`. That is a daemon (Article 10).
+- Any `queue:work` **without** `--stop-when-empty` or `--max-time`, anywhere. That is a daemon (Article 10).
 - `queue:listen`. It spawns a child process per job and is slower and heavier than `queue:work`.
 - A second `schedule:run` entry "to be safe". One entry, one minute.
 - `php artisan schedule:work`. That is a local development helper; it is a foreground daemon.
@@ -235,12 +229,10 @@ Wait two minutes, then:
 
 ```sh
 tail -n 40 /home/u123456789/athar-app/storage/logs/cron-schedule.log
-tail -n 40 /home/u123456789/athar-app/storage/logs/cron-queue.log
 ```
 
-Empty files are the **expected** result for a healthy idle system — `schedule:run` with nothing due and
-`queue:work` with an empty queue both print nothing. Empty is therefore not proof that cron ran. Prove it
-positively instead:
+The worker writes to this same log, because it runs inside `schedule:run`. A healthy idle system prints
+little or nothing here, so an empty file is not proof that cron ran. Prove it positively instead:
 
 ```sh
 ls -l --time-style=full-iso /home/u123456789/athar-app/storage/logs/cron-*.log
@@ -294,8 +286,9 @@ must run them. Say so in the handover; do not imply the platform is monitored.
 | `Could not open input file: artisan` | Wrong application path in the entry | `ls /home/<user>/athar-app/artisan` |
 | `command not found` | PHP path wrong or not absolute | §2.1 |
 | `PDOException: could not find driver` | CLI PHP lacks `pdo_mysql` | §2.1 — pick the alt-php binary that has it |
-| Jobs sit in `jobs` forever | Worker entry missing, or a fatal before the loop starts | `php artisan queue:work --once` by hand and read the output |
-| Jobs run twice | Two worker entries installed | Delete one; overlap alone does not cause double processing |
+| Jobs sit in `jobs` forever | The `schedule:run` entry is missing, or a fatal before the worker loop starts | `php artisan schedule:list` must show `queue:work`; then `php artisan queue:work --once` by hand and read the output |
+| Jobs sit for five minutes, then drain | A worker died holding the `withoutOverlapping(5)` lock | Expected recovery; if it recurs, read `laravel-*.log` for the fatal |
+| Two workers in the process list | A separate `queue:work` cron entry left from an earlier revision of this document | Delete that entry (§4.3); the scheduled worker is enough |
 | `MaxAttemptsExceededException` | Job exceeded `--timeout` or the worker was killed mid-job | Split the job; do not raise `--timeout` past `--max-time` |
 | Emails from cron flooding the mailbox | Missing `2>&1` and `>>` redirection | Add the redirection to every entry |
 | Scheduled task never fires | Task's timezone differs from what you assumed | `php artisan schedule:list` prints the resolved next-run time; §5 |
@@ -314,3 +307,31 @@ php artisan schedule:list      # confirm the schedule is what you expect
 Record the change — date, entry, reason — in the deployment log. Cron entries are production configuration
 and are not in version control; `deploy/cron-setup.txt` is the reference copy that **must** be updated in
 the same commit as any change to what the platform schedules.
+
+---
+
+## 9 · After a period without cron — backfill attendance once
+
+The scheduled `attendance:reconcile` (every fifteen minutes) revisits only the last
+`athar.attendance.reconcile_lookback_days` days — **3** by default. That bound keeps each pass short. It
+also means **a session that ended more than three days before cron started working is never revisited**:
+its no-shows have no `absent` row (BR-08), its check-ins without check-out never become `incomplete`
+(BR-09), and every affected attendance rate — and so certificate eligibility — is computed from a record
+with holes in it.
+
+So whenever cron has been off, missing or broken — the first deployment, a host migration, a wrong PHP
+path discovered late — run one pass by hand, far enough back to reach the first affected session:
+
+```sh
+cd /home/u123456789/athar-app
+php artisan attendance:reconcile --days=30
+```
+
+It prints one line, for example:
+
+```
+Reconciled 3 session(s): 3 absent, 0 incomplete, 1 cohort(s), 0 enrolment(s) updated.
+```
+
+The command is idempotent: a second run over the same period converts nothing, because nothing is left to
+convert. Running it with a generous `--days` is therefore safe; running it too short is the only mistake.

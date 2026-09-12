@@ -34,7 +34,7 @@
       *     *         *          *         *          = every minute
 
 ===============================================================================
- ENTRY 1 OF 4 - LARAVEL SCHEDULER          schedule: * * * * *   (every minute)
+ ENTRY 1 OF 3 - LARAVEL SCHEDULER          schedule: * * * * *   (every minute)
 ===============================================================================
  The single entry point for every scheduled task in the application, including
  the BR-08 absent sweep and the BR-09 incomplete-attendance sweep.
@@ -43,26 +43,15 @@
 * * * * * /usr/bin/php /home/u123456789/athar-app/artisan schedule:run >> /home/u123456789/athar-app/storage/logs/cron-schedule.log 2>&1
 
 ===============================================================================
- ENTRY 2 OF 4 - QUEUE WORKER               schedule: * * * * *   (every minute)
+ THERE IS NO QUEUE-WORKER ENTRY
 ===============================================================================
- Drains the database queue and EXITS. Never a daemon (Article 10).
- --stop-when-empty  exit as soon as the queue is empty
- --max-time=55      exit after 55s regardless, before the next minute starts
- --tries=3          three attempts, then the job lands in failed_jobs
- --backoff=30       wait 30s before retrying a failed job
- --timeout=50       per-job ceiling, must stay below --max-time
- --memory=180       restart threshold in MB, below the 256M php limit
- DO NOT REMOVE --stop-when-empty OR --max-time.
-
-* * * * * /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
-
- --- optional variant, only if the account's process allowance is being hit ---
- --- requires flock; check with:  command -v flock                          ---
-
-# * * * * * /usr/bin/flock -n /home/u123456789/athar-app/storage/framework/queue.lock /usr/bin/php /home/u123456789/athar-app/artisan queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --timeout=50 --sleep=1 --memory=180 --quiet >> /home/u123456789/athar-app/storage/logs/cron-queue.log 2>&1
+ The worker is a scheduled task inside ENTRY 1 (bootstrap/app.php,
+ everyMinute, withoutOverlapping). A separate queue:work line here would run a
+ second worker beside it. Earlier revisions of this file listed one; if your
+ account still has it, delete it. See deploy/cron.md section 4.3.
 
 ===============================================================================
- ENTRY 3 OF 4 - DAILY DATABASE BACKUP      schedule: 15 0 * * *  (00:15 UTC)
+ ENTRY 2 OF 3 - DAILY DATABASE BACKUP      schedule: 15 0 * * *  (00:15 UTC)
 ===============================================================================
  00:15 UTC = 03:15 Asia/Riyadh. Riyadh is a constant UTC+3 with no daylight
  saving, so this never needs a seasonal adjustment.
@@ -73,7 +62,7 @@
 15 0 * * * /bin/sh /home/u123456789/athar-app/deploy/backup-db.sh >> /home/u123456789/backups/backup-db.log 2>&1
 
 ===============================================================================
- ENTRY 4 OF 4 - WEEKLY FILE BACKUP         schedule: 45 0 * * 5  (Fri 00:45 UTC)
+ ENTRY 3 OF 3 - WEEKLY FILE BACKUP         schedule: 45 0 * * 5  (Fri 00:45 UTC)
 ===============================================================================
  Friday 00:45 UTC = Friday 03:45 Asia/Riyadh - the weekend in Saudi Arabia,
  the lowest-traffic window. Retention (8 weeks) is handled inside the script.
@@ -83,7 +72,7 @@
 ===============================================================================
  OPTIONAL - CRON LOG HOUSEKEEPING          schedule: 30 1 1 * *  (monthly)
 ===============================================================================
- cron-schedule.log and cron-queue.log are append-only shell logs and are NOT
+ cron-schedule.log is an append-only shell log and is NOT
  rotated by Laravel's daily log channel. Without this they grow without bound
  and eventually consume the account's inode/disk allowance.
  This truncates them to their last 2000 lines once a month.
@@ -97,6 +86,7 @@
  - queue:listen                                          (slower, heavier)
  - schedule:work                                         (a foreground daemon)
  - a second schedule:run entry                           (one entry, one minute)
+ - a separate queue:work entry                           (the scheduler runs it)
  - any entry without  >> <logfile> 2>&1                  (floods the mailbox)
  - any entry using a relative path                       (cron has no PATH)
 
