@@ -15,6 +15,7 @@ use App\Models\Enrollment;
 use App\Models\Notification;
 use App\Models\Session;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
 use App\Support\AttendanceCounting;
 use Carbon\CarbonImmutable;
@@ -50,6 +51,7 @@ final class AttendanceReconciler
     public function __construct(
         private readonly AttendanceWindow $window,
         private readonly AuditLogger $audit,
+        private readonly InAppNotifier $notifier,
     ) {}
 
     /**
@@ -450,24 +452,14 @@ final class AttendanceReconciler
         array $replacements,
         CarbonImmutable $now,
     ): void {
-        $notification = new Notification;
-        $notification->setAttribute('user_id', $trainerId);
-        $notification->setAttribute('type', self::NOTIFICATION_TYPE_INCOMPLETE);
-        $notification->setAttribute(
-            'title',
+        $this->notifier->notify(
+            [$trainerId],
+            self::NOTIFICATION_TYPE_INCOMPLETE,
             (string) __('notifications.attendance.incomplete_summary.title', $replacements),
-        );
-        $notification->setAttribute(
-            'body',
             (string) __('notifications.attendance.incomplete_summary.body', $replacements),
+            $this->trainerSessionLink($session),
+            $now,
         );
-        $notification->setAttribute('link', $this->trainerSessionLink($session));
-        $notification->setAttribute('is_read', false);
-        $notification->setAttribute('read_at', null);
-        $notification->setAttribute('channel', 'in_app');
-        $notification->setAttribute('created_at', $now);
-        $notification->setAttribute('updated_at', $now);
-        $notification->save();
     }
 
     private function trainerSessionLink(Session $session): ?string

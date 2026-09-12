@@ -8,7 +8,6 @@ use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreProjectEvaluationRequest;
 use App\Http\Requests\Trainer\UnlockFinalProjectRequest;
-use App\Models\Enrollment;
 use App\Models\FinalProject;
 use App\Models\Notification;
 use App\Models\ProjectSubmission;
@@ -17,6 +16,8 @@ use App\Presenters\Trainer\FinalProjectBrief;
 use App\Presenters\Trainer\ProjectSubmissionRow;
 use App\Services\Audit\AuditLogger;
 use App\Services\Grading\EvaluationRecorder;
+use App\Services\Mail\CohortAudience;
+use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
 use App\Support\Dates;
 use Illuminate\Contracts\View\View;
@@ -51,6 +52,8 @@ final class FinalProjectController extends Controller
     public function __construct(
         private readonly EvaluationRecorder $evaluations,
         private readonly AuditLogger $audit,
+        private readonly InAppNotifier $notifier,
+        private readonly CohortAudience $audience,
     ) {}
 
     public function index(Request $request): View
@@ -178,25 +181,18 @@ final class FinalProjectController extends Controller
         $title = (string) __('notifications.types.final_project_unlocked.title', $replacements);
         $body = (string) __('notifications.types.final_project_unlocked.body', $replacements);
 
-        $participantIds = Enrollment::query()
-            ->where('cohort_id', $project->getAttribute('cohort_id'))
-            ->participants()
-            ->pluck('user_id');
-
-        foreach ($participantIds as $participantId) {
-            $notification = new Notification;
-            $notification->setAttribute('user_id', (string) $participantId);
-            $notification->setAttribute('type', self::NOTIFICATION_TYPE_UNLOCKED);
-            $notification->setAttribute('title', $title);
-            $notification->setAttribute('body', $body);
-            $notification->setAttribute('link', $link);
-            $notification->setAttribute('is_read', false);
-            $notification->setAttribute('read_at', null);
-            $notification->setAttribute('channel', 'in_app');
-            $notification->setAttribute('created_at', $at);
-            $notification->setAttribute('updated_at', $at);
-            $notification->save();
-        }
+        // Active participants only. The query this replaced read participants()
+        // with no status filter, so a withdrawn trainee was still told the
+        // final project had opened; and it ignored the bell switch (D-68).
+        $this->notifier->notify(
+            $this->audience->participants((string) $project->getAttribute('cohort_id'))
+                ->map(static fn (User $user): string => (string) $user->getKey()),
+            self::NOTIFICATION_TYPE_UNLOCKED,
+            $title,
+            $body,
+            $link,
+            $at,
+        );
     }
 
     /** BR-12, BR-13 — record the project grade. */

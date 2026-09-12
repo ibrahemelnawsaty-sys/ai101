@@ -19,6 +19,7 @@ use App\Models\ProjectSubmission;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,7 @@ final class EvaluationRecorder
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ScoreCalculator $scores,
+        private readonly InAppNotifier $notifier,
     ) {}
 
     /**
@@ -476,18 +478,16 @@ final class EvaluationRecorder
             'reason' => $reason ?? '',
         ];
 
-        $notification = new Notification;
-        $notification->setAttribute('user_id', $participantId);
-        $notification->setAttribute('type', $type);
-        $notification->setAttribute('title', (string) __('notifications.types.'.$type.'.title', $replacements));
-        $notification->setAttribute('body', (string) __('notifications.types.'.$type.'.body', $replacements));
-        $notification->setAttribute('link', Route::has('grades') ? route('grades') : null);
-        $notification->setAttribute('is_read', false);
-        $notification->setAttribute('read_at', null);
-        $notification->setAttribute('channel', 'in_app');
-        $notification->setAttribute('created_at', $at);
-        $notification->setAttribute('updated_at', $at);
-        $notification->save();
+        // Through the one writer, so the participant's bell switch for grade
+        // notices is honoured like the e-mail one (D-68).
+        $this->notifier->notify(
+            [$participantId],
+            $type,
+            (string) __('notifications.types.'.$type.'.title', $replacements),
+            (string) __('notifications.types.'.$type.'.body', $replacements),
+            Route::has('grades') ? route('grades') : null,
+            Clock::toUtc($at),
+        );
     }
 
     /**
