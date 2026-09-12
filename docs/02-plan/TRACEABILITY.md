@@ -227,3 +227,15 @@
 كان يمرّر معرّف المتدرب إلى `submissions.remind` التي تستقبل مهمة · روابط تحميل ملفات التسليم كانت تُرسم
 `href=""` لعدم وجود مسار تحميل موقّع بعد · `variant="primary"`/`"danger"` على `stat-card`/`pill`/`progress-bar`
 ليست من مفردات تلك المكوّنات وكانت تسقط صامتة إلى `default` — صارت `brand`/`error`.
+
+---
+
+## خامسًا — متطلبات وظيفية مُستشهَد بها `FR-*`
+
+> تُضاف هنا كل `FR-*` يُذكر في شيفرة أو اسم اختبار — `G12` يرفض معرّفًا بلا صفّ.
+> المصدر: `docs/01-analysis/02-requirements-matrix.md`.
+
+| المعرّف | الوصف | الحالة | الملفات | الاختبارات |
+|---|---|---|---|---|
+| FR-NOTIF-13 | نشر مهمة يُبلغ الدفعة على المنصّة والبريد، والمسودة لا تُبلغ أحدًا | 🟩 | `app/Http/Controllers/Trainer/AssignmentController.php` (`announce()`) · `app/Events/AssignmentPublished.php` · `app/Listeners/SendAssignmentPublished.php` · `app/Services/Notifications/InAppNotifier.php` | `BusinessRules/AssignmentNotificationsTest.php` — سبع حالات: المسودة صامتة · النشر يصل النشطين مرة على القناتين لا المنسحب ولا المدرّب · نشر المسودة بالتعديل · إعادة الحفظ صامتة · الرابط صفحة المتدرّب (200 بلا رفض مُسجَّل) · الجرس المطفأ · المستمع يتحقّق من النشر عند الإرسال — تفشل على الشيفرة السابقة (D-68) · `Mail/LetterContractTest.php` — لا رسالة تشير إلى `trainer.*` أو `admin.*` |
+| FR-ASGN-30 | زرّ «ذكّر من لم يسلّم» يرسل إشعارًا واحدًا لكل من لم يسلّم ولا أحد غيره | 🟦 | `app/Http/Controllers/Trainer/SubmissionController.php` (`remind()` · `remindAssignmentId()`) · `app/Http/Requests/Trainer/RemindAssignmentRequest.php` · `app/Policies/AssignmentPolicy.php` · `app/Services/Mail/CohortAudience.php` (`yetToSubmit()`) · `app/Events/AssignmentReminderRequested.php` · `app/Listeners/SendAssignmentReminder.php` · ترحيل `add_last_reminded_at_to_assignments` | `BusinessRules/AssignmentNotificationsTest.php` — اثنتا عشرة حالة: الجمهور · ظهور الزرّ · المسودة 403 · مدرّب دفعة أخرى 403 · الموعد ±1ث · لا أحد متبقٍّ · ضغطتان ومدرّب ومدير معًا · التهدئة ±1ث · كل قناة بمفتاحها · المدّة بالكلمات · `isPastDueAt` عند الحدّ · اللوحة بلا دفعة · ⬜ **قائمة أسماء من لم يسلّم على اللوحة (PRD §9.11.3) غير موجودة بعد** · ⚠️ رفض التذكير بعد الموعد، وطول التهدئة (60 دقيقة): افتراض مؤقت (D-68) |

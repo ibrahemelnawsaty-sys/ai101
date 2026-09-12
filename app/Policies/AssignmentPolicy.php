@@ -70,9 +70,15 @@ final class AssignmentPolicy
         return $this->staffOf($user, (string) $assignment->cohort_id);
     }
 
+    /**
+     * Published only. A draft is invisible to participants (PRD §9.11.3), and a
+     * reminder would put its title in their inbox (D-68).
+     */
     public function remind(User $user, Assignment $assignment): bool
     {
-        return $this->staffOf($user, (string) $assignment->cohort_id) && $this->writesAllowed();
+        return $this->staffOf($user, (string) $assignment->cohort_id)
+            && $this->writesAllowed()
+            && $assignment->isPublished();
     }
 
     public function delete(User $user, Assignment $assignment): bool

@@ -8,9 +8,11 @@ use App\Enums\AssignmentStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Enums\SubmissionStatus;
+use App\Events\AssignmentReminderRequested;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Trainer\RemindAssignmentRequest;
 use App\Http\Requests\Trainer\ReviseEvaluationRequest;
 use App\Http\Requests\Trainer\StoreEvaluationRequest;
 use App\Models\Assignment;
@@ -21,12 +23,17 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Presenters\Shared\TotalsWarning;
 use App\Presenters\Support\Options;
+use App\Presenters\Support\Present;
 use App\Presenters\Trainer\GradingForm;
 use App\Presenters\Trainer\SubmissionRow;
 use App\Presenters\Trainer\SubmissionStats;
 use App\Services\Audit\AuditLogger;
 use App\Services\Grading\EvaluationRecorder;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Mail\CohortAudience;
+use App\Services\Notifications\InAppNotifier;
+use App\Services\Time\Clock;
+use App\Support\Dates;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,7 +59,7 @@ use Illuminate\Support\Facades\DB;
  * reads `$row->stateVariant` and `$selected->maxScore`, and both are decisions
  * about how the number looks, taken here on the server (art. 5, art. 6).
  *
- * @see BR-11, BR-12, BR-13, BR-14, BR-19, BR-22, BR-23 · PRD §9.11.3, §9.15 · CONSTITUTION art. 5, art. 6
+ * @see BR-11, BR-12, BR-13, BR-14, BR-19, BR-22, BR-23, FR-ASGN-30 · PRD §9.11.3, §9.15 · CONSTITUTION art. 5, art. 6
  */
 final class SubmissionController extends Controller
 {
@@ -79,6 +86,8 @@ final class SubmissionController extends Controller
         private readonly EvaluationRecorder $evaluations,
         private readonly ScoreCalculator $scores,
         private readonly AuditLogger $audit,
+        private readonly CohortAudience $audience,
+        private readonly InAppNotifier $notifier,
     ) {}
 
     public function index(Request $request): View
@@ -98,6 +107,7 @@ final class SubmissionController extends Controller
                 'screen' => self::SCREEN,
                 'screenState' => ScreenState::EMPTY,
                 'bulkDownloadHref' => null,
+                'remindAssignmentId' => null,
                 'selectedParam' => self::SELECTED_PARAM,
             ]);
         }
@@ -136,8 +146,43 @@ final class SubmissionController extends Controller
             // unconditionally threw UrlGenerationException and took the whole
             // board down with it — a disabled button is not a missing route.
             'bulkDownloadHref' => $this->bulkDownloadHref($request, $assignments->modelKeys()),
+            'remindAssignmentId' => $this->remindAssignmentId($request, $assignments, $cohort),
             'selectedParam' => self::SELECTED_PARAM,
         ]);
+    }
+
+    /**
+     * The assignment the "remind" button would address, or null when there is
+     * no button to show. Like the bulk download it needs ONE assignment, so it
+     * exists only once the board is filtered to one — and only when that one
+     * is published, still open, and has somebody left to remind.
+     *
+     * The button used to live in a per-row branch keyed on `hasSubmission`,
+     * which every row on this board had: it could never render (D-68).
+     *
+     * @param  EloquentCollection<int, Assignment>  $assignments
+     */
+    private function remindAssignmentId(Request $request, EloquentCollection $assignments, Cohort $cohort): ?string
+    {
+        $requested = $request->query('assignment');
+
+        if (! is_string($requested) || $requested === '') {
+            return null;
+        }
+
+        $assignment = $assignments->first(
+            static fn (Assignment $item): bool => (string) $item->getKey() === $requested,
+        );
+
+        if (! $assignment instanceof Assignment
+            || ! $assignment->isPublished()
+            || $assignment->isPastDueAt(Clock::now())) {
+            return null;
+        }
+
+        $pending = $this->audience->yetToSubmit((string) $cohort->getKey(), $requested);
+
+        return $pending->isEmpty() ? null : $requested;
     }
 
     /**
@@ -318,14 +363,77 @@ final class SubmissionController extends Controller
     }
 
     /**
-     * Remind everyone who has not handed in yet. The reminder itself is sent by
-     * the notification layer; this endpoint records that it was asked for.
+     * Remind everyone who has not handed this assignment in (FR-ASGN-30).
+     *
+     * It used to authorise, write an audit row and say "we sent the reminder"
+     * — and send nothing: no event, no listener, no notice. The trainer then
+     * treated the silent cohort as warned (D-68). Now, in order:
+     *
+     *   1. refuse after the deadline — there is no time left to remind about
+     *      (a temporary assumption, even with late submission allowed: D-68);
+     *   2. refuse when nobody is left to remind;
+     *   3. CLAIM the send atomically on `last_reminded_at`, so a double click,
+     *      or a trainer and an administrator pressing together, write to each
+     *      person once. A rate limit per actor would let the second click in;
+     *   4. write the in-app notices now, queue the letters, audit the count.
      */
-    public function remind(Assignment $assignment): RedirectResponse
+    public function remind(RemindAssignmentRequest $request, Assignment $assignment): RedirectResponse
     {
-        $this->authorize('remind', $assignment);
+        $now = Clock::now();
 
-        $this->audit->log('assignment.reminded', $assignment);
+        if ($assignment->isPastDueAt($now)) {
+            return back()->with('error', __('trainer.submissions.remind_closed'));
+        }
+
+        $cohortId = (string) $assignment->getAttribute('cohort_id');
+        $pending = $this->audience->yetToSubmit($cohortId, (string) $assignment->getKey());
+
+        if ($pending->isEmpty()) {
+            return back()->with('warning', __('trainer.submissions.remind_none'));
+        }
+
+        $cooldown = max(0, (int) config('athar.assignments.reminder_cooldown_minutes'));
+
+        // toBase(): a plain UPDATE, so Eloquent does not stamp updated_at with
+        // the framework clock rather than Clock (BR-07).
+        $claimed = Assignment::query()
+            ->whereKey($assignment->getKey())
+            ->where(static function (Builder $query) use ($now, $cooldown): void {
+                $query->whereNull('last_reminded_at')
+                    ->orWhere('last_reminded_at', '<=', $now->subMinutes($cooldown));
+            })
+            ->toBase()
+            ->update(['last_reminded_at' => $now]);
+
+        if ($claimed === 0) {
+            return back()->with('warning', __('trainer.submissions.remind_recent'));
+        }
+
+        $title = (string) $assignment->getAttribute('title');
+        $dueAt = $assignment->getAttribute('due_at');
+        $replacements = [
+            'assignment' => $title,
+            'countdown' => Present::durationLabel($dueAt, $now),
+        ];
+
+        $this->notifier->notify(
+            $pending->map(static fn (User $user): string => (string) $user->getKey()),
+            'assignment_due_reminder',
+            (string) __('notifications.types.assignment_due_reminder.title', $replacements),
+            (string) __('notifications.types.assignment_due_reminder.body', $replacements),
+            route('assignments.show', ['assignment' => $assignment->getKey()]),
+            $now,
+        );
+
+        AssignmentReminderRequested::dispatch(
+            cohortId: $cohortId,
+            assignmentId: (string) $assignment->getKey(),
+            assignmentTitle: $title,
+            dueAtIso: Clock::toUtc($dueAt)->toIso8601ZuluString(),
+            dueAtLabel: Dates::dateTime($dueAt),
+        );
+
+        $this->audit->log('assignment.reminded', $assignment, null, ['recipients' => $pending->count()]);
 
         return back()->with('status', __('trainer.submissions.reminded'));
     }
@@ -344,7 +452,10 @@ final class SubmissionController extends Controller
 
         $this->audit->log('assignment.bulk_download', $assignment);
 
-        return back()->withErrors(['files' => __('trainer.submissions.bulk_unavailable')]);
+        // `error`, not withErrors(['files' => …]): the board has no field named
+        // files, and the layout toasts only status, error and warning — so the
+        // message was never shown (D-68).
+        return back()->with('error', __('trainer.submissions.bulk_unavailable'));
     }
 
     /** The board as a CSV, scoped and filtered exactly like the board itself. */

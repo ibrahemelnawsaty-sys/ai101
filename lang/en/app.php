@@ -161,6 +161,13 @@ return [
     'delete_confirm' => 'Delete this item? This action cannot be undone.',
     'leave_unsaved' => 'You have unsaved changes. Leave the page anyway?',
 
+    'duration' => [
+        'moment' => 'less than a minute',
+        'minutes' => '{1} 1 minute|[2,*] :count minutes',
+        'hours' => '{1} 1 hour|[2,*] :count hours',
+        'days' => '{1} 1 day|[2,*] :count days',
+    ],
+
     'remaining' => [
         'none' => 'No deadline',
         'passed' => 'Deadline passed',

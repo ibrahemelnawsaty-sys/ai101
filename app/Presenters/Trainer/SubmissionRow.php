@@ -23,9 +23,11 @@ use App\Support\ViewModel;
  * than no link (CONSTITUTION art. 24 — a stored path is never a URL). The
  * template prints the file's name plainly while it stays null.
  *
- * `hasSubmission` is what separates the "grade" button from the "remind"
- * button; it is always true for a row built from a submission, and the roster
- * shape that carries absences is ParticipantSubmission.
+ * `hasSubmission` is always true for a row built from a submission; the roster
+ * shape that carries absences is ParticipantSubmission. The board no longer
+ * branches on it: the "remind" button lived in its false branch and so could
+ * never render, and it now sits in the toolbar, addressed to the assignment the
+ * board is filtered to (D-68).
  *
  * @see BR-12, BR-13, BR-19, BR-23 · PRD §9.11.3, §9.15 · CONSTITUTION art. 5, art. 18, art. 24
  */

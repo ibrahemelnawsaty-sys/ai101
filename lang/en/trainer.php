@@ -195,6 +195,9 @@ return [
         'remind' => 'Remind who has not submitted',
         'bulk_download' => 'Download the submissions as a zip',
         'reminded' => 'We sent the reminder to everyone who has not submitted yet.',
+        'remind_closed' => 'The deadline for this assignment has passed, so there is no time left to remind anyone about. Extend the deadline first if you still want to remind the cohort.',
+        'remind_none' => 'Everyone in the cohort has already submitted this assignment, so no reminder was sent.',
+        'remind_recent' => 'A reminder for this assignment was sent a short while ago. You can send another one later.',
         'bulk_unavailable' => 'Bulk download is unavailable right now. Download the submissions one by one, and try again shortly.',
 
         // Column headings for the exported submissions report

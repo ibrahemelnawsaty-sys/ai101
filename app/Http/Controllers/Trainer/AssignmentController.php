@@ -21,6 +21,8 @@ use App\Presenters\Support\Options;
 use App\Presenters\Trainer\AssignmentForm;
 use App\Presenters\Trainer\AssignmentRow;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Mail\CohortAudience;
+use App\Services\Notifications\InAppNotifier;
 use App\Support\Dates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -37,13 +39,30 @@ use Illuminate\Http\Request;
  * warned on their own board — and only warned, never blocked (BR-11,
  * PROJECT-CONTRACT §7).
  *
- * @see BR-11, BR-17, BR-18, BR-23 · PRD §9.11.3 · CONSTITUTION Art. 5, Art. 22
+ * ANNOUNCING. A draft announces nothing. The transition to published —
+ * whether a new task saved as published or a draft published later through
+ * update() — announces once, on both channels: an in-app notice written here
+ * and a letter queued through AssignmentPublished. Re-saving a task that is
+ * already published announces nothing. There is no published_at column, so
+ * publishing, withdrawing to draft and publishing again announces twice; that
+ * is accepted and recorded (D-68). Before D-68 it was the other way round on
+ * both halves: saving a DRAFT e-mailed the whole cohort its title, and
+ * publishing it later told nobody.
+ *
+ * @see BR-11, BR-17, BR-18, BR-23, FR-NOTIF-13 · PRD §9.11.3, §9.16.1 · CONSTITUTION Art. 5, Art. 22
  */
 final class AssignmentController extends Controller
 {
     use ReadsCohortScope;
 
-    public function __construct(private readonly ScoreCalculator $scores) {}
+    /** The slug the preferences screen, the lang group and the listener share. */
+    private const NOTIFICATION_TYPE = 'assignment_published';
+
+    public function __construct(
+        private readonly ScoreCalculator $scores,
+        private readonly CohortAudience $audience,
+        private readonly InAppNotifier $notifier,
+    ) {}
 
     private const PER_PAGE = 50;
 
@@ -137,15 +156,9 @@ final class AssignmentController extends Controller
             'created_by' => $trainer->getKey(),
         ]));
 
-        // Addressed to the cohort; the listener resolves who is actively
-        // enrolled at send time rather than at publish time.
-        AssignmentPublished::dispatch(
-            (string) $assignment->getAttribute('cohort_id'),
-            (string) $assignment->getAttribute('title'),
-            (int) $assignment->getAttribute('max_score'),
-            Dates::dateTime($assignment->getAttribute('due_at')),
-            route('trainer.assignments'),
-        );
+        if ($assignment->isPublished()) {
+            $this->announce($assignment);
+        }
 
         return back()->with('status', __('trainer.assignments.created'));
     }
@@ -154,6 +167,44 @@ final class AssignmentController extends Controller
     {
         $assignment->fill($request->columns())->save();
 
+        // Only the move INTO published announces; re-saving a published task
+        // does not write to the cohort again.
+        if ($assignment->wasChanged('status') && $assignment->isPublished()) {
+            $this->announce($assignment);
+        }
+
         return back()->with('status', __('trainer.assignments.updated'));
+    }
+
+    /**
+     * Both channels of FR-NOTIF-13, pointed at the PARTICIPANT's page.
+     *
+     * The bell is written here, now, for the active participants who have not
+     * switched it off. The letter is queued; its listener resolves the roster
+     * and re-checks the status when it runs (D-51).
+     */
+    private function announce(Assignment $assignment): void
+    {
+        $cohortId = (string) $assignment->getAttribute('cohort_id');
+        $title = (string) $assignment->getAttribute('title');
+        $dueAt = Dates::dateTime($assignment->getAttribute('due_at'));
+        $replacements = ['assignment' => $title, 'datetime' => $dueAt];
+
+        $this->notifier->notify(
+            $this->audience->participants($cohortId)
+                ->map(static fn (User $user): string => (string) $user->getKey()),
+            self::NOTIFICATION_TYPE,
+            (string) __('notifications.types.assignment_published.title', $replacements),
+            (string) __('notifications.types.assignment_published.body', $replacements),
+            route('assignments.show', ['assignment' => $assignment->getKey()]),
+        );
+
+        AssignmentPublished::dispatch(
+            cohortId: $cohortId,
+            assignmentId: (string) $assignment->getKey(),
+            assignmentTitle: $title,
+            maxScore: (int) $assignment->getAttribute('max_score'),
+            dueAt: $dueAt,
+        );
     }
 }

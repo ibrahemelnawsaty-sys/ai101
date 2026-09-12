@@ -7,8 +7,8 @@ $editing   (5 files, 40 properties)
   properties: allowLate, capacity, certificatesText, checkedInTimeValue, checkedOutTimeValue, dateValue, description, dueAtValue, endTimeValue, endsAtValue, exists, hours, id, isMandatory, joinOpensMinutes, maxFileMb, maxFiles, maxScore, meetingPasscode, meetingUrl, minAttendanceRate, name, objectivesText, participantName, passScore, programId, registrationClosesAtValue, requiresApproval, showGithubField, slug, startTimeValue, startsAtValue, status, summary, targetAudienceText, title, topic, trainerId, type, weekId
   files: resources/views/admin/cohorts.blade.php, resources/views/admin/programs.blade.php, resources/views/trainer/assignments.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/sessions.blade.php
 
-$row   (6 files, 32 properties)
-  properties: assignmentId, assignmentsCount, attendancePercent, attendanceVariant, averageAttendance, averageScore, cells, cohortName, completionRate, downloadUrl, email, errors, fileLabel, hasScore, hasSubmission, id, isGraded, maxScore, name, number, participantName, participants, programName, ratePercent, score, scoreMax, stateIcon, stateLabel, stateVariant, submissionRate, submittedAt, submittedCount
+$row   (6 files, 30 properties)
+  properties: assignmentsCount, attendancePercent, attendanceVariant, averageAttendance, averageScore, cells, cohortName, completionRate, downloadUrl, email, errors, fileLabel, hasScore, id, isGraded, maxScore, name, number, participantName, participants, programName, ratePercent, score, scoreMax, stateIcon, stateLabel, stateVariant, submissionRate, submittedAt, submittedCount
   files: resources/views/admin/reports.blade.php, resources/views/admin/users/import.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/final-project.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
 
 $selected   (3 files, 28 properties)
@@ -115,13 +115,13 @@ $featured   (1 files, 10 properties)
   properties: endsAt, id, isMissing, joinOpensBeforeMinutes, joinWindowOpen, startsAt, statusLabel, statusVariant, topic, trainerName
   files: resources/views/participant/live.blade.php
 
+$activeThread   (2 files, 10 properties)
+  properties: avatarVariant, canPost, id, isLocked, latestMessageId, messages, readOnlyReason, subtitle, title, type
+  files: resources/views/participant/messages.blade.php, resources/views/participant/partials/message-stream.blade.php
+
 $program   (1 files, 9 properties)
   properties: cohortsCount, hours, id, isArchived, name, slug, statusIcon, statusLabel, statusVariant
   files: resources/views/admin/programs.blade.php
-
-$activeThread   (1 files, 9 properties)
-  properties: avatarVariant, canPost, id, isLocked, messages, readOnlyReason, subtitle, title, type
-  files: resources/views/participant/messages.blade.php
 
 $roster   (1 files, 9 properties)
   properties: endsAt, entries, hasNoSession, isLive, presentCount, sessionId, sessionTitle, startsAt, totalCount
@@ -237,7 +237,7 @@ $template   (1 files, 3 properties)
 
 $attachment   (4 files, 3 properties)
   properties: downloadUrl, name, sizeLabel
-  files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/participant/messages.blade.php, resources/views/trainer/final-project.blade.php
+  files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/participant/partials/message-stream.blade.php, resources/views/trainer/final-project.blade.php
 
 $file   (4 files, 3 properties)
   properties: downloadUrl, name, sizeLabel

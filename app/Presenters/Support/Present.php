@@ -175,6 +175,37 @@ final class Present
         return (string) trans_choice('app.remaining.days', $days, ['count' => $days]);
     }
 
+    /**
+     * "3 days" / "5 hours" / "less than a minute" — a span in words, with no
+     * verb. For copy that supplies its own ("…:countdown left…"), where
+     * remainingLabel()'s wording would say "left" twice, and HH:MM:SS would put
+     * "203:59:00" in a letter (D-68). Zero or less reads as the smallest unit.
+     */
+    public static function durationLabel(?\DateTimeInterface $until, CarbonImmutable $at): string
+    {
+        $seconds = self::secondsUntil($until, $at) ?? 0;
+
+        if ($seconds < 60) {
+            return (string) __('app.duration.moment');
+        }
+
+        $minutes = intdiv($seconds, 60);
+
+        if ($minutes < 60) {
+            return (string) trans_choice('app.duration.minutes', $minutes, ['count' => $minutes]);
+        }
+
+        $hours = intdiv($minutes, 60);
+
+        if ($hours < 24) {
+            return (string) trans_choice('app.duration.hours', $hours, ['count' => $hours]);
+        }
+
+        $days = intdiv($hours, 24);
+
+        return (string) trans_choice('app.duration.days', $days, ['count' => $days]);
+    }
+
     /** The HH:MM:SS countdown wording of PRD §9.9.8. */
     public static function countdown(?\DateTimeInterface $target, CarbonImmutable $at): string
     {

@@ -221,6 +221,22 @@ it('D-62: كل اسم مسار يبنيه مستمع موجود فعلًا في 
     expect($offenders)->toBe([]);
 });
 
+it('D-68: لا رسالة تشير إلى منطقة خاصّة بالمدرّب أو المدير', function (): void {
+    // Every letter goes to a participant. The new-assignment letter linked to
+    // route('trainer.assignments') — a route that EXISTS, so the check above
+    // passed — and every participant who pressed its button got a 403.
+    $offenders = [];
+
+    foreach (letterReferences() as $reference) {
+        if ($reference['kind'] === 'route'
+            && (str_starts_with($reference['value'], 'trainer.') || str_starts_with($reference['value'], 'admin.'))) {
+            $offenders[] = sprintf('%s:%d — route("%s")', $reference['file'], $reference['line'], $reference['value']);
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
+
 it('المادة 15: ملفا الرسائل متطابقان في المفاتيح بين العربية والإنجليزية', function (): void {
     $flatten = static function (array $rows, string $prefix = '') use (&$flatten): array {
         $keys = [];

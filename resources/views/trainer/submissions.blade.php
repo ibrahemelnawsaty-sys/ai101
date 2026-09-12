@@ -47,6 +47,16 @@
                     <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
+                    {{-- The reminder addresses ONE assignment and goes to everyone who
+                         has not handed it in (PRD §9.11.3), so it appears once the board
+                         is filtered to a published, still-open assignment with someone
+                         left to remind — the controller decides, the view only asks. --}}
+                    @if ($remindAssignmentId)
+                        <form method="POST" action="{{ route('trainer.submissions.remind', ['assignment' => $remindAssignmentId]) }}">
+                            @csrf
+                            <x-ui.button variant="secondary" size="sm" icon="bell" type="submit">{{ __('trainer.submissions.remind') }}</x-ui.button>
+                        </form>
+                    @endif
                     <x-ui.button variant="secondary" size="sm" icon="down"
                         :href="$bulkDownloadHref"
                         :disabled="is_null($bulkDownloadHref)">{{ __('trainer.submissions.bulk_download') }}</x-ui.button>
@@ -132,20 +142,11 @@
                                         @endif
                                     </td>
                                     <td class="u-nowrap">
-                                        @if ($row->hasSubmission)
-                                            <x-ui.button size="sm"
-                                                :variant="$row->isGraded ? 'secondary' : 'primary'"
-                                                :href="route('trainer.submissions', array_merge(request()->query(), [$selectedParam => $row->id]))">
-                                                {{ $row->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}
-                                            </x-ui.button>
-                                        @else
-                                            {{-- The reminder addresses the ASSIGNMENT: it goes to everyone
-                                                 who has not handed that assignment in (PRD §9.11.3). --}}
-                                            <form method="POST" action="{{ route('trainer.submissions.remind', $row->assignmentId) }}">
-                                                @csrf
-                                                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('trainer.submissions.remind') }}</x-ui.button>
-                                            </form>
-                                        @endif
+                                        <x-ui.button size="sm"
+                                            :variant="$row->isGraded ? 'secondary' : 'primary'"
+                                            :href="route('trainer.submissions', array_merge(request()->query(), [$selectedParam => $row->id]))">
+                                            {{ $row->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}
+                                        </x-ui.button>
                                     </td>
                                 </tr>
                             @endforeach

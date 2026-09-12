@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AssignmentStatus;
+use App\Services\Time\Clock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,6 +66,17 @@ class Assignment extends Model
             'attachments' => 'array',
             'due_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether the deadline has passed at `$at` — THE comparison, strict, in
+     * UTC. Handing in, marking late and offering a reminder all ask this one
+     * method, so a boundary moved in one place moves everywhere (D-68).
+     * Exactly at the deadline is still on time.
+     */
+    public function isPastDueAt(\DateTimeInterface $at): bool
+    {
+        return Clock::toUtc($at)->greaterThan(Clock::toUtc($this->due_at));
     }
 
     public function isPublished(): bool

@@ -7,6 +7,7 @@ namespace App\Services\Mail;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Models\Enrollment;
+use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -72,5 +73,28 @@ final class CohortAudience
         // it. Every cohort-wide sender passes its type; before D-66 none did,
         // and the preferences screen changed nothing that was ever sent.
         return $type === null ? $users : app(MailPreferences::class)->filter($users, $type);
+    }
+
+    /**
+     * The reachable participants who have handed in NO version of this
+     * assignment — the whole audience of "remind who has not submitted"
+     * (FR-ASGN-30), and nobody else. Resolved at send time like the rest of
+     * this class (D-51), so someone who submits between the press and the
+     * queue is not chased for work already in.
+     *
+     * @return Collection<int, User>
+     */
+    public function yetToSubmit(string $cohortId, string $assignmentId, ?string $type = null): Collection
+    {
+        $handedIn = Submission::query()
+            ->where('assignment_id', $assignmentId)
+            ->distinct()
+            ->pluck('user_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        return $this->reachable($cohortId, $type)
+            ->reject(static fn (User $user): bool => in_array((string) $user->getKey(), $handedIn, true))
+            ->values();
     }
 }

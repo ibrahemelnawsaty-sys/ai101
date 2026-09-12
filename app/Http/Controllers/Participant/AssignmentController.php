@@ -232,8 +232,7 @@ final class AssignmentController extends Controller
             ->get();
 
         $now = Clock::now();
-        $dueAt = $assignment->getAttribute('due_at');
-        $isLate = $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt));
+        $isLate = $assignment->isPastDueAt($now);
 
         $assignment->loadMissing('week');
 
@@ -284,8 +283,7 @@ final class AssignmentController extends Controller
         $user = $request->user();
 
         $now = Clock::now();
-        $dueAt = $assignment->getAttribute('due_at');
-        $isLate = $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt));
+        $isLate = $assignment->isPastDueAt($now);
 
         if ($isLate && ! (bool) $assignment->getAttribute('allow_late')) {
             return back()->withErrors(['files' => __('assignments.errors.deadline_passed')]);

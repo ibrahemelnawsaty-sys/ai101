@@ -224,6 +224,13 @@ return [
     | (PRD §9.11.1). Arabic counting: singular · dual · paucal · plural.
     */
 
+    'duration' => [
+        'moment' => 'أقل من دقيقة',
+        'minutes' => '{1} دقيقة واحدة|{2} دقيقتان|[3,10] :count دقائق|[11,*] :count دقيقة',
+        'hours' => '{1} ساعة واحدة|{2} ساعتان|[3,10] :count ساعات|[11,*] :count ساعة',
+        'days' => '{1} يوم واحد|{2} يومان|[3,10] :count أيام|[11,*] :count يومًا',
+    ],
+
     'remaining' => [
         'none' => 'بلا موعد نهائي',
         'passed' => 'انتهى الموعد',

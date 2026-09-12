@@ -158,6 +158,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Assignment reminders (PRD §9.11.3)
+    |--------------------------------------------------------------------------
+    |
+    | How long after one "remind who has not submitted" the button refuses the
+    | next. It exists so a double click cannot write to the cohort twice; the
+    | length is a temporary assumption awaiting the owner's sign-off (D-68).
+    |
+    */
+
+    'assignments' => [
+        'reminder_cooldown_minutes' => (int) env('ASSIGNMENT_REMINDER_COOLDOWN_MINUTES', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------
     |
