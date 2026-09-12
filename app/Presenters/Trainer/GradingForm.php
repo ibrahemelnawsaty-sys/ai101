@@ -12,8 +12,10 @@ use App\Presenters\Shared\FileLink;
 use App\Support\ViewModel;
 
 /**
- * The quick-grading panel the submissions board opens on `?grade={submission}`
- * (PRD §9.15).
+ * The quick-grading panel the submissions board opens on `?submission={id}`
+ * (PRD §9.15). The key is QUERY_KEY, read by the board and written by every
+ * link into it — the profile's grade button still sent `grade` after the board
+ * was renamed, and opened the board with the panel shut (D-72).
  *
  * The panel is a form, so every value it publishes is a form value: `score` is
  * what pre-fills the number input, `feedback` what pre-fills the textarea when
@@ -33,6 +35,9 @@ use App\Support\ViewModel;
  */
 final class GradingForm extends ViewModel
 {
+    /** The one spelling of the query key that opens this panel. */
+    public const QUERY_KEY = 'submission';
+
     use PresentsPeople;
     use PresentsVariants;
 

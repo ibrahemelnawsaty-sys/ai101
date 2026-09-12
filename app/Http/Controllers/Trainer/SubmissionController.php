@@ -80,7 +80,7 @@ final class SubmissionController extends Controller
      * in this class and in the template, and `submission` everywhere else, so
      * the link the board rendered opened nothing.
      */
-    private const SELECTED_PARAM = 'submission';
+    private const SELECTED_PARAM = GradingForm::QUERY_KEY;
 
     public function __construct(
         private readonly EvaluationRecorder $evaluations,

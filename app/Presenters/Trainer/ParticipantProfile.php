@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presenters\Trainer;
 
+use App\Http\Middleware\EnsureCohortScope;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
@@ -58,6 +59,11 @@ final class ParticipantProfile extends ViewModel
             'email' => self::personEmail($participant),
             'phone' => self::personPhone($participant),
             'enrolledAt' => $enrollment->getAttribute('enrolled_at'),
+            // The attendance screen in the cohort this profile was opened in.
+            // It passed a `participant` key nothing reads, and no cohort.
+            'attendanceHref' => route('trainer.attendance', [
+                EnsureCohortScope::QUERY_KEY => (string) $enrollment->getAttribute('cohort_id'),
+            ]),
 
             'attendancePercent' => self::percent($ratePercent),
             'attendanceVariant' => self::rateVariant($ratePercent, $minimumRate),

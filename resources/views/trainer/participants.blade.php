@@ -227,7 +227,7 @@
                                         <td class="u-nowrap">
                                             @if ($submission->hasSubmission)
                                                 <x-ui.button variant="secondary" size="sm"
-                                                    :href="route('trainer.submissions', ['grade' => $submission->id])">{{ $submission->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}</x-ui.button>
+                                                    :href="$submission->gradeHref">{{ $submission->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}</x-ui.button>
                                             @else
                                                 <span class="u-muted">{{ __('trainer.assignments.not_submitted') }}</span>
                                             @endif
@@ -241,7 +241,7 @@
 
                 <div class="row__acts">
                     <x-ui.button variant="secondary" size="sm"
-                        :href="route('trainer.attendance', ['participant' => $selected->id])">{{ __('nav.attendance') }}</x-ui.button>
+                        :href="$selected->attendanceHref">{{ __('nav.attendance') }}</x-ui.button>
                     <x-ui.button variant="ghost" size="sm"
                         :href="route('trainer.participants', request()->except('view'))">{{ __('app.close') }}</x-ui.button>
                 </div>

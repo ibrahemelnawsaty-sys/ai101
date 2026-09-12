@@ -3,16 +3,16 @@
 # Any property listed here MUST be readable on the value the controller passes,
 # or the screen fatals / renders blank.
 
-$editing   (5 files, 40 properties)
-  properties: allowLate, capacity, certificatesText, checkedInTimeValue, checkedOutTimeValue, dateValue, description, dueAtValue, endTimeValue, endsAtValue, exists, hours, id, isMandatory, joinOpensMinutes, maxFileMb, maxFiles, maxScore, meetingPasscode, meetingUrl, minAttendanceRate, name, objectivesText, participantName, passScore, programId, registrationClosesAtValue, requiresApproval, showGithubField, slug, startTimeValue, startsAtValue, status, summary, targetAudienceText, title, topic, trainerId, type, weekId
+$editing   (5 files, 38 properties)
+  properties: allowLate, capacity, certificatesText, dateValue, description, dueAtValue, endTimeValue, endsAtValue, exists, hours, id, isMandatory, joinOpensMinutes, maxFileMb, maxFiles, maxScore, meetingPasscode, meetingUrl, minAttendanceRate, name, objectivesText, participantName, passScore, programId, registrationClosesAtValue, requiresApproval, showGithubField, slug, startTimeValue, startsAtValue, status, summary, targetAudienceText, title, topic, trainerId, type, weekId
   files: resources/views/admin/cohorts.blade.php, resources/views/admin/programs.blade.php, resources/views/trainer/assignments.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/sessions.blade.php
 
 $row   (6 files, 30 properties)
   properties: assignmentsCount, attendancePercent, attendanceVariant, averageAttendance, averageScore, cells, cohortName, completionRate, downloadUrl, email, errors, fileLabel, hasScore, id, isGraded, maxScore, name, number, participantName, participants, programName, ratePercent, score, scoreMax, stateIcon, stateLabel, stateVariant, submissionRate, submittedAt, submittedCount
   files: resources/views/admin/reports.blade.php, resources/views/admin/users/import.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/final-project.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
 
-$selected   (3 files, 28 properties)
-  properties: attendancePercent, attendanceVariant, attendedSessions, currentStepTitle, email, enrolledAt, evaluationId, feedback, files, fullNameAr, fullNameEn, githubUrl, id, isGraded, isRevision, journeyPercent, maxScore, name, note, participantName, passScore, phone, score, scoreMax, submissions, submittedAt, totalSessions, version
+$selected   (3 files, 29 properties)
+  properties: attendanceHref, attendancePercent, attendanceVariant, attendedSessions, currentStepTitle, email, enrolledAt, evaluationId, feedback, files, fullNameAr, fullNameEn, githubUrl, id, isGraded, isRevision, journeyPercent, maxScore, name, note, participantName, passScore, phone, score, scoreMax, submissions, submittedAt, totalSessions, version
   files: resources/views/trainer/final-project.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
 
 $user   (2 files, 25 properties)
@@ -26,6 +26,10 @@ $summary   (4 files, 24 properties)
 $assignment   (3 files, 23 properties)
   properties: attachments, cohortSize, description, dueAt, headline, id, isGraded, isMandatory, isSubmitted, maxFileSizeLabel, maxFiles, maxScore, remainingLabel, requirements, score, statusIcon, statusLabel, statusVariant, submittedCount, title, urgencyIcon, urgencyVariant, weekTitle
   files: resources/views/participant/assignments/index.blade.php, resources/views/participant/assignments/show.blade.php, resources/views/trainer/assignments.blade.php
+
+$entry   (6 files, 18 properties)
+  properties: actionLabel, actorName, answer, at, canEdit, checkedInLabel, checkedOutLabel, editHref, entityId, entityLabel, id, ipAddress, participantId, participantName, question, statusIcon, statusLabel, statusVariant
+  files: resources/views/admin/audit.blade.php, resources/views/admin/landing.blade.php, resources/views/admin/users/show.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/partials/roster-edit.blade.php, resources/views/trainer/partials/roster-status.blade.php
 
 $certificate   (2 files, 18 properties)
   properties: cohortName, finalScore, grandTotal, holderName, holderNameAr, holderNameEn, id, isRevoked, issuedAt, linkedInShareUrl, programName, serialNumber, statusIcon, statusLabel, statusVariant, trainingHours, verifyCode, verifyUrl
@@ -43,16 +47,12 @@ $session   (5 files, 17 properties)
   properties: cancellationReason, date, endsAt, hasMeetingUrl, id, isCancelled, isNext, replacementStartsAt, startsAt, statusIcon, statusLabel, statusVariant, title, topic, trainerName, type, typeLabel
   files: resources/views/participant/live.blade.php, resources/views/participant/schedule-print.blade.php, resources/views/participant/schedule.blade.php, resources/views/trainer/attendance.blade.php, resources/views/trainer/sessions.blade.php
 
-$entry   (4 files, 16 properties)
-  properties: actionLabel, actorName, answer, at, checkedInAt, checkedOutAt, entityId, entityLabel, id, ipAddress, participantId, participantName, question, statusIcon, statusLabel, statusVariant
-  files: resources/views/admin/audit.blade.php, resources/views/admin/landing.blade.php, resources/views/admin/users/show.blade.php, resources/views/trainer/attendance.blade.php
-
 $stats   (3 files, 16 properties)
   properties: activeCount, activeUsers, atRisk, attendanceVariant, averageAttendance, averageAttendanceVariant, averageScore, awaitingGrading, certificatesIssued, late, missing, scoreMax, submitted, total, totalRegistered, ungradedSubmissions
   files: resources/views/admin/dashboard.blade.php, resources/views/trainer/participants.blade.php, resources/views/trainer/submissions.blade.php
 
 $submission   (3 files, 16 properties)
-  properties: assignmentTitle, feedback, files, gradedAt, graderName, hasSubmission, id, isGraded, isLate, maxScore, score, stateIcon, stateLabel, stateVariant, submittedAt, version
+  properties: assignmentTitle, feedback, files, gradeHref, gradedAt, graderName, hasSubmission, isGraded, isLate, maxScore, score, stateIcon, stateLabel, stateVariant, submittedAt, version
   files: resources/views/participant/assignments/show.blade.php, resources/views/participant/final-project.blade.php, resources/views/trainer/participants.blade.php
 
 $window   (1 files, 16 properties)

@@ -27,6 +27,12 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class EnsureCohortScope
 {
+    /**
+     * The query key that names the cohort a trainer screen acts on. One
+     * spelling, so a link built elsewhere cannot drift from what is read here.
+     */
+    public const QUERY_KEY = 'cohort';
+
     use LogsDenials;
 
     /** Request attribute carrying the resolved cohort id (or null). */
@@ -45,7 +51,7 @@ final class EnsureCohortScope
             abort(Response::HTTP_FORBIDDEN);
         }
 
-        $requested = $request->query('cohort');
+        $requested = $request->query(self::QUERY_KEY);
         $requested = is_string($requested) && $requested !== '' ? $requested : null;
 
         $allowed = $this->roles->isAdmin($user)

@@ -320,6 +320,12 @@ final class ParticipantController extends Controller
             ->whereIn('assignment_id', $assignments->modelKeys())
             ->orderByDesc('version')
             ->get()
+            // The NEWEST version per assignment. keyBy() keeps the LAST item
+            // per key, so over a descending list it kept the OLDEST — and the
+            // grade button then opened a superseded file for grading, whose
+            // mark would replace the one that counts (BR-19, D-72). unique()
+            // keeps the first, which is the newest here.
+            ->unique(static fn (Submission $row): string => (string) $row->getAttribute('assignment_id'))
             ->keyBy(static fn (Submission $row): string => (string) $row->getAttribute('assignment_id'));
 
         return $assignments

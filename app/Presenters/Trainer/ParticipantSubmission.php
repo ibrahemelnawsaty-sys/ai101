@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Presenters\Trainer;
 
 use App\Enums\SubmissionStatus;
+use App\Http\Middleware\EnsureCohortScope;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Presenters\Concerns\PresentsFormValues;
@@ -65,6 +66,14 @@ final class ParticipantSubmission extends ViewModel
             'id' => $submission === null ? null : (string) $submission->getKey(),
             'assignmentTitle' => self::text($assignment, 'title'),
             'hasSubmission' => $submission !== null,
+            // Into the board, in THIS assignment's cohort, with the panel open
+            // on this submission. It sent `grade` — a key the board no longer
+            // reads — and no cohort, so it opened the default cohort's board
+            // with the panel shut (D-72).
+            'gradeHref' => $submission === null ? null : route('trainer.submissions', [
+                EnsureCohortScope::QUERY_KEY => (string) $assignment->getAttribute('cohort_id'),
+                GradingForm::QUERY_KEY => (string) $submission->getKey(),
+            ]),
             'submittedAt' => $submission?->getAttribute('submitted_at'),
             'isLate' => (bool) ($submission?->getAttribute('is_late') ?? false),
             'version' => (int) ($submission?->getAttribute('version') ?? 0),
