@@ -12,6 +12,12 @@ return [
 
     'print' => 'اطبع البطاقة أو احفظها PDF',
     'print_note' => 'اطبع هذه الصفحة أو احفظها بصيغة PDF من نافذة الطباعة. رمز الاستجابة يفتح صفحة التحقق العامة.',
+    // The printable sheet's own heading and its expiry row. Both were read
+    // by resources/views/participant/card-print.blade.php and neither
+    // existed, so the trainee's printed card carried the Latin strings
+    // "card.title" and "card.expires_on" (D-65).
+    'title' => 'بطاقة المتدرّب',
+    'expires_on' => 'سارية حتّى',
     'subtitle' => 'هويتك الرقمية في البرنامج',
 
     'role' => 'الصفة',

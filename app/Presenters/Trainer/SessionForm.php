@@ -40,6 +40,9 @@ final class SessionForm extends ViewModel
             'endTimeValue' => '',
             'meetingUrl' => '',
             'meetingPasscode' => '',
+            // Null means "use the platform default" (D-52). The editor renders
+            // an empty box for it, not a zero.
+            'joinOpensMinutes' => null,
         ]);
     }
 
@@ -64,6 +67,7 @@ final class SessionForm extends ViewModel
             'endTimeValue' => self::wallTimeInput($session->getAttribute('end_time')),
             'meetingUrl' => (string) ($session->getAttribute('zoom_url') ?? ''),
             'meetingPasscode' => (string) ($session->getAttribute('zoom_passcode') ?? ''),
+            'joinOpensMinutes' => $session->getAttribute('join_opens_minutes'),
         ]);
     }
 }

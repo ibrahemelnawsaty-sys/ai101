@@ -206,9 +206,22 @@
                         </p>
                     </div>
 
-                    <form method="POST" action="{{ route('trainer.submissions.grade', $selected->id) }}"
+                    {{-- Recording and revising are different endpoints: BR-14 amends an
+                         EVALUATION and demands a written reason, and the record
+                         endpoint refuses a submission that already has a mark. The
+                         form posted to `grade` in both cases, so a trainer who
+                         mis-keyed a score could never correct it — they typed the
+                         reason, pressed record, and got a conflict with the reason
+                         discarded and the old mark untouched (D-65). --}}
+                    <form method="POST"
+                        action="{{ $selected->isRevision
+                            ? route('trainer.submissions.revise', $selected->evaluationId)
+                            : route('trainer.submissions.grade', $selected->id) }}"
                         x-data="{ feedback: @js(old('feedback', $selected->feedback ?? '')) }">
                         @csrf
+                        @if ($selected->isRevision)
+                            @method('PATCH')
+                        @endif
 
                         <x-ui.input name="score" type="number" inputmode="decimal" step="0.5"
                             min="0" :max="$selected->maxScore" required

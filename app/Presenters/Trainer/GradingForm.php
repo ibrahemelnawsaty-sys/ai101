@@ -65,6 +65,16 @@ final class GradingForm extends ViewModel
             'isLate' => (bool) $submission->getAttribute('is_late'),
 
             'isGraded' => $isGraded,
+            // BR-14 revises an EVALUATION, not a submission, so the form needs
+            // its id to address the endpoint at all. The evaluation was already
+            // resolved above and its key was kept private, which is why the
+            // revision form posted to the record endpoint and was refused.
+            'evaluationId' => $evaluation === null ? null : (string) $evaluation->getKey(),
+            // Which of the two endpoints the panel's form addresses. Decided
+            // here rather than in the template: the answer needs the evaluation,
+            // and a Blade island carrying that decision is business logic in a
+            // view (art. 13).
+            'isRevision' => $isGraded && $evaluation !== null,
             // The number input is pre-filled with the recorded mark when a
             // grade is being amended, and left empty otherwise — a zero would
             // read as "I decided zero" rather than "nothing decided yet".

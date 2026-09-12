@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Grading;
 
+use App\Events\GradeRecorded;
+use App\Events\GradeRevised;
 use App\Enums\EvaluationEntity;
 use App\Enums\SubmissionStatus;
 use App\Exceptions\GradingException;
@@ -187,6 +189,11 @@ final class EvaluationRecorder
 
         $this->notifyParticipant($updated, self::TYPE_REVISED, $maxScore, $trimmedReason, $at);
 
+        // BR-14 asks that revising a mark tells the participant. A mark that
+        // changed quietly after the fact is the exact thing the letter exists
+        // to disclose.
+        $this->announce($updated, $maxScore, $trimmedReason);
+
         return $updated;
     }
 
@@ -278,6 +285,10 @@ final class EvaluationRecorder
         }
 
         $this->notifyParticipant($evaluation, self::TYPE_RECORDED, $maxScore, null, $at);
+
+        // The listener and the copy existed; nothing ever asked for them, so a
+        // trainee learned of a mark only by signing in and noticing the bell.
+        $this->announce($evaluation, $maxScore, null);
 
         return $evaluation;
     }
@@ -420,6 +431,35 @@ final class EvaluationRecorder
      * The type slug and the copy both come from the notification matrix of
      * PRD §9.16.1, so a preference the participant set applies to it.
      */
+    /**
+     * Tell the participant by e-mail as well as in the bell.
+     *
+     * The user is re-read rather than taken from the caller: these listeners are
+     * queued and the cron may drain them minutes later, so the event carries a
+     * model the queue will re-fetch — and if the account is gone by then, there
+     * is nothing to tell and nothing to throw about here.
+     */
+    private function announce(Evaluation $evaluation, float $maxScore, ?string $reason): void
+    {
+        $participant = User::query()->whereKey($evaluation->getAttribute('user_id'))->first();
+
+        if (! $participant instanceof User) {
+            return;
+        }
+
+        $item = $this->itemTitle($evaluation);
+        $score = $this->number((float) $evaluation->getAttribute('score'));
+        $max = $this->number($maxScore);
+
+        if ($reason === null) {
+            GradeRecorded::dispatch($participant, $item, $score, $max);
+
+            return;
+        }
+
+        GradeRevised::dispatch($participant, $item, $score, $max, $reason);
+    }
+
     private function notifyParticipant(
         Evaluation $evaluation,
         string $type,

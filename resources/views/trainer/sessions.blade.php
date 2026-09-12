@@ -158,7 +158,7 @@
                         :value="old('meeting_passcode', $editing->meetingPasscode)" />
                     {{-- How early the link appears. Left empty, the platform default applies. --}}
                     <x-ui.input name="join_opens_minutes" type="number" min="0" max="240" dir="ltr"
-                        :value="old('join_opens_minutes', $editing->join_opens_minutes)"
+                        :value="old('join_opens_minutes', $editing->joinOpensMinutes)"
                         :label="__('trainer.sessions.join_opens_minutes')"
                         :hint="__('trainer.sessions.join_opens_hint')"
                         :error="$errors->first('join_opens_minutes')" />

@@ -23,7 +23,12 @@ final class GradeRecorded
     public function __construct(
         public readonly User $user,
         public readonly string $itemName,
-        public readonly int $score,
-        public readonly int $max,
+        // Already formatted, not numeric. `evaluations.score` and `max_score`
+        // are decimal(5,2), and these were declared `int`: under strict_types a
+        // score of 7.5 is a TypeError, not a rounding. Passing the string the
+        // recorder already built for the in-app notice also makes the letter and
+        // the notification say the same number (D-65).
+        public readonly string $score,
+        public readonly string $max,
     ) {}
 }

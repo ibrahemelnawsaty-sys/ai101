@@ -63,6 +63,7 @@ final class AccountInviter
     public function __construct(
         private readonly TemporaryPassword $passwords,
         private readonly AuditLogger $audit,
+        private readonly CardIssuer $cards,
     ) {}
 
     /**
@@ -104,6 +105,26 @@ final class AccountInviter
 
             if ($cohort !== null && $role === UserRole::Participant) {
                 $this->seat($user, $cohort, $now);
+
+                // The card is issued HERE, not through an event.
+                //
+                // `CardIssuer` is reached by two listeners, on `AccountVerified`
+                // and on `EnrollmentApproved`, and an invited account triggers
+                // neither: it is verified by this method rather than by clicking
+                // a link, and it is seated rather than approved. So every
+                // trainee in the cohort would have arrived to a card screen
+                // whose own empty state (`card.empty_body` in lang/ar) promises
+                // the card is created automatically the moment the account is
+                // verified and enrolled -- a promise nothing kept.
+                //
+                // Not `EnrollmentApproved::dispatch()`, which would ALSO send
+                // the approval letter beside the invitation: two letters, thirty
+                // seconds apart, telling the same person the same thing.
+                //
+                // `issueFor` is idempotent — `(user_id, cohort_id)` is unique
+                // and it returns the existing row — so a retried import cannot
+                // mint a second card.
+                $this->cards->issueFor($user);
             }
 
             // The audit records that an invitation happened and to which

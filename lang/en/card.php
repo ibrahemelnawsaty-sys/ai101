@@ -12,6 +12,9 @@ return [
 
     'print' => 'Print or save as PDF',
     'print_note' => 'Print this page, or save it as a PDF from the print dialogue. The code opens the public verification page.',
+    // The printable sheet's heading and expiry row (D-65).
+    'title' => 'Participant card',
+    'expires_on' => 'Valid until',
     'subtitle' => 'Your digital identity in the programme',
 
     'role' => 'Role',
