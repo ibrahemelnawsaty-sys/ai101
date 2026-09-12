@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ConfirmUserImportRequest;
 use App\Http\Requests\Admin\ImportUsersRequest;
 use App\Jobs\InviteImportedParticipant;
 use App\Models\Cohort;
@@ -192,9 +193,12 @@ final class UserImportController extends Controller
      * address that already has an account, which covers the case where the
      * first press succeeded and the browser retried on its own.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(ConfirmUserImportRequest $request): RedirectResponse
     {
-        $this->authorize('create', User::class);
+        // Authorised by ConfirmUserImportRequest. The policy check used to live
+        // here, which left the endpoint without the FormRequest Article 5
+        // requires on every state-changing route — on the one route that
+        // queues up to two hundred accounts in a single press (D-66).
 
         /** @var array{path: string, extension: string, cohort_id: string}|null $pending */
         $pending = $request->session()->pull(self::SESSION_KEY);
