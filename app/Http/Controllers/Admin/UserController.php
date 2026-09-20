@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\CohortStatus;
 use App\Enums\EmailTokenType;
-use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
@@ -196,9 +195,16 @@ final class UserController extends Controller
      * import calls too — the seating, the temporary password and its expiry are
      * exactly the details that drift when they are written twice.
      */
+    /**
+     * Invite one person by name and address (D-85).
+     *
+     * No password is generated and none is mailed: the letter carries a
+     * single-use link, and the person chooses their own password behind it
+     * while filling in what the invitation did not know.
+     */
     public function store(StoreUserRequest $request): RedirectResponse
     {
-        $created = $this->inviter->invite(
+        $created = $this->inviter->inviteByLink(
             email: (string) $request->validated('email'),
             role: UserRole::from((string) $request->validated('role')),
             profileColumns: $request->profileAttributes(),
@@ -273,7 +279,6 @@ final class UserController extends Controller
         return view('admin.users.create', [
             'contextLabel' => null,
             'roleOptions' => Options::fromEnum(UserRole::class),
-            'genderOptions' => Options::fromEnum(Gender::class),
             'cohortOptions' => Options::fromModels(
                 Cohort::query()->with('program')->orderByDesc('start_date')->get(),
                 static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
@@ -334,13 +339,29 @@ final class UserController extends Controller
         return back()->with('status', __('admin.users.reset_password_sent'));
     }
 
-    /** Send the activation link again to an account that never confirmed. */
+    /**
+     * Send the link again to an account that never confirmed.
+     *
+     * WHICH link depends on how the account was made. An invited account has
+     * no password its holder knows, so an activation link would verify the
+     * address and leave them outside with nothing to sign in with; they need
+     * their invitation again (D-85). A self-registered account needs the
+     * activation link it never clicked.
+     */
     public function resendVerification(User $user): RedirectResponse
     {
         $this->authorize('update', $user);
 
         if ($user->getAttribute('email_verified_at') !== null) {
             return back()->withErrors(['email' => __('admin.users.already_verified')]);
+        }
+
+        if ($user->isPendingInvitation()) {
+            $this->inviter->resendLink($user);
+
+            $this->audit->log('user.invitation_resent', $user);
+
+            return back()->with('status', __('admin.users.invitation_resent'));
         }
 
         $this->issueToken($user, EmailTokenType::Verify);

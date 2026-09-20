@@ -1,30 +1,32 @@
 {{--
-    Admin · create one account and invite it.
+    Admin · invite one person.
 
-    WHY THIS FILE DID NOT EXIST
-    The route, the controller method, the FormRequest and the policy were all
-    written. `create()` returned `admin.users.index` with `'creating' => true`,
-    and that template never read the flag — so pressing "add a user" rendered
-    the same list again and looked like a dead button. There was no create form
-    anywhere in the platform, which is why an administrator had no way to bring
-    a trainee in once registration closed (D-63).
+    WHAT IT ASKS FOR, AND WHY IT IS TWO THINGS (D-85)
+    A name in Arabic and an address. It used to ask for eleven facts — the
+    Latin name four times over, the mobile number, the gender — before an
+    invitation could be sent at all, and an administrator holding a list of
+    names and addresses could not answer it. Everything else is known best by
+    the person themself, who fills it in behind their invitation link.
 
-    NO PASSWORD FIELD, DELIBERATELY. The platform generates a temporary one and
-    mails it; the trainee replaces it at their first sign-in. An administrator
-    who chooses a trainee's password can sign in as them without leaving the
-    impersonation record BR-34 requires.
+    Only the first part of the name is required: a two- or three-part name is a
+    name, and refusing one sends the administrator hunting for a grandfather's
+    name nobody has.
+
+    NO PASSWORD FIELD, DELIBERATELY — and now none is generated either. The
+    letter carries a single-use link, and the password is chosen on the other
+    side of it by the person it belongs to.
 
     THE COHORT IS THE FIELD THAT MATTERS. Without it the account is created
     outside every cohort — no assignments, no sessions, no card, no certificate
     path — which is exactly what this form used to produce.
 
-    The field labels are the registration form's own keys, not new ones: the two
-    forms ask for the same eleven facts, and a second set of labels is a second
+    The field labels are the registration form's own keys, not new ones: the
+    two forms ask for the same facts, and a second set of labels is a second
     thing to keep in step (Article 6).
 
     Four states: error · loading · empty (no cohort exists yet) · normal.
 
-    @see PRD §4.5.1, §9.2.1 · BR-22, BR-32, BR-34 · D-63
+    @see PRD §4.5.1, §9.2.1 · BR-22, BR-32, BR-34 · D-63, D-85
 --}}
 @extends('layouts.app')
 
@@ -63,31 +65,20 @@
             <x-ui.card icon="user" :title="__('admin.users.section_identity')">
                 <fieldset class="fieldset">
                     <legend>{{ __('auth.register.ar_names') }}</legend>
+                    <p class="form__note">{{ __('admin.users.name_hint') }}</p>
                     <div class="grid-fields">
                         <x-ui.input name="first_name_ar" required maxlength="20"
-                            :label="__('auth.register.first_name_ar')" :value="old('first_name_ar')" />
-                        <x-ui.input name="father_name_ar" required maxlength="20"
-                            :label="__('auth.register.father_name_ar')" :value="old('father_name_ar')" />
-                        <x-ui.input name="grandfather_name_ar" required maxlength="20"
-                            :label="__('auth.register.grandfather_name_ar')" :value="old('grandfather_name_ar')" />
-                        <x-ui.input name="family_name_ar" required maxlength="20"
-                            :label="__('auth.register.family_name_ar')" :value="old('family_name_ar')" />
-                    </div>
-                </fieldset>
-
-                {{-- Latin names read left-to-right inside the box while their
-                     labels stay right-to-left (Article 16). --}}
-                <fieldset class="fieldset">
-                    <legend>{{ __('auth.register.en_names') }}</legend>
-                    <div class="grid-fields">
-                        <x-ui.input name="first_name_en" required ltr maxlength="20"
-                            :label="__('auth.register.first_name_en')" :value="old('first_name_en')" />
-                        <x-ui.input name="father_name_en" required ltr maxlength="20"
-                            :label="__('auth.register.father_name_en')" :value="old('father_name_en')" />
-                        <x-ui.input name="grandfather_name_en" required ltr maxlength="20"
-                            :label="__('auth.register.grandfather_name_en')" :value="old('grandfather_name_en')" />
-                        <x-ui.input name="family_name_en" required ltr maxlength="20"
-                            :label="__('auth.register.family_name_en')" :value="old('family_name_en')" />
+                            :label="__('auth.register.first_name_ar')" :value="old('first_name_ar')"
+                            :error="$errors->first('first_name_ar')" />
+                        <x-ui.input name="father_name_ar" maxlength="20"
+                            :label="__('auth.register.father_name_ar')" :value="old('father_name_ar')"
+                            :error="$errors->first('father_name_ar')" />
+                        <x-ui.input name="grandfather_name_ar" maxlength="20"
+                            :label="__('auth.register.grandfather_name_ar')" :value="old('grandfather_name_ar')"
+                            :error="$errors->first('grandfather_name_ar')" />
+                        <x-ui.input name="family_name_ar" maxlength="20"
+                            :label="__('auth.register.family_name_ar')" :value="old('family_name_ar')"
+                            :error="$errors->first('family_name_ar')" />
                     </div>
                 </fieldset>
             </x-ui.card>
@@ -96,11 +87,8 @@
                 <div class="grid-fields">
                     <x-ui.input name="email" type="email" required ltr inputmode="email"
                         :label="__('auth.shared.email')" :value="old('email')"
-                        :hint="__('admin.users.email_hint')" />
-                    <x-ui.input name="phone" type="tel" required ltr inputmode="tel"
-                        :label="__('auth.register.phone')" :value="old('phone')" />
-                    <x-ui.select name="gender" required
-                        :label="__('auth.register.gender')" :options="$genderOptions" :value="old('gender')" />
+                        :hint="__('admin.users.email_hint')"
+                        :error="$errors->first('email')" />
                 </div>
             </x-ui.card>
 
@@ -115,11 +103,11 @@
                         :hint="__('admin.users.cohort_hint')" />
                 </div>
 
-                {{-- The account is created active and already verified: the
-                     invitation IS the proof of the address, because the only way
-                     to learn the password is to have received the letter sent to
-                     it. Carried as a field rather than decided in the controller
-                     so the choice stays visible in the request that made it. --}}
+                {{-- The account is created active but UNVERIFIED: the link in
+                     the letter is what proves the address, and until it is
+                     followed the account cannot sign in at all. Carried as a
+                     field rather than decided in the controller so the choice
+                     stays visible in the request that made it. --}}
                 <input type="hidden" name="status" value="active">
             </x-ui.card>
 

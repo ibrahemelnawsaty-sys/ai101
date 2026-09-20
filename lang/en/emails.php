@@ -45,6 +45,16 @@ return [
         'next_steps' => 'If it stops working before you have used it, choose "Forgot your password" on the sign-in page and a fresh link reaches you straight away.',
         'not_you' => 'You received this because the programme administration created an account for this address. If you were not expecting it, do not use the password and tell us at :email.',
     ],
+    'invitation_link' => [
+        'subject' => 'Your invitation to :program',
+        'preheader' => 'The invitation link opens once, and is where you choose your password.',
+        'heading' => 'Welcome - one step and your account opens',
+        'body' => 'An account has been created for you in :program. Press the button below to complete your details and choose your password, and your account opens straight away. This address is your sign-in name and does not change.',
+        'cta' => 'Complete my account',
+        'expiry_note' => 'The link works once and expires after a limited time. If it expires before you open it, contact the programme team for another.',
+        'ignore_note' => 'If this message reached you by mistake, ignore it and the account will not be used.',
+    ],
+
     'verify' => [
         'subject' => 'Activate your account on the Athar platform',
         'preheader' => 'The activation link is valid for 24 hours and works once.',

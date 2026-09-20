@@ -109,7 +109,13 @@ final class EmailVerificationController extends Controller
             ->first();
 
         if ($user !== null) {
-            $this->issueToken($user, EmailTokenType::Verify);
+            // An invited account has no password its holder knows: verifying
+            // the address would leave them outside with nothing to sign in
+            // with. They get their invitation link again (D-85).
+            $this->issueToken(
+                $user,
+                $user->isPendingInvitation() ? EmailTokenType::Invite : EmailTokenType::Verify,
+            );
         }
 
         return back()->with('status', __('auth.verify.resent'));

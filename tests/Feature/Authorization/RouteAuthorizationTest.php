@@ -350,6 +350,10 @@ it('كل مسار مغيّر للحالة محمي بوسيط المصادقة',
             //   the waiting list a visitor joins when the cohort is full or
             //   registration has closed                             PRD §9.1.3
             'waitlist.store',
+            //   accepting an invitation: an account created for someone, opened
+            //   by them with a single-use link. They are a guest until they set
+            //   the password this posts                                   D-85
+            'invitation.store',
         ], true))
         ->reject(fn ($route): bool => in_array('auth', $route->gatherMiddleware(), true))
         ->map(fn ($route): string => (string) $route->getName().' '.$route->uri())

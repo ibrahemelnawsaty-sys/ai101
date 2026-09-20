@@ -62,6 +62,11 @@ final class ImportedRow
      */
     public function profileColumns(): array
     {
-        return $this->toProfileColumns($this->values);
+        // An unwritten part of the name is ABSENT, not an empty string: the
+        // column is nullable now, and '' would be a second way of saying
+        // "unknown" that every reader would have to know about (D-85).
+        $given = array_filter($this->values, static fn (string $value): bool => $value !== '');
+
+        return $this->toProfileColumns($given);
     }
 }

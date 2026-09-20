@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\UserImportController as AdminUserImportController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\FirstPasswordController;
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -147,6 +148,19 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password/{token}', [PasswordResetController::class, 'update'])
         ->middleware('throttle:password')
         ->name('password.update');
+
+    /*
+     * The invitation link (D-85): an account an administrator created, opened
+     * by the person it was created for. It is where they choose their first
+     * password and fill in what the invitation did not know — and where the
+     * address is shown and cannot be edited. Guest-only, like recovery:
+     * somebody already signed in is not the visitor this screen is for.
+     */
+    Route::get('/invitation/{token}', [InvitationController::class, 'show'])
+        ->name('invitation.accept');
+    Route::post('/invitation/{token}', [InvitationController::class, 'store'])
+        ->middleware('throttle:password')
+        ->name('invitation.store');
 });
 
 // The activation link is followed by someone who is not signed in yet, and

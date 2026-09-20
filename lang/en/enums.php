@@ -105,6 +105,7 @@ return [
     'email_token_type' => [
         'verify' => 'Email verification',
         'reset' => 'Password reset',
+        'invite' => 'Platform invitation',
     ],
 
     'resource_type' => [

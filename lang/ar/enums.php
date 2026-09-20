@@ -106,6 +106,7 @@ return [
     'email_token_type' => [
         'verify' => 'تفعيل البريد',
         'reset' => 'استعادة كلمة المرور',
+        'invite' => 'دعوة إلى المنصة',
     ],
 
     'resource_type' => [

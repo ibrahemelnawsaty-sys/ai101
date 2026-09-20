@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Import;
 
-use App\Enums\Gender;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -183,12 +182,6 @@ final class ParticipantImportReader
         $values['email'] = mb_strtolower($values['email']);
         $values['phone'] = (string) ($this->canonicalPhone($values['phone']) ?? $values['phone']);
 
-        foreach (['first_name_en', 'father_name_en', 'grandfather_name_en', 'family_name_en'] as $field) {
-            if ($values[$field] !== '') {
-                $values[$field] = mb_convert_case($values[$field], MB_CASE_TITLE, 'UTF-8');
-            }
-        }
-
         return $values;
     }
 
@@ -215,18 +208,21 @@ final class ParticipantImportReader
         $rules = [
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'phone' => $this->phoneRules(),
-            'gender' => ['required', \Illuminate\Validation\Rule::enum(Gender::class)],
+            // Only the first part of the name is required: a trainee may be
+            // recorded with two or three parts, and a sheet that refuses them
+            // sends the administrator hunting for a grandfather's name nobody
+            // has (D-85). A part that IS written still has to be a name.
+            'first_name_ar' => $this->arabicNameRules(),
+            'father_name_ar' => $this->optionalArabicNameRules(),
+            'grandfather_name_ar' => $this->optionalArabicNameRules(),
+            'family_name_ar' => $this->optionalArabicNameRules(),
         ];
 
-        foreach ($this->arabicNameFields() as $field) {
-            $rules[$field] = $this->arabicNameRules();
-        }
+        // An empty cell is absent, not an empty string: `nullable` spares a
+        // value that is null, and an empty string would fail `min:2`.
+        $present = array_map(static fn (string $value): ?string => $value === '' ? null : $value, $values);
 
-        foreach ($this->latinNameFields() as $field) {
-            $rules[$field] = $this->latinNameRules();
-        }
-
-        $validator = Validator::make($values, $rules, [], $this->attributeNames());
+        $validator = Validator::make($present, $rules, [], $this->attributeNames());
         $errors = array_values($validator->errors()->all());
 
         $email = $values['email'];

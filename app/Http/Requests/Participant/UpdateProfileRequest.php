@@ -52,7 +52,13 @@ final class UpdateProfileRequest extends FormRequest
             $clean['phone'] = $this->canonicalPhone($this->input('phone'));
         }
 
-        $this->merge(array_filter($clean, static fn (mixed $v): bool => $v !== null));
+        // A cleared optional field posts an empty string; `nullable` spares
+        // only a null, so '' becomes null and the column is emptied rather
+        // than failing `min:2` (D-85).
+        $this->merge(array_map(
+            static fn (mixed $value): mixed => $value === '' ? null : $value,
+            array_filter($clean, static fn (mixed $v): bool => $v !== null),
+        ));
     }
 
     /**
@@ -71,12 +77,18 @@ final class UpdateProfileRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:500'],
         ];
 
-        foreach ($this->arabicNameFields() as $field) {
-            $rules[$field] = $this->arabicNameRules();
+        // Only the first part is required — the platform now creates accounts
+        // whose name is two or three parts and whose Latin name is empty, and
+        // an edit screen stricter than the door they came through would trap
+        // them (D-85).
+        $rules['first_name_ar'] = $this->arabicNameRules();
+
+        foreach (['father_name_ar', 'grandfather_name_ar', 'family_name_ar'] as $field) {
+            $rules[$field] = $this->optionalArabicNameRules();
         }
 
         foreach ($this->latinNameFields() as $field) {
-            $rules[$field] = $this->latinNameRules();
+            $rules[$field] = $this->optionalLatinNameRules();
         }
 
         return $rules;

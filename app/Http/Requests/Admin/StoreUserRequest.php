@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\Gender;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Requests\Concerns\ProfileFieldRules;
@@ -19,6 +18,15 @@ use Illuminate\Validation\Rule;
  * The field rules are the registration rules, unchanged: an account that could
  * not be created through the public form must not become creatable through the
  * admin panel either (PRD §9.2.1).
+ *
+ * IT ASKS FOR A NAME AND AN ADDRESS (D-85).
+ *
+ * It used to demand all eleven registration facts before an invitation could
+ * be sent: four Arabic name parts, four Latin ones, the mobile number and the
+ * gender. An administrator holding a list of names and addresses could not
+ * answer it — and every one of those facts is known best by the person
+ * themself, who now fills them in behind their invitation link. Only the first
+ * part of the Arabic name is required; a two- or three-part name is a name.
  *
  * TWO FIELDS CHANGED WHEN REGISTRATION CLOSED (D-63).
  *
@@ -57,16 +65,16 @@ final class StoreUserRequest extends FormRequest
             $clean[$field] = $this->tidy($this->input($field));
         }
 
-        foreach ($this->latinNameFields() as $field) {
-            $value = $this->tidy($this->input($field));
-            $clean[$field] = is_string($value) ? mb_convert_case($value, MB_CASE_TITLE, 'UTF-8') : null;
-        }
-
         $email = $this->tidy($this->input('email'));
         $clean['email'] = is_string($email) ? mb_strtolower($email) : null;
-        $clean['phone'] = $this->canonicalPhone($this->input('phone'));
 
-        $this->merge(array_filter($clean, static fn (mixed $v): bool => $v !== null));
+        // An untouched optional field posts an empty string, and `nullable`
+        // spares only a null — so an empty one is dropped rather than sent on
+        // to fail `min:2`.
+        $this->merge(array_filter(
+            $clean,
+            static fn (mixed $value): bool => $value !== null && $value !== '',
+        ));
     }
 
     /**
@@ -82,8 +90,6 @@ final class StoreUserRequest extends FormRequest
                 // ended in an insert error — a 500 — instead of a message (D-84).
                 Rule::unique('users', 'email'),
             ],
-            'phone' => array_merge($this->phoneRules(), [Rule::unique('profiles', 'phone')]),
-            'gender' => ['required', Rule::enum(Gender::class)],
             'role' => ['required', Rule::enum(UserRole::class)],
             'status' => ['required', Rule::enum(UserStatus::class)],
             // A participant with no cohort is an account that can do nothing.
@@ -98,12 +104,14 @@ final class StoreUserRequest extends FormRequest
             ],
         ];
 
-        foreach ($this->arabicNameFields() as $field) {
-            $rules[$field] = $this->arabicNameRules();
-        }
+        // The first part is the one every screen names a person by. The rest
+        // are offered and never demanded — and the mobile number, the gender
+        // and the Latin name are asked for on the invitation screen, by the
+        // person who knows them (D-85).
+        $rules['first_name_ar'] = $this->arabicNameRules();
 
-        foreach ($this->latinNameFields() as $field) {
-            $rules[$field] = $this->latinNameRules();
+        foreach (['father_name_ar', 'grandfather_name_ar', 'family_name_ar'] as $field) {
+            $rules[$field] = $this->optionalArabicNameRules();
         }
 
         return $rules;

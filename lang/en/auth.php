@@ -220,6 +220,19 @@ return [
         'go_login' => 'Back to sign in',
     ],
 
+    'invitation' => [
+        'title' => 'Complete your account',
+        'subtitle' => 'You have been invited to the programme. Fill in your details, choose a password, and your account opens straight away.',
+        'email_locked' => 'This is the address your invitation was sent to, and it is your sign-in name. It cannot be changed here.',
+        'name_hint' => 'The first name is required. For a two- or three-part name, leave the remaining boxes empty.',
+        'en_hint' => 'Optional. It is printed on your certificate and card when you write it.',
+        'password' => 'Password',
+        'submit' => 'Save and sign in',
+        'invalid_title' => 'This link no longer works',
+        'invalid_body' => 'An invitation link works once and expires after a while. Contact the programme team and they will send you a new one.',
+        'go_login' => 'Go to the sign-in page',
+    ],
+
     'reset' => [
         'title' => 'Set a new password',
         'subtitle' => 'Choose a strong password. This ends every open session on your other devices.',

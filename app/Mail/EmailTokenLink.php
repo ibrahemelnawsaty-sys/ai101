@@ -98,9 +98,11 @@ final class EmailTokenLink extends Mailable implements ShouldBeEncrypted, Should
     /** The `lang/<locale>/emails.php` block this letter reads its copy from. */
     private function key(): string
     {
-        return $this->type === EmailTokenType::Reset
-            ? 'emails.password_reset'
-            : 'emails.verify';
+        return match ($this->type) {
+            EmailTokenType::Reset => 'emails.password_reset',
+            EmailTokenType::Invite => 'emails.invitation_link',
+            EmailTokenType::Verify => 'emails.verify',
+        };
     }
 
     /**

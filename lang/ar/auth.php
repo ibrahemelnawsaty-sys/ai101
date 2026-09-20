@@ -243,6 +243,24 @@ return [
         'go_login' => 'عد إلى تسجيل الدخول',
     ],
 
+    /*
+     * The invitation link (D-85): an account an administrator created, opened
+     * by the person it belongs to. The address is shown and cannot be changed;
+     * everything else on this screen is theirs to write.
+     */
+    'invitation' => [
+        'title' => 'أكمل حسابك',
+        'subtitle' => 'دُعيت إلى البرنامج. أكمل بياناتك واختر كلمة مرورك، ويفتح حسابك مباشرة.',
+        'email_locked' => 'هذا بريد دعوتك، وهو اسم دخولك. لا يمكن تغييره من هنا.',
+        'name_hint' => 'الاسم الأول مطلوب. إن كان اسمك ثنائيًا أو ثلاثيًا فاترك بقية الخانات فارغة.',
+        'en_hint' => 'اختياري، ويُطبع على شهادتك وبطاقتك إن كتبته.',
+        'password' => 'كلمة المرور',
+        'submit' => 'احفظ وادخل',
+        'invalid_title' => 'هذا الرابط لم يعد صالحًا',
+        'invalid_body' => 'رابط الدعوة يعمل مرة واحدة وينتهي بعد مدّة. راسل إدارة البرنامج ليصلك رابط جديد.',
+        'go_login' => 'اذهب إلى صفحة الدخول',
+    ],
+
     'reset' => [
         'title' => 'تعيين كلمة مرور جديدة',
         'subtitle' => 'اختر كلمة مرور قوية. سيُنهي هذا كل جلساتك المفتوحة على الأجهزة الأخرى.',

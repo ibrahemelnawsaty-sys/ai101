@@ -21,11 +21,28 @@ declare(strict_types=1);
 
 use App\Jobs\InviteImportedParticipant;
 use App\Models\User;
+use App\Services\Import\ParticipantImportReader;
 use App\Services\Import\ParticipantImportSheet;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+/** A CSV in the sheet's own column order, for reading without an upload. */
+function importCsv(array $rows): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'athar').'.csv';
+    $handle = fopen($path, 'w');
+    fputcsv($handle, ParticipantImportSheet::headings());
+
+    foreach ($rows as $row) {
+        fputcsv($handle, $row);
+    }
+
+    fclose($handle);
+
+    return $path;
+}
 
 beforeEach(function (): void {
     freezeAt(riyadhAt('2026-09-20 09:00:00'));
@@ -57,14 +74,21 @@ function importSheetFile(array $rows): UploadedFile
     return new UploadedFile($path, 'trainees.xlsx', null, null, true);
 }
 
-/** @return list<string> one valid row */
+/**
+ * One valid row, in the sheet's own column order: the Arabic name, the
+ * address, the mobile number (D-85).
+ *
+ * @return list<string>
+ */
 function importRow(string $email, string $phone = '0512345678'): array
 {
-    return [
-        'محمد', 'عبدالله', 'سعيد', 'القحطاني',
-        'Mohammed', 'Abdullah', 'Saeed', 'Alqahtani',
-        $email, $phone, 'male',
-    ];
+    return ['محمد', 'عبدالله', 'سعيد', 'القحطاني', $email, $phone];
+}
+
+/** The same row with a two-part name — the rest of the name simply unknown. */
+function importRowWithShortName(string $email, string $phone = '0512345678'): array
+{
+    return ['محمد', '', '', 'القحطاني', $email, $phone];
 }
 
 it('D-63: القالب يُبنى بورقتين ويحفظ صفر الجوّال', function (): void {
@@ -94,6 +118,51 @@ it('D-63: القالب يُبنى بورقتين ويحفظ صفر الجوّا�
         ->toHaveCount(count(ParticipantImportSheet::columns()));
 
     $book->disconnectWorksheets();
+});
+
+it('D-85: الملف يطلب الاسم العربي والبريد والجوّال فقط', function (): void {
+    expect(array_keys(ParticipantImportSheet::columns()))->toBe([
+        'first_name_ar', 'father_name_ar', 'grandfather_name_ar', 'family_name_ar', 'email', 'phone',
+    ]);
+});
+
+it('D-85: اسم ثنائي يُقبل ويُستورد كما كُتب — والخانات الفارغة تبقى فارغة', function (): void {
+    Queue::fake();
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.users.import.preview'), [
+            'cohort_id' => $this->cohort->id,
+            'sheet' => importSheetFile([importRowWithShortName('short@example.com')]),
+        ])
+        ->assertOk();
+
+    $this->actingAs($this->admin)->post(route('admin.users.import.store'))->assertRedirect();
+
+    Queue::assertPushed(InviteImportedParticipant::class, function (InviteImportedParticipant $job): bool {
+        $columns = (fn (): array => $this->profileColumns)->call($job);
+
+        return ! array_key_exists('second_name_ar', $columns)
+            && ! array_key_exists('third_name_ar', $columns)
+            && ! array_key_exists('gender', $columns)
+            && ! array_key_exists('first_name_en', $columns)
+            && $columns['last_name_ar'] === 'القحطاني';
+    });
+});
+
+it('D-85: الجوّال والاسم الأول يبقيان مطلوبين، والجوّال المكسور يُرفَض بسطره', function (): void {
+    $rows = app(ParticipantImportReader::class)->read(
+        importCsv([
+            ['', 'عبدالله', 'سعيد', 'القحطاني', 'noname@example.com', '0512345671'],
+            ['محمد', 'عبدالله', 'سعيد', 'القحطاني', 'nophone@example.com', ''],
+            ['محمد', 'عبدالله', 'سعيد', 'القحطاني', 'bad@example.com', '12345'],
+        ]),
+        'csv',
+    );
+
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0]->isValid())->toBeFalse()
+        ->and($rows[1]->isValid())->toBeFalse()
+        ->and($rows[2]->isValid())->toBeFalse();
 });
 
 it('المادة 5: المعاينة لا تُنشئ حسابًا واحدًا', function (): void {

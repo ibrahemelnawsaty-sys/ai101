@@ -166,7 +166,7 @@ function importFileWith(string $email): string
     $path = tempnam(sys_get_temp_dir(), 'athar').'.csv';
     $handle = fopen($path, 'w');
     fputcsv($handle, App\Services\Import\ParticipantImportSheet::headings());
-    fputcsv($handle, ['CANARY', 'A', 'B', 'C', 'Canary', 'A', 'B', 'C', $email, '0512345671', 'male']);
+    fputcsv($handle, ['CANARY', 'A', 'B', 'C', $email, '0512345671']);
     fclose($handle);
 
     return $path;

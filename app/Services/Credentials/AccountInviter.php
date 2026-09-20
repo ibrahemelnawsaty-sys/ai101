@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Credentials;
 
+use App\Enums\EmailTokenType;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
 use App\Mail\InvitationLetter;
 use App\Models\Cohort;
 use App\Models\Enrollment;
@@ -61,6 +63,8 @@ use Illuminate\Support\Facades\Mail;
  */
 final class AccountInviter
 {
+    use IssuesEmailTokens;
+
     public function __construct(
         private readonly TemporaryPassword $passwords,
         private readonly AuditLogger $audit,
@@ -144,6 +148,94 @@ final class AccountInviter
         $this->send($user, $password, $cohort, $expiresAt);
 
         return $user;
+    }
+
+    /**
+     * Invite someone the platform knows almost nothing about.
+     *
+     * WHAT THE ADMINISTRATOR HAS is a name and an address. That is the whole
+     * list they are given, and demanding a Latin name and a gender before an
+     * invitation could be sent made the form unanswerable for sixty people
+     * (D-85). So the account is created with exactly that, and a single-use
+     * link asks the person themself for the rest.
+     *
+     * NO PASSWORD IS GENERATED AND NONE IS MAILED. The row is given a random
+     * value that is hashed and immediately forgotten — a column that cannot be
+     * null and must not be guessable — and the account stays UNVERIFIED, so
+     * `LoginController` refuses it until the link is followed. The only way in
+     * is the invitation.
+     *
+     * The seat, the card and the conversations are the invitation's, not the
+     * acceptance's: the trainee appears on the roster the moment they are
+     * invited, and `InvitationController` has nothing to build.
+     *
+     * @param  array<string, mixed>  $profileColumns  already mapped to `profiles` column names
+     */
+    public function inviteByLink(
+        string $email,
+        UserRole $role,
+        array $profileColumns,
+        ?Cohort $cohort,
+    ): User {
+        $now = Clock::now();
+
+        $user = DB::transaction(function () use ($email, $role, $profileColumns, $cohort, $now): User {
+            /** @var User $user */
+            $user = User::query()->create([
+                'email' => $email,
+                // Hashed by the model's `hashed` cast and never read back: the
+                // holder replaces it on the invitation screen. It exists only
+                // because the column is NOT NULL, and it is random so that a
+                // never-accepted invitation is not an account with a known
+                // password sitting in the table.
+                'password_hash' => $this->passwords->generate(),
+                'role' => $role->value,
+                'status' => UserStatus::Active->value,
+                // NOT verified: the link is what proves the address, and until
+                // it is followed the account cannot sign in at all.
+                'email_verified_at' => null,
+                'locale' => (string) config('athar.locales.default', 'ar'),
+                'failed_login_count' => 0,
+                'locked_until' => null,
+                // There is no temporary password to force a change of; the
+                // invitation screen is where the first password is chosen.
+                'must_change_password' => false,
+                'temp_password_expires_at' => null,
+                'invited_at' => $now,
+            ]);
+
+            Profile::query()->create(array_merge($profileColumns, ['user_id' => $user->getKey()]));
+
+            if ($cohort !== null && $role === UserRole::Participant) {
+                $this->seat($user, $cohort, $now);
+                $this->cards->issueFor($user);
+            }
+
+            $this->audit->log('user.invited', $user, null, [
+                'email' => $email,
+                'role' => $role->value,
+                'cohort_id' => $cohort?->getKey(),
+                'by' => 'link',
+            ]);
+
+            return $user;
+        });
+
+        // Outside the transaction: the token row is committed with the account,
+        // and the letter leaves through the queue either way.
+        $this->issueToken($user, EmailTokenType::Invite);
+
+        return $user;
+    }
+
+    /**
+     * Send the invitation link again — for someone who lost the letter, or
+     * whose link lapsed before they opened it. Issuing retires the earlier one,
+     * so there is never a second way in.
+     */
+    public function resendLink(User $user): void
+    {
+        $this->issueToken($user, EmailTokenType::Invite);
     }
 
     /**

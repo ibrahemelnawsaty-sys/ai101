@@ -43,6 +43,37 @@ trait ProfileFieldRules
         return ['required', 'string', 'min:2', 'max:20', 'regex:'.self::LATIN_NAME_PATTERN];
     }
 
+    /**
+     * The same name rule for a part that may simply not be known yet: an
+     * imported sheet may carry a two-part name, and an invitation carries only
+     * what the administrator typed (D-85). Present means valid; absent is
+     * allowed, and `first_name_ar` is never one of these.
+     *
+     * @return list<string>
+     */
+    protected function optionalArabicNameRules(): array
+    {
+        return $this->madeOptional($this->arabicNameRules());
+    }
+
+    /** @return list<string> */
+    protected function optionalLatinNameRules(): array
+    {
+        return $this->madeOptional($this->latinNameRules());
+    }
+
+    /**
+     * @param  list<string>  $rules
+     * @return list<string>
+     */
+    private function madeOptional(array $rules): array
+    {
+        return array_map(
+            static fn (string $rule): string => $rule === 'required' ? 'nullable' : $rule,
+            $rules,
+        );
+    }
+
     /** @return list<string> */
     protected function phoneRules(): array
     {

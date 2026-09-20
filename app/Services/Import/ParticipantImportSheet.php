@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Import;
 
-use App\Enums\Gender;
-use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -36,6 +34,14 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  * The CSV download stays available for anyone who wants it, and its guidance
  * says to write the number in its `9665…` form, which has no leading zero to
  * lose and which `ProfileFieldRules::canonicalPhone()` already maps back.
+ *
+ * WHAT THE SHEET ASKS FOR, AND WHY IT IS THREE THINGS
+ * The Arabic name, the address, the mobile number. It used to ask for eleven
+ * columns — the Latin name four times over and the gender — and every one of
+ * them was a column an administrator had to fill for sixty people from a list
+ * that does not contain them. None is needed to create an account and seat it,
+ * and the person can fill them in later on their own profile. A name may be
+ * two or three parts: only the first is required (D-85).
  *
  * WHAT THE SHEET DOES NOT ASK FOR
  *   · `role` — every imported row is a participant. A column that could mint an
@@ -70,13 +76,8 @@ final class ParticipantImportSheet
             'father_name_ar' => 'auth.register.father_name_ar',
             'grandfather_name_ar' => 'auth.register.grandfather_name_ar',
             'family_name_ar' => 'auth.register.family_name_ar',
-            'first_name_en' => 'auth.register.first_name_en',
-            'father_name_en' => 'auth.register.father_name_en',
-            'grandfather_name_en' => 'auth.register.grandfather_name_en',
-            'family_name_en' => 'auth.register.family_name_en',
             'email' => 'auth.shared.email',
             'phone' => 'auth.register.phone',
-            'gender' => 'auth.register.gender',
         ];
     }
 
@@ -134,33 +135,6 @@ final class ParticipantImportSheet
                     ->getNumberFormat()
                     ->setFormatCode(NumberFormat::FORMAT_TEXT);
             }
-
-            if ($field === 'gender') {
-                $this->addGenderList($sheet, $letter);
-            }
-        }
-    }
-
-    /**
-     * A dropdown, so `gender` cannot be typed as a word the enum has never
-     * heard of and then fail sixty rows at once.
-     */
-    private function addGenderList(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $letter): void
-    {
-        $allowed = implode(',', array_map(
-            static fn (Gender $case): string => $case->value,
-            Gender::cases(),
-        ));
-
-        $last = (int) config('athar.invitations.import_max_rows', 200) + 1;
-
-        for ($row = 2; $row <= $last; $row++) {
-            $validation = $sheet->getCell($letter.$row)->getDataValidation();
-            $validation->setType(DataValidation::TYPE_LIST);
-            $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
-            $validation->setAllowBlank(true);
-            $validation->setShowDropDown(true);
-            $validation->setFormula1('"'.$allowed.'"');
         }
     }
 

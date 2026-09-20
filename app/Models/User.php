@@ -280,6 +280,21 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->accessibleCohortIdsCache = $unique;
     }
 
+    /**
+     * An account created by an invitation whose holder has not accepted it yet.
+     *
+     * `invited_at` is stamped by `AccountInviter` and by nothing else, and the
+     * invitation path leaves the address unproven until the link is followed.
+     * Together they separate "invited, has not arrived" from a self-registered
+     * account that simply has not clicked its activation link — which matters,
+     * because the two are helped by two different letters (D-85).
+     */
+    public function isPendingInvitation(): bool
+    {
+        return $this->getAttribute('email_verified_at') === null
+            && $this->getAttribute('invited_at') !== null;
+    }
+
     // --------------------------------------------------------- relationships
 
     /**

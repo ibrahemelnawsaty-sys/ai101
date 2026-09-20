@@ -50,7 +50,14 @@ final class PasswordResetController extends Controller
             ->first();
 
         if ($user !== null) {
-            $this->issueToken($user, EmailTokenType::Reset);
+            // Someone who was invited and never accepted has no password to
+            // recover, and a recovery link would set one for an account that
+            // still cannot sign in — its address is unproven. The invitation
+            // link does both, so that is what they are sent (D-85).
+            $this->issueToken(
+                $user,
+                $user->isPendingInvitation() ? EmailTokenType::Invite : EmailTokenType::Reset,
+            );
         }
 
         // Identical answer in both branches, deliberately (BR-30).

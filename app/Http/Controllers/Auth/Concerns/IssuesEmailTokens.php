@@ -34,6 +34,19 @@ trait IssuesEmailTokens
     protected const RESET_TOKEN_MINUTES = 30;
 
     /**
+     * An invitation link lives as long as the temporary password it replaced —
+     * `athar.invitations.temp_password_days`, seven by default (BR-36). The
+     * window was already agreed for the letter that carried a credential; this
+     * one carries no credential at all, so it is not a looser promise.
+     */
+    protected function inviteTokenMinutes(): int
+    {
+        $days = (int) config('athar.invitations.temp_password_days', 7);
+
+        return ($days > 0 ? $days : 7) * 24 * 60;
+    }
+
+    /**
      * Create a token, retire any earlier one of the same kind, and announce it
      * so the mail layer can send it. The raw value is returned to the caller
      * and never stored.
@@ -102,15 +115,19 @@ trait IssuesEmailTokens
 
     protected function lifetimeMinutes(EmailTokenType $type): int
     {
-        return $type === EmailTokenType::Reset
-            ? self::RESET_TOKEN_MINUTES
-            : self::VERIFY_TOKEN_MINUTES;
+        return match ($type) {
+            EmailTokenType::Reset => self::RESET_TOKEN_MINUTES,
+            EmailTokenType::Invite => $this->inviteTokenMinutes(),
+            EmailTokenType::Verify => self::VERIFY_TOKEN_MINUTES,
+        };
     }
 
     protected function tokenUrl(EmailTokenType $type, string $plain): string
     {
-        return $type === EmailTokenType::Reset
-            ? route('password.reset', ['token' => $plain])
-            : route('verify-email', ['token' => $plain]);
+        return match ($type) {
+            EmailTokenType::Reset => route('password.reset', ['token' => $plain]),
+            EmailTokenType::Invite => route('invitation.accept', ['token' => $plain]),
+            EmailTokenType::Verify => route('verify-email', ['token' => $plain]),
+        };
     }
 }
