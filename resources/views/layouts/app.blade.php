@@ -51,6 +51,21 @@
 
     @vite(['resources/css/app.css', 'resources/js/dashboard.js'])
 
+    {{-- Without JavaScript — switched off, blocked, or a bundle that failed to
+         load — the burger, the drawer and the account menu are all Alpine, so
+         a phone had no navigation at all and nobody could sign out. Only then,
+         the drawer's copy of the rail is shown in the page, and a sign-out
+         button in the bar (D-86). Browsers with scripting never apply this. --}}
+    <noscript>
+        <style>
+            .drawer__host[x-cloak] { display: block !important; }
+            .drawer__host .drawer__panel { position: static; inline-size: auto; box-shadow: none; border-inline-end: 0; }
+            .appbar__burger, .appbar__menu { display: none !important; }
+            .nojs-logout { display: block; }
+            @media (min-width: 1024px) { .drawer__host[x-cloak] { display: none !important; } }
+        </style>
+    </noscript>
+
     @stack('head')
 </head>
 <body class="page page--app">
@@ -97,7 +112,10 @@
 
 {{-- The mobile navigation drawer: the same rail, slid in from the RIGHT.
      Focus is trapped inside it and returns to the burger on close. --}}
-<div x-data="drawer()" x-on:keydown.escape.window="hide()" x-on:athar-drawer.window="toggle()">
+{{-- Escape is heard window-wide but acts only when the drawer is open: it
+     used to call hide() on every Escape anywhere, which released the scroll
+     lock behind a modal that was still open (D-86). --}}
+<div x-data="drawer()" x-on:keydown.escape.window="escape()" x-on:athar-drawer.window="toggle()">
     <div class="drawer__scrim"
          x-show="open"
          x-cloak
@@ -105,7 +123,7 @@
          x-on:click="hide()"
          aria-hidden="true"></div>
 
-    <div x-show="open" x-cloak x-on:keydown="trap($event)">
+    <div class="drawer__host" x-show="open" x-cloak x-on:keydown="trap($event)">
         <x-layout.sidebar
             drawer
             :groups="$sidebarGroups ?? null"

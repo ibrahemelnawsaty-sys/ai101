@@ -48,6 +48,25 @@ final class InAppNotifier
         ?string $link,
         ?CarbonImmutable $at = null,
     ): int {
+        return count($this->deliver($userIds, $type, $title, $body, $link, $at));
+    }
+
+    /**
+     * notify(), answering WHICH accounts were written to rather than how many
+     * — so a sender can count the people it actually reached, not the people
+     * it tried to (D-87).
+     *
+     * @param  iterable<int, mixed>  $userIds
+     * @return list<string>
+     */
+    public function deliver(
+        iterable $userIds,
+        string $type,
+        string $title,
+        string $body,
+        ?string $link,
+        ?CarbonImmutable $at = null,
+    ): array {
         $ids = [];
 
         foreach ($userIds as $id) {
@@ -57,7 +76,7 @@ final class InAppNotifier
         $ids = array_keys($ids);
 
         if ($ids === []) {
-            return 0;
+            return [];
         }
 
         if (! in_array($type, PreferencePresenter::ALWAYS_ON, true)) {
@@ -89,6 +108,6 @@ final class InAppNotifier
             $notification->save();
         }
 
-        return count($ids);
+        return $ids;
     }
 }

@@ -102,6 +102,12 @@ return [
         'announcement' => 'Announcements channel',
     ],
 
+    'broadcast_kind' => [
+        'message' => 'Message',
+        'sessions' => 'Sessions reminder',
+        'assignments' => 'Assignments reminder',
+    ],
+
     'email_token_type' => [
         'verify' => 'Email verification',
         'reset' => 'Password reset',

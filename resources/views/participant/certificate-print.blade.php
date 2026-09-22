@@ -16,6 +16,7 @@
 
 @section('title', __('certificates.doc_heading'))
 @section('ownSheet', '1')
+@section('sheet', 'certificate')
 
 @section('content')
     <div class="certsheet">

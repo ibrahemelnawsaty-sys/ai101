@@ -712,6 +712,10 @@ inset: calc(var(--s1) * -1);
   background: conic-gradient(from var(--a, 0deg), transparent 0deg, var(--teal-a50) 40deg, transparent 90deg, transparent 270deg, var(--violet-a50) 320deg, transparent 360deg);
   -webkit-mask: linear-gradient(var(--black), var(--black)) content-box, linear-gradient(var(--black), var(--black));
   -webkit-mask-composite: xor;
+  /* The unprefixed pair. Firefox does not read -webkit-mask, and without this
+     line it painted the whole conic wedge over the final call to action
+     (D-86). Autoprefixer never back-fills an unprefixed property. */
+  mask: linear-gradient(var(--black), var(--black)) content-box, linear-gradient(var(--black), var(--black));
   mask-composite: exclude;
 padding: var(--s1);
   animation: spinBorder 7s linear infinite;
@@ -872,7 +876,10 @@ border: var(--bw-hairline) solid var(--v300-a20);
 .lab__grid { display: grid; grid-template-columns: 1fr; }
 .lab__grid > * { min-inline-size: 0; }
 @media (min-width: 960px) { .lab__grid { grid-template-columns: 1fr 320px; } }
-.lab__stage { position: relative; aspect-ratio: 4 / 3; cursor: crosshair; touch-action: none; }
+/* pan-y, not none: a thumb that starts a vertical swipe on the stage scrolls
+   the page. `none` trapped scrolling inside a third of a phone screen, mid
+   page (D-86). Taps still reach the canvas. */
+.lab__stage { position: relative; aspect-ratio: 4 / 3; cursor: crosshair; touch-action: pan-y; }
 @media (min-width: 960px) { .lab__stage { aspect-ratio: 16 / 10; min-block-size: 340px; } }
 .lab__stage canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; }
 .lab__hint {
@@ -1129,7 +1136,7 @@ block-size: var(--s1);
 .page--auth,
 .page--bare { background: var(--surface-page); color: var(--text-body); }
 
-.authshell { min-block-size: 100vh; display: flex; flex-direction: column; }
+.authshell { min-block-size: 100vh; min-block-size: 100dvh; display: flex; flex-direction: column; }
 .authshell__top {
   display: flex;
   align-items: center;
@@ -1187,6 +1194,7 @@ border-block-start: var(--bw-hairline) solid var(--border-1);
 
 .bare {
   min-block-size: 100vh;
+  min-block-size: 100dvh;
 max-inline-size: var(--d-10);
   margin-inline: auto;
   padding: var(--s8) var(--gutter) var(--s12);

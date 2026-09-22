@@ -39,9 +39,14 @@
     <div class="appbar__r">
 
         @if ($notificationsUrl !== null)
+            {{-- The count is IN the name: an aria-label replaces the link's
+                 content, so the hidden «unread» text beside the number was never
+                 announced — a screen reader heard «Notifications» either way. --}}
             <a href="{{ $notificationsUrl }}"
                class="icb"
-               aria-label="{{ __('app.accessibility.notifications_bell') }}">
+               aria-label="{{ $unreadCount > 0
+                   ? trans_choice('app.accessibility.notifications_bell_unread', $unreadCount, ['count' => $unreadLabel])
+                   : __('app.accessibility.notifications_bell') }}">
                 <svg aria-hidden="true"><use href="#i-bell"></use></svg>
                 @if ($unreadCount > 0)
                     <span class="icb__n">
@@ -55,11 +60,22 @@
         @if ($showMessages)
             <a href="{{ $messagesUrl }}"
                class="icb"
-               aria-label="{{ __('nav.participant.messages') }}">
+               aria-label="{{ __('app.accessibility.messages_unread') }}">
                 <svg aria-hidden="true"><use href="#i-chat"></use></svg>
                 <span class="icb__d" aria-hidden="true"></span>
                 <span class="sr">{{ __('nav.badges.unread_messages') }}</span>
             </a>
+        @endif
+
+        {{-- Only without JavaScript: the account menu below cannot open, and it
+             holds the only sign-out control (D-86). --}}
+        @if ($logoutUrl !== null)
+            <noscript>
+                <form method="POST" action="{{ $logoutUrl }}" class="nojs-logout">
+                    @csrf
+                    <button type="submit" class="ui-btn ui-btn--secondary ui-btn--sm">{{ __('nav.chrome.logout') }}</button>
+                </form>
+            </noscript>
         @endif
 
         {{-- Account menu: Escape closes it, focus returns to the trigger. --}}
@@ -72,13 +88,16 @@
                     class="icb"
                     x-on:click="toggle()"
                     x-bind:aria-expanded="open.toString()"
-                    aria-haspopup="menu"
+                    aria-controls="account-menu"
                     aria-label="{{ __('app.accessibility.user_menu') }}">
                 <span class="av" aria-hidden="true">{{ $initials }}</span>
             </button>
 
+            {{-- A disclosure of links, not an ARIA menu: role="menu" promises
+                 arrow-key navigation that nothing implemented, so screen readers
+                 announced a menu that did not behave like one (D-86). --}}
             <div class="menu"
-                 role="menu"
+                 id="account-menu"
                  x-ref="panel"
                  x-show="open"
                  x-cloak
@@ -90,27 +109,27 @@
                 </div>
 
                 @if ($profileUrl !== null)
-                    <a href="{{ $profileUrl }}" class="menu__i" role="menuitem">
+                    <a href="{{ $profileUrl }}" class="menu__i">
                         <svg aria-hidden="true"><use href="#i-user"></use></svg>
                         <span>{{ __('nav.chrome.account') }}</span>
                     </a>
                 @endif
 
                 @if ($cardUrl !== null)
-                    <a href="{{ $cardUrl }}" class="menu__i" role="menuitem">
+                    <a href="{{ $cardUrl }}" class="menu__i">
                         <svg aria-hidden="true"><use href="#i-card"></use></svg>
                         <span>{{ __('nav.participant.card') }}</span>
                     </a>
                 @endif
 
-                <div class="menu__sep" role="separator"></div>
+                <div class="menu__sep" aria-hidden="true"></div>
 
                 {{-- Logout is a POST: a GET link would be triggerable from any
                      other site (Article 24, CSRF). --}}
                 @if ($logoutUrl !== null)
                     <form method="POST" action="{{ $logoutUrl }}">
                         @csrf
-                        <button type="submit" class="menu__i menu__i--danger" role="menuitem">
+                        <button type="submit" class="menu__i menu__i--danger">
                             <svg aria-hidden="true"><use href="#i-logout"></use></svg>
                             <span>{{ __('nav.chrome.logout') }}</span>
                         </button>

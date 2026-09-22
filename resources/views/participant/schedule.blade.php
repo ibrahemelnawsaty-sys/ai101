@@ -152,15 +152,19 @@
             {{-- View 2 · visual calendar. Collapses to a card list under 768px. --}}
             <div class="cal" x-show="view === 'calendar'" x-cloak>
                 <div class="cal__nav">
-                    <x-ui.button variant="secondary" size="sm" icon="chev-prev"
+                    {{-- i-chev-prev and i-chev-next never existed, so both arrows
+                         were empty boxes; and `:disabled` is not a prop of this
+                         component, so it landed on the <a> as an attribute a link
+                         ignores. In RTL «previous» points right (D-86). --}}
+                    <x-ui.button variant="secondary" size="sm" icon="chev-end"
                         :href="route('schedule', ['week' => $calendar->previousWeekIndex, 'view' => 'calendar'])"
-                        :disabled="! $calendar->previousWeekIndex">{{ __('schedule.previous_week') }}</x-ui.button>
+                        :state="$calendar->previousWeekIndex ? 'default' : 'disabled'">{{ __('schedule.previous_week') }}</x-ui.button>
                     <b>{{ $calendar->rangeLabel }}</b>
                     <x-ui.button variant="secondary" size="sm"
                         :href="route('schedule', ['view' => 'calendar'])">{{ __('schedule.today') }}</x-ui.button>
-                    <x-ui.button variant="secondary" size="sm" icon="chev-next"
+                    <x-ui.button variant="secondary" size="sm" icon="chev"
                         :href="route('schedule', ['week' => $calendar->nextWeekIndex, 'view' => 'calendar'])"
-                        :disabled="! $calendar->nextWeekIndex">{{ __('schedule.next_week') }}</x-ui.button>
+                        :state="$calendar->nextWeekIndex ? 'default' : 'disabled'">{{ __('schedule.next_week') }}</x-ui.button>
                 </div>
 
                 @if ($calendar->days->isEmpty())

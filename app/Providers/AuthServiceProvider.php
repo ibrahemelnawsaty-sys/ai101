@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\Assignment;
 use App\Models\Attendance;
 use App\Models\AuditLog;
+use App\Models\Broadcast;
 use App\Models\Certificate;
 use App\Models\Cohort;
 use App\Models\DigitalCard;
@@ -27,6 +28,7 @@ use App\Models\Week;
 use App\Policies\AssignmentPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
+use App\Policies\BroadcastPolicy;
 use App\Policies\CertificatePolicy;
 use App\Policies\CohortPolicy;
 use App\Policies\DigitalCardPolicy;
@@ -89,6 +91,7 @@ final class AuthServiceProvider extends ServiceProvider
         Enrollment::class => EnrollmentPolicy::class,
         LandingSetting::class => LandingSettingPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
+        Broadcast::class => BroadcastPolicy::class,
     ];
 
     public function boot(): void

@@ -44,7 +44,11 @@
 
     @stack('head')
 </head>
-<body class="page page--bare">
+{{-- A sheet names itself on the body — `@section('sheet', 'certificate')` —
+     so its print rules need no :has(), which Safari before 15.4 and Firefox
+     before 121 do not know. There, the certificate printed portrait and
+     narrow (D-86). --}}
+<body class="page page--bare @hasSection('sheet') page--sheet-@yield('sheet') @endif">
 
 @include('partials.icon-sprite')
 

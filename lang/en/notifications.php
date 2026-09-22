@@ -36,7 +36,22 @@ return [
         ],
     ],
 
+    'digest' => [
+        'sessions_title' => '{1} Your next session|[2,*] Your :count upcoming sessions',
+        'sessions_body' => 'The nearest is «:session», :datetime Riyadh time. The full timetable is on the schedule tab.',
+        'assignments_title' => '{1} One assignment not handed in yet|[2,*] :count assignments not handed in yet',
+        'assignments_body' => 'The nearest is «:assignment» — :when.',
+        'closes_in' => 'hand-in closes in :countdown',
+        'late_open' => 'its deadline has passed and a late hand-in is still accepted',
+        'no_deadline' => 'there is no deadline',
+    ],
+
     'types' => [
+        'admin_broadcast' => [
+            'label' => 'Messages from the programme',
+            'title' => ':subject',
+            'body' => ':excerpt',
+        ],
         'session_reminder' => [
             'label' => 'Session reminder',
             'title' => 'Session :session starts soon',

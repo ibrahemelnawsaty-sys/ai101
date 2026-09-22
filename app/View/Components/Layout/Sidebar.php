@@ -163,6 +163,8 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
                 ['route' => 'admin.registrations.index', 'icon' => 'i-user', 'label' => __('nav.admin.registrations')],
                 ['route' => 'admin.certificates.index', 'icon' => 'i-badge', 'label' => __('nav.admin.certificates')],
+                // Messages and manual reminders to a cohort (D-87).
+                ['route' => 'admin.broadcasts.index', 'icon' => 'i-mail', 'label' => __('nav.admin.broadcasts')],
             ]],
             ['label' => __('nav.groups.work'), 'items' => [
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],

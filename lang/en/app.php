@@ -104,6 +104,8 @@ return [
         'close_menu' => 'Close the menu',
         'user_menu' => 'Account menu',
         'notifications_bell' => 'Notifications',
+        'notifications_bell_unread' => '{1} Notifications, 1 unread|[2,*] Notifications, :count unread',
+        'messages_unread' => 'Messages, with unread messages',
         'progress' => 'Progress indicator',
         'loading_region' => 'Content loading',
         'status_region' => 'Status messages',

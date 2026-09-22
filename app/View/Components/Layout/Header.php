@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\View\Components\Layout;
 
+use App\Enums\UserRole;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
@@ -86,7 +87,12 @@ final class Header extends UiComponent
         $this->messagesUrl = Route::has('messages.index') ? route('messages.index') : null;
         $this->showMessages = $this->messagesUrl !== null && (int) ($this->badges['messages'] ?? 0) > 0;
         $this->profileUrl = Route::has('profile') ? route('profile') : null;
-        $this->cardUrl = Route::has('participant.card') ? route('participant.card') : null;
+        // The card belongs to trainees: the route sits behind role:participant,
+        // so offering it to a trainer or an administrator was a link to a 403
+        // (D-86). A preview signs in AS the trainee, so it still shows there.
+        $this->cardUrl = Route::has('participant.card') && data_get($user, 'role') === UserRole::Participant
+            ? route('participant.card')
+            : null;
         $this->logoutUrl = Route::has('logout') ? route('logout') : null;
     }
 

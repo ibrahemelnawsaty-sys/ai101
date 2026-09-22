@@ -86,7 +86,43 @@ border: var(--bw-strong) solid currentColor;
   50% { box-shadow: 0 0 0 var(--ring-pulse) var(--violet-a00); }
 }
 
-/* One focus treatment for the whole library (PRD §5.6 border-focus). */
+/* One focus treatment for the whole library (PRD §5.6 border-focus).
+
+   Written three times on purpose (D-86). A selector list is dropped WHOLE if
+   one member is not understood, and Safari before 15.4 does not know
+   :focus-visible — so the one group below used to vanish there and take every
+   focus ring in the library with it (Article 18). The :focus group gives every
+   engine a ring; the :not(:focus-visible) group, which old engines drop, then
+   removes it again for a mouse click where :focus-visible is understood. */
+.ui-btn:focus,
+.ui-iconbtn:focus,
+.ui-input:focus,
+.ui-select__button:focus,
+.ui-select__native:focus,
+.ui-tab:focus,
+.ui-tabs__panel:focus,
+.ui-page:focus,
+.ui-table__sort:focus,
+.ui-tooltip__trigger:focus,
+.ui-timeline__link:focus,
+.ui-check__input:focus + .ui-check__box,
+.ui-switch__input:focus + .ui-switch__track {
+outline: var(--bw-strong) solid var(--focus-ring);
+outline-offset: var(--s1);
+}
+.ui-btn:focus:not(:focus-visible),
+.ui-iconbtn:focus:not(:focus-visible),
+.ui-select__button:focus:not(:focus-visible),
+.ui-tab:focus:not(:focus-visible),
+.ui-tabs__panel:focus:not(:focus-visible),
+.ui-page:focus:not(:focus-visible),
+.ui-table__sort:focus:not(:focus-visible),
+.ui-tooltip__trigger:focus:not(:focus-visible),
+.ui-timeline__link:focus:not(:focus-visible),
+.ui-check__input:focus:not(:focus-visible) + .ui-check__box,
+.ui-switch__input:focus:not(:focus-visible) + .ui-switch__track {
+  outline: none;
+}
 .ui-btn:focus-visible,
 .ui-iconbtn:focus-visible,
 .ui-input:focus-visible,
@@ -822,6 +858,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .ui-modal__panel {
   position: relative;
   inline-size: 100%;
+  /* vh first: an engine without dvh drops the dvh line and keeps this one,
+     instead of losing the ceiling and pushing the footer off-screen (D-86). */
+  max-block-size: calc(100vh - var(--s16));
   max-block-size: calc(100dvh - var(--s16));
   display: flex;
   flex-direction: column;
@@ -1357,7 +1396,9 @@ block-size: var(--s2);
 
 .ui-countdown__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* minmax(0, …): a `1fr` track may not shrink below its content, and four
+     two-digit cells were wider than a 320px screen (D-86). */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--s2);
   margin-block-start: var(--s3);
 }
@@ -1580,6 +1621,7 @@ border: var(--bw-hairline) solid var(--border-1);
    ========================================================================== */
 
 .ui-errorpage {
+  min-block-size: 100vh;
   min-block-size: 100dvh;
   display: flex;
   flex-direction: column;

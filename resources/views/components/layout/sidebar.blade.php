@@ -82,6 +82,11 @@
                             <a
                                 href="{{ $item['locked'] ? '#' : $item['href'] }}"
                                 class="side__b"
+                                {{-- In the 72px rail the label is visually hidden but stays
+                                     the link's accessible name; this adds the pointer's
+                                     tooltip. $data, not a bare name: the drawer renders this
+                                     same list outside the rail's scope (D-86). --}}
+                                x-bind:title="$data.collapsed ? @js($item['label']) : null"
                                 @if ($item['active']) aria-current="page" @endif
                                 @if ($item['locked']) data-locked="true" aria-disabled="true" tabindex="-1" @endif
                             >

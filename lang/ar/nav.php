@@ -66,6 +66,7 @@ return [
         'users' => 'المستخدمون',
         'registrations' => 'طلبات التسجيل',
         'certificates' => 'الشهادات',
+        'broadcasts' => 'مراسلة المتدربين',
         'reports' => 'التقارير',
         'audit' => 'سجل التدقيق',
         'settings' => 'إعدادات المنصة',

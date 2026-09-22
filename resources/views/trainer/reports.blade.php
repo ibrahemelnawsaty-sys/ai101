@@ -82,7 +82,7 @@
                     :title="__('trainer.reports.attendance_empty_title')"
                     :description="__('trainer.reports.attendance_empty_body')" />
             @else
-                <ul class="trend" role="list">
+                <ul class="trend trend--chart" role="list">
                     @foreach ($attendanceBySession as $point)
                         <li class="trend__i">
                             <span class="trend__l">{{ $point->label }}</span>
@@ -111,7 +111,7 @@
                     :title="__('trainer.reports.submissions_empty_title')"
                     :description="__('trainer.reports.submissions_empty_body')" />
             @else
-                <ul class="trend" role="list">
+                <ul class="trend trend--chart" role="list">
                     @foreach ($submissionsByAssignment as $point)
                         <li class="trend__i">
                             <span class="trend__l">{{ $point->label }}</span>

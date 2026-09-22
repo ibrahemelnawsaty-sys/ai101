@@ -87,7 +87,7 @@
 
             <nav class="chat__list" aria-label="{{ __('messages.threads') }}">
                 @foreach ($threads as $thread)
-                    <a class="chat__ci {{ $thread->id === $activeThread->id ? 'on' : '' }}"
+                    <a class="chat__ci {{ $thread->id === $activeThread->id ? 'is-on' : '' }}"
                         href="{{ route('messages.index', ['thread' => $thread->id]) }}"
                         @if ($thread->id === $activeThread->id) aria-current="page" @endif>
                         <x-ui.avatar size="sm" :name="$thread->title" :variant="$thread->avatarVariant" :icon="$thread->icon" />

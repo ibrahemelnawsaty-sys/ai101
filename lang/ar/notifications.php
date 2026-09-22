@@ -61,7 +61,27 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    /*
+     * The manual reminders' platform notices (D-87). Not in `types`: they are
+     * a session_reminder and an assignment_due_reminder, and the trainee's
+     * switches for those two types govern them.
+     */
+    'digest' => [
+        'sessions_title' => '{1} موعد جلستك القادمة|{2} مواعيد جلستيك القادمتين|[3,10] مواعيد جلساتك الـ :count القادمة|[11,*] مواعيد جلساتك الـ :count القادمة',
+        'sessions_body' => 'أقربها «:session» :datetime بتوقيت الرياض. الجدول كاملًا في تبويب جدول البرنامج.',
+        'assignments_title' => '{1} مهمة لم تسلّمها بعد|{2} مهمتان لم تسلّمهما بعد|[3,10] :count مهام لم تسلّمها بعد|[11,*] :count مهمة لم تسلّمها بعد',
+        'assignments_body' => 'أقربها «:assignment» — :when.',
+        'closes_in' => 'يغلق التسليم بعد :countdown',
+        'late_open' => 'فات موعده، والتسليم المتأخر ما زال مقبولًا',
+        'no_deadline' => 'بلا موعد نهائي',
+    ],
+
     'types' => [
+        'admin_broadcast' => [
+            'label' => 'رسائل إدارة البرنامج',
+            'title' => ':subject',
+            'body' => ':excerpt',
+        ],
         'session_reminder' => [
             'label' => 'تذكير بجلسة',
             'title' => 'جلسة :session تبدأ قريبًا',

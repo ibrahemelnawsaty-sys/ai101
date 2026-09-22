@@ -267,6 +267,25 @@ function uiTabs(options = {}) {
    Select — listbox with an internal search past 8 options (PRD §5.8)
    ========================================================================== */
 
+/**
+ * Arabic as people type it, so a search finds what they mean (D-86).
+ *
+ * The hamza forms of alif (U+0622, U+0623, U+0625, U+0671) are one letter to
+ * the reader, as are ta marbuta and ha (U+0629, U+0647) and alif maqsura and ya
+ * (U+0649, U+064A); the diacritics and the tatweel are decoration. A search for
+ * a name typed without its hamza used to miss the same name written with it,
+ * and a week filter typed that way found nothing. Latin is
+ * compared case-insensitively.
+ */
+function foldArabic(text) {
+    return String(text)
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+        .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
+        .replace(/\u0629/g, '\u0647')
+        .replace(/\u0649/g, '\u064A')
+        .toLowerCase();
+}
+
 function uiSelect(options = {}) {
     return {
         open: false,
@@ -276,15 +295,16 @@ function uiSelect(options = {}) {
         items: Array.isArray(options.items) ? options.items : [],
         searchable: options.searchable ?? (Array.isArray(options.items) && options.items.length > 8),
         placeholder: options.placeholder || '',
+        follow: null,
 
         // Which way the open panel points. The coordinates themselves are
         // written straight onto the element by `place()` — see why there.
         dropUp: false,
 
         get filtered() {
-            const q = this.query.trim();
+            const q = foldArabic(this.query.trim());
             if (!q) return this.items;
-            return this.items.filter((item) => String(item.label).includes(q));
+            return this.items.filter((item) => foldArabic(String(item.label)).includes(q));
         },
 
         get selectedLabel() {
@@ -347,6 +367,31 @@ function uiSelect(options = {}) {
                 const search = this.$refs.search;
                 if (search) search.focus();
             });
+
+            // The panel is fixed to the viewport, so it has to follow its
+            // button. `scroll.window` does not fire when an ANCESTOR scrolls — a
+            // modal body, a table's box — and on iOS the visible area shrinks
+            // when the keyboard opens for the search field. Listening in the
+            // capture phase catches every scroller; visualViewport catches the
+            // keyboard (D-86).
+            if (!this.follow) {
+                this.follow = () => { if (this.open) this.place(); };
+                document.addEventListener('scroll', this.follow, true);
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', this.follow);
+                    window.visualViewport.addEventListener('scroll', this.follow);
+                }
+            }
+        },
+
+        destroy() {
+            if (!this.follow) return;
+            document.removeEventListener('scroll', this.follow, true);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', this.follow);
+                window.visualViewport.removeEventListener('scroll', this.follow);
+            }
+            this.follow = null;
         },
 
         close(refocus = false) {

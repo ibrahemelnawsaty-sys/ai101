@@ -84,7 +84,7 @@
                     :title="__('admin.reports.empty_title')"
                     :description="__('admin.reports.empty_body')" />
             @else
-                <ul class="trend" role="list">
+                <ul class="trend trend--chart" role="list">
                     @foreach ($registrationsOverTime as $point)
                         <li class="trend__i">
                             <span class="trend__l u-num">{{ $point->label }}</span>
@@ -112,7 +112,7 @@
                     :title="__('admin.reports.empty_title')"
                     :description="__('admin.reports.empty_body')" />
             @else
-                <ul class="trend" role="list">
+                <ul class="trend trend--chart" role="list">
                     @foreach ($attendanceByCohort as $point)
                         <li class="trend__i">
                             <span class="trend__l">{{ $point->label }}</span>
