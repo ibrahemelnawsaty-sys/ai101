@@ -430,6 +430,7 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->name('resources.store');
         Route::delete('/resources/{resource}', [TrainerResourceController::class, 'archive'])
             ->middleware('not.impersonating')
+            ->withTrashed()
             ->name('resources.archive');
 
         Route::get('/final-project', [TrainerFinalProjectController::class, 'index'])->name('finalProject');

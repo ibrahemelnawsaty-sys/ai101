@@ -259,6 +259,7 @@ return [
         'title' => 'Resources for your cohort',
         'upload_title' => 'Add a resource',
         'field_title' => 'Resource title',
+        'field_file' => 'Resource file',
         'field_description' => 'Short description',
         'external_url' => 'External link',
         'external_url_hint' => 'Leave it empty if you are uploading a file instead of a link.',

@@ -25,43 +25,34 @@
                  atharUploader is called here too and nothing registers it, and
                  x-on:submit.prevent cancelled the native submit before the
                  missing handler could throw. A trainer could not add a single
-                 resource to the library. --}}
+                 resource to the library. The fourth break was quieter: this
+                 form posted `type`/`external_url`/`files[]`, but the server
+                 reads `resource_type`/`url`/`file` — every name below is kept
+                 identical to App\Http\Requests\Trainer\StoreResourceRequest. --}}
             <form method="POST" action="{{ route('trainer.resources.store') }}" enctype="multipart/form-data">
                 @csrf
 
-                <div class="drop">
-                    <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                    <b>{{ __('assignments.choose_files') }}</b>
-                    <span>{{ __('assignments.accepted_types') }}</span>
-
-                    <input type="file" name="files[]" multiple id="resource-files">
-                    <label class="sr" for="resource-files">{{ __('assignments.choose_files') }}</label>
-
-                    @error('files')
-                        <p class="hint hint--error" role="alert">{{ $message }}</p>
-                    @enderror
-                    @error('files.*')
-                        <p class="hint hint--error" role="alert">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 <div class="f2">
                     <x-ui.input name="title" required :label="__('trainer.resources.field_title')" />
-                    <x-ui.select name="type" required :label="__('resources.filter_type')" :options="$typeOptions" />
+                    <x-ui.select name="resource_type" required :label="__('resources.filter_type')" :options="$typeOptions" />
                     <x-ui.select name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
                         :hint="__('trainer.resources.week_hint')" />
                     <x-ui.select name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions" />
                 </div>
 
-                <x-ui.input name="external_url" type="url" dir="ltr"
+                <x-ui.file-uploader name="file"
+                    :label="__('trainer.resources.field_file')"
+                    :accept="$uploadAccept"
+                    :max-mb="$maxFileSizeLabel" />
+
+                <x-ui.input name="url" type="url" dir="ltr"
                     :label="__('trainer.resources.external_url')"
                     :hint="__('trainer.resources.external_url_hint')" />
 
                 <x-ui.textarea name="description" rows="3" :label="__('trainer.resources.field_description')" />
 
                 <div class="row__acts">
-                    <x-ui.button variant="primary" type="submit"
-                        x-bind:aria-busy="uploading">{{ __('trainer.resources.publish') }}</x-ui.button>
+                    <x-ui.button variant="primary" type="submit">{{ __('trainer.resources.publish') }}</x-ui.button>
                 </div>
             </form>
         </x-ui.card>

@@ -137,13 +137,15 @@ final class ResourceController extends Controller
         }
 
         // Archived material is hidden by default rather than deleted: the
-        // trainer asks for it explicitly (art. 13 §11).
+        // trainer asks for it explicitly (art. 13 §11). Resource now carries
+        // SoftDeletes, so the default query already excludes trashed rows on
+        // its own; only the two non-default states need to say anything.
         $state = $request->query('state');
 
         if ($state === 'archived') {
-            $query->whereNotNull('deleted_at');
-        } elseif ($state !== 'all') {
-            $query->whereNull('deleted_at');
+            $query->onlyTrashed();
+        } elseif ($state === 'all') {
+            $query->withTrashed();
         }
 
         return $query;
@@ -173,11 +175,13 @@ final class ResourceController extends Controller
     private function uploadLimits(): array
     {
         $kilobytes = (int) config('athar.uploads.max_kilobytes', 25600);
+        $extensions = (array) config('athar.uploads.allowed_extensions', []);
 
         return [
             'maxFiles' => (int) config('athar.uploads.max_files', 5),
             'maxFileBytes' => $kilobytes * 1024,
             'maxFileSizeLabel' => (string) (int) round($kilobytes / 1024),
+            'uploadAccept' => $extensions === [] ? null : '.'.implode(',.', $extensions),
         ];
     }
 
@@ -227,12 +231,13 @@ final class ResourceController extends Controller
     }
 
     /**
-     * Archiving hides a resource without destroying it: the `deleted_at` stamp
-     * is written explicitly rather than by calling delete(), because
-     * App\Models\Resource does not carry the SoftDeletes trait yet even though
-     * its table has the column. Writing the stamp by hand keeps this endpoint
-     * incapable of destroying teaching material whichever way that is settled
-     * (art. 7); once the trait is added the listings hide the row on their own.
+     * Archiving hides a resource without destroying it. Resource now carries
+     * SoftDeletes — the route is declared `->withTrashed()` so an already
+     * archived resource can still be found and restored — but the stamp
+     * itself is still written by hand with Clock::now() rather than by
+     * calling delete()/restore(): those write Eloquent's own timestamp, which
+     * does not honour Clock::fake() in tests and would stop being the one
+     * clock the platform reads (art. 11, gate G4).
      *
      * The same endpoint restores: a resource that is already archived has its
      * stamp cleared, which is what the button on the row offers to do.
@@ -245,9 +250,6 @@ final class ResourceController extends Controller
         $isArchived = $previous !== null;
         $stamp = $isArchived ? null : Clock::now();
 
-        // `deleted_at` is a plain column here — App\Models\Resource carries no
-        // SoftDeletes trait and no cast for it — so the audit trail records
-        // both sides as strings rather than assuming a Carbon instance.
         $this->audit->log(
             $isArchived ? 'resource.restored' : 'resource.archived',
             $resource,

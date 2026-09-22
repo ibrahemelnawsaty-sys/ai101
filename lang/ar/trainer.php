@@ -308,6 +308,7 @@ return [
         'title' => 'موارد دفعتك',
         'upload_title' => 'أضف موردًا',
         'field_title' => 'عنوان المورد',
+        'field_file' => 'ملف المورد',
         'field_description' => 'وصف مختصر',
         'external_url' => 'رابط خارجي',
         'external_url_hint' => 'اتركه فارغًا إن كنت ترفع ملفًا بدل الرابط.',
