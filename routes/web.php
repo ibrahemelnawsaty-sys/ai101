@@ -487,6 +487,15 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
             ->middleware('throttle:12,1')
             ->name('attendance.checkinCode');
 
+        // D-107 — a coordinator's one write on a session they do not
+        // otherwise manage: the recording link. Lives here, not in the
+        // trainer-only sessions group above, so a coordinator account can
+        // reach it; trainer and admin use the same endpoint from the same
+        // shared attendance screen (SessionController::updateRecording()).
+        Route::patch('/sessions/{session}/recording', [TrainerSessionController::class, 'updateRecording'])
+            ->middleware('not.impersonating')
+            ->name('sessions.recording');
+
         // D-106 — deciding a participant's excuse request. The pending queue
         // itself is a section of the attendance screen above, not a route of
         // its own.

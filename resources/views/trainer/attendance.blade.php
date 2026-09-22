@@ -241,6 +241,75 @@
             @endif
         </x-ui.card>
 
+        {{-- Recorded sessions (D-107) — the one place a recording link is set;
+             trainer, admin and coordinator share this screen and this card,
+             since no session editor field exists for it anywhere else. --}}
+        <x-ui.card class="dc--span u-mt-4" icon="folder" :title="__('trainer.sessions.recordings_title')" flush>
+            @if ($recordingSessions->isEmpty())
+                <x-ui.empty-state icon="video" size="sm"
+                    :title="__('trainer.sessions.recordings_empty_title')"
+                    :description="__('trainer.sessions.recordings_empty_body')" />
+            @else
+                <div class="tscroll">
+                    <table class="atable">
+                        <caption class="sr">{{ __('trainer.sessions.recordings_title') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('attendance.col_session') }}</th>
+                                <th scope="col">{{ __('trainer.sessions.col_recording') }}</th>
+                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($recordingSessions as $row)
+                                <tr>
+                                    <th scope="row">
+                                        {{ $row->topic }}
+                                        <span class="u-num u-muted">{{ $row->date }}</span>
+                                    </th>
+                                    <td>
+                                        @if ($row->hasRecording)
+                                            <x-ui.pill variant="success">{{ __('trainer.sessions.link_set') }}</x-ui.pill>
+                                        @else
+                                            <x-ui.pill variant="neutral">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <x-ui.button variant="secondary" size="sm" :href="$row->editHref">
+                                            {{ $row->hasRecording ? __('app.edit') : __('trainer.sessions.add_recording_action') }}
+                                        </x-ui.button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-ui.card>
+
+        {{-- Recording upload panel, open on ?recording={id} (D-107) ----------- --}}
+        @if ($recordingEditing)
+            <x-ui.card class="dc--span u-mt-4" icon="video"
+                :title="__('trainer.sessions.recording_edit_title', ['topic' => $recordingEditing->topic])">
+
+                <form method="POST" action="{{ route('trainer.sessions.recording', $recordingEditing->id) }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <x-ui.input name="recording_url" type="url" dir="ltr" maxlength="3000"
+                        :label="__('trainer.sessions.recording_url')"
+                        :hint="__('trainer.sessions.recording_url_hint')"
+                        :value="old('recording_url', $recordingEditing->recordingUrl)" />
+
+                    <div class="row__acts u-mt-3">
+                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button variant="ghost" size="sm"
+                            :href="route('trainer.attendance', request()->except('recording'))">{{ __('app.cancel') }}</x-ui.button>
+                    </div>
+                </form>
+            </x-ui.card>
+        @endif
+
         {{-- Single manual edit ------------------------------------------------- --}}
         @if ($editing)
             <x-ui.card class="dc--span u-mt-4" icon="shield"

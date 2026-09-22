@@ -12,6 +12,7 @@ use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\CancelSessionRequest;
 use App\Http\Requests\Trainer\StoreSessionRequest;
+use App\Http\Requests\Trainer\UpdateSessionRecordingRequest;
 use App\Http\Requests\Trainer\UpdateSessionRequest;
 use App\Models\Session;
 use App\Models\User;
@@ -200,6 +201,18 @@ final class SessionController extends Controller
         }
 
         return back()->with('status', __('trainer.sessions.updated'));
+    }
+
+    /**
+     * D-107 — the one field a coordinator may set on a session they do not
+     * otherwise manage. Extraction and the zoom.us check already happened in
+     * the request; this only writes what came back.
+     */
+    public function updateRecording(UpdateSessionRecordingRequest $request, Session $session): RedirectResponse
+    {
+        $session->setAttribute('recording_url', $request->recordingUrl())->save();
+
+        return back()->with('status', __('trainer.sessions.recording_saved'));
     }
 
     /**

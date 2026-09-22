@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Session;
 use App\Models\User;
 use App\Presenters\Participant\LiveSessionPresenter;
+use App\Presenters\Participant\RecordingPlayer;
 use App\Presenters\Participant\RecordingPresenter;
 use App\Presenters\Participant\SessionPresenter;
 use App\Presenters\Support\Options;
@@ -189,8 +190,16 @@ final class LiveController extends Controller
             && $now->lessThanOrEqualTo($window->endsAt($session));
     }
 
-    /** The recording, once the session is over and a recording exists. */
-    public function recording(Session $session): RedirectResponse
+    /**
+     * The recording, once the session is over and a recording exists.
+     *
+     * D-107 — this used to redirect away to Zoom. It now renders the
+     * recording inside an Athar-branded page instead: the guard is unchanged
+     * (policy, then a real url or a 404), only what happens after is
+     * different. The url is still never placed in any page before this one
+     * is reached (BR-22).
+     */
+    public function recording(Session $session): View
     {
         $this->authorize('viewRecording', $session);
 
@@ -200,7 +209,9 @@ final class LiveController extends Controller
             abort(HttpResponse::HTTP_NOT_FOUND);
         }
 
-        return redirect()->away($url);
+        return view('participant.recording-player', [
+            'recording' => RecordingPlayer::from($session, $url),
+        ]);
     }
 
     private function nextSession(string $cohortId, \DateTimeInterface $now): ?Session

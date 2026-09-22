@@ -122,6 +122,26 @@ return [
         'empty_body' => 'Add the sessions of your cohort weeks so they appear in the participant schedule.',
         'error_title' => 'The sessions could not be shown',
         'error_body' => 'Something went wrong while fetching them. Try again shortly — the schedule is unaffected.',
+
+        /*
+        |----------------------------------------------------------------------
+        | Recorded sessions — shared attendance screen (trainer/admin/coordinator) (D-107)
+        |----------------------------------------------------------------------
+        */
+
+        'recordings_title' => 'Recorded sessions',
+        'recordings_empty_title' => 'No finished sessions yet',
+        'recordings_empty_body' => 'Every session that ends in your cohort appears here, to upload its recording link.',
+        'col_recording' => 'Recording link',
+        'add_recording_action' => 'Add the recording link',
+        'recording_edit_title' => 'Recording link for :topic',
+        'recording_url' => 'Recording link',
+        'recording_url_hint' => 'Paste a zoom.us recording link, or the embed code Zoom itself copies, exactly as it is — the link is extracted from it automatically. A link from any other domain is rejected.',
+        'recording_saved' => 'The recording link was saved.',
+
+        'errors' => [
+            'recording_url_invalid' => 'A Zoom link could not be found in what you pasted. Make sure it is a recording link from zoom.us, or the embed code Zoom itself copies, unmodified.',
+        ],
     ],
 
     'attendance' => [

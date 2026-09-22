@@ -1238,3 +1238,26 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .certsheet__note { display: none; }
   .certsheet .certdoc { box-shadow: none; }
 }
+
+/* ==========================================================================
+   RECORDING PLAYER · participant/recording-player (D-107)
+   --------------------------------------------------------------------------
+   Ratio-locked instead of a fixed height, exactly like .card__banner: it
+   reserves its space before the iframe loads (Article 19) and crops
+   consistently at every width. Tokens only — no literal colour or length.
+   ========================================================================== */
+.recording-embed {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.recording-embed iframe {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+}
