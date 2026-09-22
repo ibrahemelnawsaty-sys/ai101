@@ -35,7 +35,7 @@ final class AttendancePolicy
             return true;
         }
 
-        return $this->staffOf($user, $this->cohortIdOf($attendance));
+        return $this->attendanceStaffOf($user, $this->cohortIdOf($attendance));
     }
 
     /**
@@ -61,20 +61,20 @@ final class AttendancePolicy
         return $this->checkIn($user, $session);
     }
 
-    /** Manual correction — trainers of the cohort and admins, with a reason (BR-10). */
+    /** Manual correction — trainers or coordinators of the cohort and admins, with a reason (BR-10). */
     public function update(User $user, Attendance $attendance): bool
     {
-        return $this->writesAllowed() && $this->staffOf($user, $this->cohortIdOf($attendance));
+        return $this->writesAllowed() && $this->attendanceStaffOf($user, $this->cohortIdOf($attendance));
     }
 
     public function bulkMark(User $user, Session $session): bool
     {
-        return $this->writesAllowed() && $this->staffOf($user, (string) $session->cohort_id);
+        return $this->writesAllowed() && $this->attendanceStaffOf($user, (string) $session->cohort_id);
     }
 
     public function export(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id);
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id);
     }
 
     /** Attendance rows are never destroyed (CONSTITUTION Art. 13 §11). */

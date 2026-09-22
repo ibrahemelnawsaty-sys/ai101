@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Trainer;
 
+use App\Enums\SessionDeliveryMode;
 use App\Enums\SessionType;
 use App\Models\Session;
 use Illuminate\Foundation\Http\FormRequest;
@@ -52,6 +53,16 @@ final class UpdateSessionRequest extends FormRequest
                     ->where('cohort_id', $cohortId)
                     ->where('role_in_cohort', 'trainer'),
             ],
+            'coordinator_id' => [
+                'nullable', 'string', 'uuid',
+                Rule::exists('enrollments', 'user_id')
+                    ->where('cohort_id', $cohortId)
+                    ->where('role_in_cohort', 'coordinator'),
+            ],
+            'delivery_mode' => ['required', Rule::enum(SessionDeliveryMode::class)],
+            'location_name' => ['nullable', 'string', 'max:200'],
+            'location_map_url' => ['nullable', 'string', 'url:https', 'max:500'],
+            'room_name' => ['nullable', 'string', 'max:120'],
             'meeting_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'meeting_passcode' => ['nullable', 'string', 'max:60'],
             // How early the link appears, in minutes. Null means "use the
@@ -89,6 +100,11 @@ final class UpdateSessionRequest extends FormRequest
             'start_time' => $data['start_time'].':00',
             'end_time' => $data['end_time'].':00',
             'trainer_id' => $data['trainer_id'] ?? null,
+            'coordinator_id' => $data['coordinator_id'] ?? null,
+            'delivery_mode' => $data['delivery_mode'],
+            'location_name' => $data['location_name'] ?? null,
+            'location_map_url' => $data['location_map_url'] ?? null,
+            'room_name' => $data['room_name'] ?? null,
             'zoom_url' => $data['meeting_url'] ?? null,
             'zoom_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,

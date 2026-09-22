@@ -39,6 +39,7 @@ beforeEach(function (): void {
 
     $this->admin = makeAdmin();
     $this->trainer = makeTrainer($this->cohort);
+    $this->coordinator = makeCoordinator($this->cohort);
     $this->participant = makeParticipant($this->cohort);
     // Graded and certified, the participant above may not be deleted (PRD
     // §7.8, D-84); the delete route is exercised on an account that may.
@@ -76,6 +77,7 @@ beforeEach(function (): void {
     $this->actors = [
         'admin' => $this->admin,
         'trainer' => $this->trainer,
+        'coordinator' => $this->coordinator,
         'participant' => $this->participant,
     ];
 });
@@ -139,11 +141,13 @@ function authorizationMatrix(object $test): array
         'trainer.participants' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.participants.export' => ['get', $cohort, ['trainer', 'admin']],
 
-        'trainer.attendance' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.attendance.poll' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
-        'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin']],
-        'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
+        // Attendance alone also admits a coordinator (D-105): the role exists
+        // for exactly this, and nothing else under /trainer/*.
+        'trainer.attendance' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.poll' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
 
         'trainer.sessions' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.sessions.store' => ['post', $cohort, ['trainer', 'admin']],
@@ -193,6 +197,8 @@ function authorizationMatrix(object $test): array
         'admin.cohorts.update' => ['patch', [$test->cohort], ['admin']],
         'admin.cohorts.trainers.attach' => ['post', [$test->cohort], ['admin']],
         'admin.cohorts.trainers.detach' => ['delete', [$test->cohort, $test->trainer], ['admin']],
+        'admin.cohorts.coordinators.attach' => ['post', [$test->cohort], ['admin']],
+        'admin.cohorts.coordinators.detach' => ['delete', [$test->cohort, $test->coordinator], ['admin']],
 
         'admin.users.index' => ['get', [], ['admin']],
         'admin.users.create' => ['get', [], ['admin']],

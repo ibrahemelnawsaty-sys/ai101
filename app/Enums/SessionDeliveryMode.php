@@ -7,23 +7,22 @@ namespace App\Enums;
 use App\Enums\Concerns\HasEnumValues;
 
 /**
- * Role a user holds inside a specific cohort.
+ * How a training session is delivered.
  *
  * @see PROJECT-CONTRACT.md §3
  */
-enum EnrollmentRole: string
+enum SessionDeliveryMode: string
 {
     use HasEnumValues;
 
-    case Participant = 'participant';
-    case Trainer = 'trainer';
-    case Coordinator = 'coordinator';
+    case Online = 'online';
+    case InPerson = 'in_person';
 
     /**
      * Human label, resolved from lang/{locale}/enums.php.
      */
     public function label(): string
     {
-        return __('enums.enrollment_role.'.$this->value);
+        return __('enums.session_delivery_mode.'.$this->value);
     }
 }

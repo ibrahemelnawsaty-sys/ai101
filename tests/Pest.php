@@ -245,6 +245,17 @@ function makeParticipant(?Cohort $cohort = null, array $attributes = []): User
     return $participant;
 }
 
+function makeCoordinator(?Cohort $cohort = null, array $attributes = []): User
+{
+    $coordinator = makeUser('coordinator', $attributes);
+
+    if ($cohort instanceof Cohort) {
+        enroll($coordinator, $cohort, 'coordinator');
+    }
+
+    return $coordinator;
+}
+
 function enroll(User $user, Cohort $cohort, string $roleInCohort = 'participant'): Enrollment
 {
     return Enrollment::factory()->create([

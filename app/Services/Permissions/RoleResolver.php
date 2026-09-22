@@ -53,6 +53,10 @@ final class RoleResolver
             return 'trainer';
         }
 
+        if (! $this->hasRole($user, 'participant') && $this->hasRole($user, 'coordinator')) {
+            return 'coordinator';
+        }
+
         return 'participant';
     }
 
@@ -79,6 +83,10 @@ final class RoleResolver
         if ($user->role !== UserRole::Admin) {
             if ($this->trainerCohortIds($user) !== []) {
                 $roles[] = UserRole::Trainer->value;
+            }
+
+            if ($this->coordinatorCohortIds($user) !== []) {
+                $roles[] = UserRole::Coordinator->value;
             }
 
             if ($this->participantCohortIds($user) !== []) {
@@ -149,6 +157,24 @@ final class RoleResolver
         return $this->cohortIds($user, EnrollmentRole::Participant);
     }
 
+    /**
+     * The cohorts this account works in AS A COORDINATOR — mirrors
+     * trainerCohortIds() exactly, including the primary-role gate: only an
+     * account whose own role is Coordinator (or Admin) can ever hold this
+     * authority, so a demoted account cannot keep it through a leftover
+     * enrolment row.
+     *
+     * @return list<string>
+     */
+    public function coordinatorCohortIds(User $user): array
+    {
+        if ($user->role !== UserRole::Coordinator && $user->role !== UserRole::Admin) {
+            return [];
+        }
+
+        return $this->cohortIds($user, EnrollmentRole::Coordinator);
+    }
+
     public function isTrainerOf(User $user, ?string $cohortId): bool
     {
         if ($cohortId === null || ! $this->isActive($user)) {
@@ -156,6 +182,15 @@ final class RoleResolver
         }
 
         return in_array($cohortId, $this->trainerCohortIds($user), true);
+    }
+
+    public function isCoordinatorOf(User $user, ?string $cohortId): bool
+    {
+        if ($cohortId === null || ! $this->isActive($user)) {
+            return false;
+        }
+
+        return in_array($cohortId, $this->coordinatorCohortIds($user), true);
     }
 
     public function isParticipantOf(User $user, ?string $cohortId): bool
@@ -181,6 +216,7 @@ final class RoleResolver
 
         return array_values(array_unique(array_merge(
             $this->trainerCohortIds($user),
+            $this->coordinatorCohortIds($user),
             $this->participantCohortIds($user),
         )));
     }

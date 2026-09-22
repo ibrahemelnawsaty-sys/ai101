@@ -35,6 +35,7 @@ return [
         'work' => 'المهام والتقييم',
         'communication' => 'التواصل',
         'trainer' => 'أدوات المدرب',
+        'coordinator' => 'أدوات المنسّق',
         'admin' => 'إدارة المنصة',
     ],
 
@@ -80,6 +81,10 @@ return [
         'submissions' => 'التسليمات والتصحيح',
         'final_project' => 'المشروع الختامي',
         'reports' => 'تقارير الدفعة',
+    ],
+
+    'coordinator' => [
+        'attendance' => 'التحضير',
     ],
 
     'participant' => [

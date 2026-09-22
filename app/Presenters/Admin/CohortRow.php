@@ -48,6 +48,7 @@ final class CohortRow extends ViewModel
             'seatsTaken' => $taken,
             'seatsVariant' => self::seatsVariant($taken, $capacity),
             'trainerNames' => self::trainerNames($cohort),
+            'coordinatorNames' => self::coordinatorNames($cohort),
             'statusLabel' => $status?->label() ?? '—',
             'statusVariant' => self::cohortVariantOf($status),
             'statusIcon' => self::cohortIconOf($status),
@@ -91,6 +92,31 @@ final class CohortRow extends ViewModel
 
             $profile = self::related($trainer, 'profile');
             $names[] = (string) ($profile?->getAttribute('full_name_ar') ?? $trainer->getAttribute('email'));
+        }
+
+        return $names;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function coordinatorNames(Cohort $cohort): array
+    {
+        $coordinators = self::related($cohort, 'coordinators');
+
+        if ($coordinators === null) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach ($coordinators as $coordinator) {
+            if (! $coordinator instanceof User) {
+                continue;
+            }
+
+            $profile = self::related($coordinator, 'profile');
+            $names[] = (string) ($profile?->getAttribute('full_name_ar') ?? $coordinator->getAttribute('email'));
         }
 
         return $names;

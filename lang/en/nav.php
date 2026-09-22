@@ -33,6 +33,7 @@ return [
         'work' => 'Work and grades',
         'communication' => 'Communication',
         'trainer' => 'Trainer tools',
+        'coordinator' => 'Coordinator tools',
         'admin' => 'Platform administration',
     ],
 
@@ -73,6 +74,10 @@ return [
         'submissions' => 'Submissions and grading',
         'final_project' => 'Final project',
         'reports' => 'Cohort reports',
+    ],
+
+    'coordinator' => [
+        'attendance' => 'Attendance',
     ],
 
     'participant' => [

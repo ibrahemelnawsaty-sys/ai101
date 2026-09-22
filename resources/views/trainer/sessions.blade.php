@@ -64,6 +64,7 @@
                                 <th scope="col">{{ __('schedule.col_time') }}</th>
                                 <th scope="col">{{ __('schedule.col_topic') }}</th>
                                 <th scope="col">{{ __('trainer.sessions.col_type') }}</th>
+                                <th scope="col">{{ __('trainer.sessions.col_staff') }}</th>
                                 <th scope="col">{{ __('schedule.col_status') }}</th>
                                 <th scope="col">{{ __('trainer.sessions.col_link') }}</th>
                                 <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
@@ -76,9 +77,19 @@
                                     <td class="u-num u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
                                     <th scope="row">{{ $session->topic }}</th>
                                     <td>{{ $session->typeLabel }}</td>
+                                    <td>
+                                        <div>{{ $session->trainerName }}</div>
+                                        <div>{{ $session->coordinatorName }}</div>
+                                    </td>
                                     <td><x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill></td>
                                     <td>
-                                        @if ($session->hasMeetingUrl)
+                                        @if ($session->isInPerson)
+                                            @if ($session->hasLocation)
+                                                <x-ui.pill variant="success" icon="check">{{ __('trainer.sessions.location_set') }}</x-ui.pill>
+                                            @else
+                                                <x-ui.pill variant="warning" icon="warn">{{ __('trainer.sessions.location_missing') }}</x-ui.pill>
+                                            @endif
+                                        @elseif ($session->hasMeetingUrl)
                                             <x-ui.pill variant="success" icon="check">{{ __('trainer.sessions.link_set') }}</x-ui.pill>
                                         @else
                                             <x-ui.pill variant="warning" icon="warn">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
@@ -135,6 +146,9 @@
                             :options="$typeOptions" :value="old('type', $editing->type)" />
                         <x-ui.select name="trainer_id" required :label="__('schedule.col_trainer')"
                             :options="$trainerOptions" :value="old('trainer_id', $editing->trainerId)" />
+                        <x-ui.select name="coordinator_id" :label="__('trainer.sessions.coordinator')"
+                            :hint="__('trainer.sessions.coordinator_hint')"
+                            :options="$coordinatorOptions" :value="old('coordinator_id', $editing->coordinatorId)" />
                     </div>
 
                     <div class="f2">
@@ -148,10 +162,26 @@
                             :value="old('end_time', $editing->endTimeValue)" />
                     </div>
 
+                    <x-ui.select name="delivery_mode" required :label="__('trainer.sessions.delivery_mode')"
+                        :options="$deliveryModeOptions" :value="old('delivery_mode', $editing->deliveryMode)" />
+
                     <x-ui.input name="meeting_url" type="url" dir="ltr"
                         :label="__('trainer.sessions.meeting_url')"
                         :hint="__('trainer.sessions.meeting_url_hint')"
                         :value="old('meeting_url', $editing->meetingUrl)" />
+
+                    <div class="f2">
+                        <x-ui.input name="location_name"
+                            :label="__('trainer.sessions.location_name')"
+                            :value="old('location_name', $editing->locationName)" />
+                        <x-ui.input name="location_map_url" type="url" dir="ltr"
+                            :label="__('trainer.sessions.location_map_url')"
+                            :value="old('location_map_url', $editing->locationMapUrl)" />
+                        <x-ui.input name="room_name"
+                            :label="__('trainer.sessions.room_name')"
+                            :hint="__('trainer.sessions.room_name_hint')"
+                            :value="old('room_name', $editing->roomName)" />
+                    </div>
 
                     <x-ui.input name="meeting_passcode" dir="ltr"
                         :label="__('live.passcode')"

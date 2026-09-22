@@ -133,6 +133,7 @@ final class Sidebar extends UiComponent
         return match (app(RoleResolver::class)->shellRole($user)) {
             'admin' => $this->adminGroups(),
             'trainer' => $this->trainerGroups(),
+            'coordinator' => $this->coordinatorGroups(),
             default => $this->participantGroups(),
         };
     }
@@ -197,6 +198,22 @@ final class Sidebar extends UiComponent
                 // The announcement channel, the cohort group and a direct line
                 // to each participant (PRD §9.13, D-82).
                 ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+            ]],
+        ];
+    }
+
+    /**
+     * The coordinator rail. One job, one link: attendance is the whole of
+     * what this role exists for (D-105) — nothing else is added here just
+     * because a route happens to accept the role too.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function coordinatorGroups(): array
+    {
+        return [
+            ['items' => [
+                ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
             ]],
         ];
     }

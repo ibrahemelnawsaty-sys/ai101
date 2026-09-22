@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SessionDeliveryMode;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,11 @@ class Session extends Model
         'start_time',
         'end_time',
         'trainer_id',
+        'coordinator_id',
+        'delivery_mode',
+        'location_name',
+        'location_map_url',
+        'room_name',
         'zoom_url',
         'zoom_passcode',
         'join_opens_minutes',
@@ -74,6 +80,7 @@ class Session extends Model
         return [
             'type' => SessionType::class,
             'status' => SessionStatus::class,
+            'delivery_mode' => SessionDeliveryMode::class,
             'date' => 'date',
             'start_time' => 'string',
             'end_time' => 'string',
@@ -116,6 +123,14 @@ class Session extends Model
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'trainer_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function coordinator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'coordinator_id');
     }
 
     /**

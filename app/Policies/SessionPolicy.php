@@ -71,12 +71,22 @@ final class SessionPolicy
      */
     public function viewAttendance(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id);
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id);
     }
 
     public function manageAttendance(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+    }
+
+    /**
+     * Uploading the recording link only, never the rest of the session. A
+     * coordinator earns this narrowly for the cohort they were assigned to;
+     * everything else about the session stays staffOf()-gated below.
+     */
+    public function updateRecording(User $user, Session $session): bool
+    {
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function delete(User $user, Session $session): bool

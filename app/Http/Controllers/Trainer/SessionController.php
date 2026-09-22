@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
+use App\Enums\SessionDeliveryMode;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Events\SessionCancelled;
@@ -63,8 +64,10 @@ final class SessionController extends Controller
                 'sessions' => collect(),
                 'weekOptions' => [],
                 'trainerOptions' => [],
+                'coordinatorOptions' => [],
                 'typeOptions' => Options::fromEnum(SessionType::class),
                 'statusOptions' => Options::fromEnum(SessionStatus::class),
+                'deliveryModeOptions' => Options::fromEnum(SessionDeliveryMode::class),
                 'editing' => null,
                 'cancelling' => null,
                 'errorState' => null,
@@ -106,8 +109,15 @@ final class SessionController extends Controller
                     $item->profile?->getAttribute('full_name_ar') ?? $item->getAttribute('email')
                 ),
             ),
+            'coordinatorOptions' => Options::fromModels(
+                $cohort->coordinators()->with('profile')->get(),
+                static fn (User $item): string => (string) (
+                    $item->profile?->getAttribute('full_name_ar') ?? $item->getAttribute('email')
+                ),
+            ),
             'typeOptions' => Options::fromEnum(SessionType::class),
             'statusOptions' => Options::fromEnum(SessionStatus::class),
+            'deliveryModeOptions' => Options::fromEnum(SessionDeliveryMode::class),
             'editing' => $this->editing($request),
             'cancelling' => $this->cancelling($request),
             'errorState' => null,

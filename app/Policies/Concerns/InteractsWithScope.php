@@ -42,6 +42,11 @@ trait InteractsWithScope
         return $this->roles->isTrainerOf($user, $cohortId);
     }
 
+    protected function coordinatorOf(User $user, ?string $cohortId): bool
+    {
+        return $this->roles->isCoordinatorOf($user, $cohortId);
+    }
+
     protected function participantOf(User $user, ?string $cohortId): bool
     {
         return $this->roles->isParticipantOf($user, $cohortId);
@@ -51,6 +56,17 @@ trait InteractsWithScope
     protected function staffOf(User $user, ?string $cohortId): bool
     {
         return $this->admin($user) || $this->trainerOf($user, $cohortId);
+    }
+
+    /**
+     * Attendance authority only: everything staffOf() already grants, plus a
+     * coordinator assigned to the cohort — the one ability their role exists
+     * for. Never used for session, resource or cohort management, which stay
+     * staffOf()-gated: a coordinator is not a trainer.
+     */
+    protected function attendanceStaffOf(User $user, ?string $cohortId): bool
+    {
+        return $this->staffOf($user, $cohortId) || $this->coordinatorOf($user, $cohortId);
     }
 
     /** Anyone with a legitimate reason to read this cohort's data. */

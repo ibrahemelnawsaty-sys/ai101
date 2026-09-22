@@ -27,6 +27,7 @@ final class TrainerAssignment extends ViewModel
     {
         $program = self::related($cohort, 'program');
         $trainers = self::related($cohort, 'trainers');
+        $coordinators = self::related($cohort, 'coordinators');
 
         $people = [];
 
@@ -36,11 +37,20 @@ final class TrainerAssignment extends ViewModel
             }
         }
 
+        $coordinatorPeople = [];
+
+        foreach (($coordinators ?? []) as $coordinator) {
+            if ($coordinator instanceof User) {
+                $coordinatorPeople[] = TrainerOption::from($coordinator);
+            }
+        }
+
         return new self([
             'id' => (string) $cohort->getKey(),
             'name' => (string) $cohort->getAttribute('name'),
             'programName' => self::text($program, 'name_ar'),
             'trainers' => $people,
+            'coordinators' => $coordinatorPeople,
         ]);
     }
 }

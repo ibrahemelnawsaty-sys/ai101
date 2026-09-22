@@ -389,22 +389,6 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::get('/assignments/{assignment}/download-all', [TrainerSubmissionController::class, 'bulkDownload'])
             ->name('submissions.bulkDownload');
 
-        Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
-        Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
-            ->name('attendance.export');
-        // The live roster (PRD §9.9.7), asked every few seconds while a session
-        // runs: throttled, so a stuck tab cannot become a stream of PHP
-        // processes on shared hosting.
-        Route::get('/attendance/{session}/poll', [TrainerAttendanceController::class, 'poll'])
-            ->middleware('throttle:30,1')
-            ->name('attendance.poll');
-        Route::patch('/attendance/{attendance}', [TrainerAttendanceController::class, 'update'])
-            ->middleware('not.impersonating')
-            ->name('attendance.update');
-        Route::post('/attendance/{session}/bulk', [TrainerAttendanceController::class, 'bulk'])
-            ->middleware('not.impersonating')
-            ->name('attendance.bulk');
-
         Route::get('/assignments', [TrainerAssignmentController::class, 'index'])->name('assignments');
         Route::post('/assignments', [TrainerAssignmentController::class, 'store'])
             ->middleware(['not.impersonating', 'throttle:upload'])
@@ -451,6 +435,38 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
 
 /*
 |--------------------------------------------------------------------------
+| Attendance — trainer, admin AND coordinator (D-105)
+|--------------------------------------------------------------------------
+| Pulled out of the trainer-only group above so a coordinator account can
+| reach exactly these five routes and nothing else under /trainer/*. Route
+| names stay `trainer.attendance*` on purpose: trainer/attendance.blade.php
+| already builds its poll/bulk/update forms from those names, and a
+| coordinator reaching the same screen must post to the same endpoints.
+*/
+
+Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort.scope'])
+    ->prefix('trainer')
+    ->name('trainer.')
+    ->group(function (): void {
+        Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
+        Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
+            ->name('attendance.export');
+        // The live roster (PRD §9.9.7), asked every few seconds while a session
+        // runs: throttled, so a stuck tab cannot become a stream of PHP
+        // processes on shared hosting.
+        Route::get('/attendance/{session}/poll', [TrainerAttendanceController::class, 'poll'])
+            ->middleware('throttle:30,1')
+            ->name('attendance.poll');
+        Route::patch('/attendance/{attendance}', [TrainerAttendanceController::class, 'update'])
+            ->middleware('not.impersonating')
+            ->name('attendance.update');
+        Route::post('/attendance/{session}/bulk', [TrainerAttendanceController::class, 'bulk'])
+            ->middleware('not.impersonating')
+            ->name('attendance.bulk');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Administration
 |--------------------------------------------------------------------------
 | Every route is admin-only and every write is refused while an account
@@ -492,6 +508,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::delete('/cohorts/{cohort}/trainers/{trainer}', [AdminCohortController::class, 'detachTrainer'])
             ->middleware('not.impersonating')
             ->name('cohorts.trainers.detach');
+
+        // Assigning a coordinator mirrors the trainer assignment above (D-105).
+        Route::post('/cohorts/{cohort}/coordinators', [AdminCohortController::class, 'attachCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.attach');
+        Route::delete('/cohorts/{cohort}/coordinators/{coordinator}', [AdminCohortController::class, 'detachCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.detach');
 
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');

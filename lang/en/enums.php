@@ -12,6 +12,7 @@ return [
     'user_role' => [
         'admin' => 'Administrator',
         'trainer' => 'Trainer',
+        'coordinator' => 'Coordinator',
         'participant' => 'Participant',
     ],
 
@@ -50,6 +51,7 @@ return [
     'enrollment_role' => [
         'participant' => 'Participant',
         'trainer' => 'Trainer',
+        'coordinator' => 'Coordinator',
     ],
 
     'session_type' => [
@@ -64,6 +66,11 @@ return [
         'live' => 'Live now',
         'completed' => 'Finished',
         'cancelled' => 'Cancelled',
+    ],
+
+    'session_delivery_mode' => [
+        'online' => 'Online',
+        'in_person' => 'In person',
     ],
 
     'attendance_status' => [

@@ -13,6 +13,7 @@ return [
     'user_role' => [
         'admin' => 'مدير نظام',
         'trainer' => 'مدرب',
+        'coordinator' => 'منسّق',
         'participant' => 'مشارك',
     ],
 
@@ -51,6 +52,7 @@ return [
     'enrollment_role' => [
         'participant' => 'مشارك',
         'trainer' => 'مدرب',
+        'coordinator' => 'منسّق',
     ],
 
     'session_type' => [
@@ -65,6 +67,11 @@ return [
         'live' => 'جارية الآن',
         'completed' => 'انتهت',
         'cancelled' => 'ملغاة',
+    ],
+
+    'session_delivery_mode' => [
+        'online' => 'افتراضي (عن بُعد)',
+        'in_person' => 'حضوري',
     ],
 
     'attendance_status' => [
