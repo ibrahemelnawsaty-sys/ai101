@@ -206,6 +206,7 @@
                                     <th scope="col">{{ __('attendance.col_check_out') }}</th>
                                     <th scope="col">{{ __('attendance.col_status') }}</th>
                                     <th scope="col">{{ __('attendance.col_note') }}</th>
+                                    <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -217,8 +218,48 @@
                                         <td class="u-num">{{ $record->checkedOutAt ? \App\Support\Dates::time12($record->checkedOutAt) : '—' }}</td>
                                         <td>
                                             <x-ui.pill :variant="$record->statusVariant" :icon="$record->statusIcon">{{ $record->statusLabel }}</x-ui.pill>
+                                            @if ($record->isExcused)
+                                                <x-ui.pill variant="info" icon="check">{{ __('enums.attendance_status.excused') }}</x-ui.pill>
+                                            @endif
                                         </td>
                                         <td>{{ $record->note ?? '—' }}</td>
+                                        <td>
+                                            {{-- D-106: at most one of these three states applies to a row. --}}
+                                            @if ($record->exceptionPending)
+                                                <span class="hint">{{ __('attendance.exception.pending_note') }}</span>
+                                            @elseif ($record->exceptionStatus === 'approved')
+                                                <span class="hint">{{ __('attendance.exception.approved_note') }}</span>
+                                            @elseif ($record->exceptionStatus === 'rejected')
+                                                <span class="hint hint--bad">{{ __('attendance.exception.rejected_note', ['reason' => $record->exceptionRejectedReason]) }}</span>
+                                            @elseif ($record->canRequestAbsenceException || $record->canRequestLatenessException)
+                                                <div x-data="{ open: false }">
+                                                    <x-ui.button variant="secondary" size="sm" type="button" x-on:click="open = ! open">
+                                                        {{ $record->canRequestAbsenceException
+                                                            ? __('attendance.exception.request_absence_action')
+                                                            : __('attendance.exception.request_lateness_action') }}
+                                                    </x-ui.button>
+                                                    <form method="POST" x-show="open" x-cloak
+                                                        action="{{ route('attendance.exceptionRequest', $record->id) }}" class="u-mt-2">
+                                                        @csrf
+                                                        <input type="hidden" name="type" value="{{ $record->exceptionTypeValue }}">
+                                                        <x-ui.textarea name="reason" rows="2" required minlength="10"
+                                                            :label="__('attendance.exception.reason_label')"
+                                                            :placeholder="__('attendance.exception.reason_placeholder')"
+                                                            :hint="__('attendance.exception.reason_hint', ['min' => 10])" />
+                                                        <div class="row__acts u-mt-2">
+                                                            <x-ui.button variant="primary" size="sm" type="submit">
+                                                                {{ __('attendance.exception.submit_action') }}
+                                                            </x-ui.button>
+                                                            <x-ui.button variant="ghost" size="sm" type="button" x-on:click="open = false">
+                                                                {{ __('attendance.exception.cancel_action') }}
+                                                            </x-ui.button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

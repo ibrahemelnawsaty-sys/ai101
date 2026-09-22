@@ -33,7 +33,7 @@ use Illuminate\Support\Str;
  *    read-then-write check would lose the race between two concurrent requests
  *  · ip_address and user_agent are stored for auditing only
  *
- * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-07, BR-10 · PRD §9.9
+ * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-07, BR-10 · D-106 · PRD §9.9
  */
 final class AttendanceRecorder
 {
@@ -109,7 +109,63 @@ final class AttendanceRecorder
                 return $attendance;
             });
         } catch (QueryException $e) {
-            throw $this->duplicateCheckIn($user, $session, $e);
+            throw $this->duplicateCheckIn($user, $session, $e, AuditLogger::ATTENDANCE_CHECK_IN);
+        }
+    }
+
+    /**
+     * D-106 — a self-check-in scan, from the coordinator's QR code. Same
+     * transaction, same duplicate handling, same present/late threshold as
+     * `checkIn()`; the only real difference is which window guards it, since
+     * the self-check-in window ([S, S+60m]) is narrower than the manual one
+     * ([S-60m, E], D-103) and closes for good instead of staying open until E.
+     *
+     * @throws AttendanceException
+     */
+    public function selfCheckIn(
+        User $user,
+        Session $session,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
+    ): Attendance {
+        $at = Clock::now();
+
+        $this->guardSession($user, $session, AuditLogger::ATTENDANCE_SELF_CHECK_IN);
+        $this->guardEnrolment($user, $session, AuditLogger::ATTENDANCE_SELF_CHECK_IN);
+        $this->guardSelfCheckInWindow($user, $session, $at);
+
+        $status = $this->window->classify($session, $at);
+
+        try {
+            return DB::transaction(function () use ($user, $session, $at, $status, $ipAddress, $userAgent): Attendance {
+                $attendance = new Attendance;
+
+                $attendance->setAttribute($attendance->getKeyName(), (string) Str::uuid());
+                $attendance->setAttribute('session_id', $session->getKey());
+                $attendance->setAttribute('user_id', $user->getKey());
+                $attendance->setAttribute('check_in_at', $at);
+                $attendance->setAttribute('check_out_at', null);
+                $attendance->setAttribute('status', $status);
+                $attendance->setAttribute('is_manual', false);
+                $attendance->setAttribute('edited_by', null);
+                $attendance->setAttribute('edit_reason', null);
+                $attendance->setAttribute('ip_address', $this->trim($ipAddress, self::IP_MAX_LENGTH));
+                $attendance->setAttribute('user_agent', $this->trim($userAgent, self::USER_AGENT_MAX_LENGTH));
+
+                $this->audit->log(
+                    action: AuditLogger::ATTENDANCE_SELF_CHECK_IN,
+                    entity: $attendance,
+                    before: null,
+                    after: $this->audit->snapshot($attendance, $this->auditedColumns()),
+                    actor: $user,
+                );
+
+                $attendance->save();
+
+                return $attendance;
+            });
+        } catch (QueryException $e) {
+            throw $this->duplicateCheckIn($user, $session, $e, AuditLogger::ATTENDANCE_SELF_CHECK_IN);
         }
     }
 
@@ -363,10 +419,31 @@ final class AttendanceRecorder
     }
 
     /**
+     * D-106 — the self-check-in counterpart of guardCheckInWindow(), against
+     * the narrower [S, S+60m] window instead of D-103's [S-60m, E].
+     *
+     * @throws AttendanceException
+     */
+    private function guardSelfCheckInWindow(User $user, Session $session, CarbonImmutable $at): void
+    {
+        if ($this->window->canSelfCheckIn($session, $at)) {
+            return;
+        }
+
+        $failure = $at->lessThan($this->window->selfCheckInOpensAt($session))
+            ? AttendanceException::selfCheckInNotOpen()
+            : AttendanceException::selfCheckInClosed();
+
+        $this->audit->reject(AuditLogger::ATTENDANCE_SELF_CHECK_IN, $session, $failure, $user);
+
+        throw $failure;
+    }
+
+    /**
      * BR-06 — the unique index is the authority. Its violation is translated
      * here, after reading which kind of row already occupies the slot.
      */
-    private function duplicateCheckIn(User $user, Session $session, QueryException $e): AttendanceException
+    private function duplicateCheckIn(User $user, Session $session, QueryException $e, string $action): AttendanceException
     {
         if (! $this->isUniqueViolation($e)) {
             throw $e;
@@ -378,7 +455,7 @@ final class AttendanceRecorder
             ? AttendanceException::alreadyCheckedIn($e)
             : AttendanceException::recordAlreadyExists($e);
 
-        $this->audit->reject(AuditLogger::ATTENDANCE_CHECK_IN, $session, $failure, $user);
+        $this->audit->reject($action, $session, $failure, $user);
 
         return $failure;
     }

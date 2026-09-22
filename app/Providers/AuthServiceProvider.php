@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Models\Assignment;
 use App\Models\Attendance;
+use App\Models\AttendanceExceptionRequest;
 use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Models\Cohort;
@@ -25,6 +26,7 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Models\Week;
 use App\Policies\AssignmentPolicy;
+use App\Policies\AttendanceExceptionRequestPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\CertificatePolicy;
@@ -75,6 +77,7 @@ final class AuthServiceProvider extends ServiceProvider
         Week::class => WeekPolicy::class,
         Session::class => SessionPolicy::class,
         Attendance::class => AttendancePolicy::class,
+        AttendanceExceptionRequest::class => AttendanceExceptionRequestPolicy::class,
         Assignment::class => AssignmentPolicy::class,
         Submission::class => SubmissionPolicy::class,
         Evaluation::class => EvaluationPolicy::class,

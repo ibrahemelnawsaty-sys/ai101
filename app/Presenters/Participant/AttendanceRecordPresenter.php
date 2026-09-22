@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Presenters\Participant;
 
+use App\Enums\AttendanceExceptionStatus;
+use App\Enums\AttendanceExceptionType;
 use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
+use App\Models\AttendanceExceptionRequest;
 use App\Models\Session;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
@@ -28,8 +31,19 @@ final class AttendanceRecordPresenter extends ViewModel
             : AttendanceStatus::tryFrom((string) $status);
 
         $session = $attendance->relationLoaded('session') ? $attendance->getRelation('session') : null;
+        $isExcused = $attendance->isExcused();
+
+        /** @var AttendanceExceptionRequest|null $latestRequest */
+        $latestRequest = $attendance->relationLoaded('exceptionRequests')
+            ? $attendance->getRelation('exceptionRequests')->sortByDesc('created_at')->first()
+            : null;
+        $requestStatus = $latestRequest?->getAttribute('status');
+        // A decided request stops offering the button it came from — a fresh
+        // one is only ever for a LATER record, never a reopening of this one.
+        $hasOpenOrDecidedRequest = $latestRequest !== null;
 
         return new self([
+            'id' => (string) $attendance->getKey(),
             'sessionTitle' => $session instanceof Session
                 ? (string) $session->getAttribute('title')
                 : '',
@@ -39,19 +53,36 @@ final class AttendanceRecordPresenter extends ViewModel
             'checkedInAt' => Present::toDateTime($attendance->getAttribute('check_in_at')),
             'checkedOutAt' => Present::toDateTime($attendance->getAttribute('check_out_at')),
             'statusLabel' => $status?->label() ?? '',
-            'statusVariant' => match ($status) {
-                AttendanceStatus::Present => 'success',
-                AttendanceStatus::Excused => 'info',
-                AttendanceStatus::Late, AttendanceStatus::Incomplete => 'warning',
+            'statusVariant' => match (true) {
+                $isExcused => 'info',
+                $status === AttendanceStatus::Present => 'success',
+                $status === AttendanceStatus::Excused => 'info',
+                $status === AttendanceStatus::Late, $status === AttendanceStatus::Incomplete => 'warning',
                 default => 'error',
             },
-            'statusIcon' => match ($status) {
-                AttendanceStatus::Present => 'check',
-                AttendanceStatus::Excused => 'info',
-                AttendanceStatus::Late, AttendanceStatus::Incomplete => 'clock',
+            'statusIcon' => match (true) {
+                $isExcused => 'info',
+                $status === AttendanceStatus::Present => 'check',
+                $status === AttendanceStatus::Excused => 'info',
+                $status === AttendanceStatus::Late, $status === AttendanceStatus::Incomplete => 'clock',
                 default => 'warn',
             },
             'note' => Present::text($attendance->getAttribute('edit_reason')),
+
+            // D-106 — the excuse-request action for this record, if any applies.
+            'isExcused' => $isExcused,
+            'canRequestAbsenceException' => ! $isExcused && ! $hasOpenOrDecidedRequest && $status === AttendanceStatus::Absent,
+            'canRequestLatenessException' => ! $isExcused && ! $hasOpenOrDecidedRequest && $status === AttendanceStatus::Late,
+            'exceptionTypeValue' => match ($status) {
+                AttendanceStatus::Absent => AttendanceExceptionType::Absence->value,
+                AttendanceStatus::Late => AttendanceExceptionType::Lateness->value,
+                default => null,
+            },
+            'exceptionStatus' => $requestStatus?->value,
+            'exceptionPending' => $requestStatus === AttendanceExceptionStatus::Pending,
+            'exceptionRejectedReason' => $requestStatus === AttendanceExceptionStatus::Rejected
+                ? Present::text($latestRequest?->getAttribute('decision_reason'))
+                : null,
         ]);
     }
 }

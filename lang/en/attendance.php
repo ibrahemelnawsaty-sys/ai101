@@ -30,6 +30,9 @@ return [
     'checked_out' => 'You are checked out. Thank you for attending.',
     'manual_saved' => 'The change was saved and written to the audit log.',
     'bulk_saved' => 'The bulk record was saved and its reason written to the audit log.',
+    'exception_requested' => 'Your request was sent. We will reply once it has been reviewed.',
+    'exception_approved' => 'The request was approved, and the attendance record was updated.',
+    'exception_rejected_saved' => 'The rejection was saved with its reason in the audit log, and the participant was notified.',
 
     // Column headings for the exported attendance report
     'export' => [
@@ -73,6 +76,14 @@ return [
         'record_exists' => 'An attendance record already exists in your name for this session. Ask your trainer if it needs correcting.',
         'record_not_found' => 'There is no attendance record in your name for this session.',
         'reason_too_short' => 'Write the reason for the change in at least :min characters. It is stored in the audit log.',
+
+        // D-106 — self-check-in by scanning the session's code
+        'self_check_in_not_open' => 'The session has not started yet. Self-check-in opens as soon as it does.',
+        'self_check_in_closed' => 'The check-in window has closed.',
+        'exception_reason_too_short' => 'Write the reason for the request in at least :min characters. This reason reaches whoever reviews your request.',
+        'exception_type_mismatch' => 'Your attendance status changed since this page opened. Refresh the page and try again.',
+        'exception_already_pending' => 'You already have a request pending for this record. Wait for a decision before submitting another.',
+        'exception_already_decided' => 'This request has already been decided and cannot be changed.',
     ],
 
     'window' => [
@@ -144,5 +155,60 @@ return [
     'no_session_body' => 'The check-in and check-out buttons appear here half an hour before the next session starts.',
     'error_title' => 'Your attendance log could not be shown',
     'error_body' => 'Something went wrong while fetching your log. Try again shortly — your record is safe and unaffected.',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Self-check-in by code — coordinator screen (D-106)
+    |--------------------------------------------------------------------------
+    */
+
+    'checkin_code' => [
+        'title' => 'Self-check-in code',
+        'body' => 'A participant scans this with their phone camera and is checked in immediately. The code refreshes automatically every ten minutes.',
+        'link_label' => 'Or share this link',
+        'closed_title' => 'No code shown right now',
+        'closed_body' => 'The self-check-in code appears as soon as the session starts, and disappears an hour after it does.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Excuse requests — participant screen (D-106)
+    |--------------------------------------------------------------------------
+    */
+
+    'exception' => [
+        'request_absence_action' => 'Request an excused absence',
+        'request_lateness_action' => 'Request excused lateness',
+        'reason_label' => 'Reason for the request',
+        'reason_placeholder' => 'Briefly state the reason for the absence or lateness…',
+        'reason_hint' => 'Write a real reason in at least :min characters; it reaches whoever reviews your request.',
+        'submit_action' => 'Send the request',
+        'cancel_action' => 'Cancel',
+        'pending_note' => 'Your request is under review.',
+        'approved_note' => 'Your excuse for this record was accepted.',
+        'rejected_note' => 'Your excuse was not accepted. Reason: :reason',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pending excuse requests — coordinator, trainer and admin screen (D-106)
+    |--------------------------------------------------------------------------
+    */
+
+    'exceptions_queue' => [
+        'title' => 'Pending excuse requests',
+        'col_participant' => 'Participant',
+        'col_session' => 'Session',
+        'col_type' => 'Type',
+        'col_reason' => 'Reason',
+        'col_requested_at' => 'Requested',
+        'approve_action' => 'Approve',
+        'reject_action' => 'Reject',
+        'reject_reason_label' => 'Reason for rejection',
+        'reject_reason_placeholder' => 'Explain the reason for rejecting, for the participant…',
+        'reject_reason_hint' => 'A rejection reason is required, at least :min characters, and reaches the participant by notice and email.',
+        'empty_title' => 'No excuse requests pending',
+        'empty_body' => 'Excuse requests from any participant in this cohort appear here as soon as they are submitted.',
+    ],
 
 ];

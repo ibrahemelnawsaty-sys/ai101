@@ -82,6 +82,17 @@ return [
         'incomplete' => 'حضور غير مكتمل',
     ],
 
+    'attendance_exception_type' => [
+        'absence' => 'غياب',
+        'lateness' => 'تأخير',
+    ],
+
+    'attendance_exception_status' => [
+        'pending' => 'قيد المراجعة',
+        'approved' => 'مقبول',
+        'rejected' => 'مرفوض',
+    ],
+
     'assignment_status' => [
         'draft' => 'مسودة',
         'published' => 'منشورة',

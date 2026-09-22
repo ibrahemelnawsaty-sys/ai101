@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One attendance record for one account in one session. The pair
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Timestamps are written from App\Services\Time\Clock only (BR-07).
  *
- * @see BR-01 … BR-10, BR-22, BR-23 · PRD §7.4, §9.9 · PROJECT-CONTRACT §4, §6
+ * @see BR-01 … BR-10, BR-22, BR-23 · D-106 · PRD §7.4, §9.9 · PROJECT-CONTRACT §4, §6
  */
 class Attendance extends Model
 {
@@ -45,6 +46,9 @@ class Attendance extends Model
         'edit_reason',
         'ip_address',
         'user_agent',
+        'excused_at',
+        'excuse_reason',
+        'excused_by',
     ];
 
     /**
@@ -57,6 +61,7 @@ class Attendance extends Model
             'check_in_at' => 'datetime',
             'check_out_at' => 'datetime',
             'is_manual' => 'boolean',
+            'excused_at' => 'datetime',
         ];
     }
 
@@ -91,6 +96,28 @@ class Attendance extends Model
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'edited_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function excusedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'excused_by');
+    }
+
+    /**
+     * @return HasMany<AttendanceExceptionRequest, $this>
+     */
+    public function exceptionRequests(): HasMany
+    {
+        return $this->hasMany(AttendanceExceptionRequest::class);
+    }
+
+    /** D-106 — a status the door recorded, forgiven after the fact. */
+    public function isExcused(): bool
+    {
+        return $this->getAttribute('excused_at') !== null;
     }
 
     // ---------------------------------------------------------------- scopes

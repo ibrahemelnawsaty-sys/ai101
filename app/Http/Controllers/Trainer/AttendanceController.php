@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\BulkAttendanceRequest;
 use App\Http\Requests\Trainer\UpdateAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\AttendanceExceptionRequest;
 use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Session;
@@ -22,12 +23,15 @@ use App\Presenters\Trainer\AtRiskPerson;
 use App\Presenters\Trainer\AttendanceEditForm;
 use App\Presenters\Trainer\AttendanceMatrix;
 use App\Presenters\Trainer\AttendanceRoster;
+use App\Presenters\Trainer\CheckinCode;
 use App\Presenters\Trainer\MatrixRow;
+use App\Presenters\Trainer\PendingExceptionRow;
 use App\Presenters\Trainer\RosterEntry;
 use App\Presenters\Trainer\SessionRow;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
+use App\Services\Time\Clock;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -87,6 +91,8 @@ final class AttendanceController extends Controller
                 'statusOptions' => Options::fromEnum(AttendanceStatus::class),
                 'atRisk' => collect(),
                 'editing' => null,
+                'pendingExceptions' => collect(),
+                'checkInCode' => null,
                 'errorState' => null,
                 'screen' => self::SCREEN,
                 'screenState' => ScreenState::EMPTY,
@@ -127,6 +133,8 @@ final class AttendanceController extends Controller
             'statusOptions' => Options::fromEnum(AttendanceStatus::class),
             'atRisk' => $this->atRisk($cohort, $participants, $rates),
             'editing' => $this->editing($request, $session, $records, $participants),
+            'pendingExceptions' => $this->pendingExceptions($cohort),
+            'checkInCode' => $this->checkInCodeFor($session),
             'rosterPollSeconds' => max(0, (int) config('athar.attendance.roster_poll_seconds')),
             'errorState' => null,
             'screen' => self::SCREEN,
@@ -222,6 +230,35 @@ final class AttendanceController extends Controller
     }
 
     /**
+     * D-106 — every request still awaiting a decision, for the cohort
+     * currently scoped. Oldest first, like Admin\RegistrationController's own
+     * queue, so nobody waits behind a request filed after theirs.
+     *
+     * @return Collection<int, PendingExceptionRow>
+     */
+    private function pendingExceptions(Cohort $cohort): Collection
+    {
+        return AttendanceExceptionRequest::query()
+            ->pending()
+            ->forCohort($cohort)
+            ->with(['user.profile', 'attendance.session'])
+            ->orderBy('created_at')
+            ->get()
+            ->map(static fn (AttendanceExceptionRequest $request): PendingExceptionRow => PendingExceptionRow::from($request))
+            ->values();
+    }
+
+    /** D-106 — null whenever there is no selected session or its self-check-in window is closed. */
+    private function checkInCodeFor(?Session $session): ?CheckinCode
+    {
+        if ($session === null || ! $this->window->canSelfCheckIn($session, Clock::now())) {
+            return null;
+        }
+
+        return CheckinCode::for($session);
+    }
+
+    /**
      * The live roster of one session (PRD §9.9.7): the four cells of each row
      * that can change, rendered by the same partials the page uses, and the
      * present count.
@@ -257,6 +294,33 @@ final class AttendanceController extends Controller
             'isLive' => (bool) $roster->get('isLive'),
             'present' => (int) $roster->get('presentCount'),
             'rows' => $rows,
+        ]);
+    }
+
+    /**
+     * D-106 — the self-check-in QR code, re-minted on the ten-minute boundary
+     * (CheckinCode::for()). Polled every minute or so by the coordinator's
+     * screen — far slower than the roster's own poll, since the underlying
+     * signed url is only ever new once every ten minutes regardless of how
+     * often this is asked.
+     */
+    public function checkinCode(Session $session): JsonResponse
+    {
+        $this->authorize('viewAttendance', $session);
+
+        $now = Clock::now();
+
+        if (! $this->window->canSelfCheckIn($session, $now)) {
+            return new JsonResponse(['open' => false]);
+        }
+
+        $code = CheckinCode::for($session);
+
+        return new JsonResponse([
+            'open' => true,
+            'url' => $code->get('url'),
+            'svg' => $code->get('svg'),
+            'bucketEndsAtIso' => $code->get('bucketEndsAtIso'),
         ]);
     }
 

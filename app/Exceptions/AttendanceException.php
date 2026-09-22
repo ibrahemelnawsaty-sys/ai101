@@ -7,7 +7,7 @@ namespace App\Exceptions;
 /**
  * Attendance domain failures.
  *
- * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-10 · PRD §9.9.8
+ * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-10 · D-106 · PRD §9.9.8
  */
 final class AttendanceException extends DomainException
 {
@@ -83,5 +83,46 @@ final class AttendanceException extends DomainException
     public static function recordNotFound(): self
     {
         return new self('attendance.errors.record_not_found', [], 404);
+    }
+
+    /** D-106 — a scan before the session has actually started. */
+    public static function selfCheckInNotOpen(): self
+    {
+        return new self('attendance.errors.self_check_in_not_open', [], 422);
+    }
+
+    /** D-106 — the one-hour self-check-in window has closed for good. */
+    public static function selfCheckInClosed(): self
+    {
+        return new self('attendance.errors.self_check_in_closed', [], 422);
+    }
+
+    /** D-106 — an excuse request needs a written reason, like a manual edit. */
+    public static function exceptionReasonTooShort(int $minimum): self
+    {
+        return new self('attendance.errors.exception_reason_too_short', ['min' => $minimum], 422);
+    }
+
+    /**
+     * D-106 — the type requested (absence/lateness) does not match what this
+     * attendance record's status currently is. The buttons that lead here are
+     * shown or hidden by the same rule server-side, so this is reached only by
+     * a request crafted after the record's status has since changed.
+     */
+    public static function exceptionTypeMismatch(): self
+    {
+        return new self('attendance.errors.exception_type_mismatch', [], 422);
+    }
+
+    /** D-106 — one pending request per attendance record at a time. */
+    public static function exceptionAlreadyPending(): self
+    {
+        return new self('attendance.errors.exception_already_pending', [], 409);
+    }
+
+    /** D-106 — only a request still pending may be approved or rejected. */
+    public static function exceptionAlreadyDecided(): self
+    {
+        return new self('attendance.errors.exception_already_decided', [], 409);
     }
 }

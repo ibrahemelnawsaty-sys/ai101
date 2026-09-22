@@ -57,7 +57,40 @@
                 :description="__('trainer.attendance.no_session_body')"
                 :action-label="__('trainer.sessions.title')" :action-href="route('trainer.sessions')" />
         @else
-            <x-ui.card class="dc--span" flush>
+            {{-- D-106: the self-check-in QR, only while its window is actually
+                 open — the same [S, S+60m] the server itself enforces. The
+                 underlying signed url only ever changes once every ten
+                 minutes (CheckinCode), so polling this every minute is enough
+                 to catch that rotation without competing with the roster's
+                 own much faster poll below. --}}
+            <x-ui.card class="dc--span" icon="video" :title="__('attendance.checkin_code.title')"
+                x-data="atharCheckinCode({
+                        pollUrl: '{{ route('trainer.attendance.checkinCode', $roster->sessionId) }}',
+                        pollSeconds: 60,
+                        initialOpen: @js($checkInCode !== null),
+                        initialUrl: @js($checkInCode?->get('url') ?? ''),
+                        initialSvg: @js($checkInCode?->get('svg') ?? ''),
+                    })">
+                <template x-if="open">
+                    <div>
+                        <p class="u-muted">{{ __('attendance.checkin_code.body') }}</p>
+                        <div class="checkincode">
+                            <div class="checkincode__qr" x-html="svg"></div>
+                            <p>
+                                {{ __('attendance.checkin_code.link_label') }}
+                                <a :href="url" x-text="url" dir="ltr" class="u-num"></a>
+                            </p>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="! open">
+                    <x-ui.empty-state icon="clock" size="sm"
+                        :title="__('attendance.checkin_code.closed_title')"
+                        :description="__('attendance.checkin_code.closed_body')" />
+                </template>
+            </x-ui.card>
+
+            <x-ui.card class="dc--span u-mt-4" flush>
                 {{-- The roster refreshes itself while the session is live (PRD §9.9.7):
                      the server re-renders the four cells that can change, and only
                      those are replaced — never the checkboxes or the reason being
@@ -147,6 +180,66 @@
                 </div>
             </x-ui.card>
         @endif
+
+        {{-- Pending excuse requests (D-106) -------------------------------------- --}}
+        <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('attendance.exceptions_queue.title')" flush>
+            @if ($pendingExceptions->isEmpty())
+                <x-ui.empty-state icon="check" size="sm"
+                    :title="__('attendance.exceptions_queue.empty_title')"
+                    :description="__('attendance.exceptions_queue.empty_body')" />
+            @else
+                <div class="tscroll">
+                    <table class="atable">
+                        <caption class="sr">{{ __('attendance.exceptions_queue.title') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_participant') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_session') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_type') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_reason') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_requested_at') }}</th>
+                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pendingExceptions as $item)
+                                <tr>
+                                    <th scope="row">{{ $item->participantName }}</th>
+                                    <td>{{ $item->sessionTitle }} <span class="u-num u-muted">{{ $item->sessionDate }}</span></td>
+                                    <td><x-ui.pill variant="neutral">{{ $item->typeLabel }}</x-ui.pill></td>
+                                    <td>{{ $item->reason }}</td>
+                                    <td class="u-num u-nowrap">{{ $item->requestedAt }}</td>
+                                    <td>
+                                        <div class="row__acts" x-data="{ rejecting: false }">
+                                            <form method="POST" action="{{ route('trainer.attendance-exceptions.approve', $item->id) }}">
+                                                @csrf
+                                                <x-ui.button variant="primary" size="sm" type="submit">
+                                                    {{ __('attendance.exceptions_queue.approve_action') }}
+                                                </x-ui.button>
+                                            </form>
+                                            <x-ui.button variant="danger" size="sm" type="button" x-on:click="rejecting = ! rejecting">
+                                                {{ __('attendance.exceptions_queue.reject_action') }}
+                                            </x-ui.button>
+                                            <form method="POST" x-show="rejecting" x-cloak
+                                                action="{{ route('trainer.attendance-exceptions.reject', $item->id) }}" class="u-mt-2">
+                                                @csrf
+                                                <x-ui.textarea name="decision_reason" rows="2" required minlength="10"
+                                                    :label="__('attendance.exceptions_queue.reject_reason_label')"
+                                                    :placeholder="__('attendance.exceptions_queue.reject_reason_placeholder')"
+                                                    :hint="__('attendance.exceptions_queue.reject_reason_hint', ['min' => 10])" />
+                                                <x-ui.button variant="danger" size="sm" type="submit" class="u-mt-2">
+                                                    {{ __('attendance.exceptions_queue.reject_action') }}
+                                                </x-ui.button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-ui.card>
 
         {{-- Single manual edit ------------------------------------------------- --}}
         @if ($editing)

@@ -68,6 +68,7 @@ use App\Http\Controllers\Public\ProgramDirectoryController;
 use App\Http\Controllers\Public\WaitlistController;
 use App\Http\Controllers\Trainer\AssignmentController as TrainerAssignmentController;
 use App\Http\Controllers\Trainer\AttendanceController as TrainerAttendanceController;
+use App\Http\Controllers\Trainer\AttendanceExceptionController as TrainerAttendanceExceptionController;
 use App\Http\Controllers\Trainer\FinalProjectController as TrainerFinalProjectController;
 use App\Http\Controllers\Trainer\ParticipantController as TrainerParticipantController;
 use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
@@ -259,6 +260,21 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
     Route::post('/attendance/{session}/check-out', [AttendanceController::class, 'checkOut'])
         ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
         ->name('attendance.checkOut');
+
+    /*
+     * Self-check-in by QR code (D-106). `signed` is the only proof this link
+     * is genuine and unexpired — CheckinCode mints it, nothing else does — so
+     * it carries the same role/throttle guards as the two writes above, plus
+     * `signed` in front of them.
+     */
+    Route::get('/attendance/{session}/self-check-in', [AttendanceController::class, 'selfCheckIn'])
+        ->middleware(['signed', 'role:participant', 'not.impersonating', 'throttle:attendance'])
+        ->name('attendance.selfCheckIn');
+
+    /* D-106 — asking to be excused for an absence or an unexcused lateness. */
+    Route::post('/attendance/{attendance}/exception-request', [AttendanceController::class, 'requestException'])
+        ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
+        ->name('attendance.exceptionRequest');
 
     /*
      * Live sessions. `join` is a POST because it hands over a meeting URL after
@@ -463,6 +479,23 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
         Route::post('/attendance/{session}/bulk', [TrainerAttendanceController::class, 'bulk'])
             ->middleware('not.impersonating')
             ->name('attendance.bulk');
+
+        // D-106 — the self-check-in QR, re-minted on a ten-minute boundary
+        // (CheckinCode). Polled far more slowly than the roster above, since
+        // the underlying signed url is only ever new once every ten minutes.
+        Route::get('/attendance/{session}/checkin-code', [TrainerAttendanceController::class, 'checkinCode'])
+            ->middleware('throttle:12,1')
+            ->name('attendance.checkinCode');
+
+        // D-106 — deciding a participant's excuse request. The pending queue
+        // itself is a section of the attendance screen above, not a route of
+        // its own.
+        Route::post('/attendance-exceptions/{exceptionRequest}/approve', [TrainerAttendanceExceptionController::class, 'approve'])
+            ->middleware('not.impersonating')
+            ->name('attendance-exceptions.approve');
+        Route::post('/attendance-exceptions/{exceptionRequest}/reject', [TrainerAttendanceExceptionController::class, 'reject'])
+            ->middleware('not.impersonating')
+            ->name('attendance-exceptions.reject');
     });
 
 /*

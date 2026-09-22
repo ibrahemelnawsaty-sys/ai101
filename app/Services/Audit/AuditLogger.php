@@ -40,6 +40,14 @@ final class AuditLogger
 
     public const ATTENDANCE_RATE_RECOMPUTED = 'attendance.rate_recomputed';
 
+    public const ATTENDANCE_SELF_CHECK_IN = 'attendance.self_check_in';
+
+    public const ATTENDANCE_EXCEPTION_REQUESTED = 'attendance.exception_requested';
+
+    public const ATTENDANCE_EXCEPTION_APPROVED = 'attendance.exception_approved';
+
+    public const ATTENDANCE_EXCEPTION_REJECTED = 'attendance.exception_rejected';
+
     public const EVALUATION_RECORDED = 'evaluation.recorded';
 
     public const EVALUATION_REVISED = 'evaluation.revised';

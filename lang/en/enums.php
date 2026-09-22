@@ -81,6 +81,17 @@ return [
         'incomplete' => 'Incomplete attendance',
     ],
 
+    'attendance_exception_type' => [
+        'absence' => 'Absence',
+        'lateness' => 'Lateness',
+    ],
+
+    'attendance_exception_status' => [
+        'pending' => 'Pending review',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+    ],
+
     'assignment_status' => [
         'draft' => 'Draft',
         'published' => 'Published',

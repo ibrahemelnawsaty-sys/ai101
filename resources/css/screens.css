@@ -266,6 +266,11 @@ min-block-size: var(--s15);
 .checkin[data-state="done"] { background: var(--ok); }
 .checkin svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
 
+/* D-106 — the self-check-in QR on the coordinator's attendance screen. */
+.checkincode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s5); margin-block-start: var(--s4); }
+.checkincode__qr { inline-size: var(--d-2); block-size: var(--d-2); flex: none; }
+.checkincode__qr svg { inline-size: 100%; block-size: 100%; }
+
 /* The tick draws itself once, then stays. */
 .ck-path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: ckDraw 480ms var(--e-out) forwards; }
 @keyframes ckDraw { to { stroke-dashoffset: 0; } }
