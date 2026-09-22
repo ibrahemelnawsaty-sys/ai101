@@ -1126,19 +1126,37 @@ block-size: var(--s1);
    15 · AUTHENTICATION SHELL
    ========================================================================== */
 
-.page--auth,
 .page--bare { background: var(--surface-page); color: var(--text-body); }
+/* A soft brand-tinted glow behind the card instead of a flat fill — the same
+   violet wash the public shell already uses, just faint enough for a light
+   surface (Article 14: no colour here that tokens.css does not already name). */
+.page--auth {
+  background:
+    radial-gradient(ellipse var(--d-12) var(--d-9) at 50% 0%, var(--violet-a08), transparent 65%),
+    var(--surface-page);
+  color: var(--text-body);
+}
 
 .authshell { min-block-size: 100vh; display: flex; flex-direction: column; }
+/* A quiet strip of floating text used to open every authentication screen —
+   nothing marked where the page ended and the browser chrome began. A sticky,
+   bordered bar matches the one the dashboard's .appbar already uses, so the
+   sign-in flow and the product it leads to read as the same piece of work. */
 .authshell__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s4);
-  padding: var(--s5) var(--gutter);
-  max-inline-size: var(--maxw);
+  padding-block: var(--s4);
+  /* Full-bleed bar, centred content: the same maxw column the card and the
+     footer use below, without a second wrapper element just to centre it. */
+  padding-inline: max(var(--gutter), calc((100% - var(--maxw)) / 2));
   inline-size: 100%;
-  margin-inline: auto;
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  background: var(--surface-1);
+border-block-end: var(--bw-hairline) solid var(--border-1);
 }
 .authshell__back {
   display: inline-flex;
@@ -1150,9 +1168,9 @@ block-size: var(--s1);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   color: var(--text-muted);
-  transition: color var(--t-fast);
+  transition: color var(--t-fast), background var(--t-fast);
 }
-.authshell__back:hover { color: var(--text-strong); }
+.authshell__back:hover { color: var(--text-strong); background: var(--surface-2); }
 .authshell__back svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); }
 .authshell__main {
   flex: 1;
@@ -1176,9 +1194,16 @@ block-size: var(--s1);
 border-block-start: var(--bw-hairline) solid var(--border-1);
 }
 .authshell__tag { color: var(--text-accent-2); font-weight: var(--fw-semi); }
-.authshell__links { display: flex; flex-wrap: wrap; gap: var(--s4); }
-.authshell__links a { min-block-size: var(--touch); display: inline-flex; align-items: center; transition: color var(--t-fast); }
-.authshell__links a:hover { color: var(--text-accent-2); }
+.authshell__links { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.authshell__links a {
+  min-block-size: var(--touch);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--s2);
+  border-radius: var(--r-sm);
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.authshell__links a:hover { color: var(--text-accent-2); background: var(--surface-2); }
 
 /* ==========================================================================
    16 · PUBLIC VERIFICATION SHELL (digital card · certificate)
