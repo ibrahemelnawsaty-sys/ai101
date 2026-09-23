@@ -477,4 +477,29 @@ return [
         'error_body' => 'Something went wrong while fetching the data. Try again shortly.',
     ],
 
+    'final_project' => [
+        'title' => 'Final project',
+        'intro' => 'Pick a cohort to set the final project\'s title, brief, requirements, score ceiling and deadline, and to open it for that cohort\'s trainees. The trainer only reads this and grades hand-ins — nothing here is theirs to change.',
+        'no_cohort_title' => 'No cohorts yet',
+        'no_cohort_body' => 'Create a cohort first from the cohorts screen, then come back to set up its final project.',
+        'no_cohort_action' => 'Go to cohorts',
+        'pick_cohort_title' => 'Pick a cohort',
+        'pick_cohort_body' => 'Choose a cohort above to view or create its final project settings.',
+        'fields' => [
+            'cohort' => 'Cohort',
+            'title' => 'Project title',
+            'brief' => 'Project brief',
+            'requirements' => 'Requirements (one per line)',
+            'due_at' => 'Submission deadline',
+            'max_score' => 'Score ceiling',
+            'allow_late' => 'Allow submission after the deadline (marked late)',
+            'is_unlocked' => 'Open the project for this cohort\'s trainees now',
+        ],
+        'allow_late_hint' => 'Off, any submission after the deadline is refused with a clear message and never recorded.',
+        'is_unlocked_hint' => 'A notice and an e-mail reach every trainee the first time it opens — saving again later sends nothing further.',
+        'unlocked_note' => ':name opened it on :date',
+        'save' => 'Save settings',
+        'saved' => 'The final project settings were saved.',
+    ],
+
 ];

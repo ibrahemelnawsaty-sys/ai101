@@ -38,7 +38,10 @@ class ProjectSubmission extends Model
         'final_project_id',
         'user_id',
         'files',
+        'live_url',
         'github_url',
+        'presentation_file',
+        'logo_file',
         'description',
         'submitted_at',
         'is_late',
@@ -52,6 +55,11 @@ class ProjectSubmission extends Model
     {
         return [
             'files' => 'array',
+            // D-110's two named deliverables: single-file descriptors, the
+            // same shape PrivateFileService::store() returns for one entry of
+            // `files`, never a list of one (they are not a repeatable field).
+            'presentation_file' => 'array',
+            'logo_file' => 'array',
             'is_late' => 'boolean',
             'version' => 'integer',
             'submitted_at' => 'datetime',

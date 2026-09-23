@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Presenters\Concerns\PresentsVariants;
 use App\Presenters\Shared\FileLink;
-use App\Support\SignedFiles;
 use App\Support\ViewModel;
 
 /**
@@ -50,11 +49,10 @@ final class ProjectSubmissionRow extends ViewModel
             'email' => self::personEmail($user),
 
             'hasSubmission' => true,
-            'files' => FileLink::collection(
-                $submission->getAttribute('files'),
-                SignedFiles::for('files.projectSubmission', 'projectSubmission', $submission),
-            ),
+            'liveUrl' => self::stringOrNull($submission->getAttribute('live_url')),
             'githubUrl' => self::stringOrNull($submission->getAttribute('github_url')),
+            'presentationFile' => self::singleFile($submission->getAttribute('presentation_file')),
+            'logoFile' => self::singleFile($submission->getAttribute('logo_file')),
             // `project_submissions` names this column `description`, not
             // `note` as `submissions` does (PROJECT-CONTRACT §4).
             'note' => self::stringOrNull($submission->getAttribute('description')),
@@ -78,5 +76,15 @@ final class ProjectSubmissionRow extends ViewModel
     private static function stringOrNull(mixed $value): ?string
     {
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    /**
+     * D-110's two named deliverables are one descriptor each, never a list —
+     * `downloadUrl` stays null for the same reason as the rest of this
+     * screen: no signed download route for a submitted file exists yet.
+     */
+    private static function singleFile(mixed $stored): ?FileLink
+    {
+        return is_array($stored) && $stored !== [] ? FileLink::fromStored($stored) : null;
     }
 }

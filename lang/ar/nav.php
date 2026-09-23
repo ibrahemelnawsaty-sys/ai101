@@ -70,6 +70,7 @@ return [
         'registrations' => 'طلبات التسجيل',
         'certificates' => 'الشهادات',
         'broadcasts' => 'مراسلة المتدربين',
+        'final_project' => 'المشروع الختامي',
         'reports' => 'التقارير',
         'audit' => 'سجل التدقيق',
         'settings' => 'إعدادات المنصة',

@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 use App\Models\Assignment;
 use App\Models\AuditLog;
+use App\Models\Cohort;
 use App\Models\Notification;
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
@@ -37,6 +38,7 @@ beforeEach(function (): void {
 
     $this->cohort = makeCohort();
     $this->trainer = makeTrainer($this->cohort);
+    $this->admin = makeAdmin();
     $this->participant = makeParticipant($this->cohort);
 
     $this->project = makeFinalProject($this->cohort, [
@@ -45,6 +47,24 @@ beforeEach(function (): void {
         'requirements' => PROJECT_REQUIREMENTS_CANARY,
     ]);
 });
+
+/**
+ * The admin settings form's full payload, with `$overrides` replacing
+ * whichever fields a test cares about — every field is required by
+ * Admin\StoreFinalProjectRequest, so a partial post fails validation for
+ * reasons unrelated to the policy this file is testing.
+ */
+function finalProjectSettingsPayload(Cohort $cohort, array $overrides = []): array
+{
+    return array_merge([
+        'cohort_id' => $cohort->id,
+        'title' => 'Final project',
+        'brief' => PROJECT_BRIEF_CANARY,
+        'due_at' => '2026-11-05T23:59',
+        'max_score' => 100,
+        'is_unlocked' => '1',
+    ], $overrides);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -89,19 +109,22 @@ it('BR-16: لوحة التحكم كاملة لا تسرب دليل المشرو�
     }
 });
 
-it('BR-15: المدرب يفعّل التبويب فيصل المحتوى ويُسجَّل التفعيل في سجل التدقيق', function (): void {
-    assertAccepted($this->actingAs($this->trainer)->put(route('trainer.finalProject.unlock', $this->project)));
+it('D-109: المشرف العام يفعّل التبويب فيصل المحتوى ويُسجَّل التفعيل في سجل التدقيق', function (): void {
+    assertAccepted($this->actingAs($this->admin)->post(
+        route('admin.finalProject.store'),
+        finalProjectSettingsPayload($this->cohort),
+    ));
 
     $fresh = $this->project->fresh();
 
     expect($fresh->is_unlocked)->toBeTrue()
-        ->and($fresh->unlocked_by)->toBe($this->trainer->id)
+        ->and($fresh->unlocked_by)->toBe($this->admin->id)
         ->and($fresh->unlocked_at)->not->toBeNull();
 
     expect(AuditLog::query()
         ->where('entity_type', 'final_project')
         ->where('entity_id', $this->project->id)
-        ->where('actor_id', $this->trainer->id)
+        ->where('actor_id', $this->admin->id)
         ->count())->toBe(1);
 
     $this->actingAs($this->participant)
@@ -110,19 +133,21 @@ it('BR-15: المدرب يفعّل التبويب فيصل المحتوى ويُ
         ->assertSee(PROJECT_BRIEF_CANARY, escape: false);
 });
 
-it('BR-15: المتدرب لا يستطيع تفعيل تبويب المشروع بنفسه', function (): void {
-    $this->actingAs($this->participant)
-        ->put(route('trainer.finalProject.unlock', $this->project))
-        ->assertForbidden();
+it('D-109: لا المتدرب ولا المدرب يستطيعان تفعيل تبويب المشروع — المشرف العام حصرًا', function (): void {
+    foreach (['participant', 'trainer'] as $role) {
+        $this->actingAs($this->$role)
+            ->post(route('admin.finalProject.store'), finalProjectSettingsPayload($this->cohort))
+            ->assertForbidden();
+    }
 
     expect($this->project->fresh()->is_unlocked)->toBeFalse();
 });
 
-it('BR-15: التفعيل يُشعر كل متدربي الدفعة', function (): void {
+it('D-109: التفعيل يُشعر كل متدربي الدفعة', function (): void {
     $second = makeParticipant($this->cohort);
     Notification::query()->delete();
 
-    $this->actingAs($this->trainer)->put(route('trainer.finalProject.unlock', $this->project));
+    $this->actingAs($this->admin)->post(route('admin.finalProject.store'), finalProjectSettingsPayload($this->cohort));
 
     foreach ([$this->participant, $second] as $trainee) {
         expect(Notification::query()->where('user_id', $trainee->id)->count())->toBeGreaterThan(0);

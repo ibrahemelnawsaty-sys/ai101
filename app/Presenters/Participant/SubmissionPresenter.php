@@ -39,7 +39,17 @@ final class SubmissionPresenter extends ViewModel
         return new self(self::shared($submission, $evaluation, $maxScore) + [
             'note' => null,
             'description' => Present::text($submission->getAttribute('description')),
+            // D-110's three named deliverables, each a single descriptor —
+            // `files` from shared() stays present but empty going forward.
+            'liveUrl' => Present::text($submission->getAttribute('live_url')),
+            'presentationFile' => self::singleFile($submission->getAttribute('presentation_file')),
+            'logoFile' => self::singleFile($submission->getAttribute('logo_file')),
         ]);
+    }
+
+    private static function singleFile(mixed $stored): ?FilePresenter
+    {
+        return is_array($stored) && $stored !== [] ? FilePresenter::fromStored($stored) : null;
     }
 
     /**

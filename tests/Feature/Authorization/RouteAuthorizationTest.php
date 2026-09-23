@@ -173,9 +173,10 @@ function authorizationMatrix(object $test): array
         'trainer.submissions.remind' => ['post', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
         'trainer.submissions.bulkDownload' => ['get', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
 
+        // D-109, D-110 moved unlocking (and every other setting) to
+        // admin.finalProject.* below; this screen only reads the brief and
+        // grades — trainer only, same as the PRD §4.2 row already read.
         'trainer.finalProject' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.finalProject.unlock' => ['put', $cohort + ['project' => $test->finalProject->id], ['trainer', 'admin']],
-        // Same PRD §4.2 row: unlocking the project is an admin's to do, marking it is not.
         'trainer.finalProject.grade' => ['post', $cohort + ['submission' => $test->projectSubmission->id], ['trainer']],
 
         'trainer.resources' => ['get', $cohort, ['trainer', 'admin']],
@@ -192,6 +193,10 @@ function authorizationMatrix(object $test): array
         'admin.broadcasts.index' => ['get', [], ['admin']],
         'admin.broadcasts.store' => ['post', [], ['admin']],
         'admin.broadcasts.remind' => ['post', [], ['admin']],
+
+        // D-109, D-110 — the final project's settings and its open switch.
+        'admin.finalProject.index' => ['get', [], ['admin']],
+        'admin.finalProject.store' => ['post', [], ['admin']],
         'admin.audit.export' => ['get', [], ['admin']],
 
         'admin.programs.index' => ['get', [], ['admin']],

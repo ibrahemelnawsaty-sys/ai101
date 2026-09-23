@@ -61,6 +61,7 @@ return [
         'registrations' => 'Registrations',
         'certificates' => 'Certificates',
         'broadcasts' => 'Message trainees',
+        'final_project' => 'Final project',
         'reports' => 'Reports',
         'audit' => 'Audit log',
         'settings' => 'Platform settings',

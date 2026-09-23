@@ -132,16 +132,36 @@
                     <b>{{ __('assignments.current_submission', ['version' => $submission->version]) }}</b>
                     <span class="u-num">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
                 </div>
-                <ul class="filelist">
-                    @foreach ($submission->files as $file)
-                        <li>
-                            <a href="{{ $file->downloadUrl }}">
-                                <x-ui.icon name="file" />{{ $file->name }}
-                                <small class="u-num">{{ $file->sizeLabel }}</small>
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
+                <dl class="deflist">
+                    <div>
+                        <dt>{{ __('project.live_url') }}</dt>
+                        <dd><a href="{{ $submission->liveUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $submission->liveUrl }}</a></dd>
+                    </div>
+                    <div>
+                        <dt>{{ __('project.github_url') }}</dt>
+                        <dd><a href="{{ $submission->githubUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $submission->githubUrl }}</a></dd>
+                    </div>
+                    <div>
+                        <dt>{{ __('project.presentation_file') }}</dt>
+                        <dd>
+                            @if ($submission->presentationFile)
+                                <span dir="ltr">{{ $submission->presentationFile->name }}</span>
+                                <small class="u-num">{{ $submission->presentationFile->sizeLabel }}</small>
+                            @else
+                                <span class="u-muted">{{ __('app.none') }}</span>
+                            @endif
+                        </dd>
+                    </div>
+                    @if ($submission->logoFile)
+                        <div>
+                            <dt>{{ __('project.logo_file') }}</dt>
+                            <dd>
+                                <span dir="ltr">{{ $submission->logoFile->name }}</span>
+                                <small class="u-num">{{ $submission->logoFile->sizeLabel }}</small>
+                            </dd>
+                        </div>
+                    @endif
+                </dl>
             @endif
 
             @if (! $canSubmit)
@@ -160,31 +180,45 @@
                     enctype="multipart/form-data">
                     @csrf
 
+                    <p class="form__note">{{ __('project.submission_intro') }}</p>
+
+                    <x-ui.input name="live_url" type="url" dir="ltr" required
+                        :label="__('project.live_url')"
+                        :hint="__('project.live_url_hint')"
+                        :value="old('live_url', $submission?->liveUrl)"
+                        placeholder="https://" />
+
+                    <x-ui.input name="github_url" type="url" dir="ltr" required
+                        :label="__('project.github_url')"
+                        :hint="__('project.github_url_hint')"
+                        :value="old('github_url', $submission?->githubUrl)"
+                        placeholder="https://github.com/" />
+
                     <div class="drop">
                         <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                        <b>{{ __('assignments.choose_files') }}</b>
-                        <span>
-                            {{ __('assignments.accepted_types') }}
-                            · {{ __('assignments.size_limit', ['size' => $project->maxFileSizeLabel]) }}
-                            · {{ trans_choice('assignments.file_limit', $project->maxFiles, ['count' => $project->maxFiles]) }}
-                        </span>
+                        <b>{{ __('project.presentation_file') }}</b>
+                        <span>{{ __('project.presentation_file_hint') }}</span>
 
-                        <input type="file" name="files[]" multiple id="project-files">
-                        <label class="sr" for="project-files">{{ __('assignments.choose_files') }}</label>
+                        <input type="file" name="presentation_file" required id="project-presentation">
+                        <label class="sr" for="project-presentation">{{ __('project.presentation_file') }}</label>
 
-                        @error('files')
-                            <p class="hint hint--error" role="alert">{{ $message }}</p>
-                        @enderror
-                        @error('files.*')
+                        @error('presentation_file')
                             <p class="hint hint--error" role="alert">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <x-ui.input name="github_url" type="url" dir="ltr"
-                        :label="__('assignments.github_url')"
-                        :hint="__('assignments.github_hint')"
-                        :value="old('github_url', $submission?->githubUrl)"
-                        placeholder="https://github.com/" />
+                    <div class="drop">
+                        <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
+                        <b>{{ __('project.logo_file') }}</b>
+                        <span>{{ __('project.logo_file_hint') }}</span>
+
+                        <input type="file" name="logo_file" id="project-logo">
+                        <label class="sr" for="project-logo">{{ __('project.logo_file') }}</label>
+
+                        @error('logo_file')
+                            <p class="hint hint--error" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <x-ui.textarea name="description" rows="4"
                         :label="__('project.description_field')"
@@ -192,10 +226,6 @@
                         :placeholder="__('project.description_placeholder')" />
 
                     <div class="row__acts">
-                        {{-- No Alpine bindings: they named `ready` and `uploading`
-                             from the retired uploader component, which nothing
-                             defines any more, and threw on every render (D-86).
-                             The assignment form lost the same two in D-51. --}}
                         <x-ui.button variant="primary" type="submit">{{ __('project.submit_action') }}</x-ui.button>
                     </div>
 

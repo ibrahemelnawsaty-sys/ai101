@@ -181,15 +181,12 @@ it('المدرب لا يرى تقرير حضور دفعة أخرى', function ()
     );
 });
 
-it('المدرب لا يفعّل مشروع دفعة أخرى', function (): void {
-    $foreignProject = makeFinalProject($this->foreignCohort);
-
-    $this->actingAs($this->trainer)
-        ->put(route('trainer.finalProject.unlock', $foreignProject))
-        ->assertForbidden();
-
-    expect($foreignProject->fresh()->is_unlocked)->toBeFalse();
-});
+// D-109: opening a final project is an admin/coordinator-only settings save
+// now (admin.finalProject.store), not a trainer action at all — the
+// cross-tenant guard this test checked no longer applies to a capability the
+// trainer does not have in the first place. Coverage moved to
+// AssignmentAndProjectRulesTest.php's D-109 tests, which assert 403 for
+// both the trainer and the participant regardless of cohort.
 
 it('معرّف غير موجود لا يكشف وجود الموارد من عدمه', function (): void {
     $missingId = '00000000-0000-4000-8000-000000000000';

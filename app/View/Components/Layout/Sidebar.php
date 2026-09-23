@@ -172,6 +172,10 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.broadcasts.index', 'icon' => 'i-mail', 'label' => __('nav.admin.broadcasts')],
             ]],
             ['label' => __('nav.groups.work'), 'items' => [
+                // D-109, D-110 — the brief, the deadline, the ceiling, the
+                // late policy and opening the tab, entirely separate from the
+                // trainer's own read-and-grade screen.
+                ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
                 ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],

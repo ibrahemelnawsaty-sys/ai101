@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
+use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -423,10 +424,9 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->withTrashed()
             ->name('resources.archive');
 
+        // D-110 — opening it and every setting of it moved to
+        // admin.finalProject.*; this screen only reads the brief and grades.
         Route::get('/final-project', [TrainerFinalProjectController::class, 'index'])->name('finalProject');
-        Route::put('/final-project/{project}/unlock', [TrainerFinalProjectController::class, 'unlock'])
-            ->middleware('not.impersonating')
-            ->name('finalProject.unlock');
         Route::post('/final-project/{submission}/grade', [TrainerFinalProjectController::class, 'grade'])
             ->middleware('not.impersonating')
             ->name('finalProject.grade');
@@ -702,6 +702,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/broadcasts/reminders', [AdminBroadcastController::class, 'remind'])
             ->middleware('not.impersonating')
             ->name('broadcasts.remind');
+
+        /*
+         * The final project's brief, deadline, ceiling, late policy and open
+         * switch — an administrator affair only (D-109, D-110). A trainer's
+         * own screen (trainer.finalProject) keeps reading the brief and
+         * grading; it has no route here and never had one.
+         */
+        Route::get('/final-project', [AdminFinalProjectController::class, 'index'])->name('finalProject.index');
+        Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.store');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/export', [AuditController::class, 'export'])->name('audit.export');

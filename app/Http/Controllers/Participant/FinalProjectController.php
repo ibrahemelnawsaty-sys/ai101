@@ -79,9 +79,13 @@ final class FinalProjectController extends Controller
             ->orderByDesc('version')
             ->first();
 
-        $dueAt = $project->getAttribute('due_at');
-        $isLate = $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt));
-        $canSubmit = $user->can('submit', $project) && ! $isLate;
+        $isPastDue = $project->isPastDueAt($now);
+        $allowsLate = (bool) $project->getAttribute('allow_late');
+        // D-110's own switch: past the deadline blocks submission only when
+        // the project forbids late hand-ins; when it allows them the form
+        // stays open and the record is simply marked late (mirrors
+        // Assignment::scopeOpenFor()'s exact rule).
+        $canSubmit = $user->can('submit', $project) && (! $isPastDue || $allowsLate);
 
         $evaluation = $submission?->latestEvaluation;
 
@@ -102,7 +106,7 @@ final class FinalProjectController extends Controller
             // A closed submission area always says why (PRD §9.9.4's rule).
             'closedReason' => $canSubmit
                 ? null
-                : (string) __($isLate ? 'project.closed_deadline' : 'project.closed_locked'),
+                : (string) __($isPastDue ? 'project.closed_deadline' : 'project.closed_locked'),
             'expectedOpeningLabel' => null,
             'serverNow' => $now,
             'errorState' => null,
@@ -122,7 +126,7 @@ final class FinalProjectController extends Controller
         $project = $cohort?->finalProject()->first();
 
         if (! $project instanceof FinalProject) {
-            return back()->withErrors(['files' => __('project.errors.not_available')]);
+            return back()->withErrors(['live_url' => __('project.errors.not_available')]);
         }
 
         $this->authorize('submit', $project);
@@ -130,39 +134,44 @@ final class FinalProjectController extends Controller
         $now = Clock::now();
         $dueAt = $project->getAttribute('due_at');
 
+        // D-110's late-submission switch: past the deadline is refused
+        // outright when the project forbids it, exactly like an assignment
+        // that does not allow_late (BR-18's own rule, mirrored).
+        if ($project->isPastDueAt($now) && ! (bool) $project->getAttribute('allow_late')) {
+            return back()->withErrors(['live_url' => __('project.closed_deadline')]);
+        }
+
         $previous = (int) ProjectSubmission::query()
             ->where('final_project_id', $project->getKey())
             ->where('user_id', $user->getKey())
             ->max('version');
 
-        // Same defect as the assignment screen, same fix (D-56): this wrote
-        // `'files' => []` under a comment claiming the storage service "is not
-        // part of this slice", while PrivateFileService sat complete with no
-        // callers. Half the marks in the programme live in this project, and
-        // every file attached to it was accepted and thrown away.
-        //
-        // Storing and recording in one transaction: neither a submission that
-        // claims files it does not have, nor a file with no row pointing at it.
+        // D-110's three named deliverables plus the optional logo: each is
+        // its own single-file descriptor, stored and recorded in the same
+        // transaction so neither a submission that claims a file it does not
+        // have, nor a file with no row pointing at it, can exist.
         try {
             DB::transaction(function () use ($request, $project, $user, $now, $dueAt, $previous): void {
-                $descriptors = [];
+                $presentation = $this->files->store(
+                    $request->file('presentation_file'),
+                    'final-projects/'.$project->getKey(),
+                    $user,
+                );
 
-                $files = $request->file('files');
-                $files = $files === null ? [] : (is_array($files) ? $files : [$files]);
-
-                foreach ($files as $file) {
-                    $descriptors[] = $this->files->store(
-                        $file,
-                        'final-projects/'.$project->getKey(),
-                        $user,
-                    );
-                }
+                $logoFile = $request->file('logo_file');
+                $logo = $logoFile === null ? null : $this->files->store(
+                    $logoFile,
+                    'final-projects/'.$project->getKey(),
+                    $user,
+                );
 
                 ProjectSubmission::query()->create([
                     'final_project_id' => $project->getKey(),
                     'user_id' => $user->getKey(),
-                    'files' => $descriptors,
+                    'live_url' => $request->validated('live_url'),
                     'github_url' => $request->validated('github_url'),
+                    'presentation_file' => $presentation,
+                    'logo_file' => $logo,
                     'description' => $request->validated('description'),
                     'submitted_at' => $now,
                     'is_late' => $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt)),

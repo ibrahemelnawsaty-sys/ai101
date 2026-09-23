@@ -39,6 +39,7 @@ final class FinalProjectFactory extends Factory
             'unlocked_at' => null,
             'unlocked_by' => null,
             'due_at' => Clock::now()->addDays(14),
+            'allow_late' => false,
             'max_score' => 50,
             'attachments' => [],
         ];
@@ -49,8 +50,14 @@ final class FinalProjectFactory extends Factory
         return $this->state(fn (array $attributes): array => [
             'is_unlocked' => true,
             'unlocked_at' => Clock::now(),
-            'unlocked_by' => $by?->getKey() ?? User::factory()->trainer(),
+            'unlocked_by' => $by?->getKey() ?? User::factory()->admin(),
         ]);
+    }
+
+    /** D-110's own switch: past the deadline is still accepted, marked late. */
+    public function allowingLate(): self
+    {
+        return $this->state(fn (array $attributes): array => ['allow_late' => true]);
     }
 
     public function dueInThePast(int $daysAgo = 2): self
