@@ -54,5 +54,11 @@
              card, its empty state and the invitation form showed an empty box in
              the dashboard (D-86). The same drawing as partials/icon-sprite. --}}
         <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2.6 7.2l8.35 5.7a1.8 1.8 0 002.1 0l8.35-5.7"/></symbol>
+        {{-- Session platform marks (D-109): a generic silhouette per video
+             service, not a reproduction of its trademark, so each stays a
+             single flat colour like every other icon here (Article 6). --}}
+        <symbol id="i-zoom" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M18 9.6l4-2.4a1 1 0 011.5.86v7.9a1 1 0 01-1.5.85l-4-2.4z"/></symbol>
+        <symbol id="i-meet" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></symbol>
+        <symbol id="i-teams" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="9" r="5"/><circle cx="16" cy="13" r="4" opacity=".6"/></symbol>
     </defs>
 </svg>

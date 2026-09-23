@@ -73,6 +73,12 @@ return [
         'in_person' => 'In person',
     ],
 
+    'session_platform' => [
+        'zoom' => 'Zoom',
+        'google_meet' => 'Google Meet',
+        'teams' => 'Microsoft Teams',
+    ],
+
     'attendance_status' => [
         'present' => 'Present',
         'late' => 'Late',

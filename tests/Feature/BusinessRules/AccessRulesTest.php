@@ -196,7 +196,7 @@ it('BR-23: تقرير حضور الدفعة لا يحمل متدربًا من د
 
 it('BR-24: رابط الزوم لا يظهر في شيفرة الصفحة قبل الجلسة بخمس عشرة دقيقة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
-    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
+    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['meeting_url' => ZOOM_CANARY]);
 
     freezeAt($start->subMinutes(15)->subSecond());
 
@@ -210,7 +210,7 @@ it('BR-24: رابط الزوم لا يظهر في شيفرة الصفحة قبل
 
 it('BR-24: الرابط يُسلَّم عند الحد بالضبط قبل الجلسة بخمس عشرة دقيقة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
-    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
+    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['meeting_url' => ZOOM_CANARY]);
 
     freezeAt($start->subMinutes(15));
 
@@ -224,7 +224,7 @@ it('BR-24: الرابط يُسلَّم عند الحد بالضبط قبل ال�
 it('BR-24: الرابط يُغلق بعد نهاية الجلسة', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
     $end = $start->addHours(3);
-    $session = sessionInCohort($this->cohort, $start, $end, ['zoom_url' => ZOOM_CANARY]);
+    $session = sessionInCohort($this->cohort, $start, $end, ['meeting_url' => ZOOM_CANARY]);
 
     freezeAt($end->addSecond());
 
@@ -233,7 +233,7 @@ it('BR-24: الرابط يُغلق بعد نهاية الجلسة', function ():
 
 it('BR-24: متدرب من دفعة أخرى لا يحصل على الرابط في نافذته الزمنية', function (): void {
     $start = riyadhAt('2026-10-12 18:00:00');
-    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['zoom_url' => ZOOM_CANARY]);
+    $session = sessionInCohort($this->cohort, $start, $start->addHours(3), ['meeting_url' => ZOOM_CANARY]);
     $stranger = makeParticipant($this->otherCohort);
 
     freezeAt($start);

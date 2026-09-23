@@ -414,17 +414,6 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->middleware(['not.impersonating', 'throttle:upload'])
             ->name('assignments.update');
 
-        Route::get('/sessions', [TrainerSessionController::class, 'index'])->name('sessions');
-        Route::post('/sessions', [TrainerSessionController::class, 'store'])
-            ->middleware('not.impersonating')
-            ->name('sessions.store');
-        Route::patch('/sessions/{session}', [TrainerSessionController::class, 'update'])
-            ->middleware('not.impersonating')
-            ->name('sessions.update');
-        Route::post('/sessions/{session}/cancel', [TrainerSessionController::class, 'cancel'])
-            ->middleware('not.impersonating')
-            ->name('sessions.cancel');
-
         Route::get('/resources', [TrainerResourceController::class, 'index'])->name('resources');
         Route::post('/resources', [TrainerResourceController::class, 'store'])
             ->middleware(['not.impersonating', 'throttle:upload'])
@@ -465,6 +454,12 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
     ->prefix('trainer')
     ->name('trainer.')
     ->group(function (): void {
+        // D-109 — reading the schedule is a trainer ability too (their own
+        // sessions and whoever's join link the coordinator set); writing it
+        // is not, and the group below enforces that half. SessionPolicy is
+        // still what a direct POST answers to either way.
+        Route::get('/sessions', [TrainerSessionController::class, 'index'])->name('sessions');
+
         Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
         Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
             ->name('attendance.export');
@@ -506,6 +501,35 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
         Route::post('/attendance-exceptions/{exceptionRequest}/reject', [TrainerAttendanceExceptionController::class, 'reject'])
             ->middleware('not.impersonating')
             ->name('attendance-exceptions.reject');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Session schedule writes — admin AND coordinator only (D-109)
+|--------------------------------------------------------------------------
+| D-105 gave the trainer the same write access as the admin here; the owner
+| asked that the schedule, the location and the meeting link become an
+| admin/coordinator affair instead, so a trainer's own edit could never
+| duplicate — or silently overwrite — whatever the coordinator running the
+| room had just set. Route names stay `trainer.sessions.*` on purpose: the
+| read-only `trainer.sessions` view above already posts to them, and a
+| trainer's own request still lands on SessionPolicy, which now answers
+| false regardless of what a form on their screen could ever submit.
+*/
+
+Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope'])
+    ->prefix('trainer')
+    ->name('trainer.')
+    ->group(function (): void {
+        Route::post('/sessions', [TrainerSessionController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('sessions.store');
+        Route::patch('/sessions/{session}', [TrainerSessionController::class, 'update'])
+            ->middleware('not.impersonating')
+            ->name('sessions.update');
+        Route::post('/sessions/{session}/cancel', [TrainerSessionController::class, 'cancel'])
+            ->middleware('not.impersonating')
+            ->name('sessions.cancel');
     });
 
 /*

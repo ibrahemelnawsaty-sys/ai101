@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Presenters\Trainer;
 
 use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Models\Session;
@@ -51,6 +52,9 @@ final class SessionRow extends ViewModel
         $hasLocation = is_string($session->getAttribute('location_name'))
             && $session->getAttribute('location_name') !== '';
 
+        $platform = $session->getAttribute('platform');
+        $platform = $platform instanceof SessionPlatform ? $platform : null;
+
         return new self([
             'id' => (string) $session->getKey(),
             'topic' => (string) ($session->getAttribute('topic') ?? $session->getAttribute('title') ?? '—'),
@@ -72,13 +76,15 @@ final class SessionRow extends ViewModel
             'deliveryModeLabel' => $deliveryMode?->label() ?? '—',
             'isInPerson' => $deliveryMode === SessionDeliveryMode::InPerson,
             'hasLocation' => $hasLocation,
+            'platformLabel' => $platform?->label(),
+            'platformIcon' => $platform?->icon(),
             'statusLabel' => $status?->label() ?? '—',
             'statusVariant' => self::sessionVariantOf($status),
             'statusIcon' => self::sessionIconOf($status),
             'isCancelled' => $status === SessionStatus::Cancelled,
             'cancellationReason' => (string) ($session->getAttribute('cancellation_reason') ?? '—'),
-            'hasMeetingUrl' => is_string($session->getAttribute('zoom_url'))
-                && $session->getAttribute('zoom_url') !== '',
+            'hasMeetingUrl' => is_string($session->getAttribute('meeting_url'))
+                && $session->getAttribute('meeting_url') !== '',
         ]);
     }
 }

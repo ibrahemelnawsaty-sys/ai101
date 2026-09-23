@@ -37,7 +37,7 @@ function joinProbeSession(string $cohortId, array $attributes = []): App\Models\
 
     return makeSessionAt($start, $start->addHours(2), $attributes + [
         'cohort_id' => $cohortId,
-        'zoom_url' => 'https://example.test/meeting',
+        'meeting_url' => 'https://example.test/meeting',
     ]);
 }
 

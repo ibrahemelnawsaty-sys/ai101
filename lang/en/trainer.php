@@ -96,6 +96,8 @@ return [
         'link_set' => 'Link added',
         'link_missing' => 'No link',
         'delivery_mode' => 'Delivery mode',
+        'platform' => 'Streaming platform',
+        'platform_hint' => 'Shown to the trainee and the trainer alongside the join link.',
         'coordinator' => 'Coordinator',
         'coordinator_hint' => 'Optional — handles attendance for this session if assigned.',
         'location_name' => 'Location name',
@@ -104,6 +106,8 @@ return [
         'room_name_hint' => 'Optional.',
         'location_set' => 'Location added',
         'location_missing' => 'No location',
+        'readonly_title' => 'Your schedule — view only',
+        'readonly_body' => 'The administrator and the coordinator create sessions and set their times and join links, so this data is never duplicated or in conflict. This is the list of sessions assigned to you; taking attendance from the attendance tab is still yours to do.',
 
         'cancel' => 'Cancel the session',
         'cancel_title' => 'Cancel a session',

@@ -209,8 +209,10 @@ final class Sidebar extends UiComponent
     }
 
     /**
-     * The coordinator rail. One job, one link: attendance is the whole of
-     * what this role exists for (D-105) — nothing else is added here just
+     * The coordinator rail. D-105 gave this role one link: attendance.
+     * D-109 adds a second — the schedule itself is now theirs to create, move,
+     * cancel and hold the meeting link for, so a trainer's own edit could
+     * never duplicate it. Nothing else is added here just
      * because a route happens to accept the role too.
      *
      * @return list<array{label?: string, items: list<array<string, mixed>>}>
@@ -219,6 +221,7 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
+                ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
                 ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
             ]],
         ];

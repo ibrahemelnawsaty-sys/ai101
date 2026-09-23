@@ -49,19 +49,25 @@ final class SessionPolicy
             && $session->status === SessionStatus::Completed;
     }
 
+    /**
+     * D-109 amends D-105: the schedule, the location and the meeting link are
+     * an admin/coordinator affair now, not a trainer one — a trainer's own
+     * write here used to duplicate whatever the coordinator had just set,
+     * with no way to tell whose value would stick.
+     */
     public function create(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function update(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function cancel(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     /**

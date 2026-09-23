@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,8 +24,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * App\Services\Attendance\AttendanceWindow may derive the check-in and check-out
  * windows from them (BR-01 … BR-07).
  *
- * `zoom_url` and `zoom_passcode` are hidden from serialisation as defence in depth
- * for BR-24; the authoritative gate stays in the controller and policy.
+ * `meeting_url` and `meeting_passcode` are hidden from serialisation as defence
+ * in depth for BR-24; the authoritative gate stays in the controller and policy.
  *
  * @see BR-01, BR-04, BR-07, BR-22, BR-23, BR-24 · PRD §7.3, §9.9 · PROJECT-CONTRACT §4, §6
  */
@@ -55,11 +56,12 @@ class Session extends Model
         'trainer_id',
         'coordinator_id',
         'delivery_mode',
+        'platform',
         'location_name',
         'location_map_url',
         'room_name',
-        'zoom_url',
-        'zoom_passcode',
+        'meeting_url',
+        'meeting_passcode',
         'join_opens_minutes',
         'recording_url',
         'status',
@@ -68,8 +70,8 @@ class Session extends Model
 
     /** @var list<string> */
     protected $hidden = [
-        'zoom_url',
-        'zoom_passcode',
+        'meeting_url',
+        'meeting_passcode',
     ];
 
     /**
@@ -81,6 +83,7 @@ class Session extends Model
             'type' => SessionType::class,
             'status' => SessionStatus::class,
             'delivery_mode' => SessionDeliveryMode::class,
+            'platform' => SessionPlatform::class,
             'date' => 'date',
             'start_time' => 'string',
             'end_time' => 'string',

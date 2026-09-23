@@ -78,6 +78,7 @@ return [
     ],
 
     'coordinator' => [
+        'sessions' => 'Sessions',
         'attendance' => 'Attendance',
     ],
 

@@ -136,7 +136,7 @@ final class LiveController extends Controller
             return back()->withErrors(['session' => __('live.errors.window_closed')]);
         }
 
-        $url = $session->getAttribute('zoom_url');
+        $url = $session->getAttribute('meeting_url');
 
         if (! is_string($url) || $url === '') {
             return back()->withErrors(['session' => __('live.errors.no_link')]);

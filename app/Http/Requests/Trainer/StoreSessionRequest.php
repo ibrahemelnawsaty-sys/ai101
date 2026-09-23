@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Trainer;
 
 use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Http\Requests\Trainer\Concerns\ScopedToCohort;
@@ -75,6 +76,13 @@ final class StoreSessionRequest extends FormRequest
                     ->where('role_in_cohort', 'coordinator'),
             ],
             'delivery_mode' => ['required', Rule::enum(SessionDeliveryMode::class)],
+            // Required only once a link is actually entered: a session may be
+            // saved online with nothing yet (D-105), and a platform with no
+            // link to label would be meaningless (D-109).
+            'platform' => [
+                'nullable', Rule::enum(SessionPlatform::class),
+                Rule::requiredIf(fn (): bool => is_string($this->input('meeting_url')) && trim((string) $this->input('meeting_url')) !== ''),
+            ],
             // Nullable regardless of mode, mirroring meeting_url's own
             // long-standing behaviour: a session may be saved before its room
             // is booked (D-105).
@@ -112,11 +120,12 @@ final class StoreSessionRequest extends FormRequest
             'trainer_id' => $data['trainer_id'] ?? null,
             'coordinator_id' => $data['coordinator_id'] ?? null,
             'delivery_mode' => $data['delivery_mode'],
+            'platform' => $data['platform'] ?? null,
             'location_name' => $data['location_name'] ?? null,
             'location_map_url' => $data['location_map_url'] ?? null,
             'room_name' => $data['room_name'] ?? null,
-            'zoom_url' => $data['meeting_url'] ?? null,
-            'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'meeting_url' => $data['meeting_url'] ?? null,
+            'meeting_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             // A new session is scheduled. Creating one already cancelled
             // skipped the reason, the audit and the letter (D-77).

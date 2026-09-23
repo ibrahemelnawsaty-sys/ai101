@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Trainer;
 
 use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionType;
 use App\Models\Session;
 use App\Rules\ValidZoomRecordingUrl;
@@ -83,6 +84,10 @@ final class UpdateSessionRequest extends FormRequest
                     ->where('role_in_cohort', 'coordinator'),
             ],
             'delivery_mode' => ['required', Rule::enum(SessionDeliveryMode::class)],
+            'platform' => [
+                'nullable', Rule::enum(SessionPlatform::class),
+                Rule::requiredIf(fn (): bool => is_string($this->input('meeting_url')) && trim((string) $this->input('meeting_url')) !== ''),
+            ],
             'location_name' => ['nullable', 'string', 'max:200'],
             'location_map_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'room_name' => ['nullable', 'string', 'max:120'],
@@ -125,11 +130,12 @@ final class UpdateSessionRequest extends FormRequest
             'trainer_id' => $data['trainer_id'] ?? null,
             'coordinator_id' => $data['coordinator_id'] ?? null,
             'delivery_mode' => $data['delivery_mode'],
+            'platform' => $data['platform'] ?? null,
             'location_name' => $data['location_name'] ?? null,
             'location_map_url' => $data['location_map_url'] ?? null,
             'room_name' => $data['room_name'] ?? null,
-            'zoom_url' => $data['meeting_url'] ?? null,
-            'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'meeting_url' => $data['meeting_url'] ?? null,
+            'meeting_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             'recording_url' => $data['recording_url'] ?? null,
             // The editor does not change status in either direction. It

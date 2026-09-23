@@ -149,10 +149,13 @@ function authorizationMatrix(object $test): array
         'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin', 'coordinator']],
         'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
 
-        'trainer.sessions' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.sessions.store' => ['post', $cohort, ['trainer', 'admin']],
-        'trainer.sessions.update' => ['patch', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
-        'trainer.sessions.cancel' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
+        // D-109 — reading the schedule stayed a trainer ability; writing it
+        // moved to admin/coordinator only, so a trainer's own edit could
+        // never duplicate the coordinator's.
+        'trainer.sessions' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.sessions.store' => ['post', $cohort, ['admin', 'coordinator']],
+        'trainer.sessions.update' => ['patch', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
+        'trainer.sessions.cancel' => ['post', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
 
         'trainer.assignments' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.assignments.store' => ['post', $cohort, ['trainer', 'admin']],

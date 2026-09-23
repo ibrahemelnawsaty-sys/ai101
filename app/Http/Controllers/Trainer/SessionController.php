@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Trainer;
 
 use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Events\SessionCancelled;
@@ -31,7 +32,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * Managing the schedule of one's own cohorts (PRD §9.8, §9.10).
+ * The cohort's schedule (PRD §9.8, §9.10).
+ *
+ * D-109 split who reads this screen from who writes it: the admin and the
+ * coordinator create, edit, cancel and hold the meeting link; a trainer
+ * reaches the same screen and the same rows, but `$canManage` (SessionPolicy's
+ * own `create` answer) comes back false, so the view renders read-only cards
+ * instead of the editor. The policy is still what a direct POST is checked
+ * against — the flag only decides what the page offers.
  *
  * The meeting link is stored from this screen. It is never emitted to a
  * participant page before its window opens — that guard lives in the
@@ -39,7 +47,7 @@ use Illuminate\Http\Request;
  *
  * Cancelling demands a reason and is audited before the change lands (BR-27).
  *
- * @see BR-07, BR-23, BR-24, BR-27 · PRD §9.8, §9.10 · CONSTITUTION Art. 8, Art. 22
+ * @see BR-07, BR-23, BR-24, BR-27 · PRD §9.8, §9.10 · CONSTITUTION Art. 5, Art. 8, Art. 22
  */
 final class SessionController extends Controller
 {
@@ -69,11 +77,15 @@ final class SessionController extends Controller
                 'typeOptions' => Options::fromEnum(SessionType::class),
                 'statusOptions' => Options::fromEnum(SessionStatus::class),
                 'deliveryModeOptions' => Options::fromEnum(SessionDeliveryMode::class),
+                'platformOptions' => Options::fromEnum(SessionPlatform::class),
+                'canManage' => false,
                 'editing' => null,
                 'cancelling' => null,
                 'errorState' => null,
             ]);
         }
+
+        $canManage = $this->canManage($request, (string) $cohort->getKey());
 
         $query = Session::query()
             ->with(['week', 'trainer.profile'])
@@ -119,10 +131,25 @@ final class SessionController extends Controller
             'typeOptions' => Options::fromEnum(SessionType::class),
             'statusOptions' => Options::fromEnum(SessionStatus::class),
             'deliveryModeOptions' => Options::fromEnum(SessionDeliveryMode::class),
-            'editing' => $this->editing($request),
-            'cancelling' => $this->cancelling($request),
+            'platformOptions' => Options::fromEnum(SessionPlatform::class),
+            'canManage' => $canManage,
+            'editing' => $canManage ? $this->editing($request) : null,
+            'cancelling' => $canManage ? $this->cancelling($request) : null,
             'errorState' => null,
         ]);
+    }
+
+    /**
+     * SessionPolicy::create's own answer, asked against a draft bound to this
+     * cohort — the same shape StoreSessionRequest::authorize() checks against
+     * (D-109). The view never decides this on its own.
+     */
+    private function canManage(Request $request, string $cohortId): bool
+    {
+        $draft = new Session;
+        $draft->setAttribute('cohort_id', $cohortId);
+
+        return (bool) $request->user()?->can('create', $draft);
     }
 
     /**

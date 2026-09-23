@@ -74,6 +74,12 @@ return [
         'in_person' => 'حضوري',
     ],
 
+    'session_platform' => [
+        'zoom' => 'Zoom',
+        'google_meet' => 'Google Meet',
+        'teams' => 'Microsoft Teams',
+    ],
+
     'attendance_status' => [
         'present' => 'حاضر',
         'late' => 'متأخر',

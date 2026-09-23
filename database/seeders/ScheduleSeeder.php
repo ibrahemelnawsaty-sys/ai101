@@ -12,8 +12,8 @@ declare(strict_types=1);
  *
  * Status is decided by comparing the session's real end instant to Clock::now()
  * — never by a hard-coded flag, so a re-seed on any day stays truthful (BR-07).
- * `zoom_url` is stored for sessions that have not finished; a finished session
- * carries a recording instead.
+ * `meeting_url` is stored for sessions that have not finished; a finished
+ * session carries a recording instead.
  *
  * @see PRD §7.3, §7.8 · BR-07 · PROJECT-CONTRACT §4, §6
  */
@@ -164,10 +164,11 @@ final class ScheduleSeeder extends Seeder
             'start_time' => SeedContent::SESSION_START_TIME,
             'end_time' => $endTime,
             'trainer_id' => $trainer?->getKey(),
-            'zoom_url' => $status === 'scheduled'
+            'platform' => $status === 'scheduled' ? 'zoom' : null,
+            'meeting_url' => $status === 'scheduled'
                 ? 'https://zoom.us/j/'.random_int(10_000_000_000, 99_999_999_999)
                 : null,
-            'zoom_passcode' => $status === 'scheduled' ? $extras['zoom_passcode'] : null,
+            'meeting_passcode' => $status === 'scheduled' ? $extras['zoom_passcode'] : null,
             'recording_url' => $status === 'completed'
                 ? 'https://athar-dev.edu.sa/recordings/'.SeedContent::dateOn($dayOffset)
                 : null,

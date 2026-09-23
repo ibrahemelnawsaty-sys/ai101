@@ -69,6 +69,19 @@ trait InteractsWithScope
         return $this->staffOf($user, $cohortId) || $this->coordinatorOf($user, $cohortId);
     }
 
+    /**
+     * Session schedule authority: admin everywhere, or a coordinator assigned
+     * to the cohort. A trainer used to sit here too (D-105) — the owner asked
+     * that the trainer's tab become read-only, so only the coordinator (who
+     * runs the room) and the admin (who runs everything) write the schedule,
+     * the location and the meeting link, avoiding two roles maintaining the
+     * same link (D-109 amends D-105 to this narrower scope explicitly).
+     */
+    protected function sessionManagerOf(User $user, ?string $cohortId): bool
+    {
+        return $this->admin($user) || $this->coordinatorOf($user, $cohortId);
+    }
+
     /** Anyone with a legitimate reason to read this cohort's data. */
     protected function reaches(User $user, ?string $cohortId): bool
     {
