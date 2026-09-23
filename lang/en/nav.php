@@ -68,6 +68,7 @@ return [
     ],
 
     'trainer' => [
+        'dashboard' => 'Info dashboard',
         'participants' => 'Cohort participants',
         'sessions' => 'Sessions',
         'attendance' => 'Attendance',
@@ -81,6 +82,7 @@ return [
     ],
 
     'coordinator' => [
+        'dashboard' => 'Info dashboard',
         'sessions' => 'Sessions',
         'attendance' => 'Attendance',
     ],

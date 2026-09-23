@@ -138,6 +138,9 @@ function authorizationMatrix(object $test): array
         'notifications' => ['get', [], ['participant', 'trainer', 'admin']],
 
         // -------------------------------------------------------------- trainer
+        // PR-5 دفعة 2 — the trainer's own information dashboard.
+        'trainer.dashboard' => ['get', $cohort, ['trainer', 'admin']],
+
         'trainer.participants' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.participants.export' => ['get', $cohort, ['trainer', 'admin']],
 
@@ -187,6 +190,12 @@ function authorizationMatrix(object $test): array
 
         'trainer.reports' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.reports.export' => ['get', $cohort, ['trainer', 'admin']],
+
+        // ---------------------------------------------------------- coordinator
+        // PR-5 دفعة 2 — the coordinator's own information dashboard, the first
+        // screen under its own coordinator.* prefix rather than shared with
+        // trainer.* (D-109's sessions/attendance stay shared; this does not).
+        'coordinator.dashboard' => ['get', $cohort, ['coordinator', 'admin']],
 
         // ---------------------------------------------------------------- admin
         'admin.dashboard' => ['get', [], ['admin']],
@@ -337,7 +346,11 @@ it('لا يوجد مسار محمي بلا سطر في مصفوفة التفوي
         ->filter()
         ->filter(fn (string $name): bool => str_starts_with($name, 'admin.')
             || str_starts_with($name, 'trainer.')
-            || str_starts_with($name, 'participant.'),
+            || str_starts_with($name, 'participant.')
+            // D-109 introduced the first coordinator.* leaf (its own dashboard,
+            // PR-5 دفعة 2) — a fourth prefix this walker must watch, or every
+            // future route under it ships with no matrix row enforced.
+            || str_starts_with($name, 'coordinator.'),
         )
         ->reject(fn (string $name): bool => in_array($name, $covered, true))
         // The impersonation stop route is deliberately reachable by whoever is

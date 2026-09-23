@@ -44,6 +44,7 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\FileDownloadController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\Public\WaitlistController;
 use App\Http\Controllers\Trainer\AssignmentController as TrainerAssignmentController;
 use App\Http\Controllers\Trainer\AttendanceController as TrainerAttendanceController;
 use App\Http\Controllers\Trainer\AttendanceExceptionController as TrainerAttendanceExceptionController;
+use App\Http\Controllers\Trainer\DashboardController as TrainerDashboardController;
 use App\Http\Controllers\Trainer\FinalProjectController as TrainerFinalProjectController;
 use App\Http\Controllers\Trainer\ParticipantController as TrainerParticipantController;
 use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
@@ -392,6 +394,10 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
     ->prefix('trainer')
     ->name('trainer.')
     ->group(function (): void {
+        // PR-5, batch 2 — the trainer's own information dashboard: next
+        // session, the grading queue, BR-11's balance, BR-26's at-risk count.
+        Route::get('/dashboard', TrainerDashboardController::class)->name('dashboard');
+
         Route::get('/submissions', [TrainerSubmissionController::class, 'index'])->name('submissions');
         Route::get('/submissions/export', [TrainerSubmissionController::class, 'export'])
             ->name('submissions.export');
@@ -530,6 +536,24 @@ Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope']
         Route::post('/sessions/{session}/cancel', [TrainerSessionController::class, 'cancel'])
             ->middleware('not.impersonating')
             ->name('sessions.cancel');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Coordinator dashboard (PR-5, batch 2)
+|--------------------------------------------------------------------------
+| The coordinator's own information home: sessions still missing a join link
+| or a location (D-109's own to complete now) and the excuse-request queue
+| (D-106). Its own prefix, unlike the coordinator's other two screens, which
+| stayed under /trainer/* because they are genuinely shared with the trainer
+| — this content is not.
+*/
+
+Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope'])
+    ->prefix('coordinator')
+    ->name('coordinator.')
+    ->group(function (): void {
+        Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     });
 
 /*

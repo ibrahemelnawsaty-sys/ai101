@@ -193,6 +193,10 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
+                // The trainer's own information home (PR-5, batch 2) — next
+                // session, grading queues, attendance standing, all in one
+                // read-only screen the trainer never had before.
+                ['route' => 'trainer.dashboard', 'icon' => 'i-panel', 'label' => __('nav.trainer.dashboard')],
                 ['route' => 'trainer.participants', 'icon' => 'i-users', 'label' => __('nav.trainer.participants')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
@@ -225,6 +229,10 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
+                // The coordinator's own information home (PR-5, batch 2) —
+                // sessions still missing a link or a location, and the
+                // exception-request queue, both theirs to clear.
+                ['route' => 'coordinator.dashboard', 'icon' => 'i-panel', 'label' => __('nav.coordinator.dashboard')],
                 ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
                 ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
             ]],
