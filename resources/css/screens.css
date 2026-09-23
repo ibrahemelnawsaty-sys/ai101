@@ -1227,6 +1227,11 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   /* On the body, not the sheet: a named page takes effect where a box starts a
      page, and the first page starts with the body — so naming only the sheet
      left page one at the default size. */
+  /* The class is set by the view; the :has() pair stays for any sheet that
+     predates it. Two rules, not one list: a list with :has() in it is dropped
+     WHOLE by an engine that does not know :has() (D-86). */
+  .page--sheet-certificate { page: certificate; }
+  .page--sheet-certificate .bare { max-inline-size: none; min-block-size: 0; padding: 0; }
   .page--bare:has(.certsheet) { page: certificate; }
   .page--bare:has(.certsheet) .bare { max-inline-size: none; min-block-size: 0; padding: 0; }
   /* Full width: auto side margins in the bare layout's flex column shrank the
@@ -1237,6 +1242,17 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .certsheet .certdoc__for { font-size: var(--fs-body); }
   .certsheet__note { display: none; }
   .certsheet .certdoc { box-shadow: none; }
+
+  /* The brand rule and the inner frame are background paint, and every
+     browser strips backgrounds from a printout unless the reader ticks
+     «background graphics». The certificate and card ARE printouts: keep them. */
+  .certsheet,
+  .certsheet *,
+  .page--sheet-card,
+  .page--sheet-card * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 /* ==========================================================================

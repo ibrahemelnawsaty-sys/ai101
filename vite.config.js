@@ -37,6 +37,13 @@ export default defineConfig({
         // dashboard bundle at 250 KB gzipped and the Constitution (Article 19)
         // caps landing-page JS at 40 KB gzipped.
         chunkSizeWarningLimit: 250,
+        // The browser floor, stated where the build can read it (D-86).
+        // package.json's browserslist says iOS/Safari 15, but Vite reads it
+        // for nothing: autoprefixer honoured it and the syntax target stayed
+        // Vite's default. Naming the engines here makes esbuild lower what it
+        // can for them, and makes the contract visible in one place.
+        target: ['es2020', 'safari15', 'chrome87', 'firefox78', 'edge88'],
+        cssTarget: ['safari15', 'chrome87', 'firefox78', 'edge88'],
         cssCodeSplit: true,
         sourcemap: false,
         rollupOptions: {

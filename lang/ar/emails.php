@@ -11,6 +11,32 @@
 
 return [
 
+    /*
+     * The send screen's letters (D-87). The message carries the
+     * administrator's own subject and words; the two digests list rows built
+     * at send time.
+     */
+    'broadcast' => [
+        'cta' => 'افتح المنصة',
+    ],
+    'sessions_digest' => [
+        'subject' => 'مواعيد جلساتك القادمة في :program',
+        'preheader' => 'كل جلساتك القادمة في رسالة واحدة، بتوقيت الرياض.',
+        'heading' => 'مواعيد جلساتك القادمة',
+        'body' => 'هذه جلسات دفعتك القادمة بتوقيت الرياض. رابط كل جلسة يظهر في تبويب المحاضرات المباشرة قبل موعدها بقليل.',
+        'cta' => 'افتح جدول البرنامج',
+    ],
+    'assignments_digest' => [
+        'subject' => 'مهام لم تسلّمها بعد في :program',
+        'preheader' => 'ما بقي عليك تسليمه، وأقرب موعد أولًا.',
+        'heading' => 'ما بقي عليك تسليمه',
+        'body' => 'هذه المهام ما زالت مفتوحة ولم يصلنا تسليمك لها. سلّم قبل الموعد، فالتسليم المتأخر قد يُوسَم أو يُرفَض بحسب إعداد المهمة.',
+        'due' => 'آخر موعد :date · بعد :countdown',
+        'late' => 'فات موعده :date — التسليم المتأخر ما زال مقبولًا',
+        'no_deadline' => 'بلا موعد نهائي',
+        'cta' => 'افتح المهام',
+    ],
+
     'common' => [
         'greeting' => 'أهلًا :name،',
         'greeting_neutral' => 'أهلًا بك،',
@@ -20,6 +46,7 @@ return [
         // used to label the cohort name with nav.schedule — "the timetable".
         'cohort_label' => 'الدفعة',
         'view_in_platform' => 'افتح المنصة',
+        'and_more' => '{1} وبند آخر في المنصة|{2} وبندان آخران في المنصة|[3,10] و:count بنود أخرى في المنصة|[11,*] و:count بندًا آخر في المنصة',
         'contact_line' => 'لأي استفسار راسلنا على :email',
         'why_receiving' => 'وصلتك هذه الرسالة لأنك مسجّل في :program.',
         'preferences_link' => 'يمكنك ضبط ما يصلك من رسائل من إعدادات حسابك.',

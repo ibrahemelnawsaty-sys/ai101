@@ -192,9 +192,11 @@
                         :placeholder="__('project.description_placeholder')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit"
-                            x-bind:disabled="! ready"
-                            x-bind:aria-busy="uploading">{{ __('project.submit_action') }}</x-ui.button>
+                        {{-- No Alpine bindings: they named `ready` and `uploading`
+                             from the retired uploader component, which nothing
+                             defines any more, and threw on every render (D-86).
+                             The assignment form lost the same two in D-51. --}}
+                        <x-ui.button variant="primary" type="submit">{{ __('project.submit_action') }}</x-ui.button>
                     </div>
 
                     <p class="hint">

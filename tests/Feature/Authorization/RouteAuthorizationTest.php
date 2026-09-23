@@ -185,6 +185,10 @@ function authorizationMatrix(object $test): array
         // ---------------------------------------------------------------- admin
         'admin.dashboard' => ['get', [], ['admin']],
         'admin.audit.index' => ['get', [], ['admin']],
+        // The send screen (D-87).
+        'admin.broadcasts.index' => ['get', [], ['admin']],
+        'admin.broadcasts.store' => ['post', [], ['admin']],
+        'admin.broadcasts.remind' => ['post', [], ['admin']],
         'admin.audit.export' => ['get', [], ['admin']],
 
         'admin.programs.index' => ['get', [], ['admin']],

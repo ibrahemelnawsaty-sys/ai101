@@ -64,7 +64,10 @@
                      follows a redirect natively. The JavaScript would have had to
                      re-implement that, and it would break again the day JS fails. --}}
                 <div class="row__acts">
-                    <form method="POST" action="{{ route('live.join', $featured->id) }}">
+                    {{-- A new tab, as PRD §9.10 asks: the trainee keeps the platform
+                         open beside the meeting, and the passcode below stays on
+                         screen to copy. --}}
+                    <form method="POST" action="{{ route('live.join', $featured->id) }}" target="_blank">
                         @csrf
                         <x-ui.button variant="primary"
                             type="submit"
@@ -85,15 +88,20 @@
                         </p>
                     @enderror
 
-                    {{-- The passcode arrives with the URL, only after the guarded call succeeds. --}}
-                    <template x-if="passcode">
-                        <div class="live__pass">
+                    {{-- The passcode, only once the window is open — the presenter
+                         leaves it null before then (BR-24). Rendered by the server,
+                         so it shows with JavaScript off; the copy button is the only
+                         part that needs the bundle. --}}
+                    @if ($featured->passcode)
+                        <div class="live__pass" x-data="atharCopy({ value: @js($featured->passcode) })">
                             <span>{{ __('live.passcode') }}</span>
-                            <code dir="ltr" x-text="passcode"></code>
-                            <x-ui.button variant="secondary" size="sm" type="button"
-                                x-on:click="copyPasscode()">{{ __('app.copy') }}</x-ui.button>
+                            <code dir="ltr">{{ $featured->passcode }}</code>
+                            <x-ui.button variant="secondary" size="sm" type="button" x-on:click="copy()">
+                                <span x-show="! copied">{{ __('live.copy_passcode') }}</span>
+                                <span x-show="copied" x-cloak>{{ __('live.passcode_copied') }}</span>
+                            </x-ui.button>
                         </div>
-                    </template>
+                    @endif
                 </div>
             </x-ui.card>
         @endif

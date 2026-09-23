@@ -50,5 +50,9 @@
         <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/><path d="M6 7l1 13a2 2 0 002 2h6a2 2 0 002-2l1-13"/></symbol>
         <symbol id="i-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9.5A2.5 2.5 0 0012.5 8h-1a2 2 0 000 4h1a2 2 0 010 4h-1A2.5 2.5 0 019 14.5M12 6.5v11"/></symbol>
         <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.6 2 2.2 6.4 2.2 11.85c0 1.9.5 3.7 1.5 5.3L2 22.3l5.3-1.65a9.9 9.9 0 004.75 1.2c5.44 0 9.85-4.4 9.85-9.85S17.48 2 12.04 2m0 1.8a8 8 0 018.05 8.05 8.05 8.05 0 01-8.05 8.05c-1.5 0-2.98-.4-4.25-1.2l-.3-.18-3.15 1 1-3.07-.2-.32a7.9 7.9 0 01-1.2-4.28A8 8 0 0112.04 3.8m-3.6 4.15c-.17 0-.44.06-.68.32-.23.26-.9.87-.9 2.13s.92 2.47 1.05 2.64c.13.17 1.8 2.75 4.37 3.85.6.26 1.08.42 1.45.54.6.2 1.16.17 1.6.1.48-.07 1.5-.6 1.7-1.2.22-.6.22-1.1.16-1.2-.07-.1-.24-.17-.5-.3-.26-.13-1.5-.74-1.74-.83-.23-.08-.4-.13-.57.14-.17.26-.65.82-.8.99-.15.17-.3.19-.55.06-.26-.13-1.1-.4-2.08-1.29-.77-.68-1.29-1.53-1.44-1.79-.15-.26-.02-.4.11-.53.12-.12.26-.3.4-.46.12-.15.16-.26.25-.43.08-.18.04-.33-.02-.46-.07-.13-.57-1.39-.79-1.9-.2-.48-.4-.42-.55-.43z"/></symbol>
+        {{-- The envelope. Only the public sprite had it, so the admin settings
+             card, its empty state and the invitation form showed an empty box in
+             the dashboard (D-86). The same drawing as partials/icon-sprite. --}}
+        <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2.6 7.2l8.35 5.7a1.8 1.8 0 002.1 0l8.35-5.7"/></symbol>
     </defs>
 </svg>

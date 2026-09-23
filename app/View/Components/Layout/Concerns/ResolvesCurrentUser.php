@@ -32,6 +32,8 @@ trait ResolvesCurrentUser
 
     public string $initials;
 
+    public ?UserRole $role;
+
     public string $roleLabel;
 
     public string $roleVariant;
@@ -52,9 +54,9 @@ trait ResolvesCurrentUser
         $this->email = (string) data_get($user, 'email', '');
         $this->initials = self::initialsOf($this->displayName);
 
-        $role = $user instanceof User ? $user->role : null;
-        $this->roleLabel = $role instanceof UserRole ? $role->label() : '';
-        $this->roleVariant = $role instanceof UserRole ? $role->value : 'neutral';
+        $this->role = $user instanceof User ? $user->role : null;
+        $this->roleLabel = $this->role?->label() ?? '';
+        $this->roleVariant = $this->role?->value ?? 'neutral';
 
         $this->logoutUrl = Route::has('logout') ? route('logout') : null;
     }

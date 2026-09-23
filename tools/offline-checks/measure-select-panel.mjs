@@ -50,7 +50,8 @@ console.log('open before click  :', await tab.evaluate(() =>
 // Every ancestor property that would make something a containing block for a
 // fixed element — and therefore able to clip it again.
 const traps = await tab.evaluate(() => {
-  const field = document.querySelector('[name="gender"], #s-gender');
+  // The invitation form asks for a role, not a gender, since D-85.
+  const field = document.querySelector('[name="role"], #s-role');
   const start = field ? field.closest('.ui-select') || field : document.body;
   const found = [];
   for (let el = start; el && el !== document.documentElement; el = el.parentElement) {
@@ -68,8 +69,9 @@ const traps = await tab.evaluate(() => {
 });
 console.log('fixed-position traps:', traps.length ? JSON.stringify(traps) : 'none');
 
-// Open the gender list — the one in the owner's screenshot.
-const gender = tab.locator('.ui-select').filter({ has: tab.locator('[name="gender"]') }).locator('.ui-select__button');
+// Open the role list. It was the gender list — the one in the owner's
+// screenshot — until D-85 moved gender to the invitee's own screen.
+const gender = tab.locator('.ui-select').filter({ has: tab.locator('[name="role"]') }).locator('.ui-select__button');
 await gender.scrollIntoViewIfNeeded();
 await gender.click();
 await tab.waitForTimeout(400);

@@ -34,6 +34,7 @@
 
 @section('title', __('card.title'))
 @section('ownSheet', '1')
+@section('sheet', 'card')
 
 @section('content')
     <div class="sheet">

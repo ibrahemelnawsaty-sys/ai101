@@ -102,7 +102,7 @@ final class LiveController extends Controller
             'serverNow' => $now,
             'featured' => $featured === null
                 ? LiveSessionPresenter::missing()
-                : LiveSessionPresenter::from($featured, $this->window, $now),
+                : LiveSessionPresenter::from($featured, $this->window, $now, $user->can('revealJoinLink', $featured)),
             'upcoming' => $upcoming,
             'recordings' => $recordings,
             'weekOptions' => Options::fromModels(

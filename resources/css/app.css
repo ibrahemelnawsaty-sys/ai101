@@ -27,18 +27,17 @@
 /* --------------------------------------------------------------------------
    Self-hosted fonts (PRD §5.4 · Constitution Article 19 — font-display: swap).
 
-   THE BINARIES ARE NOT IN THIS REPOSITORY. public/fonts/README.md names the
-   four files, their licences and where to fetch them; the deploy step copies
-   them in. Until it does, every rule below simply fails to load and the browser
-   moves on to the next family in the stack — this is why each rule tries a
-   locally installed copy first, and why no rule is the only source of a face:
-   the family is ALWAYS reached through --font in tokens.css, whose stack ends
-   in Segoe UI and Tahoma. Both cover Arabic, so the platform is fully legible
-   with public/fonts/ empty.
+   ONE FAMILY, FOUR WEIGHTS (D-86, D-108 — the same decision reached
+   independently the same day; D-86 is the canonical record). The binaries
+   are committed in public/fonts/ (D-28) and copied to the web root by
+   deploy/update.sh. Each rule still tries a locally installed copy first,
+   and the stack in tokens.css ends in Segoe UI and Tahoma, which both cover
+   Arabic — so a missing file costs the page its typeface and never its
+   legibility.
 
-   D-108 retired the second face (Reem Kufi, PRD-era "display" heading font):
-   one face everywhere, no exception, per an explicit product decision in
-   PR-5. Its @font-face rule and binary are gone, not merely unused.
+   There used to be a fifth rule, for a display face on the marketing
+   headings (D-22). The owner asked for a single typeface across the whole
+   platform, so it is gone, and so is its file.
 
    No size-adjust is declared: the correct metric overrides can only be measured
    from the real binaries, and a guessed value would trade a missing font for a
@@ -134,7 +133,17 @@
   img { max-inline-size: 100%; block-size: auto; }
   table { border-collapse: collapse; }
 
-  /* Focus ring — visible on every interactive element (Article 18). */
+  /* Focus ring — visible on every interactive element (Article 18).
+     :focus first, so an engine that does not know :focus-visible (Safari
+     before 15.4) still draws a ring; the :not() rule, which such an engine
+     drops, then removes it again after a mouse click where it is known. */
+  /* No radius here: a mouse click focuses the element too, and the radius
+     outlived the removed ring — a pill switch turned square until blur. */
+  :focus {
+outline: var(--bw-strong) solid var(--focus-ring);
+outline-offset: var(--s1);
+  }
+  :focus:not(:focus-visible) { outline: none; }
   :focus-visible {
 outline: var(--bw-strong) solid var(--focus-ring);
 outline-offset: var(--s1);
@@ -679,8 +688,6 @@ border: var(--bw-hairline) solid var(--border-1);
   }
   .menu__i:hover { background: var(--surface-2); }
   .menu__i svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; color: var(--text-muted); }
-  .menu__i--danger { color: var(--status-bad-text); }
-  .menu__i--danger svg { color: var(--status-bad-text); }
 
   /* --------------------------------------------------- IMPERSONATION BAR */
   /* Burnt orange · sticky · the end button is ALWAYS visible (Article 23). */
@@ -1577,6 +1584,487 @@ border: var(--bw-hairline) solid var(--border-2);
 @media (forced-colors: active) {
   .btn, .card, .dc, .inp, .side__b { border: var(--bw-hairline) solid ButtonBorder; }
   .side__b[aria-current="page"] { forced-color-adjust: none; }
+}
+
+/* ==========================================================================
+   CROSS-DEVICE (D-86)
+   Every rule here answers a failure that was MEASURED — by
+   tools/offline-checks/measure-responsive.mjs at 320-1440px, or by the
+   cross-browser audit recorded in D-86. Unlayered and last, so it wins at
+   equal specificity over the layered blocks above without !important.
+   ========================================================================== */
+
+/* 1 · The content column on phones and tablets.
+   `.shell__main { grid-column: 2 }` was unconditional, but below 1024px the
+   shell has ONE explicit column and the rail is display:none. The content was
+   pushed into an implicit auto-sized second column beside an empty first
+   one — on a short screen it shrank to its content and sat to one side. */
+@media (max-width: 1023px) {
+  .shell__main { grid-column: 1 / -1; }
+}
+/* …and the column itself may not grow past the screen. `1fr` is
+   `minmax(auto, 1fr)`: the widest table on the page used to set its width,
+   and the implicit column above was only hiding that. minmax(0, 1fr) lets the
+   table scroll inside its own box, which is what .tscroll is for. */
+.shell { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) {
+  .shell { grid-template-columns: var(--side-w) minmax(0, 1fr); }
+  .shell[data-collapsed="true"] { grid-template-columns: var(--side-w-collapsed) minmax(0, 1fr); }
+}
+
+/* 2 · The account menu opens INTO the screen.
+   Its trigger is the last item of the bar, at the inline END (the left, in
+   RTL). Anchored at inline-start the panel grew further left, past the edge
+   of the screen, where body{overflow-x:hidden} cut off the profile, card and
+   sign-out entries. */
+.appbar__menu .menu {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  max-inline-size: calc(100vw - var(--s6));
+}
+
+/* 3 · Finger-sized controls in the chrome (Article 18 · --touch-min). */
+.side__switch,
+.impbar__stop { min-block-size: var(--touch-min); }
+.toast__x { inline-size: var(--touch-min); block-size: var(--touch-min); }
+
+/* 4 · The rail's group labels at the 12px floor, not 11px. */
+.side__t { font-size: var(--fs-xs); }
+
+/* 5 · The app bar grows with its content instead of spilling out of a fixed
+   64px box when a subtitle wraps. */
+.appbar { block-size: auto; min-block-size: var(--header-h); }
+
+/* 6 · Stick BELOW the preview banner, not under it. --impbar-h is 0 unless a
+   preview is running; its component writes the banner's live height. */
+.appbar { inset-block-start: var(--impbar-h); }
+.side {
+  inset-block-start: var(--impbar-h);
+  block-size: calc(100vh - var(--impbar-h));
+  block-size: calc(100dvh - var(--impbar-h));
+}
+
+/* 7 · Safe areas. Every layout declares viewport-fit=cover, which extends the
+   page under the notch and the home indicator and then asks the author to
+   pay the insets back; nothing did. Both side insets on both sides, so the
+   rule holds in either reading direction. An engine without env() drops each
+   declaration and keeps the padding it had. */
+.appbar,
+.body {
+  padding-inline: max(var(--s5), env(safe-area-inset-left), env(safe-area-inset-right));
+}
+.body { padding-block-end: max(var(--s10), env(safe-area-inset-bottom)); }
+.side { padding-block-end: max(var(--s3), env(safe-area-inset-bottom)); }
+.drawer__panel {
+  padding:
+    max(var(--s3), env(safe-area-inset-top))
+    max(var(--s3), env(safe-area-inset-right))
+    max(var(--s3), env(safe-area-inset-bottom))
+    max(var(--s3), env(safe-area-inset-left));
+}
+.toasts { inset-block-start: max(var(--s4), env(safe-area-inset-top)); }
+.foot { padding-block-end: max(var(--s8), env(safe-area-inset-bottom)); }
+.foot--app { padding-block-end: max(var(--s6), env(safe-area-inset-bottom)); }
+
+/* 8 · The drawer belongs to phones and tablets. The rail replaces it at
+   1024px; the drawer's own component also closes itself there. */
+@media (min-width: 1024px) {
+  .drawer__panel,
+  .drawer__scrim { display: none; }
+}
+
+/* 9 · vh before dvh (the legacy modal had only vh). */
+.modal__box {
+  max-block-size: calc(100vh - var(--s16));
+  max-block-size: calc(100dvh - var(--s16));
+}
+
+/* 10 · A grid or flex child never widens its track past the screen.
+   A `1fr` track is `minmax(auto, 1fr)`: it cannot shrink below the widest
+   unbreakable thing inside it. The certificate column measured 424px on a
+   320px phone for exactly that reason. */
+.idwrap { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) {
+  .idwrap { grid-template-columns: minmax(0, var(--idwrap-col)) minmax(0, 1fr); }
+}
+.idwrap > *,
+.dgrid > *,
+.g2 > *, .g3 > *, .g4 > *,
+.f2 > *, .f4 > *,
+.grid-fields > *,
+.form__row > * { min-inline-size: 0; }
+
+/* 11 · Rows of actions wrap instead of pushing their last button off-screen.
+   Measured: the user page's «sign out everywhere» 188px past the edge, the
+   users/schedule/submissions toolbars, the settings switches, the resources
+   card and the pagination — all at 320-414px. */
+.toolbar__end,
+.row__acts,
+.ui-pagination__list { flex-wrap: wrap; }
+@media (max-width: 599px) {
+  /* The title keeps a real share of the row, and the end column drops to its
+     own line only when the two cannot share one. Growing the end column
+     instead halved every title and cut names that used to fit. */
+  .row { flex-wrap: wrap; }
+  .row__m { flex: 1 1 var(--d-2); }
+  .row__e { max-inline-size: 100%; min-inline-size: 0; }
+  .ui-card__header,
+  .ui-card__actions { flex-wrap: wrap; }
+
+  /* A long Arabic label may take two lines — only where a row of actions
+     measured an overflow, never in the site's navigation, and with a line
+     height text can breathe in: at line-height 1 two wrapped lines collided,
+     dots and marks touching. Buttons in a table stay on one line; the table
+     scrolls. */
+  .toolbar__end .ui-btn,
+  .row__acts .ui-btn,
+  .row__e .ui-btn,
+  .ui-card__actions .ui-btn,
+  .idacts .ui-btn,
+  .form__submit .ui-btn {
+    white-space: normal;
+    max-inline-size: 100%;
+    line-height: var(--lh-sm);
+    padding-block: var(--s2);
+  }
+}
+
+/* 11b · A scroll box contains what is positioned inside it.
+   Measured on a phone: every page with a table grew its layout viewport to
+   ~900px and zoomed out. The culprit was not the table — it scrolled inside
+   its box as designed — but the absolutely positioned pieces within it (the
+   screen-reader caption, the progress-bar fills). A non-positioned scroller is
+   not their containing block, so they escaped its clipping and widened the
+   whole page. `position: relative` makes the box contain them. */
+.tscroll,
+.ui-table-scroll,
+.ui-tabs__list,
+.codebox { position: relative; }
+
+/* 12 · Things that carried a hidden minimum width. */
+input[type="file"] { max-inline-size: 100%; min-inline-size: 0; }
+.deflist > div { flex-wrap: wrap; }
+.deflist dd { min-inline-size: 0; }
+.deflist dd,
+.codebox,
+.menu__head span {
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 13 · The ID card keeps the proportions of a real card only where they fit.
+   Its 240px minimum height at a 1.586 ratio forced it to 381px wide — past a
+   320px screen. On a phone its height follows its content instead. */
+@media (max-width: 479px) {
+  .idcard { aspect-ratio: auto; min-block-size: 0; padding: var(--s4); }
+}
+
+/* 14 · The countdown on a 320px screen. */
+@media (max-width: 379px) {
+  .ui-countdown__grid { gap: var(--s1); }
+  .ui-countdown__n { font-size: var(--fs-h3); }
+}
+
+/* 15 · Icon buttons never give up their width.
+   On a 320-414px phone the app bar holds the title, the bell, messages and
+   the avatar, and the flex row squeezed the BURGER — the only navigation a
+   phone has — to 20-40px. The title takes the squeeze instead; it already
+   ends in an ellipsis. */
+.icb,
+.nav__burger { flex: none; }
+
+/* 16 · Finger-sized targets where the pointer is a finger (Article 18).
+   Measured under touch emulation: card-header links at 25-28px, the
+   notification titles, «forgot your password» at 21px, inputs at 34-36px,
+   the schedule's view switch at 36px. */
+@media (pointer: coarse) {
+  .ui-input,
+  .ui-select__button,
+  .ui-select__native,
+  .segmented__b { min-block-size: var(--touch-min); }
+
+  .ui-card__actions a,
+  .row__m > a,
+  .form__aside,
+  .row__url,
+  .authshell__top .logo,
+  .nav .logo {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--touch-min);
+  }
+  /* A two-letter link («back») is still a whole finger wide. */
+  .ui-card__actions a { min-inline-size: var(--touch-min); justify-content: center; }
+
+  input[type="file"],
+  input[type="range"] { min-block-size: var(--touch-min); }
+}
+
+/* <small> is 80% of its parent, which put 12px text at 9.6px. */
+small { font-size: var(--fs-small); }
+
+/* 17 · The countdown wraps to two rows when its card is narrow, instead of
+   pushing its digits out of four cells too small to hold them. Intrinsic, so
+   it answers to the card's width and not the screen's. */
+.ui-countdown__grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--s18)), 1fr));
+}
+
+/* 18 · A progress label beside its value wraps rather than overflowing a
+   narrow table cell. */
+.ui-progress__head { flex-wrap: wrap; }
+
+/* 19 · The icon at the head of a note.
+   `.note` had no rule for it, so a bare <svg><use/></svg> took the browser's
+   default size — 300×150 — on every error summary (sign-in, registration,
+   reset, invitation) and on the import screen's CSV warning, where it also
+   ran past a phone's edge. Floated to the inline start so it sits beside the
+   text; an engine without logical float values stacks it above instead. */
+.note > svg {
+  inline-size: var(--icon-md);
+  block-size: var(--icon-md);
+  float: inline-start;
+  margin-inline-end: var(--s2);
+  margin-block-start: var(--s1);
+}
+.note > svg + * { display: flow-root; }
+
+/* 20 · The collapsed rail keeps its links' names.
+   `display: none` on the label removed the only text inside each link, so in
+   the 72px rail every item was announced as an unnamed link. Visually hidden
+   instead: gone from the screen, still the accessible name. */
+.shell[data-collapsed="true"] .side__b .side__label {
+  display: block;
+  position: absolute;
+  inline-size: var(--s1);
+  block-size: var(--s1);
+  margin: calc(var(--s1) * -1);
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.side__b { position: relative; }
+
+/* 21 · Messages on a phone.
+   The conversation list was display:none below 860px and nothing replaced it,
+   so on a phone a trainee was stuck in whichever conversation opened first —
+   the trainer DM, the cohort group and the announcements unreachable from
+   each other. It now sits above the conversation, scrolling on its own. */
+.chat__list {
+  display: block;
+  order: -1;
+  border-inline-start: 0;
+  border-block-end: var(--bw-hairline) solid var(--border-1);
+  max-block-size: var(--d-4);
+  overflow-y: auto;
+}
+@media (min-width: 860px) {
+  .chat__list {
+    order: 0;
+    border-inline-start: var(--bw-hairline) solid var(--border-1);
+    border-block-end: 0;
+    max-block-size: none;
+  }
+}
+
+/* 22 · The bar charts.
+   The reports and grades charts reused `.trend` — the class of a 12px
+   up/down arrow — so every row sat on one line that could not wrap, with bars
+   about 12px long. The chart now has its own modifier and rows of label,
+   bar, value; on a phone the bar takes a line of its own. */
+.trend.trend--chart {
+  display: grid;
+  gap: var(--s3);
+  inline-size: 100%;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+}
+.trend--chart .trend__i {
+  display: grid;
+  grid-template-columns: minmax(0, var(--d-2)) minmax(0, 1fr) auto;
+  grid-template-areas: "l b v";
+  align-items: center;
+  gap: var(--s3);
+  inline-size: auto;
+  block-size: auto;
+}
+.trend--chart .trend__l { grid-area: l; color: var(--text-muted); font-size: var(--fs-xs); overflow-wrap: break-word; overflow-wrap: anywhere; }
+.trend--chart .ui-progress { grid-area: b; min-inline-size: 0; }
+.trend--chart .trend__v { grid-area: v; font-weight: var(--fw-semi); color: var(--text-strong); }
+@media (max-width: 479px) {
+  .trend--chart .trend__i {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "l v" "b b";
+    gap: var(--s1) var(--s3);
+  }
+}
+
+/* 23 · The calendar.
+   Below 700px the day header was hidden — but it sits INSIDE each day, so
+   every date disappeared and nobody could tell one day from the next. It
+   stays, as a row of its own. Today is marked with `is-today`, which the
+   stylesheet never matched. The week navigation wraps; an event shows its
+   topic and status instead of one clipped line. */
+.cal__day.is-today { box-shadow: inset 0 0 0 var(--bw-strong) var(--violet-500); }
+.cal__nav { flex-wrap: wrap; }
+@media (max-width: 699px) {
+  .cal__dayhd {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s2);
+    text-align: start;
+    border-radius: var(--r-sm);
+  }
+  .cal__nav b { flex-basis: 100%; order: -1; }
+  .cal__ev { white-space: normal; min-block-size: var(--touch-min); }
+  .cal__none { padding: var(--s3); }
+}
+
+/* 24 · The week-by-week lists in the dashboard.
+   `.wk` lived only in public.css, which the dashboard never loads, so the
+   timetable's main view and the assignments list rendered as bare
+   <details> elements. The same rules, here, where the dashboard reads them. */
+.wk { display: grid; gap: var(--s4); }
+.wk__i { border: var(--bw-hairline) solid var(--border-1); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden; }
+.wk__hd { display: flex; align-items: center; gap: var(--s4); padding: var(--s4) var(--s5); cursor: pointer; min-block-size: var(--touch-min); }
+summary.wk__hd { list-style: none; }
+summary.wk__hd::-webkit-details-marker { display: none; }
+.wk__no {
+  flex: none;
+  inline-size: var(--s12);
+  block-size: var(--s12);
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  background: var(--violet-500);
+  color: var(--white);
+}
+.wk__no--muted { background: var(--surface-3); color: var(--text-muted); }
+.wk__t { flex: 1; min-inline-size: 0; }
+.wk__t b { display: block; font-size: var(--fs-body); color: var(--text-strong); }
+.wk__t span { font-size: var(--fs-sm); color: var(--text-muted); }
+.wk__body { padding: 0 var(--s5) var(--s5); color: var(--text-body); font-size: var(--fs-sm); }
+.wk__tags { padding: 0 var(--s5) var(--s5); display: flex; flex-wrap: wrap; gap: var(--s2); }
+@media (max-width: 479px) {
+  .wk__hd { flex-wrap: wrap; gap: var(--s3); padding: var(--s3) var(--s4); }
+  .wk__no { inline-size: var(--s10); block-size: var(--s10); }
+}
+
+/* 25 · The printable card had no stylesheet at all: its classes existed in
+   the view and nowhere else, so the QR code stretched to the width of the
+   page and the URL ran off a phone. A card of credit-card proportion, a QR
+   sized to scan from paper, a URL that wraps (D-57's own promise). */
+.sheet__hd {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding-block-end: var(--s4);
+  margin-block-end: var(--s6);
+  border-block-end: var(--bw-hairline) solid var(--ink-600);
+}
+.sheet__hd h1 { font-size: var(--fs-h3); line-height: var(--lh-flat); }
+.sheet__hd p { font-size: var(--fs-sm); color: var(--ink-600); }
+.sheet__note { margin-block-start: var(--s5); font-size: var(--fs-xs); color: var(--ink-600); text-align: center; }
+.pcard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s5);
+  align-items: center;
+  max-inline-size: var(--d-8);
+  margin-inline: auto;
+  padding: var(--s5);
+  border: var(--bw-strong) solid var(--violet-500);
+  border-radius: var(--r-lg);
+  aspect-ratio: 1.586 / 1;
+  background: var(--white);
+  color: var(--black);
+}
+.pcard__main { min-inline-size: 0; }
+.pcard__name { font-size: var(--fs-h4); font-weight: var(--fw-bold); line-height: var(--lh-h4); }
+.pcard__name--latin { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--ink-600); text-align: start; unicode-bidi: isolate; }
+.pcard__meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s1) var(--s3); margin-block-start: var(--s3); font-size: var(--fs-xs); }
+.pcard__meta dt { color: var(--ink-600); }
+.pcard__meta dd { margin: 0; font-weight: var(--fw-semi); }
+.pcard__side { display: grid; justify-items: center; gap: var(--s2); inline-size: var(--d-1); }
+.pcard__qr { inline-size: var(--d-1); block-size: var(--d-1); }
+.pcard__qr svg { inline-size: 100%; block-size: 100%; }
+.pcard__url { font-size: var(--fs-2xs); color: var(--ink-600); text-align: center; overflow-wrap: break-word; overflow-wrap: anywhere; unicode-bidi: isolate; }
+@media (max-width: 479px) {
+  .pcard { grid-template-columns: minmax(0, 1fr); aspect-ratio: auto; justify-items: start; }
+  .pcard__side { justify-self: center; }
+}
+
+/* 26 · Stat strips: `.dgrid--stats` sat EARLIER in the bundle than `.dgrid`
+   (Tailwind moves app.css's component layer after the imports), so at equal
+   specificity the plain grid won and the strip was one column on a phone and
+   never four. Two classes beat one. */
+.dgrid.dgrid--stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) {
+  .dgrid.dgrid--stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* 27 · Two-column form rows stay two columns only where two fit. */
+@media (max-width: 619px) {
+  .f2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 28 · The printable timetable and the certificate's URL on a phone. The
+   table scrolls in its own box on a phone only; wider, it stays a table and
+   spans its sheet. */
+@media screen and (max-width: 599px) {
+  .sheet__table { display: block; overflow-x: auto; position: relative; }
+}
+.certsheet__url { overflow-wrap: break-word; overflow-wrap: anywhere; min-inline-size: 0; }
+
+/* 29 · iOS zooms the page when a field under 16px takes focus. */
+@media (pointer: coarse) {
+  .ui-input,
+  .ui-select__native,
+  .ui-select__button,
+  .chat__in input,
+  textarea,
+  select { font-size: var(--fs-input-touch); }
+}
+
+/* 30 · The public verification pages' status icon had no size either. */
+.verify__status svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; }
+
+/* 31 · The sticky app bar stays above content that lifts itself to the same
+   layer (the journey's step dots painted over it and over an open menu). */
+.appbar { z-index: calc(var(--z-raised) + 1); }
+
+/* 32 · A left-to-right page reads direction the other way. i-chev is drawn
+   pointing left — forward in Arabic — so in English the plain chevron flips
+   and the «back» one un-flips. */
+[dir="ltr"] .ic { transform: scaleX(-1); }
+[dir="ltr"] .ic--flip { transform: none; }
+
+/* 33 · The landing's small controls, finger-sized on a touch screen. */
+@media (pointer: coarse) {
+  .trace__stop { min-inline-size: var(--touch-min); min-block-size: var(--touch-min); }
+}
+
+/* 34 · The resource card. `.res` lands on the card's outer box, whose only
+   child is the card body — so its flex row never reached the icon, title and
+   buttons inside, the title never ellipsized, and the action row could not
+   wrap: the download button was cut off at 320px. The layout now sits on the
+   body the parts actually live in. */
+.res > .ui-card__body { display: grid; gap: var(--s2); min-inline-size: 0; }
+.res__hd { display: flex; align-items: center; gap: var(--s2); }
+.res__acts { flex-wrap: wrap; }
+@media (max-width: 599px) {
+  .res__acts .ui-btn {
+    white-space: normal;
+    max-inline-size: 100%;
+    line-height: var(--lh-sm);
+    padding-block: var(--s2);
+  }
 }
 
 /* Alpine cloak — never flash un-initialised markup. */

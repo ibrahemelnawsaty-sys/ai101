@@ -417,6 +417,25 @@ function drawer() {
         open: false,
         previouslyFocused: null,
 
+        /**
+         * At 1024px the permanent rail appears, and a drawer left open when a
+         * tablet is rotated or a window widened used to stay on screen beside
+         * it — two navigations, a focus trap on hidden content and the page
+         * still unable to scroll (D-86). The drawer closes itself instead.
+         */
+        init() {
+            if (!window.matchMedia) return;
+            const wide = window.matchMedia('(min-width: 1024px)');
+            const close = () => { if (wide.matches && this.open) this.hide(); };
+            if (wide.addEventListener) wide.addEventListener('change', close);
+            else if (wide.addListener) wide.addListener(close); // Safari < 14
+        },
+
+        /** Escape closes the drawer only when it is the drawer that is open. */
+        escape() {
+            if (this.open) this.hide();
+        },
+
         show() {
             this.previouslyFocused = document.activeElement;
             this.open = true;
@@ -757,8 +776,25 @@ function impersonation() {
         label: '00:00',
         expired: false,
         timer: null,
+        observer: null,
 
         init() {
+            // The banner is sticky at the top, and so are the app bar and the
+            // rail. All three at top 0 put the bar over the header and over the
+            // rail's collapse button once the page scrolled. The banner now
+            // publishes its own height, which wraps to two or three lines on a
+            // phone, and the other two stick below it (D-86).
+            const publish = () => {
+                document.documentElement.style.setProperty('--impbar-h', this.$el.offsetHeight + 'px');
+            };
+            publish();
+            if ('ResizeObserver' in window) {
+                this.observer = new ResizeObserver(publish);
+                this.observer.observe(this.$el);
+            } else {
+                window.addEventListener('resize', publish);
+            }
+
             if (Number.isNaN(this.endsAtMs)) return;
             this.tick();
             this.timer = window.setInterval(() => this.tick(), 1000);
@@ -766,6 +802,7 @@ function impersonation() {
 
         destroy() {
             window.clearInterval(this.timer);
+            if (this.observer) this.observer.disconnect();
         },
 
         tick() {
@@ -797,7 +834,13 @@ const toastStore = {
     push(message, tone = 'info') {
         const id = ++this.seq;
         this.items.push({ id, message, tone });
-        window.setTimeout(() => this.dismiss(id), TOAST_MS);
+        // A success fades; a problem stays until it is closed. An error that
+        // disappeared after five seconds could not be read twice, and people
+        // who read slowly, or who were looking away, never read it at all
+        // (WCAG 2.2.1, D-86).
+        if (tone !== 'bad' && tone !== 'warn') {
+            window.setTimeout(() => this.dismiss(id), TOAST_MS);
+        }
         return id;
     },
 

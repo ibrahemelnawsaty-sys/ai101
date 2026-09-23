@@ -131,7 +131,7 @@
             {{-- Progress across the weeks --}}
             @if ($trend && $trend->isNotEmpty())
                 <x-ui.card class="u-mt-4" icon="chart" :title="__('grades.trend_title')">
-                    <ul class="trend" role="list">
+                    <ul class="trend trend--chart" role="list">
                         @foreach ($trend as $point)
                             <li class="trend__i">
                                 <span class="trend__l">{{ $point->label }}</span>

@@ -131,11 +131,13 @@ final class EmailPalette
 
         $theme['font'] = $tokens['font'];
 
-        // The invitation prints a temporary password. It has to be read one
-        // character at a time by somebody retyping it, so it is set in the
-        // monospaced stack: proportional type makes `rn` look like `m` and puts
-        // `1`, `l` and `I` on the same width. The generator already drops the
-        // worst of those pairs; the typeface removes the rest.
+        // The invitation prints a temporary password, read one character at a
+        // time by somebody retyping it. It used to be set in a monospaced
+        // stack; since the owner asked for one typeface everywhere (D-86) the
+        // mono role resolves to the body face. What keeps the password legible
+        // now is the generator, whose alphabet leaves out 0/O and 1/l/I, and
+        // the letter's wide letter-spacing on that one line, which keeps `rn`
+        // from reading as `m`.
         if (! isset($tokens['font-mono'])) {
             throw new \RuntimeException('tokens.css does not define --font-mono.');
         }
@@ -161,18 +163,36 @@ final class EmailPalette
         preg_match_all('/--([a-z0-9-]+):\s*([^;\n]+);/i', $source, $matches, PREG_SET_ORDER);
 
         $tokens = [];
+        $aliases = [];
 
         foreach ($matches as $match) {
             $value = trim($match[2]);
 
-            // Only concrete values are useful here: a role pointing at another
-            // role (`var(--x)`) would have to be resolved, and an e-mail has no
-            // cascade to resolve it in.
+            // A role that is nothing but another role — `--font-mono:
+            // var(--font)` — is remembered and resolved below. Anything else
+            // holding a `var(` is skipped: an e-mail has no cascade, and a
+            // partly resolved value would reach the reader as literal text.
+            if (preg_match('/^var\(--([a-z0-9-]+)\)$/i', $value, $alias) === 1) {
+                $aliases[$match[1]] ??= $alias[1];
+
+                continue;
+            }
+
             if (str_contains($value, 'var(')) {
                 continue;
             }
 
             $tokens[$match[1]] ??= $value;
+        }
+
+        // Only a role with no concrete definition of its own takes its alias's
+        // value, so no colour that resolved before resolves differently now.
+        // Without this, pointing `--font-mono` at `--font` (D-86) left the mono
+        // role undefined and every invitation letter threw.
+        foreach ($aliases as $name => $target) {
+            if (! isset($tokens[$name]) && isset($tokens[$target])) {
+                $tokens[$name] = $tokens[$target];
+            }
         }
 
         return $tokens;

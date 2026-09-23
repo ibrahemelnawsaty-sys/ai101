@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use App\Http\Controllers\Admin\AuditController;
+use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -665,6 +666,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])
 
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export', [AdminReportController::class, 'export'])->name('reports.export');
+
+        /*
+         * Writing to a cohort's trainees, and the session and assignment
+         * reminders by hand (D-87). The automatic reminders are not touched.
+         */
+        Route::get('/broadcasts', [AdminBroadcastController::class, 'index'])->name('broadcasts.index');
+        Route::post('/broadcasts', [AdminBroadcastController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('broadcasts.store');
+        Route::post('/broadcasts/reminders', [AdminBroadcastController::class, 'remind'])
+            ->middleware('not.impersonating')
+            ->name('broadcasts.remind');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/export', [AuditController::class, 'export'])->name('audit.export');

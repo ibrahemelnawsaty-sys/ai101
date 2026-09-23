@@ -1,12 +1,13 @@
-# public/fonts — the four font binaries, now vendored
+# public/fonts — the four font binaries, vendored
 
 > **`D-28` is closed.** The files that this directory used to only describe are
 > now committed here. `git pull` brings them; nothing has to be fetched by hand
 > on a deploy any more.
 >
-> **`D-108` retired the second face.** Reem Kufi (the display heading face)
-> and its `@font-face` rule are gone — IBM Plex Sans Arabic is the platform's
-> only face now, everywhere, no exception.
+> **`D-86` retired the second face** (Reem Kufi, the display heading face) —
+> IBM Plex Sans Arabic is the platform's only face now, everywhere, no
+> exception. `D-108` reached the same decision independently the same day;
+> `D-86` is the canonical record.
 
 `resources/css/app.css` declares four `@font-face` rules that point at this
 directory. Each file below is referenced by that exact name — renaming one
@@ -39,14 +40,25 @@ platform, so a subset build would have dropped every figure on every screen to
 the fallback font — visible immediately in tables of grades and attendance.
 The `complete` builds carry Arabic and Latin in one file.
 
-## One thing that will break this silently
+**One family only (D-86).** A fifth file, `reem-kufi-variable.woff2`, used to
+serve a display face on the marketing headings (D-22). The owner asked for a
+single typeface across the whole platform, so the file and its `@font-face`
+rule were removed; `deploy/update.sh` copies this directory with
+`rsync --delete`, so the next deploy removes it from the web root too.
 
-**The shim deployment.** `deploy/public_html-index.php` calls
-`usePublicPath(__DIR__)`, so `public_path()` is the web root, **not**
-`$APP/public`. Files here are not reachable over HTTP until they are copied
-across. `deploy/RUNBOOK-first-deploy.md` §7 does that; skipping it leaves
-these four files 404 while every other asset works, which is exactly how the
-problem presented the first time.
+## Two things that will break this silently
+
+1. **`format()` in the `@font-face` rule.** Keep it plain `format("woff2")`.
+   A retired rule here once used `format("woff2-variations")`, a hint dropped
+   from the specification; a browser that does not know it discards the whole
+   rule and loads nothing.
+
+2. **The shim deployment.** `deploy/public_html-index.php` calls
+   `usePublicPath(__DIR__)`, so `public_path()` is the web root, **not**
+   `$APP/public`. Files here are not reachable over HTTP until they are copied
+   across. `deploy/RUNBOOK-first-deploy.md` §7 does that; skipping it leaves
+   these files 404 while every other asset works, which is exactly how the
+   problem presented the first time.
 
 ## Replacing a file
 

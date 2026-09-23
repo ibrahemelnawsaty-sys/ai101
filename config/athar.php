@@ -188,6 +188,17 @@ return [
     ],
 
     /*
+    | The administrator's send screen (D-87). A reminder of the same kind to
+    | the same cohort inside this window is refused, and so is the same
+    | message twice — the double click that would otherwise write to every
+    | trainee two times.
+    */
+    'broadcasts' => [
+        'cooldown_minutes' => (int) env('ATHAR_BROADCAST_COOLDOWN_MINUTES', 10),
+        'body_max' => 5000,
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------

@@ -10,6 +10,27 @@
 
 return [
 
+    'broadcast' => [
+        'cta' => 'Open the platform',
+    ],
+    'sessions_digest' => [
+        'subject' => 'Your upcoming sessions in :program',
+        'preheader' => 'All your upcoming sessions in one message, in Riyadh time.',
+        'heading' => 'Your upcoming sessions',
+        'body' => 'These are your cohort\'s upcoming sessions in Riyadh time. Each session\'s link appears on the live sessions tab shortly before it starts.',
+        'cta' => 'Open the timetable',
+    ],
+    'assignments_digest' => [
+        'subject' => 'Work not handed in yet in :program',
+        'preheader' => 'What is still due from you, nearest deadline first.',
+        'heading' => 'What is still due from you',
+        'body' => 'These assignments are still open and we have not received your hand-in. Submit before the deadline — a late hand-in may be marked late or refused, depending on the assignment.',
+        'due' => 'Due :date · in :countdown',
+        'late' => 'Was due :date — a late hand-in is still accepted',
+        'no_deadline' => 'No deadline',
+        'cta' => 'Open assignments',
+    ],
+
     'common' => [
         'greeting' => 'Hello :name,',
         'greeting_neutral' => 'Hello,',
@@ -18,6 +39,7 @@ return [
         // A LABEL for the detail strip, not a sentence.
         'cohort_label' => 'Cohort',
         'view_in_platform' => 'Open the platform',
+        'and_more' => '{1} and 1 more on the platform|[2,*] and :count more on the platform',
         'contact_line' => 'For any question, write to us at :email',
         'why_receiving' => 'You are receiving this because you are enrolled in :program.',
         'preferences_link' => 'You can choose what reaches you from your account settings.',

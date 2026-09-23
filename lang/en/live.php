@@ -15,6 +15,8 @@ return [
     'join' => 'Join the session',
     'join_locked' => '{0} Joining opens when the session starts, and the link is not sent to your browser before then.|{1} Joining opens 1 minute before the session starts, and the link is not sent to your browser before then.|[2,*] Joining opens :minutes minutes before the session starts, and the link is not sent to your browser before then.',
     'passcode' => 'Meeting passcode',
+    'copy_passcode' => 'Copy passcode',
+    'passcode_copied' => 'Passcode copied',
 
     'errors' => [
         'no_link' => 'No link has been added for this session yet. Ask your trainer to add one before it starts.',

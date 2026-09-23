@@ -318,11 +318,15 @@
      13 · TYPOGRAPHY (PRD §5.4)
           Arabic line-height never below 1.7 · never a weight under 400.
      ====================================================================== */
-  /* D-108 — one face everywhere, no exception. Reem Kufi is retired; a
-     heading that used to reach --font-display now reaches --font like
-     everything else (CLAUDE.md PR-5, 23 September 2026). */
+  /* ONE family, everywhere (D-86, D-108 — two sessions reached the same
+     decision independently the same day; D-86 is the canonical record).
+     The display and mono roles are kept as names so every rule that asks
+     for a role still reads; they now answer with the same face. A code
+     string stays aligned through tabular figures (set on the body), not
+     through a second typeface. */
   --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  --font-display: var(--font);
+  --font-mono: var(--font);
 
   --fw-regular: 400;
   --fw-medium:  500;
@@ -336,7 +340,12 @@
   --fs-body: 16px;
   --fs-sm:   14px;
   --fs-xs:   12px;
-  --fs-2xs:  11px;
+  --fs-2xs:  12px;   /* 12px floor for Arabic on a phone (D-86); was 11px */
+  /* <small>: 80% of its parent, never under the floor above (D-86). */
+  --fs-small: max(0.8em, 12px);
+  /* iOS Safari zooms the whole page when a field under 16px takes focus.
+     Fields are 16px where the pointer is a finger (D-86). */
+  --fs-input-touch: 16px;
   --fs-btn:  16px;
   --fs-stat: clamp(28px, 4vw, 36px);
   --fs-lead: clamp(16px, 2vw, 19px);   /* an intro paragraph, one step above body */
@@ -371,6 +380,10 @@
   --header-h:      64px;     /* dashboard header — PRD §5.5 */
   --side-w:        264px;    /* PRD §5.5 · Constitution Article 16 */
   --side-w-collapsed: 72px;
+  /* The preview banner's live height, written by its component so the app bar
+     and the rail stick BELOW it rather than under it (D-86). Zero when there
+     is no preview. */
+  --impbar-h:      0px;
   --touch-min:     44px;     /* WCAG 2.1 AA floor · PRD §5.9, §13.2 */
   --touch:         var(--touch-min);   /* legacy alias — same single value */
   --gutter:        24px;
@@ -464,6 +477,7 @@
   --d-6:  320px;
   --d-7:  400px;
   --d-8:  480px;
+  --idwrap-col: 420px;   /* the card/certificate column beside its details (D-57) */
   --d-9:  560px;
   --d-10: 640px;
   --d-11: 760px;

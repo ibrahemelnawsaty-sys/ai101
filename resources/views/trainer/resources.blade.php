@@ -52,6 +52,8 @@
                 <x-ui.textarea name="description" rows="3" :label="__('trainer.resources.field_description')" />
 
                 <div class="row__acts">
+                    {{-- `uploading` belonged to the retired uploader component and
+                         threw on every render (D-86). --}}
                     <x-ui.button variant="primary" type="submit">{{ __('trainer.resources.publish') }}</x-ui.button>
                 </div>
             </form>

@@ -89,7 +89,14 @@ function neuralCanvas() {
     if (!canvas || reduced()) return;
 
     const ctx = canvas.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // On a phone this is a full-screen surface repainted every frame, on the
+    // one page most often opened from an in-app browser with the least GPU and
+    // battery to spare. There it draws at 1x and about thirty frames a
+    // second; the effect reads the same at a glance (D-86).
+    const lite = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse), (max-width: 767px)').matches);
+    const dpr = lite ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    const FRAME_MS = lite ? 33 : 0;
+    let lastPaint = 0;
     const LAYERS = [5, 8, 8, 6, 3];
     let W = 0;
     let H = 0;
@@ -163,6 +170,11 @@ function neuralCanvas() {
 
     function frame(ts) {
         if (!running) return;
+        if (FRAME_MS && ts - lastPaint < FRAME_MS) {
+            requestAnimationFrame(frame);
+            return;
+        }
+        lastPaint = ts;
         const dt = Math.min((ts - t0) / 16.7 || 1, 3);
         t0 = ts;
         ctx.clearRect(0, 0, W, H);
@@ -491,8 +503,21 @@ function classifierLab() {
         else draw();
     }
 
+    // A point is placed on a TAP: pointerup near where the pointer went down,
+    // with no pointercancel between. The stage lets a vertical swipe scroll
+    // the page (touch-action: pan-y), and placing on pointerdown turned every
+    // thumb that scrolled past the demo into a training point (D-86).
+    let pressed = null;
+    const TAP_SLOP = 10;
     stage.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
+        pressed = { x: e.clientX, y: e.clientY };
+    });
+    stage.addEventListener('pointercancel', () => { pressed = null; });
+    stage.addEventListener('pointerup', (e) => {
+        if (!pressed) return;
+        const moved = Math.abs(e.clientX - pressed.x) + Math.abs(e.clientY - pressed.y);
+        pressed = null;
+        if (moved > TAP_SLOP) return;
         const r = stage.getBoundingClientRect();
         add(e.clientX - r.left, e.clientY - r.top);
     });

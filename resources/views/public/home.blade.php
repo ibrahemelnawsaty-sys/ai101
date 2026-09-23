@@ -204,7 +204,10 @@
                 <x-ui.button variant="primary" size="lg" :href="route('register')" class="mag">
                     <span class="mag__t">
                         {{ __('landing.hero.register') }}
-                        <svg aria-hidden="true" class="ic ic--flip"><use href="#i-chev"/></svg>
+                        {{-- Unflipped: i-chev points left, which is FORWARD in a
+                             right-to-left page. The flip made the main call to
+                             action point backward (D-86). --}}
+                        <svg aria-hidden="true" class="ic"><use href="#i-chev"/></svg>
                     </span>
                 </x-ui.button>
             @endif

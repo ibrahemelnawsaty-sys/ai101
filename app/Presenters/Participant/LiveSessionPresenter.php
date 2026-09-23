@@ -16,6 +16,7 @@ use Carbon\CarbonImmutable;
  * The featured session at the top of the live screen (PRD §9.10).
  *
  * BR-24 in one line: the meeting URL is not here, and it is not in the page.
+ * The passcode is, but only once the join window is open (PRD §9.10).
  * `joinWindowOpen` is the server's answer to «is it time», rendered as a
  * disabled or enabled button; the join endpoint asks the same question again
  * before it hands anything over.
@@ -36,6 +37,7 @@ final class LiveSessionPresenter extends ViewModel
             'statusLabel' => null,
             'statusVariant' => 'neutral',
             'joinWindowOpen' => false,
+            'passcode' => null,
             // There is no session here to ask, so the platform default is the
             // only honest answer. A blind search-and-replace once put a
             // per-session lookup in this method, which has no $session — and the whole
@@ -45,7 +47,14 @@ final class LiveSessionPresenter extends ViewModel
         ]);
     }
 
-    public static function from(Session $session, AttendanceWindow $window, CarbonImmutable $now): self
+    /**
+     * `$mayJoin` is the caller's answer to SessionPolicy::revealJoinLink — the
+     * question the join endpoint asks. The page can feature a session to an
+     * account the endpoint refuses (a pending or rejected registrant, a
+     * withdrawn trainee), and the passcode must not reach them where the link
+     * cannot (BR-24). It defaults to no.
+     */
+    public static function from(Session $session, AttendanceWindow $window, CarbonImmutable $now, bool $mayJoin = false): self
     {
         $startsAt = $window->startsAt($session);
         $endsAt = $window->endsAt($session);
@@ -53,6 +62,9 @@ final class LiveSessionPresenter extends ViewModel
 
         $status = $session->getAttribute('status');
         $status = $status instanceof SessionStatus ? $status : SessionStatus::tryFrom((string) $status);
+
+        $open = LiveController::joinWindowOpen($session, $window, $now);
+        $passcode = Present::text($session->getAttribute('zoom_passcode'));
 
         return new self([
             'isMissing' => false,
@@ -65,7 +77,13 @@ final class LiveSessionPresenter extends ViewModel
             'statusLabel' => $isLive ? SessionStatus::Live->label() : ($status?->label() ?? ''),
             'statusVariant' => $isLive ? 'live' : ($status === SessionStatus::Cancelled ? 'error' : 'info'),
             // The endpoint's own rule, asked rather than copied (D-52, D-75).
-            'joinWindowOpen' => LiveController::joinWindowOpen($session, $window, $now),
+            'joinWindowOpen' => $open,
+            // PRD §9.10: the meeting passcode is shown, with a copy button,
+            // WHEN the link is — never before. The same rule that withholds the
+            // URL withholds this (BR-24), so it is null until the window opens.
+            // The page used to reference a `passcode` no component provided;
+            // Alpine threw on every render and the passcode never appeared (D-86).
+            'passcode' => $open && $mayJoin ? $passcode : null,
             'joinOpensBeforeMinutes' => LiveController::joinWindowMinutes($session),
         ]);
     }

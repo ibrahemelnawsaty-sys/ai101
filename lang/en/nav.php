@@ -60,6 +60,7 @@ return [
         'users' => 'Users',
         'registrations' => 'Registrations',
         'certificates' => 'Certificates',
+        'broadcasts' => 'Message trainees',
         'reports' => 'Reports',
         'audit' => 'Audit log',
         'settings' => 'Platform settings',
