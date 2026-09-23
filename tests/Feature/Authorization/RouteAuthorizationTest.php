@@ -157,9 +157,11 @@ function authorizationMatrix(object $test): array
         'trainer.sessions.update' => ['patch', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
         'trainer.sessions.cancel' => ['post', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
 
+        // D-111 — reading the list stayed a trainer ability; defining a task
+        // (creating or editing it) moved to admin only.
         'trainer.assignments' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.assignments.store' => ['post', $cohort, ['trainer', 'admin']],
-        'trainer.assignments.update' => ['patch', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
+        'trainer.assignments.store' => ['post', $cohort, ['admin']],
+        'trainer.assignments.update' => ['patch', $cohort + ['assignment' => $test->assignment->id], ['admin']],
 
         'trainer.submissions' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.submissions.export' => ['get', $cohort, ['trainer', 'admin']],

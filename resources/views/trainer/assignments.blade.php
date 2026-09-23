@@ -1,8 +1,10 @@
 {{--
-    Trainer assignments — list plus the create/edit editor. A draft is invisible to
-    participants until published; the visibility rule lives in the query scope, not here.
+    Weekly tasks (D-111): the administrator defines them — conditions,
+    description, deadline, files — and the trainer reads this same list and
+    grades what comes in. A draft is invisible to participants until
+    published; the visibility rule lives in the query scope, not here.
 
-    @see PRD §9.11.3, §9.15.1 · BR-11, BR-23
+    @see PRD §9.11.3, §9.15.1 · BR-11, BR-23 · D-111
 --}}
 @extends('layouts.app')
 
@@ -24,16 +26,25 @@
             </div>
         @endif
 
+        @unless ($canManage)
+            <div class="note note--info u-mb-4">
+                <b>{{ __('trainer.assignments.readonly_title') }}</b>
+                {{ __('trainer.assignments.readonly_body') }}
+            </div>
+        @endunless
+
         <div class="toolbar">
             <form method="GET" action="{{ route('trainer.assignments') }}" class="toolbar__filters">
                 <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                 <x-ui.select name="status" :label="__('trainer.assignments.filter_status')" :options="$statusOptions" :value="request('status')" />
                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
-            <div class="toolbar__end">
-                <x-ui.button variant="primary" size="sm"
-                    :href="route('trainer.assignments', ['edit' => 'new'])">{{ __('trainer.assignments.create') }}</x-ui.button>
-            </div>
+            @if ($canManage)
+                <div class="toolbar__end">
+                    <x-ui.button variant="primary" size="sm"
+                        :href="route('trainer.assignments', ['edit' => 'new'])">{{ __('trainer.assignments.create') }}</x-ui.button>
+                </div>
+            @endif
         </div>
 
         <x-ui.card class="dc--span" flush>
@@ -55,10 +66,10 @@
                 </div>
             @elseif ($assignments->isEmpty())
                 <x-ui.empty-state icon="file"
-                    :title="__('trainer.assignments.empty_title')"
-                    :description="__('trainer.assignments.empty_body')"
-                    :action-label="__('trainer.assignments.create')"
-                    :action-href="route('trainer.assignments', ['edit' => 'new'])" />
+                    :title="__($canManage ? 'trainer.assignments.empty_title' : 'trainer.assignments.empty_title_readonly')"
+                    :description="__($canManage ? 'trainer.assignments.empty_body' : 'trainer.assignments.empty_body_readonly')"
+                    :action-label="$canManage ? __('trainer.assignments.create') : null"
+                    :action-href="$canManage ? route('trainer.assignments', ['edit' => 'new']) : null" />
             @else
                 <div class="tscroll">
                     <table class="atable">
@@ -89,8 +100,10 @@
                                     <td class="u-num">{{ $assignment->submittedCount }} / {{ $assignment->cohortSize }}</td>
                                     <td><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
-                                            :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>
+                                        @if ($canManage)
+                                            <x-ui.button variant="secondary" size="sm"
+                                                :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>
+                                        @endif
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('trainer.submissions', ['assignment' => $assignment->id])">{{ __('trainer.submissions.title') }}</x-ui.button>
                                     </td>

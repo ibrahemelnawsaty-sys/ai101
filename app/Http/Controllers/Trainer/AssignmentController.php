@@ -76,11 +76,14 @@ final class AssignmentController extends Controller
                 'assignments' => collect(),
                 'weekOptions' => [],
                 'statusOptions' => Options::fromEnum(AssignmentStatus::class),
+                'canManage' => false,
                 'editing' => null,
                 'totalsWarning' => null,
                 'errorState' => null,
             ]);
         }
+
+        $canManage = $this->canManage($request, (string) $cohort->getKey());
 
         $query = Assignment::query()
             ->with(['week'])
@@ -117,11 +120,25 @@ final class AssignmentController extends Controller
                 static fn (Week $item): string => (string) $item->getAttribute('title'),
             ),
             'statusOptions' => Options::fromEnum(AssignmentStatus::class),
-            'editing' => $this->editing($request),
+            'canManage' => $canManage,
+            'editing' => $canManage ? $this->editing($request) : null,
             // BR-11 — a mismatch warns the trainer and never blocks them.
             'totalsWarning' => TotalsWarning::forCohort($this->scores, $cohort),
             'errorState' => null,
         ]);
+    }
+
+    /**
+     * AssignmentPolicy::create's own answer, asked against a draft bound to
+     * this cohort — the same shape StoreAssignmentRequest::authorize() checks
+     * against (D-111). The view never decides this on its own.
+     */
+    private function canManage(Request $request, string $cohortId): bool
+    {
+        $draft = new Assignment;
+        $draft->setAttribute('cohort_id', $cohortId);
+
+        return (bool) $request->user()?->can('create', $draft);
     }
 
     /** The editor panel, open on `?edit=new` or `?edit={id}`. */

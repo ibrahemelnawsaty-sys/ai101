@@ -72,7 +72,9 @@ return [
         'sessions' => 'Sessions',
         'attendance' => 'Attendance',
         'resources' => 'Resources',
-        'assignments' => 'Assignments',
+        // D-111 — setting this up (its conditions, description, date, files)
+        // moved to the administrator only; the trainer reads it and grades.
+        'assignments' => 'Weekly tasks',
         'submissions' => 'Submissions and grading',
         'final_project' => 'Final project',
         'reports' => 'Cohort reports',

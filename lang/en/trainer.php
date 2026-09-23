@@ -190,6 +190,8 @@ return [
         'description' => 'Assignment description',
         'create' => 'Create an assignment',
         'edit_title' => 'Edit the assignment',
+        'readonly_title' => 'Your weekly tasks — view only',
+        'readonly_body' => 'The administrator creates weekly tasks and sets their conditions, description, date and files. Grading hand-ins is still yours, from the "Submissions and grading" button on each row.',
         'filter_status' => 'Assignment status',
         'col_title' => 'Assignment',
         'col_submitted' => 'Submissions',
@@ -209,6 +211,8 @@ return [
 
         'empty_title' => 'No assignments created yet',
         'empty_body' => 'Create the first assignment for this week. A draft stays invisible to participants until you publish it.',
+        'empty_title_readonly' => 'No weekly tasks yet',
+        'empty_body_readonly' => 'The administrator creates the first task for this week, and it appears here once published.',
         'error_title' => 'The assignments could not be shown',
         'error_body' => 'Something went wrong while fetching them. Try again shortly — your assignments are safe and unaffected.',
     ],
