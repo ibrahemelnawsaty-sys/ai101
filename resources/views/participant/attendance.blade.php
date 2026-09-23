@@ -73,7 +73,8 @@
                                     {{ __('attendance.check_in') }}
                                 @elseif ($window->checkInState === 'wait')
                                     {{ __('attendance.opens_in') }}
-                                    <x-ui.countdown :until="$window->checkInOpensAt" :server-now="$serverNow" compact />
+                                    <x-ui.countdown :until="$window->checkInOpensAt" :server-now="$serverNow"
+                                        variant="compact" :show-days="false" />
                                 @else
                                     {{ __('attendance.check_in_closed') }}
                                 @endif
@@ -93,7 +94,8 @@
                                     {{ __('attendance.check_out') }}
                                 @elseif ($window->checkOutState === 'wait')
                                     {{ __('attendance.check_out_opens_in') }}
-                                    <x-ui.countdown :until="$window->checkOutOpensAt" :server-now="$serverNow" compact />
+                                    <x-ui.countdown :until="$window->checkOutOpensAt" :server-now="$serverNow"
+                                        variant="compact" :show-days="false" />
                                 @else
                                     {{ __('attendance.check_out_closed') }}
                                 @endif

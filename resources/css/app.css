@@ -28,13 +28,17 @@
    Self-hosted fonts (PRD §5.4 · Constitution Article 19 — font-display: swap).
 
    THE BINARIES ARE NOT IN THIS REPOSITORY. public/fonts/README.md names the
-   five files, their licences and where to fetch them; the deploy step copies
+   four files, their licences and where to fetch them; the deploy step copies
    them in. Until it does, every rule below simply fails to load and the browser
    moves on to the next family in the stack — this is why each rule tries a
    locally installed copy first, and why no rule is the only source of a face:
-   the two families are ALWAYS reached through --font and --font-display in
-   tokens.css, whose stacks end in Segoe UI and Tahoma. Both cover Arabic, so
-   the platform is fully legible with public/fonts/ empty.
+   the family is ALWAYS reached through --font in tokens.css, whose stack ends
+   in Segoe UI and Tahoma. Both cover Arabic, so the platform is fully legible
+   with public/fonts/ empty.
+
+   D-108 retired the second face (Reem Kufi, PRD-era "display" heading font):
+   one face everywhere, no exception, per an explicit product decision in
+   PR-5. Its @font-face rule and binary are gone, not merely unused.
 
    No size-adjust is declared: the correct metric overrides can only be measured
    from the real binaries, and a guessed value would trade a missing font for a
@@ -75,18 +79,6 @@
   src: local("IBM Plex Sans Arabic Bold"),
        local("IBMPlexSansArabic-Bold"),
        url("/fonts/ibm-plex-sans-arabic-700.woff2") format("woff2");
-}
-/* Display face for marketing headings only (DECISIONS D-22, layer 2).
-   Headings fall back to the body face, then to Segoe UI / Tahoma, so a missing
-   Reem Kufi costs the marketing pages their flourish and nothing else. */
-@font-face {
-  font-family: "Reem Kufi";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: local("Reem Kufi"),
-       local("ReemKufi-Regular"),
-       url("/fonts/reem-kufi-variable.woff2") format("woff2");
 }
 
 @tailwind base;
@@ -500,6 +492,29 @@ block-size: var(--s5);
   }
   .side__badge--alert { background: var(--bad-700); }
 
+  /* Signed-in identity (D-108): always visible, never only in the header
+     dropdown, so the role badge reads the same way in both places
+     (Article 6, Article 18). */
+  .side__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s3);
+    margin-block-start: var(--s2);
+    border-block-start: var(--bw-hairline) solid var(--border-1);
+  }
+  .side__identity-text { min-inline-size: 0; overflow: hidden; }
+  .side__identity-text b {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semi);
+    color: var(--text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .side__identity-text .ui-badge { margin-block-start: var(--s1); }
+
   .side__foot {
     margin-block-start: var(--s4);
     padding: var(--s3);
@@ -523,11 +538,20 @@ border: var(--bw-hairline) solid var(--violet-100);
     padding-inline: var(--s2);
   }
 
+  /* Signed-out is a POST, styled exactly like a nav item (D-108): the same
+     side__b, so the rail never gains a second visual language for one row. */
+  .side__logout { padding: var(--s2); border-block-start: var(--bw-hairline) solid var(--border-1); }
+  .side__logout .side__b { color: var(--status-bad-text); }
+  .side__logout .side__b:hover { background: var(--bad-a10); }
+  .side__logout .side__b svg { color: var(--status-bad-text); }
+
   /* Collapsed rail: icons only. */
   .shell[data-collapsed="true"] .side__label,
   .shell[data-collapsed="true"] .side__t,
   .shell[data-collapsed="true"] .side__foot,
+  .shell[data-collapsed="true"] .side__identity-text,
   .shell[data-collapsed="true"] .side__wordmark { display: none; }
+  .shell[data-collapsed="true"] .side__identity { justify-content: center; padding-inline: 0; }
 
   /* The compact mark replaces the wordmark in the 72px rail, and the brand row
      stacks so the collapse button keeps its full 44px touch target instead of
@@ -638,7 +662,8 @@ border: var(--bw-hairline) solid var(--border-1);
   }
   .menu__head { padding: var(--s3); border-block-end: var(--bw-hairline) solid var(--border-1); margin-block-end: var(--s2); }
   .menu__head b { display: block; font-size: var(--fs-sm); color: var(--text-strong); font-weight: var(--fw-semi); }
-  .menu__head span { display: block; font-size: var(--fs-xs); color: var(--text-muted); direction: ltr; unicode-bidi: isolate; text-align: start; }
+  .menu__head .ui-badge { margin-block-start: var(--s1); }
+  .menu__head .menu__email { display: block; font-size: var(--fs-xs); color: var(--text-muted); direction: ltr; unicode-bidi: isolate; text-align: start; margin-block-start: var(--s1); }
   .menu__i {
     display: flex;
     align-items: center;
@@ -656,7 +681,6 @@ border: var(--bw-hairline) solid var(--border-1);
   .menu__i svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; color: var(--text-muted); }
   .menu__i--danger { color: var(--status-bad-text); }
   .menu__i--danger svg { color: var(--status-bad-text); }
-  .menu__sep { block-size: var(--s1); background: var(--border-1); margin-block: var(--s2); }
 
   /* --------------------------------------------------- IMPERSONATION BAR */
   /* Burnt orange · sticky · the end button is ALWAYS visible (Article 23). */

@@ -318,8 +318,10 @@
      13 · TYPOGRAPHY (PRD §5.4)
           Arabic line-height never below 1.7 · never a weight under 400.
      ====================================================================== */
+  /* D-108 — one face everywhere, no exception. Reem Kufi is retired; a
+     heading that used to reach --font-display now reaches --font like
+     everything else (CLAUDE.md PR-5, 23 September 2026). */
   --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-display: "Reem Kufi", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
 
   --fw-regular: 400;

@@ -49,7 +49,7 @@
                     </div>
                     <div class="row__e">
                         <x-ui.countdown :until="$featured->startsAt" :server-now="$serverNow"
-                            :label="__('live.starts_in')" />
+                            variant="compact" :label="__('live.starts_in')" />
                     </div>
                 </div>
 

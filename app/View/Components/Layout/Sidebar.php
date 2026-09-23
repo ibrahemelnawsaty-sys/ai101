@@ -6,6 +6,7 @@ namespace App\View\Components\Layout;
 
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
+use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,8 @@ use Illuminate\Support\Facades\Route;
  */
 final class Sidebar extends UiComponent
 {
+    use ResolvesCurrentUser;
+
     /** Above this the badge reads "99+" rather than a four-digit number. */
     public const BADGE_CAP = 99;
 
@@ -97,6 +100,7 @@ final class Sidebar extends UiComponent
         $this->cohorts = self::rows($cohorts);
         $this->drawer = (bool) $drawer;
         $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? self::rows($groups) : $this->defaultGroups());
+        $this->resolveCurrentUser();
 
         $this->tag = $this->drawer ? 'div' : 'aside';
         $this->wrapperClass = $this->drawer ? 'drawer__panel' : 'side';
@@ -227,7 +231,14 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
-                ['route' => 'dashboard', 'icon' => 'i-home', 'label' => __('nav.participant.dashboard')],
+                // D-108 — nav.participant.home_page now leaves the dashboard
+                // shell for the public landing page (route: home) exactly as
+                // requested; the stats screen that used to sit behind this
+                // same first tab kept its own route (dashboard) and moved to
+                // nav.participant.dashboard's new label right after it,
+                // unchanged otherwise.
+                ['route' => 'home', 'icon' => 'i-home', 'label' => __('nav.participant.home_page')],
+                ['route' => 'dashboard', 'icon' => 'i-panel', 'label' => __('nav.participant.dashboard')],
                 ['route' => 'participant.card', 'icon' => 'i-card', 'label' => __('nav.participant.card')],
                 ['route' => 'participant.journey', 'icon' => 'i-route', 'label' => __('nav.participant.journey')],
             ]],

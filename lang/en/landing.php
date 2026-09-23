@@ -36,6 +36,7 @@ return [
 
     'hero' => [
         'register' => 'Register now',
+        'go_to_dashboard' => 'Go to my dashboard',
         'try_lab' => 'Train a model right now',
         'countdown_title' => 'Registration closes in',
         'days' => 'days',

@@ -11,6 +11,7 @@
 
     Props
       variant   success | warning | error | info | brand | neutral | solid | outline | count
+                | participant | trainer | coordinator | admin (the role badges, D-108)
       size      sm | md | lg
       state     default | loading
       icon      sprite id drawn before the label
@@ -23,7 +24,10 @@
 ])
 
 @php
-    $allowed = ['success', 'warning', 'error', 'info', 'brand', 'neutral', 'solid', 'outline', 'count'];
+    $allowed = [
+        'success', 'warning', 'error', 'info', 'brand', 'neutral', 'solid', 'outline', 'count',
+        'participant', 'trainer', 'coordinator', 'admin',
+    ];
     $variant = in_array($variant, $allowed, true) ? $variant : 'neutral';
     $size = in_array($size, ['sm', 'md', 'lg'], true) ? $size : 'md';
 @endphp

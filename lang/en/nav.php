@@ -37,7 +37,7 @@ return [
         'admin' => 'Platform administration',
     ],
 
-    'dashboard' => 'Home',
+    'dashboard' => 'Info dashboard',
     'card' => 'Digital card',
     'journey' => 'My journey',
     'schedule' => 'Programme schedule',
@@ -81,7 +81,8 @@ return [
     ],
 
     'participant' => [
-        'dashboard' => 'Home',
+        'home_page' => 'Home page',
+        'dashboard' => 'Info dashboard',
         'card' => 'Digital card',
         'journey' => 'My journey',
         'schedule' => 'Programme schedule',

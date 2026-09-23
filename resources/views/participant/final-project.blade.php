@@ -45,7 +45,7 @@
         <x-ui.card class="dc--span" icon="badge" :title="$project->title">
             <x-slot:action>
                 <x-ui.countdown :until="$project->dueAt" :server-now="$serverNow"
-                    :label="__('project.time_left')" />
+                    variant="compact" :label="__('project.time_left')" />
             </x-slot:action>
 
             <div class="prose">{{ $project->description }}</div>

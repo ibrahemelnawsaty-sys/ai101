@@ -215,14 +215,14 @@ trait PresentsVariants
         };
     }
 
+    /**
+     * The one role-badge colour per role (D-108) — the pill/badge variant name
+     * is the role's own enum value, so this can never drift from the identical
+     * mapping ResolvesCurrentUser uses for the header and sidebar's own badge.
+     */
     protected static function roleVariantOf(?UserRole $role): string
     {
-        return match ($role) {
-            UserRole::Admin => 'brand',
-            UserRole::Trainer => 'info',
-            UserRole::Participant => 'neutral',
-            default => 'neutral',
-        };
+        return $role?->value ?? 'neutral';
     }
 
     protected static function enrollmentVariantOf(?EnrollmentStatus $status): string

@@ -599,6 +599,14 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .ui-badge--neutral, .ui-pill--neutral { background: var(--surface-3); color: var(--text-muted); }
 .ui-badge--solid,   .ui-pill--solid   { background: var(--violet-500); color: var(--white); }
 
+/* The four role badges (D-108) — one existing brand pair per role, opaque
+   rather than an alpha wash like --info/--brand above, so identity reads at
+   a glance beside a name. No new colour anywhere in this block. */
+.ui-badge--participant, .ui-pill--participant { background: var(--teal-100);   color: var(--teal-700); }
+.ui-badge--trainer,     .ui-pill--trainer     { background: var(--violet-100); color: var(--violet-700); }
+.ui-badge--coordinator, .ui-pill--coordinator { background: var(--n-150);      color: var(--n-600); }
+.ui-badge--admin,       .ui-pill--admin       { background: var(--ink);       color: var(--white); }
+
 .ui-badge--outline {
   background: transparent;
 border: var(--bw-hairline) solid var(--border-3);
@@ -1380,12 +1388,23 @@ font-size: var(--fs-h2);
 }
 .ui-countdown__l { font-size: var(--fs-2xs); font-weight: var(--fw-medium); color: var(--text-muted); margin-block-start: var(--s1); }
 
-/* Compact form — a single inline HH:MM:SS readout for cards and table rows. */
+/* Compact form — a single inline readout for cards, table rows, pills and
+   button text (D-108). The whole component becomes one row instead of a
+   label paragraph sitting above a separate grid, so a countdown never costs
+   more vertical space than the text already beside it. */
+.ui-countdown--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: nowrap;
+}
+.ui-countdown--compact .ui-countdown__head { margin: 0; }
 .ui-countdown--compact .ui-countdown__grid {
   display: inline-flex;
   align-items: baseline;
   gap: var(--s1);
   margin-block-start: 0;
+  flex-wrap: nowrap;
 }
 .ui-countdown--compact .ui-countdown__cell { background: transparent; border: 0; padding: 0; }
 .ui-countdown--compact .ui-countdown__n { font-size: var(--fs-h4); color: var(--text-accent); }
