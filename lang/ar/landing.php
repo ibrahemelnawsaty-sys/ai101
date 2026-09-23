@@ -38,6 +38,9 @@ return [
 
     'hero' => [
         'register' => 'سجّل الآن',
+        // D-108 — a visitor already signed in sees this instead of a
+        // register button on both CTAs of this page (hero and final).
+        'go_to_dashboard' => 'اذهب إلى لوحتي',
         'try_lab' => 'جرّب تدريب نموذج الآن',
         'countdown_title' => 'يغلق التسجيل خلال',
         'days' => 'يوم',

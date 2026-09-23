@@ -67,17 +67,6 @@
             </a>
         @endif
 
-        {{-- Only without JavaScript: the account menu below cannot open, and it
-             holds the only sign-out control (D-86). --}}
-        @if ($logoutUrl !== null)
-            <noscript>
-                <form method="POST" action="{{ $logoutUrl }}" class="nojs-logout">
-                    @csrf
-                    <button type="submit" class="ui-btn ui-btn--secondary ui-btn--sm">{{ __('nav.chrome.logout') }}</button>
-                </form>
-            </noscript>
-        @endif
-
         {{-- Account menu: Escape closes it, focus returns to the trigger. --}}
         <div class="appbar__menu"
              x-data="menu()"
@@ -105,7 +94,10 @@
 
                 <div class="menu__head">
                     <b>{{ $displayName }}</b>
-                    <span dir="ltr">{{ $email }}</span>
+                    {{-- D-108 — the same role badge as the sidebar footer;
+                         text always rides with the colour (Article 18). --}}
+                    <x-ui.badge size="sm" :variant="$roleVariant">{{ $roleLabel }}</x-ui.badge>
+                    <span class="menu__email" dir="ltr">{{ $email }}</span>
                 </div>
 
                 @if ($profileUrl !== null)
@@ -120,20 +112,6 @@
                         <svg aria-hidden="true"><use href="#i-card"></use></svg>
                         <span>{{ __('nav.participant.card') }}</span>
                     </a>
-                @endif
-
-                <div class="menu__sep" aria-hidden="true"></div>
-
-                {{-- Logout is a POST: a GET link would be triggerable from any
-                     other site (Article 24, CSRF). --}}
-                @if ($logoutUrl !== null)
-                    <form method="POST" action="{{ $logoutUrl }}">
-                        @csrf
-                        <button type="submit" class="menu__i menu__i--danger">
-                            <svg aria-hidden="true"><use href="#i-logout"></use></svg>
-                            <span>{{ __('nav.chrome.logout') }}</span>
-                        </button>
-                    </form>
                 @endif
             </div>
         </div>

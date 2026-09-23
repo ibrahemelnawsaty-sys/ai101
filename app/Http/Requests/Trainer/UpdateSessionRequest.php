@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Trainer;
 
+use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionType;
 use App\Models\Session;
+use App\Rules\ValidZoomRecordingUrl;
+use App\Support\ZoomRecordingUrl;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,6 +29,27 @@ final class UpdateSessionRequest extends FormRequest
         return $session instanceof Session
             && $user !== null
             && $user->can('update', $session);
+    }
+
+    /**
+     * D-107 — a pasted Zoom `<iframe>` embed snippet is reduced to the bare
+     * url it points at before anything else runs, so `rules()` and
+     * `columns()` alike only ever see a plain string, never markup (art. 24).
+     * Extraction failing (not a zoom.us url) is left for ValidZoomRecordingUrl
+     * to report with a real message — this only ever REPLACES the input, on
+     * success, never silently drops it to null on failure.
+     */
+    protected function prepareForValidation(): void
+    {
+        $raw = $this->input('recording_url');
+
+        if (is_string($raw) && trim($raw) !== '') {
+            $extracted = ZoomRecordingUrl::extract($raw);
+
+            if ($extracted !== null) {
+                $this->merge(['recording_url' => $extracted]);
+            }
+        }
     }
 
     /**
@@ -52,13 +77,27 @@ final class UpdateSessionRequest extends FormRequest
                     ->where('cohort_id', $cohortId)
                     ->where('role_in_cohort', 'trainer'),
             ],
+            'coordinator_id' => [
+                'nullable', 'string', 'uuid',
+                Rule::exists('enrollments', 'user_id')
+                    ->where('cohort_id', $cohortId)
+                    ->where('role_in_cohort', 'coordinator'),
+            ],
+            'delivery_mode' => ['required', Rule::enum(SessionDeliveryMode::class)],
+            'platform' => [
+                'nullable', Rule::enum(SessionPlatform::class),
+                Rule::requiredIf(fn (): bool => is_string($this->input('meeting_url')) && trim((string) $this->input('meeting_url')) !== ''),
+            ],
+            'location_name' => ['nullable', 'string', 'max:200'],
+            'location_map_url' => ['nullable', 'string', 'url:https', 'max:500'],
+            'room_name' => ['nullable', 'string', 'max:120'],
             'meeting_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'meeting_passcode' => ['nullable', 'string', 'max:60'],
             // How early the link appears, in minutes. Null means "use the
             // platform default" — the trainer is choosing, not being forced to
             // restate a value they are happy with (D-52).
             'join_opens_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
-            'recording_url' => ['nullable', 'string', 'url:https', 'max:500'],
+            'recording_url' => ['nullable', 'string', 'max:3000', new ValidZoomRecordingUrl],
             // Cancelling is its own endpoint because it demands a reason and
             // notifies the cohort, so the editor leaves the status alone.
         ];
@@ -89,8 +128,14 @@ final class UpdateSessionRequest extends FormRequest
             'start_time' => $data['start_time'].':00',
             'end_time' => $data['end_time'].':00',
             'trainer_id' => $data['trainer_id'] ?? null,
-            'zoom_url' => $data['meeting_url'] ?? null,
-            'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'coordinator_id' => $data['coordinator_id'] ?? null,
+            'delivery_mode' => $data['delivery_mode'],
+            'platform' => $data['platform'] ?? null,
+            'location_name' => $data['location_name'] ?? null,
+            'location_map_url' => $data['location_map_url'] ?? null,
+            'room_name' => $data['room_name'] ?? null,
+            'meeting_url' => $data['meeting_url'] ?? null,
+            'meeting_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             'recording_url' => $data['recording_url'] ?? null,
             // The editor does not change status in either direction. It

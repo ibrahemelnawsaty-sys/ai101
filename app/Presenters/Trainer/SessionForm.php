@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Presenters\Trainer;
 
+use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionType;
 use App\Models\Session;
 use App\Presenters\Concerns\PresentsFormValues;
@@ -35,6 +37,12 @@ final class SessionForm extends ViewModel
             'weekId' => $weekId,
             'type' => SessionType::Training->value,
             'trainerId' => null,
+            'coordinatorId' => null,
+            'deliveryMode' => SessionDeliveryMode::Online->value,
+            'platform' => null,
+            'locationName' => '',
+            'locationMapUrl' => '',
+            'roomName' => '',
             'dateValue' => '',
             'startTimeValue' => '',
             'endTimeValue' => '',
@@ -49,6 +57,8 @@ final class SessionForm extends ViewModel
     public static function from(Session $session): self
     {
         $type = $session->getAttribute('type');
+        $deliveryMode = $session->getAttribute('delivery_mode');
+        $platform = $session->getAttribute('platform');
 
         return new self([
             'exists' => true,
@@ -62,11 +72,21 @@ final class SessionForm extends ViewModel
             'trainerId' => $session->getAttribute('trainer_id') === null
                 ? null
                 : (string) $session->getAttribute('trainer_id'),
+            'coordinatorId' => $session->getAttribute('coordinator_id') === null
+                ? null
+                : (string) $session->getAttribute('coordinator_id'),
+            'deliveryMode' => $deliveryMode instanceof SessionDeliveryMode
+                ? $deliveryMode->value
+                : (string) ($deliveryMode ?? SessionDeliveryMode::Online->value),
+            'platform' => $platform instanceof SessionPlatform ? $platform->value : $platform,
+            'locationName' => (string) ($session->getAttribute('location_name') ?? ''),
+            'locationMapUrl' => (string) ($session->getAttribute('location_map_url') ?? ''),
+            'roomName' => (string) ($session->getAttribute('room_name') ?? ''),
             'dateValue' => self::dateInput($session->getAttribute('date')),
             'startTimeValue' => self::wallTimeInput($session->getAttribute('start_time')),
             'endTimeValue' => self::wallTimeInput($session->getAttribute('end_time')),
-            'meetingUrl' => (string) ($session->getAttribute('zoom_url') ?? ''),
-            'meetingPasscode' => (string) ($session->getAttribute('zoom_passcode') ?? ''),
+            'meetingUrl' => (string) ($session->getAttribute('meeting_url') ?? ''),
+            'meetingPasscode' => (string) ($session->getAttribute('meeting_passcode') ?? ''),
             'joinOpensMinutes' => $session->getAttribute('join_opens_minutes'),
         ]);
     }

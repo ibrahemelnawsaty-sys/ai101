@@ -178,6 +178,26 @@ return [
             'title' => 'لم يُعتمد طلب التحاقك',
             'body' => 'السبب: :reason. يمكنك مراسلتنا لأي استفسار.',
         ],
+        'attendance_exception_requested' => [
+            'label' => 'طلب إعذار جديد',
+            'title' => 'طلب إعذار جديد بانتظار المراجعة',
+            'body' => 'رفع :name طلب إعذار عن حضوره ويحتاج قرارك.',
+        ],
+        'attendance_exception_requested_confirmation' => [
+            'label' => 'استلام طلب الإعذار',
+            'title' => 'استلمنا طلبك',
+            'body' => 'طلبك قيد المراجعة الآن وسيصلك ردّنا قريبًا.',
+        ],
+        'attendance_exception_approved' => [
+            'label' => 'قبول طلب الإعذار',
+            'title' => 'قُبل طلبك',
+            'body' => 'قُبل طلبك بخصوص جلسة :session، وتحدَّث سجل حضورك.',
+        ],
+        'attendance_exception_rejected' => [
+            'label' => 'رفض طلب الإعذار',
+            'title' => 'لم يُقبل طلبك',
+            'body' => 'السبب: :reason',
+        ],
     ],
 
     /*

@@ -1,11 +1,12 @@
 {{--
-    Trainer · final project — opening it for the cohort, and grading it.
+    Trainer · final project — reading the brief the administrator published,
+    and grading what was handed in.
 
-    BR-15, BR-16: the tab opens for a WHOLE cohort at once and only a trainer of
-    that cohort or an administrator may open it. The switch below reflects that
-    state; it does not decide it. The policy on UnlockFinalProjectRequest
-    refuses a direct POST from anybody else whether or not this control was
-    drawn (CONSTITUTION art. 5).
+    D-109, D-110: opening the tab and every setting of it (the brief, the
+    deadline, the ceiling, the late policy) moved to Admin\FinalProjectController
+    — this screen only reads them and records a mark. BR-15, BR-16 are
+    unchanged: the brief still never reaches a participant response before an
+    administrator opens the tab (enforced in the policy, not by hiding markup).
 
     BR-12, BR-13: the mark never exceeds the project's own ceiling and the
     feedback is mandatory at ten characters. The hint below mirrors both; the
@@ -14,7 +15,7 @@
 
     Four states: error · loading skeleton shaped like the table · empty · normal.
 
-    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23
+    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23 · D-109, D-110
 --}}
 @extends('layouts.app')
 
@@ -93,24 +94,6 @@
                             </div>
                         @endif
                     </dl>
-
-                    <form method="POST" action="{{ route('trainer.finalProject.unlock', $project->id) }}">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="is_unlocked" value="{{ $project->toggleValue }}">
-
-                        <p class="hint">
-                            <x-ui.icon name="warn" />
-                            {{ __('trainer.final_project.open_hint') }}
-                        </p>
-
-                        <div class="row__acts">
-                            <x-ui.button size="sm" type="submit"
-                                :variant="$project->isUnlocked ? 'secondary' : 'primary'">
-                                {{ $project->isUnlocked ? __('trainer.final_project.close_action') : __('trainer.final_project.open_action') }}
-                            </x-ui.button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </x-ui.card>
@@ -196,26 +179,48 @@
                     <div>
                         <h3 class="abrief__sub">{{ __('trainer.grading.submission') }}</h3>
 
-                        @if ($selected->files === [])
-                            <p class="u-muted">{{ __('app.none') }}</p>
-                        @else
-                            <ul class="filelist">
-                                @foreach ($selected->files as $file)
-                                    <li>
-                                        {{-- A signed link that expires in fifteen minutes (D-80). --}}
-                                        <a href="{{ $file->downloadUrl }}">
-                                            <x-ui.icon name="file" />
-                                            <span dir="ltr">{{ $file->name }}</span>
-                                            <small class="u-num">{{ $file->sizeLabel }}</small>
-                                        </a>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @endif
-
-                        @if ($selected->githubUrl)
-                            <p><a href="{{ $selected->githubUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $selected->githubUrl }}</a></p>
-                        @endif
+                        <dl class="deflist">
+                            <div>
+                                <dt>{{ __('project.live_url') }}</dt>
+                                <dd>
+                                    @if ($selected->liveUrl)
+                                        <a href="{{ $selected->liveUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $selected->liveUrl }}</a>
+                                    @else
+                                        <span class="u-muted">{{ __('app.none') }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>{{ __('project.github_url') }}</dt>
+                                <dd>
+                                    @if ($selected->githubUrl)
+                                        <a href="{{ $selected->githubUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $selected->githubUrl }}</a>
+                                    @else
+                                        <span class="u-muted">{{ __('app.none') }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>{{ __('project.presentation_file') }}</dt>
+                                <dd>
+                                    @if ($selected->presentationFile)
+                                        <span dir="ltr">{{ $selected->presentationFile->name }}</span>
+                                        <small class="u-num">{{ $selected->presentationFile->sizeLabel }}</small>
+                                    @else
+                                        <span class="u-muted">{{ __('app.none') }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                            @if ($selected->logoFile)
+                                <div>
+                                    <dt>{{ __('project.logo_file') }}</dt>
+                                    <dd>
+                                        <span dir="ltr">{{ $selected->logoFile->name }}</span>
+                                        <small class="u-num">{{ $selected->logoFile->sizeLabel }}</small>
+                                    </dd>
+                                </div>
+                            @endif
+                        </dl>
 
                         @if ($selected->note)
                             <div class="note">

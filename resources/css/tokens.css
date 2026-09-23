@@ -318,10 +318,12 @@
      13 · TYPOGRAPHY (PRD §5.4)
           Arabic line-height never below 1.7 · never a weight under 400.
      ====================================================================== */
-  /* ONE family, everywhere (D-86). The display and mono roles are kept as
-     names so every rule that asks for a role still reads; they now answer
-     with the same face. A code string stays aligned through tabular figures
-     (set on the body), not through a second typeface. */
+  /* ONE family, everywhere (D-86, D-108 — two sessions reached the same
+     decision independently the same day; D-86 is the canonical record).
+     The display and mono roles are kept as names so every rule that asks
+     for a role still reads; they now answer with the same face. A code
+     string stays aligned through tabular figures (set on the body), not
+     through a second typeface. */
   --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   --font-display: var(--font);
   --font-mono: var(--font);

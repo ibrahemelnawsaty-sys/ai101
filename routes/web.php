@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
+use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\FileDownloadController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
@@ -69,6 +71,8 @@ use App\Http\Controllers\Public\ProgramDirectoryController;
 use App\Http\Controllers\Public\WaitlistController;
 use App\Http\Controllers\Trainer\AssignmentController as TrainerAssignmentController;
 use App\Http\Controllers\Trainer\AttendanceController as TrainerAttendanceController;
+use App\Http\Controllers\Trainer\AttendanceExceptionController as TrainerAttendanceExceptionController;
+use App\Http\Controllers\Trainer\DashboardController as TrainerDashboardController;
 use App\Http\Controllers\Trainer\FinalProjectController as TrainerFinalProjectController;
 use App\Http\Controllers\Trainer\ParticipantController as TrainerParticipantController;
 use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
@@ -262,6 +266,21 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         ->name('attendance.checkOut');
 
     /*
+     * Self-check-in by QR code (D-106). `signed` is the only proof this link
+     * is genuine and unexpired — CheckinCode mints it, nothing else does — so
+     * it carries the same role/throttle guards as the two writes above, plus
+     * `signed` in front of them.
+     */
+    Route::get('/attendance/{session}/self-check-in', [AttendanceController::class, 'selfCheckIn'])
+        ->middleware(['signed', 'role:participant', 'not.impersonating', 'throttle:attendance'])
+        ->name('attendance.selfCheckIn');
+
+    /* D-106 — asking to be excused for an absence or an unexcused lateness. */
+    Route::post('/attendance/{attendance}/exception-request', [AttendanceController::class, 'requestException'])
+        ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
+        ->name('attendance.exceptionRequest');
+
+    /*
      * Live sessions. `join` is a POST because it hands over a meeting URL after
      * re-checking the window on the server — it is an action, not a page (BR-24).
      */
@@ -375,6 +394,10 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
     ->prefix('trainer')
     ->name('trainer.')
     ->group(function (): void {
+        // PR-5, batch 2 — the trainer's own information dashboard: next
+        // session, the grading queue, BR-11's balance, BR-26's at-risk count.
+        Route::get('/dashboard', TrainerDashboardController::class)->name('dashboard');
+
         Route::get('/submissions', [TrainerSubmissionController::class, 'index'])->name('submissions');
         Route::get('/submissions/export', [TrainerSubmissionController::class, 'export'])
             ->name('submissions.export');
@@ -389,6 +412,59 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->name('submissions.remind');
         Route::get('/assignments/{assignment}/download-all', [TrainerSubmissionController::class, 'bulkDownload'])
             ->name('submissions.bulkDownload');
+
+        Route::get('/assignments', [TrainerAssignmentController::class, 'index'])->name('assignments');
+        Route::post('/assignments', [TrainerAssignmentController::class, 'store'])
+            ->middleware(['not.impersonating', 'throttle:upload'])
+            ->name('assignments.store');
+        Route::patch('/assignments/{assignment}', [TrainerAssignmentController::class, 'update'])
+            ->middleware(['not.impersonating', 'throttle:upload'])
+            ->name('assignments.update');
+
+        Route::get('/resources', [TrainerResourceController::class, 'index'])->name('resources');
+        Route::post('/resources', [TrainerResourceController::class, 'store'])
+            ->middleware(['not.impersonating', 'throttle:upload'])
+            ->name('resources.store');
+        Route::delete('/resources/{resource}', [TrainerResourceController::class, 'archive'])
+            ->middleware('not.impersonating')
+            ->withTrashed()
+            ->name('resources.archive');
+
+        // D-110 — opening it and every setting of it moved to
+        // admin.finalProject.*; this screen only reads the brief and grades.
+        Route::get('/final-project', [TrainerFinalProjectController::class, 'index'])->name('finalProject');
+        Route::post('/final-project/{submission}/grade', [TrainerFinalProjectController::class, 'grade'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.grade');
+
+        Route::get('/participants', [TrainerParticipantController::class, 'index'])->name('participants');
+        Route::get('/participants/export', [TrainerParticipantController::class, 'export'])
+            ->name('participants.export');
+
+        Route::get('/reports', [TrainerReportController::class, 'index'])->name('reports');
+        Route::get('/reports/export', [TrainerReportController::class, 'export'])->name('reports.export');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Attendance — trainer, admin AND coordinator (D-105)
+|--------------------------------------------------------------------------
+| Pulled out of the trainer-only group above so a coordinator account can
+| reach exactly these five routes and nothing else under /trainer/*. Route
+| names stay `trainer.attendance*` on purpose: trainer/attendance.blade.php
+| already builds its poll/bulk/update forms from those names, and a
+| coordinator reaching the same screen must post to the same endpoints.
+*/
+
+Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort.scope'])
+    ->prefix('trainer')
+    ->name('trainer.')
+    ->group(function (): void {
+        // D-109 — reading the schedule is a trainer ability too (their own
+        // sessions and whoever's join link the coordinator set); writing it
+        // is not, and the group below enforces that half. SessionPolicy is
+        // still what a direct POST answers to either way.
+        Route::get('/sessions', [TrainerSessionController::class, 'index'])->name('sessions');
 
         Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
         Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
@@ -406,15 +482,51 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->middleware('not.impersonating')
             ->name('attendance.bulk');
 
-        Route::get('/assignments', [TrainerAssignmentController::class, 'index'])->name('assignments');
-        Route::post('/assignments', [TrainerAssignmentController::class, 'store'])
-            ->middleware(['not.impersonating', 'throttle:upload'])
-            ->name('assignments.store');
-        Route::patch('/assignments/{assignment}', [TrainerAssignmentController::class, 'update'])
-            ->middleware(['not.impersonating', 'throttle:upload'])
-            ->name('assignments.update');
+        // D-106 — the self-check-in QR, re-minted on a ten-minute boundary
+        // (CheckinCode). Polled far more slowly than the roster above, since
+        // the underlying signed url is only ever new once every ten minutes.
+        Route::get('/attendance/{session}/checkin-code', [TrainerAttendanceController::class, 'checkinCode'])
+            ->middleware('throttle:12,1')
+            ->name('attendance.checkinCode');
 
-        Route::get('/sessions', [TrainerSessionController::class, 'index'])->name('sessions');
+        // D-107 — a coordinator's one write on a session they do not
+        // otherwise manage: the recording link. Lives here, not in the
+        // trainer-only sessions group above, so a coordinator account can
+        // reach it; trainer and admin use the same endpoint from the same
+        // shared attendance screen (SessionController::updateRecording()).
+        Route::patch('/sessions/{session}/recording', [TrainerSessionController::class, 'updateRecording'])
+            ->middleware('not.impersonating')
+            ->name('sessions.recording');
+
+        // D-106 — deciding a participant's excuse request. The pending queue
+        // itself is a section of the attendance screen above, not a route of
+        // its own.
+        Route::post('/attendance-exceptions/{exceptionRequest}/approve', [TrainerAttendanceExceptionController::class, 'approve'])
+            ->middleware('not.impersonating')
+            ->name('attendance-exceptions.approve');
+        Route::post('/attendance-exceptions/{exceptionRequest}/reject', [TrainerAttendanceExceptionController::class, 'reject'])
+            ->middleware('not.impersonating')
+            ->name('attendance-exceptions.reject');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Session schedule writes — admin AND coordinator only (D-109)
+|--------------------------------------------------------------------------
+| D-105 gave the trainer the same write access as the admin here; the owner
+| asked that the schedule, the location and the meeting link become an
+| admin/coordinator affair instead, so a trainer's own edit could never
+| duplicate — or silently overwrite — whatever the coordinator running the
+| room had just set. Route names stay `trainer.sessions.*` on purpose: the
+| read-only `trainer.sessions` view above already posts to them, and a
+| trainer's own request still lands on SessionPolicy, which now answers
+| false regardless of what a form on their screen could ever submit.
+*/
+
+Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope'])
+    ->prefix('trainer')
+    ->name('trainer.')
+    ->group(function (): void {
         Route::post('/sessions', [TrainerSessionController::class, 'store'])
             ->middleware('not.impersonating')
             ->name('sessions.store');
@@ -424,29 +536,24 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::post('/sessions/{session}/cancel', [TrainerSessionController::class, 'cancel'])
             ->middleware('not.impersonating')
             ->name('sessions.cancel');
+    });
 
-        Route::get('/resources', [TrainerResourceController::class, 'index'])->name('resources');
-        Route::post('/resources', [TrainerResourceController::class, 'store'])
-            ->middleware(['not.impersonating', 'throttle:upload'])
-            ->name('resources.store');
-        Route::delete('/resources/{resource}', [TrainerResourceController::class, 'archive'])
-            ->middleware('not.impersonating')
-            ->name('resources.archive');
+/*
+|--------------------------------------------------------------------------
+| Coordinator dashboard (PR-5, batch 2)
+|--------------------------------------------------------------------------
+| The coordinator's own information home: sessions still missing a join link
+| or a location (D-109's own to complete now) and the excuse-request queue
+| (D-106). Its own prefix, unlike the coordinator's other two screens, which
+| stayed under /trainer/* because they are genuinely shared with the trainer
+| — this content is not.
+*/
 
-        Route::get('/final-project', [TrainerFinalProjectController::class, 'index'])->name('finalProject');
-        Route::put('/final-project/{project}/unlock', [TrainerFinalProjectController::class, 'unlock'])
-            ->middleware('not.impersonating')
-            ->name('finalProject.unlock');
-        Route::post('/final-project/{submission}/grade', [TrainerFinalProjectController::class, 'grade'])
-            ->middleware('not.impersonating')
-            ->name('finalProject.grade');
-
-        Route::get('/participants', [TrainerParticipantController::class, 'index'])->name('participants');
-        Route::get('/participants/export', [TrainerParticipantController::class, 'export'])
-            ->name('participants.export');
-
-        Route::get('/reports', [TrainerReportController::class, 'index'])->name('reports');
-        Route::get('/reports/export', [TrainerReportController::class, 'export'])->name('reports.export');
+Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope'])
+    ->prefix('coordinator')
+    ->name('coordinator.')
+    ->group(function (): void {
+        Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     });
 
 /*
@@ -492,6 +599,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::delete('/cohorts/{cohort}/trainers/{trainer}', [AdminCohortController::class, 'detachTrainer'])
             ->middleware('not.impersonating')
             ->name('cohorts.trainers.detach');
+
+        // Assigning a coordinator mirrors the trainer assignment above (D-105).
+        Route::post('/cohorts/{cohort}/coordinators', [AdminCohortController::class, 'attachCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.attach');
+        Route::delete('/cohorts/{cohort}/coordinators/{coordinator}', [AdminCohortController::class, 'detachCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.detach');
 
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
@@ -611,6 +726,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/broadcasts/reminders', [AdminBroadcastController::class, 'remind'])
             ->middleware('not.impersonating')
             ->name('broadcasts.remind');
+
+        /*
+         * The final project's brief, deadline, ceiling, late policy and open
+         * switch — an administrator affair only (D-109, D-110). A trainer's
+         * own screen (trainer.finalProject) keeps reading the brief and
+         * grading; it has no route here and never had one.
+         */
+        Route::get('/final-project', [AdminFinalProjectController::class, 'index'])->name('finalProject.index');
+        Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.store');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/export', [AuditController::class, 'export'])->name('audit.export');

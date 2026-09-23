@@ -17,6 +17,7 @@ enum UserRole: string
 
     case Admin = 'admin';
     case Trainer = 'trainer';
+    case Coordinator = 'coordinator';
     case Participant = 'participant';
 
     /**

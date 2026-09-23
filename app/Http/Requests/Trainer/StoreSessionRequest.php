@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Trainer;
 
+use App\Enums\SessionDeliveryMode;
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Http\Requests\Trainer\Concerns\ScopedToCohort;
@@ -67,6 +69,26 @@ final class StoreSessionRequest extends FormRequest
                     ->where('cohort_id', $cohortId)
                     ->where('role_in_cohort', 'trainer'),
             ],
+            'coordinator_id' => [
+                'nullable', 'string', 'uuid',
+                Rule::exists('enrollments', 'user_id')
+                    ->where('cohort_id', $cohortId)
+                    ->where('role_in_cohort', 'coordinator'),
+            ],
+            'delivery_mode' => ['required', Rule::enum(SessionDeliveryMode::class)],
+            // Required only once a link is actually entered: a session may be
+            // saved online with nothing yet (D-105), and a platform with no
+            // link to label would be meaningless (D-109).
+            'platform' => [
+                'nullable', Rule::enum(SessionPlatform::class),
+                Rule::requiredIf(fn (): bool => is_string($this->input('meeting_url')) && trim((string) $this->input('meeting_url')) !== ''),
+            ],
+            // Nullable regardless of mode, mirroring meeting_url's own
+            // long-standing behaviour: a session may be saved before its room
+            // is booked (D-105).
+            'location_name' => ['nullable', 'string', 'max:200'],
+            'location_map_url' => ['nullable', 'string', 'url:https', 'max:500'],
+            'room_name' => ['nullable', 'string', 'max:120'],
             'meeting_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'meeting_passcode' => ['nullable', 'string', 'max:60'],
             // How early the link appears, in minutes. Null means "use the
@@ -96,8 +118,14 @@ final class StoreSessionRequest extends FormRequest
             'start_time' => $data['start_time'].':00',
             'end_time' => $data['end_time'].':00',
             'trainer_id' => $data['trainer_id'] ?? null,
-            'zoom_url' => $data['meeting_url'] ?? null,
-            'zoom_passcode' => $data['meeting_passcode'] ?? null,
+            'coordinator_id' => $data['coordinator_id'] ?? null,
+            'delivery_mode' => $data['delivery_mode'],
+            'platform' => $data['platform'] ?? null,
+            'location_name' => $data['location_name'] ?? null,
+            'location_map_url' => $data['location_map_url'] ?? null,
+            'room_name' => $data['room_name'] ?? null,
+            'meeting_url' => $data['meeting_url'] ?? null,
+            'meeting_passcode' => $data['meeting_passcode'] ?? null,
             'join_opens_minutes' => $data['join_opens_minutes'] ?? null,
             // A new session is scheduled. Creating one already cancelled
             // skipped the reason, the audit and the letter (D-77).

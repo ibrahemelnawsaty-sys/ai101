@@ -245,6 +245,17 @@ function makeParticipant(?Cohort $cohort = null, array $attributes = []): User
     return $participant;
 }
 
+function makeCoordinator(?Cohort $cohort = null, array $attributes = []): User
+{
+    $coordinator = makeUser('coordinator', $attributes);
+
+    if ($cohort instanceof Cohort) {
+        enroll($coordinator, $cohort, 'coordinator');
+    }
+
+    return $coordinator;
+}
+
 function enroll(User $user, Cohort $cohort, string $roleInCohort = 'participant'): Enrollment
 {
     return Enrollment::factory()->create([
@@ -694,6 +705,18 @@ function fakeUpload(string $name, string $type = 'pdf'): Illuminate\Http\Uploade
         // UTF-8 bytes so the payload stops being the one the test meant to send.
         // pack() reaches the same bytes through a literal pint will not touch.
         'exe' => (string) pack('H*', '4d5a90000300000004000000ffff0000b8000000'),
+        // A genuine 1x1 PNG, rendered rather than typed as a byte literal —
+        // GD is a test-only dependency here (the platform's own hosting
+        // constraints govern production code, not what generates a fixture).
+        'png' => (static function (): string {
+            $image = imagecreatetruecolor(1, 1);
+            ob_start();
+            imagepng($image);
+            $bytes = (string) ob_get_clean();
+            imagedestroy($image);
+
+            return $bytes;
+        })(),
         default => throw new InvalidArgumentException("fakeUpload() has no bytes for type [{$type}]."),
     };
 

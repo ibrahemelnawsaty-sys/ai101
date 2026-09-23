@@ -21,6 +21,14 @@ use Carbon\CarbonImmutable;
  *   late       :  at >  S + 30m
  *   check-out  : [E - 30m, E + 60m]    inclusive at both ends
  *
+ * A second, narrower window exists for self-check-in by QR code ONLY (D-106):
+ *
+ *   self-check-in : [S, S + 60m]        inclusive at both ends, never before S
+ *
+ * It shares the exact same present/late threshold (S+30m) as the window
+ * above; the two differ only in when they open and close. Manual check-in by
+ * a trainer or coordinator is never subject to the narrower window.
+ *
  * Boundary table (CONTRACT §6, PRD §9.9.3):
  *
  *   S-60m-1s   check-in closed
@@ -33,7 +41,7 @@ use Carbon\CarbonImmutable;
  *   E+60m      check-out open (last instant)
  *   E+60m+1s   check-out closed
  *
- * @see BR-01, BR-02, BR-03, BR-04, BR-07 · D-103 · PRD §9.9.2, §9.9.3 · CONTRACT §6
+ * @see BR-01, BR-02, BR-03, BR-04, BR-07 · D-103, D-106 · PRD §9.9.2, §9.9.3 · CONTRACT §6
  */
 final class AttendanceWindow
 {
@@ -64,6 +72,19 @@ final class AttendanceWindow
     public const CHECK_OUT_OPENS_BEFORE_END_MINUTES = 30;    // BR-04
 
     public const CHECK_OUT_CLOSES_AFTER_END_MINUTES = 60;    // BR-04, D-103
+
+    /*
+     | Self-check-in only (D-106) — scanning the coordinator's QR code, never
+     | the manual check-in above. D-103's [S-60m, E] window and its present/
+     | late threshold are UNCHANGED and apply to every other entry point,
+     | including a trainer's or coordinator's own manual correction, which
+     | stays uncapped. This window opens AT the start, not before it (a code
+     | is only ever displayed once a session is live), and closes for good an
+     | hour later — after which a scan is refused outright rather than
+     | recorded as an automatic absence; BR-08's reconciler is still the only
+     | thing that turns "never checked in" into an actual absent row.
+     */
+    public const SELF_CHECK_IN_CLOSES_AFTER_START_MINUTES = 60;   // D-106
 
     /**
      * S — the session start, in UTC.
@@ -144,6 +165,32 @@ final class AttendanceWindow
 
         return $at->greaterThanOrEqualTo($this->checkOutOpensAt($session))
             && $at->lessThanOrEqualTo($this->checkOutClosesAt($session));
+    }
+
+    /** S — self-check-in opens exactly at the start, never before it (D-106). */
+    public function selfCheckInOpensAt(Session $session): CarbonImmutable
+    {
+        return $this->startsAt($session);
+    }
+
+    /** S + 60m (D-106). */
+    public function selfCheckInClosesAt(Session $session): CarbonImmutable
+    {
+        return $this->startsAt($session)->addMinutes(self::SELF_CHECK_IN_CLOSES_AFTER_START_MINUTES);
+    }
+
+    /**
+     * D-106 — inclusive of both S and S+60m. A cancelled session refuses a
+     * scan exactly as it refuses every other attendance action.
+     */
+    public function canSelfCheckIn(Session $session, CarbonImmutable $at): bool
+    {
+        if ($this->isCancelled($session)) {
+            return false;
+        }
+
+        return $at->greaterThanOrEqualTo($this->selfCheckInOpensAt($session))
+            && $at->lessThanOrEqualTo($this->selfCheckInClosesAt($session));
     }
 
     /**

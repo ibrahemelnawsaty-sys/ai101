@@ -39,6 +39,7 @@ beforeEach(function (): void {
 
     $this->admin = makeAdmin();
     $this->trainer = makeTrainer($this->cohort);
+    $this->coordinator = makeCoordinator($this->cohort);
     $this->participant = makeParticipant($this->cohort);
     // Graded and certified, the participant above may not be deleted (PRD
     // §7.8, D-84); the delete route is exercised on an account that may.
@@ -76,6 +77,7 @@ beforeEach(function (): void {
     $this->actors = [
         'admin' => $this->admin,
         'trainer' => $this->trainer,
+        'coordinator' => $this->coordinator,
         'participant' => $this->participant,
     ];
 });
@@ -136,23 +138,33 @@ function authorizationMatrix(object $test): array
         'notifications' => ['get', [], ['participant', 'trainer', 'admin']],
 
         // -------------------------------------------------------------- trainer
+        // PR-5 دفعة 2 — the trainer's own information dashboard.
+        'trainer.dashboard' => ['get', $cohort, ['trainer', 'admin']],
+
         'trainer.participants' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.participants.export' => ['get', $cohort, ['trainer', 'admin']],
 
-        'trainer.attendance' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.attendance.poll' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
-        'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin']],
-        'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
+        // Attendance alone also admits a coordinator (D-105): the role exists
+        // for exactly this, and nothing else under /trainer/*.
+        'trainer.attendance' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.poll' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
 
-        'trainer.sessions' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.sessions.store' => ['post', $cohort, ['trainer', 'admin']],
-        'trainer.sessions.update' => ['patch', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
-        'trainer.sessions.cancel' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin']],
+        // D-109 — reading the schedule stayed a trainer ability; writing it
+        // moved to admin/coordinator only, so a trainer's own edit could
+        // never duplicate the coordinator's.
+        'trainer.sessions' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        'trainer.sessions.store' => ['post', $cohort, ['admin', 'coordinator']],
+        'trainer.sessions.update' => ['patch', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
+        'trainer.sessions.cancel' => ['post', $cohort + ['session' => $test->session->id], ['admin', 'coordinator']],
 
+        // D-111 — reading the list stayed a trainer ability; defining a task
+        // (creating or editing it) moved to admin only.
         'trainer.assignments' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.assignments.store' => ['post', $cohort, ['trainer', 'admin']],
-        'trainer.assignments.update' => ['patch', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
+        'trainer.assignments.store' => ['post', $cohort, ['admin']],
+        'trainer.assignments.update' => ['patch', $cohort + ['assignment' => $test->assignment->id], ['admin']],
 
         'trainer.submissions' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.submissions.export' => ['get', $cohort, ['trainer', 'admin']],
@@ -166,9 +178,10 @@ function authorizationMatrix(object $test): array
         'trainer.submissions.remind' => ['post', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
         'trainer.submissions.bulkDownload' => ['get', $cohort + ['assignment' => $test->assignment->id], ['trainer', 'admin']],
 
+        // D-109, D-110 moved unlocking (and every other setting) to
+        // admin.finalProject.* below; this screen only reads the brief and
+        // grades — trainer only, same as the PRD §4.2 row already read.
         'trainer.finalProject' => ['get', $cohort, ['trainer', 'admin']],
-        'trainer.finalProject.unlock' => ['put', $cohort + ['project' => $test->finalProject->id], ['trainer', 'admin']],
-        // Same PRD §4.2 row: unlocking the project is an admin's to do, marking it is not.
         'trainer.finalProject.grade' => ['post', $cohort + ['submission' => $test->projectSubmission->id], ['trainer']],
 
         'trainer.resources' => ['get', $cohort, ['trainer', 'admin']],
@@ -178,6 +191,12 @@ function authorizationMatrix(object $test): array
         'trainer.reports' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.reports.export' => ['get', $cohort, ['trainer', 'admin']],
 
+        // ---------------------------------------------------------- coordinator
+        // PR-5 دفعة 2 — the coordinator's own information dashboard, the first
+        // screen under its own coordinator.* prefix rather than shared with
+        // trainer.* (D-109's sessions/attendance stay shared; this does not).
+        'coordinator.dashboard' => ['get', $cohort, ['coordinator', 'admin']],
+
         // ---------------------------------------------------------------- admin
         'admin.dashboard' => ['get', [], ['admin']],
         'admin.audit.index' => ['get', [], ['admin']],
@@ -185,6 +204,10 @@ function authorizationMatrix(object $test): array
         'admin.broadcasts.index' => ['get', [], ['admin']],
         'admin.broadcasts.store' => ['post', [], ['admin']],
         'admin.broadcasts.remind' => ['post', [], ['admin']],
+
+        // D-109, D-110 — the final project's settings and its open switch.
+        'admin.finalProject.index' => ['get', [], ['admin']],
+        'admin.finalProject.store' => ['post', [], ['admin']],
         'admin.audit.export' => ['get', [], ['admin']],
 
         'admin.programs.index' => ['get', [], ['admin']],
@@ -197,6 +220,8 @@ function authorizationMatrix(object $test): array
         'admin.cohorts.update' => ['patch', [$test->cohort], ['admin']],
         'admin.cohorts.trainers.attach' => ['post', [$test->cohort], ['admin']],
         'admin.cohorts.trainers.detach' => ['delete', [$test->cohort, $test->trainer], ['admin']],
+        'admin.cohorts.coordinators.attach' => ['post', [$test->cohort], ['admin']],
+        'admin.cohorts.coordinators.detach' => ['delete', [$test->cohort, $test->coordinator], ['admin']],
 
         'admin.users.index' => ['get', [], ['admin']],
         'admin.users.create' => ['get', [], ['admin']],
@@ -321,7 +346,11 @@ it('لا يوجد مسار محمي بلا سطر في مصفوفة التفوي
         ->filter()
         ->filter(fn (string $name): bool => str_starts_with($name, 'admin.')
             || str_starts_with($name, 'trainer.')
-            || str_starts_with($name, 'participant.'),
+            || str_starts_with($name, 'participant.')
+            // D-109 introduced the first coordinator.* leaf (its own dashboard,
+            // PR-5 دفعة 2) — a fourth prefix this walker must watch, or every
+            // future route under it ships with no matrix row enforced.
+            || str_starts_with($name, 'coordinator.'),
         )
         ->reject(fn (string $name): bool => in_array($name, $covered, true))
         // The impersonation stop route is deliberately reachable by whoever is

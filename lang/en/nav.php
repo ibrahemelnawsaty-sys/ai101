@@ -33,10 +33,11 @@ return [
         'work' => 'Work and grades',
         'communication' => 'Communication',
         'trainer' => 'Trainer tools',
+        'coordinator' => 'Coordinator tools',
         'admin' => 'Platform administration',
     ],
 
-    'dashboard' => 'Home',
+    'dashboard' => 'Info dashboard',
     'card' => 'Digital card',
     'journey' => 'My journey',
     'schedule' => 'Programme schedule',
@@ -52,7 +53,9 @@ return [
     'profile' => 'My account',
 
     'admin' => [
-        'dashboard' => 'Console',
+        // D-113 — unified with the other three roles' first tab, all now
+        // named "Info dashboard" (this one used to read "Console").
+        'dashboard' => 'Info dashboard',
         'programs' => 'Programmes',
         'cohorts' => 'Cohorts',
         'landing' => 'Landing page',
@@ -60,24 +63,35 @@ return [
         'registrations' => 'Registrations',
         'certificates' => 'Certificates',
         'broadcasts' => 'Message trainees',
+        'final_project' => 'Final project',
         'reports' => 'Reports',
         'audit' => 'Audit log',
         'settings' => 'Platform settings',
     ],
 
     'trainer' => [
+        'dashboard' => 'Info dashboard',
         'participants' => 'Cohort participants',
         'sessions' => 'Sessions',
         'attendance' => 'Attendance',
         'resources' => 'Resources',
-        'assignments' => 'Assignments',
+        // D-111 — setting this up (its conditions, description, date, files)
+        // moved to the administrator only; the trainer reads it and grades.
+        'assignments' => 'Weekly tasks',
         'submissions' => 'Submissions and grading',
         'final_project' => 'Final project',
         'reports' => 'Cohort reports',
     ],
 
+    'coordinator' => [
+        'dashboard' => 'Info dashboard',
+        'sessions' => 'Sessions',
+        'attendance' => 'Attendance',
+    ],
+
     'participant' => [
-        'dashboard' => 'Home',
+        'home_page' => 'Home page',
+        'dashboard' => 'Info dashboard',
         'card' => 'Digital card',
         'journey' => 'My journey',
         'schedule' => 'Programme schedule',

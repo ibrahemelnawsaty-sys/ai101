@@ -56,7 +56,10 @@ final class EnsureCohortScope
 
         $allowed = $this->roles->isAdmin($user)
             ? null                                  // null means "no restriction"
-            : $this->roles->trainerCohortIds($user);
+            : array_values(array_unique(array_merge(
+                $this->roles->trainerCohortIds($user),
+                $this->roles->coordinatorCohortIds($user),
+            )));
 
         if ($requested !== null && $allowed !== null && ! in_array($requested, $allowed, true)) {
             $this->logDenial($this->audit, $request, 'cohort.scope_denied', 'cohort', $requested);

@@ -63,6 +63,11 @@ final class CohortPolicy
         return $this->admin($user) && $this->writesAllowed();
     }
 
+    public function assignCoordinator(User $user, Cohort $cohort): bool
+    {
+        return $this->admin($user) && $this->writesAllowed();
+    }
+
     public function manageRegistrations(User $user, Cohort $cohort): bool
     {
         return $this->admin($user) && $this->writesAllowed();

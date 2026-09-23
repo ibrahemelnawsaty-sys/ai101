@@ -11,6 +11,8 @@ use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\CheckInRequest;
 use App\Http\Requests\Participant\CheckOutRequest;
+use App\Http\Requests\Participant\SelfCheckInRequest;
+use App\Http\Requests\Participant\StoreAttendanceExceptionRequest;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\Session;
@@ -19,6 +21,7 @@ use App\Presenters\Participant\AttendanceRecordPresenter;
 use App\Presenters\Participant\AttendanceSummaryPresenter;
 use App\Presenters\Participant\AttendanceWindowPresenter;
 use App\Presenters\Support\Options;
+use App\Services\Attendance\AttendanceExceptionRequester;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
@@ -59,6 +62,7 @@ final class AttendanceController extends Controller
         private readonly AttendanceWindow $window,
         private readonly AttendanceRecorder $recorder,
         private readonly CertificateEligibility $eligibility,
+        private readonly AttendanceExceptionRequester $exceptions,
     ) {}
 
     public function index(Request $request): View
@@ -171,6 +175,42 @@ final class AttendanceController extends Controller
     }
 
     /**
+     * D-106 — self-check-in by scanning the coordinator's QR code. Reached
+     * only through a `signed` link the server minted itself, and re-runs the
+     * exact same enrolment and duplicate guards as the manual button, plus
+     * its own narrower [S, S+60m] window (AttendanceWindow::canSelfCheckIn).
+     */
+    public function selfCheckIn(SelfCheckInRequest $request, Session $session): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->recorder->selfCheckIn($user, $session, $request->ip(), $request->userAgent());
+
+        return redirect()->route('attendance.index')->with('status', __('attendance.checked_in'));
+    }
+
+    /**
+     * D-106 — asking to be excused for an absence or an unexcused lateness.
+     * Which of the two is valid is re-derived from the record's own current
+     * status by the service, never trusted from the form alone (art. 5).
+     *
+     * `$attendance` is declared here, not only read off the FormRequest,
+     * because implicit route-model-binding resolves from the CONTROLLER
+     * ACTION's own signature (same reason `selfCheckIn()` above takes
+     * `Session $session` alongside its FormRequest).
+     */
+    public function requestException(StoreAttendanceExceptionRequest $request, Attendance $attendance): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->exceptions->request($user, $attendance, $request->type(), $request->reason());
+
+        return back()->with('status', __('attendance.exception_requested'));
+    }
+
+    /**
      * The participant's own log as a CSV. Same scope as the screen: their rows
      * and nobody else's (BR-22).
      */
@@ -211,7 +251,7 @@ final class AttendanceController extends Controller
     private function logQuery(User $user, string $cohortId)
     {
         return Attendance::query()
-            ->with(['session.week'])
+            ->with(['session.week', 'exceptionRequests'])
             ->where('user_id', $user->getKey())
             ->whereIn('session_id', Session::query()->where('cohort_id', $cohortId)->select('id'))
             ->orderByDesc('created_at');

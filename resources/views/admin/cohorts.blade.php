@@ -74,6 +74,7 @@
                                 <th scope="col">{{ __('admin.cohorts.fields.starts_at') }}</th>
                                 <th scope="col">{{ __('admin.cohorts.fields.capacity') }}</th>
                                 <th scope="col">{{ __('admin.cohorts.fields.trainers') }}</th>
+                                <th scope="col">{{ __('admin.cohorts.fields.coordinators') }}</th>
                                 <th scope="col">{{ __('admin.cohorts.fields.status') }}</th>
                                 <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
@@ -101,6 +102,13 @@
                                             <span class="u-muted">{{ __('app.none') }}</span>
                                         @else
                                             {{ implode(' · ', $cohort->trainerNames) }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if (count($cohort->coordinatorNames) === 0)
+                                            <span class="u-muted">{{ __('app.none') }}</span>
+                                        @else
+                                            {{ implode(' · ', $cohort->coordinatorNames) }}
                                         @endif
                                     </td>
                                     <td>
@@ -228,6 +236,51 @@
 
                     <div class="row__acts">
                         <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
+                        <x-ui.button variant="ghost"
+                            :href="route('admin.cohorts.index', request()->except('trainers'))">{{ __('app.close') }}</x-ui.button>
+                    </div>
+                </form>
+            </x-ui.card>
+
+            {{-- Coordinator assignment (D-105) --------------------------------------------- --}}
+            <x-ui.card class="dc--span u-mt-4" icon="check"
+                :title="__('admin.cohorts.assign_coordinator')">
+
+                @if (count($assigning->coordinators) === 0)
+                    <x-ui.empty-state icon="check"
+                        :title="__('admin.cohorts.coordinators_empty_title')"
+                        :description="__('admin.cohorts.coordinators_empty_body')" />
+                @else
+                    <ul class="reslist" role="list">
+                        @foreach ($assigning->coordinators as $coordinator)
+                            <li class="row">
+                                <div class="row__m">
+                                    <b>{{ $coordinator->name }}</b>
+                                    <span dir="ltr">{{ $coordinator->email }}</span>
+                                </div>
+                                <div class="row__e">
+                                    <form method="POST"
+                                        action="{{ route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_coordinator') }}</x-ui.button>
+                                    </form>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <form method="POST" action="{{ route('admin.cohorts.coordinators.attach', $assigning->id) }}">
+                    @csrf
+
+                    <x-ui.input name="email" type="email" dir="ltr" required
+                        :label="__('admin.cohorts.coordinator_email')"
+                        :hint="__('admin.cohorts.coordinator_email_hint')"
+                        :value="old('email')" />
+
+                    <div class="row__acts">
+                        <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.assign_coordinator') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('trainers'))">{{ __('app.close') }}</x-ui.button>
                     </div>

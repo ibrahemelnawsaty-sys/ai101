@@ -49,19 +49,25 @@ final class SessionPolicy
             && $session->status === SessionStatus::Completed;
     }
 
+    /**
+     * D-109 amends D-105: the schedule, the location and the meeting link are
+     * an admin/coordinator affair now, not a trainer one — a trainer's own
+     * write here used to duplicate whatever the coordinator had just set,
+     * with no way to tell whose value would stick.
+     */
     public function create(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function update(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function cancel(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->sessionManagerOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     /**
@@ -71,12 +77,22 @@ final class SessionPolicy
      */
     public function viewAttendance(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id);
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id);
     }
 
     public function manageAttendance(User $user, Session $session): bool
     {
-        return $this->staffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
+    }
+
+    /**
+     * Uploading the recording link only, never the rest of the session. A
+     * coordinator earns this narrowly for the cohort they were assigned to;
+     * everything else about the session stays staffOf()-gated below.
+     */
+    public function updateRecording(User $user, Session $session): bool
+    {
+        return $this->attendanceStaffOf($user, (string) $session->cohort_id) && $this->writesAllowed();
     }
 
     public function delete(User $user, Session $session): bool

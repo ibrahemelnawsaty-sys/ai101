@@ -54,14 +54,14 @@
     {{-- Without JavaScript — switched off, blocked, or a bundle that failed to
          load — the burger, the drawer and the account menu are all Alpine, so
          a phone had no navigation at all and nobody could sign out. Only then,
-         the drawer's copy of the rail is shown in the page, and a sign-out
-         button in the bar (D-86). Browsers with scripting never apply this. --}}
+         the drawer's copy of the rail is shown in the page (D-86); its own
+         sign-out link at the foot needs no script (D-108), so nothing else
+         has to stand in for it here. Browsers with scripting never apply this. --}}
     <noscript>
         <style>
             .drawer__host[x-cloak] { display: block !important; }
             .drawer__host .drawer__panel { position: static; inline-size: auto; box-shadow: none; border-inline-end: 0; }
             .appbar__burger, .appbar__menu { display: none !important; }
-            .nojs-logout { display: block; }
             @media (min-width: 1024px) { .drawer__host[x-cloak] { display: none !important; } }
         </style>
     </noscript>

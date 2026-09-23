@@ -35,7 +35,7 @@ function sessionWithWindow(object $test, ?int $minutes): App\Models\Session
 {
     return makeSessionAt($test->start, $test->end, [
         'cohort_id' => $test->cohort->id,
-        'zoom_url' => 'https://example.test/meeting',
+        'meeting_url' => 'https://example.test/meeting',
         'join_opens_minutes' => $minutes,
     ]);
 }

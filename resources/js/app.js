@@ -1219,6 +1219,56 @@ function atharRoster() {
 }
 
 /**
+ * D-106 — the self-check-in QR code on the coordinator's attendance screen.
+ * Seeded from the server-rendered initial state so the card never flashes an
+ * empty or wrong state before its first poll, then polled slowly (the
+ * underlying signed url only ever changes once every ten minutes) to pick up
+ * the rotation and the open/closed transition around the session's start.
+ */
+function atharCheckinCode() {
+    return (config = {}) => ({
+        open: Boolean(config.initialOpen),
+        url: String(config.initialUrl || ''),
+        svg: String(config.initialSvg || ''),
+        busy: false,
+        timer: null,
+
+        init() {
+            const seconds = Number(config.pollSeconds) || 60;
+            if (!config.pollUrl) return;
+            this.timer = window.setInterval(() => this.poll(), seconds * 1000);
+        },
+
+        destroy() {
+            window.clearInterval(this.timer);
+        },
+
+        async poll() {
+            if (this.busy || document.hidden) return;
+            this.busy = true;
+            try {
+                const response = await window.fetch(config.pollUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data) return;
+                this.open = Boolean(data.open);
+                if (this.open) {
+                    this.url = String(data.url || '');
+                    this.svg = String(data.svg || '');
+                }
+            } catch (error) {
+                /* Offline or a server hiccup: keep what is on screen. */
+            } finally {
+                this.busy = false;
+            }
+        },
+    });
+}
+
+/**
  * The wait before "send the link again" is offered (PRD §9.2.3). The instant
  * comes from the server and is counted against server time (BR-07); the server
  * enforces the limit again when the form arrives — this only avoids offering a
@@ -1267,6 +1317,7 @@ Alpine.data('atharWelcome', atharWelcome());
 Alpine.data('atharSchedule', atharSchedule());
 Alpine.data('atharThread', atharThread());
 Alpine.data('atharRoster', atharRoster());
+Alpine.data('atharCheckinCode', atharCheckinCode());
 Alpine.data('resendCooldown', resendCooldown());
 
 window.Alpine = Alpine;

@@ -8,7 +8,9 @@ use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AssignCoordinatorRequest;
 use App\Http\Requests\Admin\AssignTrainerRequest;
+use App\Http\Requests\Admin\DetachCoordinatorRequest;
 use App\Http\Requests\Admin\DetachTrainerRequest;
 use App\Http\Requests\Admin\StoreCohortRequest;
 use App\Http\Requests\Admin\UpdateCohortRequest;
@@ -54,7 +56,7 @@ final class CohortController extends Controller
         $this->authorize('viewAny', Cohort::class);
 
         $query = Cohort::query()
-            ->with(['program', 'trainers.profile'])
+            ->with(['program', 'trainers.profile', 'coordinators.profile'])
             ->withCount(['enrollments', 'sessions'])
             ->orderByDesc('start_date');
 
@@ -125,7 +127,7 @@ final class CohortController extends Controller
         }
 
         /** @var Cohort|null $cohort */
-        $cohort = Cohort::query()->with(['program', 'trainers.profile'])->find($id);
+        $cohort = Cohort::query()->with(['program', 'trainers.profile', 'coordinators.profile'])->find($id);
 
         return $cohort === null ? null : TrainerAssignment::from($cohort);
     }
@@ -239,5 +241,58 @@ final class CohortController extends Controller
         $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
 
         return back()->with('status', __('admin.cohorts.trainer_detached'));
+    }
+
+    /**
+     * Assign a coordinator to a cohort — mirrors attachTrainer() exactly. The
+     * enrolment IS the permission: it is what `EnsureCohortScope` and
+     * `attendanceStaffOf()` read afterwards (BR-23, D-105).
+     */
+    public function attachCoordinator(AssignCoordinatorRequest $request, Cohort $cohort): RedirectResponse
+    {
+        $coordinator = $request->coordinator();
+
+        $enrollment = Enrollment::query()->firstOrNew([
+            'cohort_id' => $cohort->getKey(),
+            'user_id' => $coordinator->getKey(),
+        ]);
+
+        $enrollment->fill([
+            'role_in_cohort' => EnrollmentRole::Coordinator->value,
+            'status' => EnrollmentStatus::Active->value,
+            'enrolled_at' => $enrollment->getAttribute('enrolled_at') ?? Clock::now(),
+        ]);
+
+        $this->audit->log('cohort.coordinator_attached', $cohort, null, [
+            'coordinator_id' => (string) $coordinator->getKey(),
+        ]);
+
+        $enrollment->save();
+
+        return back()->with('status', __('admin.cohorts.coordinator_attached'));
+    }
+
+    /**
+     * Remove a coordinator from a cohort — mirrors detachTrainer() exactly.
+     */
+    public function detachCoordinator(DetachCoordinatorRequest $request, Cohort $cohort, User $coordinator): RedirectResponse
+    {
+        $enrollment = Enrollment::query()
+            ->where('cohort_id', $cohort->getKey())
+            ->where('user_id', $coordinator->getKey())
+            ->where('role_in_cohort', EnrollmentRole::Coordinator->value)
+            ->first();
+
+        if ($enrollment === null) {
+            return back();
+        }
+
+        $this->audit->log('cohort.coordinator_detached', $cohort, [
+            'status' => $enrollment->getAttribute('status')?->value,
+        ], ['coordinator_id' => (string) $coordinator->getKey()]);
+
+        $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
+
+        return back()->with('status', __('admin.cohorts.coordinator_detached'));
     }
 }

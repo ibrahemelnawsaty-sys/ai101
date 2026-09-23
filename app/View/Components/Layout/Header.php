@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Components\Layout;
 
 use App\Enums\UserRole;
+use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Route;
  */
 final class Header extends UiComponent
 {
+    use ResolvesCurrentUser;
+
     /** Above this the badge reads "99+" rather than a four-digit number. */
     public const BADGE_CAP = 99;
 
@@ -32,12 +35,6 @@ final class Header extends UiComponent
 
     public string $unreadLabel;
 
-    public string $displayName;
-
-    public string $email;
-
-    public string $initials;
-
     public ?string $notificationsUrl;
 
     public ?string $messagesUrl;
@@ -47,8 +44,6 @@ final class Header extends UiComponent
     public ?string $profileUrl;
 
     public ?string $cardUrl;
-
-    public ?string $logoutUrl;
 
     /** @var array<string, int> */
     public array $badges;
@@ -71,17 +66,7 @@ final class Header extends UiComponent
         $this->unreadCount = max(0, (int) $unread);
         $this->unreadLabel = $this->unreadCount > self::BADGE_CAP ? self::BADGE_CAP.'+' : (string) $this->unreadCount;
 
-        // loadMissing is an explicit eager load, so it stays legal under
-        // Model::preventLazyLoading() outside production (art. 19).
-        $user = auth()->user()?->loadMissing('profile');
-
-        $this->displayName = trim((string) (
-            data_get($user, 'profile.short_name_ar')
-            ?: data_get($user, 'profile.full_name_ar')
-            ?: data_get($user, 'email', '')
-        ));
-        $this->email = (string) data_get($user, 'email', '');
-        $this->initials = self::initialsOf($this->displayName);
+        $this->resolveCurrentUser();
 
         $this->notificationsUrl = Route::has('notifications') ? route('notifications') : null;
         $this->messagesUrl = Route::has('messages.index') ? route('messages.index') : null;
@@ -90,26 +75,9 @@ final class Header extends UiComponent
         // The card belongs to trainees: the route sits behind role:participant,
         // so offering it to a trainer or an administrator was a link to a 403
         // (D-86). A preview signs in AS the trainee, so it still shows there.
-        $this->cardUrl = Route::has('participant.card') && data_get($user, 'role') === UserRole::Participant
+        $this->cardUrl = Route::has('participant.card') && $this->role === UserRole::Participant
             ? route('participant.card')
             : null;
-        $this->logoutUrl = Route::has('logout') ? route('logout') : null;
-    }
-
-    /**
-     * Two initials for the avatar fallback, taken from whole words and never by
-     * slicing inside one: Arabic letters connect, and cutting a word apart
-     * breaks its shape (CONSTITUTION art. 16-bis). The first letter of a word is
-     * a safe, standalone grapheme.
-     */
-    private static function initialsOf(string $name): string
-    {
-        $words = preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        return collect($words)
-            ->take(2)
-            ->map(static fn (string $word): string => mb_substr($word, 0, 1, 'UTF-8'))
-            ->implode('');
     }
 
     public function render(): View

@@ -213,13 +213,24 @@ it('D-77: فتح المشروع الختامي يُعلَن مرة، وإعاد�
     freezeAt(riyadhAt('2026-11-01 12:00:00'));
     Event::fake([FinalProjectUnlocked::class]);
     $cohort = makeCohort();
-    $trainer = makeTrainer($cohort);
+    $admin = makeAdmin();
     $participant = makeParticipant($cohort);
-    $project = makeFinalProject($cohort, ['is_unlocked' => false]);
+    makeFinalProject($cohort, ['is_unlocked' => false]);
 
-    $this->actingAs($trainer)->put(route('trainer.finalProject.unlock', $project), ['is_unlocked' => true]);
-    $this->actingAs($trainer)->put(route('trainer.finalProject.unlock', $project), ['is_unlocked' => true]);
-    $this->actingAs($trainer)->put(route('trainer.finalProject.unlock', $project), ['is_unlocked' => false]);
+    // D-109, D-110: opening the tab is an admin-only settings save now, not a
+    // dedicated trainer toggle — the payload carries every required field.
+    $payload = static fn (bool $unlocked): array => [
+        'cohort_id' => $cohort->id,
+        'title' => 'Final project',
+        'brief' => 'Brief',
+        'due_at' => '2026-12-01T23:59',
+        'max_score' => 100,
+        'is_unlocked' => $unlocked ? '1' : '0',
+    ];
+
+    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(true));
+    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(true));
+    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(false));
 
     Event::assertDispatchedTimes(FinalProjectUnlocked::class, 1);
     expect(Notification::query()->where('user_id', $participant->id)->where('type', 'final_project_unlocked')->count())->toBe(1);

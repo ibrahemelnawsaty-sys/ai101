@@ -49,7 +49,7 @@
                     </div>
                     <div class="row__e">
                         <x-ui.countdown :until="$featured->startsAt" :server-now="$serverNow"
-                            :label="__('live.starts_in')" />
+                            variant="compact" :label="__('live.starts_in')" />
                     </div>
                 </div>
 
@@ -73,6 +73,10 @@
                             type="submit"
                             :disabled="! $featured->joinWindowOpen">{{ __('live.join') }}</x-ui.button>
                     </form>
+
+                    @if ($featured->platformLabel)
+                        <x-ui.pill variant="neutral" :icon="$featured->platformIcon">{{ $featured->platformLabel }}</x-ui.pill>
+                    @endif
 
                     @unless ($featured->joinWindowOpen)
                         <p class="hint">

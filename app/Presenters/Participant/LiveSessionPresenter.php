@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presenters\Participant;
 
+use App\Enums\SessionPlatform;
 use App\Enums\SessionStatus;
 use App\Http\Controllers\Participant\LiveController;
 use App\Models\Session;
@@ -38,6 +39,8 @@ final class LiveSessionPresenter extends ViewModel
             'statusVariant' => 'neutral',
             'joinWindowOpen' => false,
             'passcode' => null,
+            'platformLabel' => null,
+            'platformIcon' => null,
             // There is no session here to ask, so the platform default is the
             // only honest answer. A blind search-and-replace once put a
             // per-session lookup in this method, which has no $session — and the whole
@@ -64,7 +67,10 @@ final class LiveSessionPresenter extends ViewModel
         $status = $status instanceof SessionStatus ? $status : SessionStatus::tryFrom((string) $status);
 
         $open = LiveController::joinWindowOpen($session, $window, $now);
-        $passcode = Present::text($session->getAttribute('zoom_passcode'));
+        $passcode = Present::text($session->getAttribute('meeting_passcode'));
+
+        $platform = $session->getAttribute('platform');
+        $platform = $platform instanceof SessionPlatform ? $platform : null;
 
         return new self([
             'isMissing' => false,
@@ -84,6 +90,8 @@ final class LiveSessionPresenter extends ViewModel
             // The page used to reference a `passcode` no component provided;
             // Alpine threw on every render and the passcode never appeared (D-86).
             'passcode' => $open && $mayJoin ? $passcode : null,
+            'platformLabel' => $platform?->label(),
+            'platformIcon' => $platform?->icon(),
             'joinOpensBeforeMinutes' => LiveController::joinWindowMinutes($session),
         ]);
     }

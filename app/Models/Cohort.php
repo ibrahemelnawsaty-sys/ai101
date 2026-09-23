@@ -152,6 +152,19 @@ class Cohort extends Model
     }
 
     /**
+     * The coordinators who run attendance for this cohort NOW. Mirrors
+     * trainers() exactly — active enrolments only.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function coordinators(): BelongsToMany
+    {
+        return $this->users()
+            ->wherePivot('role_in_cohort', EnrollmentRole::Coordinator->value)
+            ->wherePivot('status', EnrollmentStatus::Active->value);
+    }
+
+    /**
      * Which cohort the platform treats as "the current one", in order.
      *
      * Running is included and last: dropping to no cohort the moment a cohort

@@ -70,7 +70,7 @@ final class SessionPresenter extends ViewModel
             // No replacement-date column exists yet (PROJECT-CONTRACT §4); the
             // view only prints this when it is present, so absent stays absent.
             'replacementStartsAt' => null,
-            'hasMeetingUrl' => Present::text($session->getAttribute('zoom_url')) !== null,
+            'hasMeetingUrl' => Present::text($session->getAttribute('meeting_url')) !== null,
         ]);
     }
 

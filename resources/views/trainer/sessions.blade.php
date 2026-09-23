@@ -1,10 +1,13 @@
 {{--
-    Trainer sessions — schedule management for the trainer's own cohorts.
+    The cohort's schedule. The admin and the coordinator manage it here — create,
+    edit, cancel, hold the meeting link; a trainer reaches the very same list
+    read-only, with their own sessions and whichever join link the coordinator
+    set, so the two roles never maintain the same link (D-109).
     Cancelling a session requires a reason and notifies the whole cohort (PRD §9.8.2).
-    The Zoom URL is stored here but is never emitted to a participant page before its
-    window opens; that guard lives in the participant controller.
+    The meeting URL is stored here but is never emitted to a participant page before
+    its window opens; that guard lives in the participant controller.
 
-    @see PRD §9.8, §9.10 · BR-23, BR-24, BR-27
+    @see PRD §9.8, §9.10 · BR-23, BR-24, BR-27 · D-109
 --}}
 @extends('layouts.app')
 
@@ -19,16 +22,25 @@
             :action-label="__('app.retry')" :action-href="route('trainer.sessions')" />
     @else
 
+        @unless ($canManage)
+            <div class="note note--info u-mb-4">
+                <b>{{ __('trainer.sessions.readonly_title') }}</b>
+                {{ __('trainer.sessions.readonly_body') }}
+            </div>
+        @endunless
+
         <div class="toolbar">
             <form method="GET" action="{{ route('trainer.sessions') }}" class="toolbar__filters">
                 <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                 <x-ui.select name="status" :label="__('trainer.sessions.filter_status')" :options="$statusOptions" :value="request('status')" />
                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
-            <div class="toolbar__end">
-                <x-ui.button variant="primary" size="sm"
-                    :href="route('trainer.sessions', ['edit' => 'new'])">{{ __('trainer.sessions.create') }}</x-ui.button>
-            </div>
+            @if ($canManage)
+                <div class="toolbar__end">
+                    <x-ui.button variant="primary" size="sm"
+                        :href="route('trainer.sessions', ['edit' => 'new'])">{{ __('trainer.sessions.create') }}</x-ui.button>
+                </div>
+            @endif
         </div>
 
         <x-ui.card class="dc--span" flush>
@@ -52,8 +64,8 @@
                 <x-ui.empty-state icon="cal"
                     :title="__('trainer.sessions.empty_title')"
                     :description="__('trainer.sessions.empty_body')"
-                    :action-label="__('trainer.sessions.create')"
-                    :action-href="route('trainer.sessions', ['edit' => 'new'])" />
+                    :action-label="$canManage ? __('trainer.sessions.create') : null"
+                    :action-href="$canManage ? route('trainer.sessions', ['edit' => 'new']) : null" />
             @else
                 <div class="tscroll">
                     <table class="atable">
@@ -64,6 +76,7 @@
                                 <th scope="col">{{ __('schedule.col_time') }}</th>
                                 <th scope="col">{{ __('schedule.col_topic') }}</th>
                                 <th scope="col">{{ __('trainer.sessions.col_type') }}</th>
+                                <th scope="col">{{ __('trainer.sessions.col_staff') }}</th>
                                 <th scope="col">{{ __('schedule.col_status') }}</th>
                                 <th scope="col">{{ __('trainer.sessions.col_link') }}</th>
                                 <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
@@ -76,23 +89,35 @@
                                     <td class="u-num u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
                                     <th scope="row">{{ $session->topic }}</th>
                                     <td>{{ $session->typeLabel }}</td>
+                                    <td>
+                                        <div>{{ $session->trainerName }}</div>
+                                        <div>{{ $session->coordinatorName }}</div>
+                                    </td>
                                     <td><x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill></td>
                                     <td>
-                                        @if ($session->hasMeetingUrl)
-                                            <x-ui.pill variant="success" icon="check">{{ __('trainer.sessions.link_set') }}</x-ui.pill>
+                                        @if ($session->isInPerson)
+                                            @if ($session->hasLocation)
+                                                <x-ui.pill variant="success" icon="check">{{ __('trainer.sessions.location_set') }}</x-ui.pill>
+                                            @else
+                                                <x-ui.pill variant="warning" icon="warn">{{ __('trainer.sessions.location_missing') }}</x-ui.pill>
+                                            @endif
+                                        @elseif ($session->hasMeetingUrl)
+                                            <x-ui.pill variant="success" :icon="$session->platformIcon ?? 'check'">{{ $session->platformLabel ?? __('trainer.sessions.link_set') }}</x-ui.pill>
                                         @else
                                             <x-ui.pill variant="warning" icon="warn">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
                                         @endif
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
-                                            :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
+                                        @if ($canManage)
+                                            <x-ui.button variant="secondary" size="sm"
+                                                :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
+                                        @endif
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('trainer.attendance', ['session' => $session->id])">{{ __('nav.attendance') }}</x-ui.button>
-                                        @unless ($session->isCancelled)
+                                        @if ($canManage && ! $session->isCancelled)
                                             <x-ui.button variant="danger" size="sm"
                                                 :href="route('trainer.sessions', ['cancel' => $session->id])">{{ __('trainer.sessions.cancel') }}</x-ui.button>
-                                        @endunless
+                                        @endif
                                     </td>
                                 </tr>
                                 @if ($session->isCancelled)
@@ -135,6 +160,9 @@
                             :options="$typeOptions" :value="old('type', $editing->type)" />
                         <x-ui.select name="trainer_id" required :label="__('schedule.col_trainer')"
                             :options="$trainerOptions" :value="old('trainer_id', $editing->trainerId)" />
+                        <x-ui.select name="coordinator_id" :label="__('trainer.sessions.coordinator')"
+                            :hint="__('trainer.sessions.coordinator_hint')"
+                            :options="$coordinatorOptions" :value="old('coordinator_id', $editing->coordinatorId)" />
                     </div>
 
                     <div class="f2">
@@ -148,10 +176,30 @@
                             :value="old('end_time', $editing->endTimeValue)" />
                     </div>
 
+                    <x-ui.select name="delivery_mode" required :label="__('trainer.sessions.delivery_mode')"
+                        :options="$deliveryModeOptions" :value="old('delivery_mode', $editing->deliveryMode)" />
+
+                    <x-ui.select name="platform" :label="__('trainer.sessions.platform')"
+                        :hint="__('trainer.sessions.platform_hint')"
+                        :options="$platformOptions" :value="old('platform', $editing->platform)" />
+
                     <x-ui.input name="meeting_url" type="url" dir="ltr"
                         :label="__('trainer.sessions.meeting_url')"
                         :hint="__('trainer.sessions.meeting_url_hint')"
                         :value="old('meeting_url', $editing->meetingUrl)" />
+
+                    <div class="f2">
+                        <x-ui.input name="location_name"
+                            :label="__('trainer.sessions.location_name')"
+                            :value="old('location_name', $editing->locationName)" />
+                        <x-ui.input name="location_map_url" type="url" dir="ltr"
+                            :label="__('trainer.sessions.location_map_url')"
+                            :value="old('location_map_url', $editing->locationMapUrl)" />
+                        <x-ui.input name="room_name"
+                            :label="__('trainer.sessions.room_name')"
+                            :hint="__('trainer.sessions.room_name_hint')"
+                            :value="old('room_name', $editing->roomName)" />
+                    </div>
 
                     <x-ui.input name="meeting_passcode" dir="ltr"
                         :label="__('live.passcode')"

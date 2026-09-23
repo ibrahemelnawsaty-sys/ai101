@@ -6,6 +6,7 @@ namespace App\View\Components\Layout;
 
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
+use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,8 @@ use Illuminate\Support\Facades\Route;
  */
 final class Sidebar extends UiComponent
 {
+    use ResolvesCurrentUser;
+
     /** Above this the badge reads "99+" rather than a four-digit number. */
     public const BADGE_CAP = 99;
 
@@ -97,6 +100,7 @@ final class Sidebar extends UiComponent
         $this->cohorts = self::rows($cohorts);
         $this->drawer = (bool) $drawer;
         $this->resolvedGroups = $this->resolveGroups(is_array($groups) ? self::rows($groups) : $this->defaultGroups());
+        $this->resolveCurrentUser();
 
         $this->tag = $this->drawer ? 'div' : 'aside';
         $this->wrapperClass = $this->drawer ? 'drawer__panel' : 'side';
@@ -133,6 +137,7 @@ final class Sidebar extends UiComponent
         return match (app(RoleResolver::class)->shellRole($user)) {
             'admin' => $this->adminGroups(),
             'trainer' => $this->trainerGroups(),
+            'coordinator' => $this->coordinatorGroups(),
             default => $this->participantGroups(),
         };
     }
@@ -152,7 +157,9 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
-                ['route' => 'admin.dashboard', 'icon' => 'i-home', 'label' => __('nav.admin.dashboard')],
+                // D-113 — the icon matches all three other roles' own
+                // "Info dashboard" tab now, not the public home page's i-home.
+                ['route' => 'admin.dashboard', 'icon' => 'i-panel', 'label' => __('nav.admin.dashboard')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
                 ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],
@@ -167,6 +174,10 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.broadcasts.index', 'icon' => 'i-mail', 'label' => __('nav.admin.broadcasts')],
             ]],
             ['label' => __('nav.groups.work'), 'items' => [
+                // D-109, D-110 — the brief, the deadline, the ceiling, the
+                // late policy and opening the tab, entirely separate from the
+                // trainer's own read-and-grade screen.
+                ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
                 ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
@@ -184,6 +195,10 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
+                // The trainer's own information home (PR-5, batch 2) — next
+                // session, grading queues, attendance standing, all in one
+                // read-only screen the trainer never had before.
+                ['route' => 'trainer.dashboard', 'icon' => 'i-panel', 'label' => __('nav.trainer.dashboard')],
                 ['route' => 'trainer.participants', 'icon' => 'i-users', 'label' => __('nav.trainer.participants')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
@@ -204,6 +219,29 @@ final class Sidebar extends UiComponent
     }
 
     /**
+     * The coordinator rail. D-105 gave this role one link: attendance.
+     * D-109 adds a second — the schedule itself is now theirs to create, move,
+     * cancel and hold the meeting link for, so a trainer's own edit could
+     * never duplicate it. Nothing else is added here just
+     * because a route happens to accept the role too.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function coordinatorGroups(): array
+    {
+        return [
+            ['items' => [
+                // The coordinator's own information home (PR-5, batch 2) —
+                // sessions still missing a link or a location, and the
+                // exception-request queue, both theirs to clear.
+                ['route' => 'coordinator.dashboard', 'icon' => 'i-panel', 'label' => __('nav.coordinator.dashboard')],
+                ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
+                ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
+            ]],
+        ];
+    }
+
+    /**
      * The participant rail, exactly as PRD §9.5.1 groups it.
      *
      * @return list<array{items: list<array<string, mixed>>}>
@@ -212,7 +250,14 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
-                ['route' => 'dashboard', 'icon' => 'i-home', 'label' => __('nav.participant.dashboard')],
+                // D-108 — nav.participant.home_page now leaves the dashboard
+                // shell for the public landing page (route: home) exactly as
+                // requested; the stats screen that used to sit behind this
+                // same first tab kept its own route (dashboard) and moved to
+                // nav.participant.dashboard's new label right after it,
+                // unchanged otherwise.
+                ['route' => 'home', 'icon' => 'i-home', 'label' => __('nav.participant.home_page')],
+                ['route' => 'dashboard', 'icon' => 'i-panel', 'label' => __('nav.participant.dashboard')],
                 ['route' => 'participant.card', 'icon' => 'i-card', 'label' => __('nav.participant.card')],
                 ['route' => 'participant.journey', 'icon' => 'i-route', 'label' => __('nav.participant.journey')],
             ]],

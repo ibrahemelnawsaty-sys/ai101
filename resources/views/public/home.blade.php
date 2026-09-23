@@ -190,7 +190,17 @@
         @endif
 
         <div class="hero__acts">
-            @if (data_get($cohort, 'is_registration_open'))
+            @auth
+                {{-- D-108 — a visitor already signed in is never asked to
+                     register again; route('dashboard') already sends every
+                     role to its own area. --}}
+                <x-ui.button variant="primary" size="lg" :href="route('dashboard')" class="mag">
+                    <span class="mag__t">
+                        {{ __('landing.hero.go_to_dashboard') }}
+                        <svg aria-hidden="true" class="ic ic--flip"><use href="#i-chev"/></svg>
+                    </span>
+                </x-ui.button>
+            @elseif (data_get($cohort, 'is_registration_open'))
                 <x-ui.button variant="primary" size="lg" :href="route('register')" class="mag">
                     <span class="mag__t">
                         {{ __('landing.hero.register') }}
@@ -914,7 +924,11 @@
                 <p>{{ data_get($landing, 'final.body') }}</p>
 
                 <div class="final__acts">
-                    @if (data_get($cohort, 'is_registration_open'))
+                    @auth
+                        <x-ui.button variant="primary" size="lg" :href="route('dashboard')" class="mag">
+                            <span class="mag__t">{{ __('landing.hero.go_to_dashboard') }}</span>
+                        </x-ui.button>
+                    @elseif (data_get($cohort, 'is_registration_open'))
                         <x-ui.button variant="primary" size="lg" :href="route('register')" class="mag">
                             <span class="mag__t">{{ __('landing.final.register') }}</span>
                         </x-ui.button>

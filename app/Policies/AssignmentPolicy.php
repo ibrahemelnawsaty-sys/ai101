@@ -37,14 +37,20 @@ final class AssignmentPolicy
             && $this->participantOf($user, $cohortId);
     }
 
+    /**
+     * D-111 — defining a weekly task (its conditions, description, deadline
+     * and files) is an administrator's to do now, not a trainer's: the
+     * trainer's own screen keeps reading it and grading what comes in,
+     * nothing else.
+     */
     public function create(User $user, Assignment $assignment): bool
     {
-        return $this->staffOf($user, (string) $assignment->cohort_id) && $this->writesAllowed();
+        return $this->admin($user) && $this->writesAllowed();
     }
 
     public function update(User $user, Assignment $assignment): bool
     {
-        return $this->staffOf($user, (string) $assignment->cohort_id) && $this->writesAllowed();
+        return $this->admin($user) && $this->writesAllowed();
     }
 
     public function publish(User $user, Assignment $assignment): bool
@@ -83,7 +89,7 @@ final class AssignmentPolicy
 
     public function delete(User $user, Assignment $assignment): bool
     {
-        return $this->staffOf($user, (string) $assignment->cohort_id) && $this->writesAllowed();
+        return $this->admin($user) && $this->writesAllowed();
     }
 
     public function forceDelete(User $user, Assignment $assignment): bool

@@ -146,8 +146,8 @@ it('BR-24: كلمة مرور الاجتماع لا تظهر قبل نافذة ا
     $participant = makeParticipant($cohort);
     $start = riyadhAt('2026-10-14 17:00:00');
     $session = sessionInCohort($cohort, $start, $start->addHours(2), [
-        'zoom_url' => 'https://example.test/meeting',
-        'zoom_passcode' => 'CANARY-PASS',
+        'meeting_url' => 'https://example.test/meeting',
+        'meeting_passcode' => 'CANARY-PASS',
         'join_opens_minutes' => null,
     ]);
     $window = app(AttendanceWindow::class);

@@ -266,6 +266,11 @@ min-block-size: var(--s15);
 .checkin[data-state="done"] { background: var(--ok); }
 .checkin svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
 
+/* D-106 — the self-check-in QR on the coordinator's attendance screen. */
+.checkincode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s5); margin-block-start: var(--s4); }
+.checkincode__qr { inline-size: var(--d-2); block-size: var(--d-2); flex: none; }
+.checkincode__qr svg { inline-size: 100%; block-size: 100%; }
+
 /* The tick draws itself once, then stays. */
 .ck-path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: ckDraw 480ms var(--e-out) forwards; }
 @keyframes ckDraw { to { stroke-dashoffset: 0; } }
@@ -401,17 +406,28 @@ min-block-size: var(--s6);
 .gitem__sc small { font-size: var(--fs-xs); color: var(--text-faint); font-weight: var(--fw-medium); }
 .gitem__hint { font-size: var(--fs-xs); color: var(--text-muted); }
 
-/* Feedback note.  BR-13 makes it mandatory, so it is never an empty box. */
+/* Feedback note.  BR-13 makes it mandatory, so it is never an empty box.
+   The sprite ships every icon at a 24x24 viewBox with no intrinsic size, so
+   a caller's leading <svg> used to paint at its raw, unconstrained size —
+   the icon alone could dwarf the sentence beside it. Sized and tinted here,
+   once, for every note on the platform. */
 .note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
   margin-block-start: var(--s3);
   padding: var(--s3) var(--s4);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--violet-050);
 border-inline-start: var(--bw-marker) solid var(--violet-300);
   font-size: var(--fs-sm);
   color: var(--n-600);
   line-height: var(--lh-body);
+  box-shadow: var(--sh-sm);
 }
+.note > svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; color: var(--text-accent); }
+.note > p,
+.note > div { flex: 1; min-inline-size: 0; }
 .note b { color: var(--violet-900); display: block; font-size: var(--fs-xs); margin-block-end: var(--s1); }
 .note--ok   { background: var(--ok-100);   border-inline-start-color: var(--ok);   color: var(--n-600); }
 .note--warn { background: var(--warn-100); border-inline-start-color: var(--warn); color: var(--n-600); }
@@ -420,6 +436,9 @@ border-inline-start: var(--bw-marker) solid var(--violet-300);
 .note--ok b   { color: var(--ok-700); }
 .note--warn b { color: var(--warn-700); }
 .note--bad b  { color: var(--bad-700); }
+.note--ok > svg   { color: var(--status-ok-text); }
+.note--warn > svg { color: var(--status-warn-text); }
+.note--bad > svg  { color: var(--status-bad-text); }
 .note__body { display: block; }
 .note__list { display: grid; gap: var(--s1); margin-block-start: var(--s2); padding-inline-start: var(--s4); list-style: disc; }
 .note__meta { display: block; font-size: var(--fs-xs); color: var(--text-faint); margin-block-start: var(--s2); }
@@ -1234,4 +1253,27 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* ==========================================================================
+   RECORDING PLAYER · participant/recording-player (D-107)
+   --------------------------------------------------------------------------
+   Ratio-locked instead of a fixed height, exactly like .card__banner: it
+   reserves its space before the iframe loads (Article 19) and crops
+   consistently at every width. Tokens only — no literal colour or length.
+   ========================================================================== */
+.recording-embed {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.recording-embed iframe {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
 }

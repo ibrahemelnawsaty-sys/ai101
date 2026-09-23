@@ -27,6 +27,8 @@ final class PreferencePresenter extends ViewModel
         'enrollment_approved',
         'enrollment_rejected',
         'certificate_issued',
+        'attendance_exception_approved',
+        'attendance_exception_rejected',
     ];
 
     public static function from(NotificationPreference $preference): self

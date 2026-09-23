@@ -13,6 +13,7 @@ return [
     'user_role' => [
         'admin' => 'مدير نظام',
         'trainer' => 'مدرب',
+        'coordinator' => 'منسّق',
         'participant' => 'مشارك',
     ],
 
@@ -51,6 +52,7 @@ return [
     'enrollment_role' => [
         'participant' => 'مشارك',
         'trainer' => 'مدرب',
+        'coordinator' => 'منسّق',
     ],
 
     'session_type' => [
@@ -67,12 +69,34 @@ return [
         'cancelled' => 'ملغاة',
     ],
 
+    'session_delivery_mode' => [
+        'online' => 'افتراضي (عن بُعد)',
+        'in_person' => 'حضوري',
+    ],
+
+    'session_platform' => [
+        'zoom' => 'Zoom',
+        'google_meet' => 'Google Meet',
+        'teams' => 'Microsoft Teams',
+    ],
+
     'attendance_status' => [
         'present' => 'حاضر',
         'late' => 'متأخر',
         'absent' => 'غائب',
         'excused' => 'غياب بعذر',
         'incomplete' => 'حضور غير مكتمل',
+    ],
+
+    'attendance_exception_type' => [
+        'absence' => 'غياب',
+        'lateness' => 'تأخير',
+    ],
+
+    'attendance_exception_status' => [
+        'pending' => 'قيد المراجعة',
+        'approved' => 'مقبول',
+        'rejected' => 'مرفوض',
     ],
 
     'assignment_status' => [

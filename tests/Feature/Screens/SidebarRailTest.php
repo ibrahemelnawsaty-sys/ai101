@@ -32,7 +32,7 @@ function railRouteNames(): array
 
     $names = [];
 
-    foreach (['participantGroups', 'trainerGroups', 'adminGroups'] as $method) {
+    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups'] as $method) {
         $reflection = new ReflectionMethod(Sidebar::class, $method);
         $reflection->setAccessible(true);
 
@@ -107,6 +107,17 @@ it('D-30: المدرّب يرى وجهات المدرّب', function (): void {
         ->and($hrefs)->not->toContain(route('admin.settings.edit'));
 });
 
+it('D-30: المنسّق يرى وجهاته فقط دون وجهات الإدارة', function (): void {
+    $cohort = makeCohort();
+    $hrefs = railHrefsFor(makeCoordinator($cohort));
+
+    expect($hrefs)->toContain(route('coordinator.dashboard'))
+        ->and($hrefs)->toContain(route('trainer.sessions'))
+        ->and($hrefs)->toContain(route('trainer.attendance'))
+        ->and($hrefs)->not->toContain(route('admin.settings.edit'))
+        ->and($hrefs)->not->toContain(route('trainer.participants'));
+});
+
 it('D-30: المتدرّب لم تتغيّر قائمته', function (): void {
     $cohort = makeCohort();
     $hrefs = railHrefsFor(makeParticipant($cohort));
@@ -148,7 +159,7 @@ it('المادة 16: كل أيقونة تذكرها القائمة موجودة 
 
     $missing = [];
 
-    foreach (['participantGroups', 'trainerGroups', 'adminGroups'] as $method) {
+    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups'] as $method) {
         $reflection = new ReflectionMethod(Sidebar::class, $method);
         $reflection->setAccessible(true);
 

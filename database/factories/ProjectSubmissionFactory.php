@@ -32,13 +32,16 @@ final class ProjectSubmissionFactory extends Factory
         return [
             'final_project_id' => FinalProject::factory(),
             'user_id' => User::factory(),
-            'files' => [[
-                'name' => 'final-project.zip',
-                'path' => 'project-submissions/'.fake()->uuid().'.zip',
-                'size' => fake()->numberBetween(100_000, 5_000_000),
-                'mime' => 'application/zip',
-            ]],
+            'files' => [],
+            'live_url' => 'https://ai101-final.example.test',
             'github_url' => 'https://github.com/athar-trainee/ai101-final',
+            'presentation_file' => [
+                'original_name' => 'presentation.pdf',
+                'path' => 'final-projects/'.fake()->uuid().'.pdf',
+                'size' => fake()->numberBetween(200_000, 5_000_000),
+                'mime' => 'application/pdf',
+            ],
+            'logo_file' => null,
             'description' => fake('en_US')->paragraph(),
             'submitted_at' => Clock::now(),
             'is_late' => false,

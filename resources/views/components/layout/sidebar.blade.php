@@ -116,6 +116,17 @@
         @endforelse
     </nav>
 
+    {{-- D-108 — who is signed in, always visible (never hidden behind the
+         header dropdown alone), and the one role badge shown consistently
+         everywhere a name appears (Article 6, Article 18). --}}
+    <div class="side__identity">
+        <span class="av" aria-hidden="true">{{ $initials }}</span>
+        <div class="side__identity-text">
+            <b>{{ $displayName }}</b>
+            <x-ui.badge size="sm" :variant="$roleVariant">{{ $roleLabel }}</x-ui.badge>
+        </div>
+    </div>
+
     @if ($cohort)
         <div class="side__foot">
             <b>{{ $cohort }}</b>
@@ -143,5 +154,20 @@
                 </form>
             @endif
         </div>
+    @endif
+
+    {{-- D-108 — moved out of the header's account dropdown so it is reachable
+         in one step and stays visible even when the rail is collapsed to
+         72px (icon only, exactly like every other side__b item). Still a
+         POST: a GET link would be triggerable from any other site (Article
+         24, CSRF). --}}
+    @if ($logoutUrl !== null)
+        <form method="POST" action="{{ $logoutUrl }}" class="side__logout">
+            @csrf
+            <button type="submit" class="side__b">
+                <svg aria-hidden="true"><use href="#i-logout"></use></svg>
+                <span class="side__label">{{ __('nav.chrome.logout') }}</span>
+            </button>
+        </form>
     @endif
 </{{ $tag }}>

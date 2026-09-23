@@ -148,6 +148,26 @@ return [
             'title' => 'Your enrolment request was not approved',
             'body' => 'Reason: :reason. You are welcome to contact us with any question.',
         ],
+        'attendance_exception_requested' => [
+            'label' => 'New excuse request',
+            'title' => 'A new excuse request needs review',
+            'body' => ':name filed an excuse request for their attendance and needs your decision.',
+        ],
+        'attendance_exception_requested_confirmation' => [
+            'label' => 'Excuse request received',
+            'title' => 'We received your request',
+            'body' => 'Your request is under review now, and we will reply soon.',
+        ],
+        'attendance_exception_approved' => [
+            'label' => 'Excuse request approved',
+            'title' => 'Your request was approved',
+            'body' => 'Your request for :session was approved, and your attendance record was updated.',
+        ],
+        'attendance_exception_rejected' => [
+            'label' => 'Excuse request rejected',
+            'title' => 'Your request was not approved',
+            'body' => 'Reason: :reason',
+        ],
     ],
 
     'empty_title' => 'No new notifications',

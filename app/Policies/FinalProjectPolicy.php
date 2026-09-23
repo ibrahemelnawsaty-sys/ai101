@@ -34,14 +34,19 @@ final class FinalProjectPolicy
         return (bool) $project->is_unlocked && $this->participantOf($user, $cohortId);
     }
 
+    /**
+     * D-110 — settings (the brief, the deadline, the ceiling, the late
+     * policy) and opening the tab are an admin affair only now; a trainer's
+     * own screen keeps `view` (to read the brief) and grading, nothing else.
+     */
     public function unlock(User $user, FinalProject $project): bool
     {
-        return $this->staffOf($user, (string) $project->cohort_id) && $this->writesAllowed();
+        return $this->admin($user) && $this->writesAllowed();
     }
 
     public function update(User $user, FinalProject $project): bool
     {
-        return $this->staffOf($user, (string) $project->cohort_id) && $this->writesAllowed();
+        return $this->admin($user) && $this->writesAllowed();
     }
 
     public function submit(User $user, FinalProject $project): bool

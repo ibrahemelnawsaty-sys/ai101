@@ -122,7 +122,8 @@
                                                     <td>
                                                         @if ($session->isNext && ! $session->isCancelled)
                                                             <x-ui.pill variant="primary" icon="clock">
-                                                                <x-ui.countdown :until="$session->startsAt" :server-now="$serverNow" compact />
+                                                                <x-ui.countdown :until="$session->startsAt" :server-now="$serverNow"
+                                                                    variant="compact" :show-days="false" />
                                                             </x-ui.pill>
                                                         @else
                                                             <x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill>

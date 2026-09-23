@@ -12,6 +12,7 @@ return [
     'user_role' => [
         'admin' => 'Administrator',
         'trainer' => 'Trainer',
+        'coordinator' => 'Coordinator',
         'participant' => 'Participant',
     ],
 
@@ -50,6 +51,7 @@ return [
     'enrollment_role' => [
         'participant' => 'Participant',
         'trainer' => 'Trainer',
+        'coordinator' => 'Coordinator',
     ],
 
     'session_type' => [
@@ -66,12 +68,34 @@ return [
         'cancelled' => 'Cancelled',
     ],
 
+    'session_delivery_mode' => [
+        'online' => 'Online',
+        'in_person' => 'In person',
+    ],
+
+    'session_platform' => [
+        'zoom' => 'Zoom',
+        'google_meet' => 'Google Meet',
+        'teams' => 'Microsoft Teams',
+    ],
+
     'attendance_status' => [
         'present' => 'Present',
         'late' => 'Late',
         'absent' => 'Absent',
         'excused' => 'Excused',
         'incomplete' => 'Incomplete attendance',
+    ],
+
+    'attendance_exception_type' => [
+        'absence' => 'Absence',
+        'lateness' => 'Lateness',
+    ],
+
+    'attendance_exception_status' => [
+        'pending' => 'Pending review',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
     ],
 
     'assignment_status' => [

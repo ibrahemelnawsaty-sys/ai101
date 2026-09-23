@@ -87,7 +87,7 @@
                     </div>
                     <div class="row__e">
                         <x-ui.countdown :until="$nextSession->startsAt" :server-now="$serverNow"
-                            :label="__('dashboard.next_session.starts_in')" />
+                            variant="compact" :label="__('dashboard.next_session.starts_in')" />
                     </div>
                 </div>
 

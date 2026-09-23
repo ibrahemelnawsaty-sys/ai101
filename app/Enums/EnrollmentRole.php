@@ -17,6 +17,7 @@ enum EnrollmentRole: string
 
     case Participant = 'participant';
     case Trainer = 'trainer';
+    case Coordinator = 'coordinator';
 
     /**
      * Human label, resolved from lang/{locale}/enums.php.

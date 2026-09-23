@@ -27,11 +27,13 @@
 /* --------------------------------------------------------------------------
    Self-hosted fonts (PRD §5.4 · Constitution Article 19 — font-display: swap).
 
-   ONE FAMILY, FOUR WEIGHTS (D-86). The binaries are committed in
-   public/fonts/ (D-28) and copied to the web root by deploy/update.sh. Each
-   rule still tries a locally installed copy first, and the stack in
-   tokens.css ends in Segoe UI and Tahoma, which both cover Arabic — so a
-   missing file costs the page its typeface and never its legibility.
+   ONE FAMILY, FOUR WEIGHTS (D-86, D-108 — the same decision reached
+   independently the same day; D-86 is the canonical record). The binaries
+   are committed in public/fonts/ (D-28) and copied to the web root by
+   deploy/update.sh. Each rule still tries a locally installed copy first,
+   and the stack in tokens.css ends in Segoe UI and Tahoma, which both cover
+   Arabic — so a missing file costs the page its typeface and never its
+   legibility.
 
    There used to be a fifth rule, for a display face on the marketing
    headings (D-22). The owner asked for a single typeface across the whole
@@ -499,6 +501,29 @@ block-size: var(--s5);
   }
   .side__badge--alert { background: var(--bad-700); }
 
+  /* Signed-in identity (D-108): always visible, never only in the header
+     dropdown, so the role badge reads the same way in both places
+     (Article 6, Article 18). */
+  .side__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s3);
+    margin-block-start: var(--s2);
+    border-block-start: var(--bw-hairline) solid var(--border-1);
+  }
+  .side__identity-text { min-inline-size: 0; overflow: hidden; }
+  .side__identity-text b {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semi);
+    color: var(--text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .side__identity-text .ui-badge { margin-block-start: var(--s1); }
+
   .side__foot {
     margin-block-start: var(--s4);
     padding: var(--s3);
@@ -522,11 +547,20 @@ border: var(--bw-hairline) solid var(--violet-100);
     padding-inline: var(--s2);
   }
 
+  /* Signed-out is a POST, styled exactly like a nav item (D-108): the same
+     side__b, so the rail never gains a second visual language for one row. */
+  .side__logout { padding: var(--s2); border-block-start: var(--bw-hairline) solid var(--border-1); }
+  .side__logout .side__b { color: var(--status-bad-text); }
+  .side__logout .side__b:hover { background: var(--bad-a10); }
+  .side__logout .side__b svg { color: var(--status-bad-text); }
+
   /* Collapsed rail: icons only. */
   .shell[data-collapsed="true"] .side__label,
   .shell[data-collapsed="true"] .side__t,
   .shell[data-collapsed="true"] .side__foot,
+  .shell[data-collapsed="true"] .side__identity-text,
   .shell[data-collapsed="true"] .side__wordmark { display: none; }
+  .shell[data-collapsed="true"] .side__identity { justify-content: center; padding-inline: 0; }
 
   /* The compact mark replaces the wordmark in the 72px rail, and the brand row
      stacks so the collapse button keeps its full 44px touch target instead of
@@ -637,7 +671,8 @@ border: var(--bw-hairline) solid var(--border-1);
   }
   .menu__head { padding: var(--s3); border-block-end: var(--bw-hairline) solid var(--border-1); margin-block-end: var(--s2); }
   .menu__head b { display: block; font-size: var(--fs-sm); color: var(--text-strong); font-weight: var(--fw-semi); }
-  .menu__head span { display: block; font-size: var(--fs-xs); color: var(--text-muted); direction: ltr; unicode-bidi: isolate; text-align: start; }
+  .menu__head .ui-badge { margin-block-start: var(--s1); }
+  .menu__head .menu__email { display: block; font-size: var(--fs-xs); color: var(--text-muted); direction: ltr; unicode-bidi: isolate; text-align: start; margin-block-start: var(--s1); }
   .menu__i {
     display: flex;
     align-items: center;
@@ -653,9 +688,6 @@ border: var(--bw-hairline) solid var(--border-1);
   }
   .menu__i:hover { background: var(--surface-2); }
   .menu__i svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; color: var(--text-muted); }
-  .menu__i--danger { color: var(--status-bad-text); }
-  .menu__i--danger svg { color: var(--status-bad-text); }
-  .menu__sep { block-size: var(--s1); background: var(--border-1); margin-block: var(--s2); }
 
   /* --------------------------------------------------- IMPERSONATION BAR */
   /* Burnt orange · sticky · the end button is ALWAYS visible (Article 23). */
@@ -1269,13 +1301,26 @@ border: var(--bw-hairline) solid var(--n-200);
      it is white in every shell, including one whose text is white too. .card
      and .dc already do it this way; this rule was the outlier. */
   .authcard {
+    position: relative;
     max-inline-size: var(--d-7);
     margin-inline: auto;
     background: var(--surface-1);
     border: var(--bw-hairline) solid var(--border-1);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-xl);
     padding: var(--s8);
-    box-shadow: var(--sh-md);
+    box-shadow: var(--sh-lg);
+  }
+  /* A one-line brand signature on every authentication card — the two
+     identity colours already locked in tokens.css §1, nothing new. */
+  .authcard::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: var(--s1);
+    border-start-start-radius: var(--r-xl);
+    border-start-end-radius: var(--r-xl);
+    background: linear-gradient(90deg, var(--violet-500), var(--teal-500));
   }
   .authcard h3 { text-align: center; }
   .authcard > p { font-size: var(--fs-sm); color: var(--text-muted); text-align: center; margin-block-start: var(--s1); margin-block-end: var(--s6); margin-inline: auto; }

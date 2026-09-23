@@ -470,7 +470,9 @@ MAIL_USERNAME=<blocked by D-02>
 MAIL_PASSWORD=<blocked by D-02>
 MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=<blocked by D-02>
-MAIL_FROM_NAME="${APP_NAME}"
+# اسم المرسل الذي يظهر للمستلم هو اسم البرنامج (ATHAR_PROGRAM_NAME)، لا APP_NAME
+# ولا اسم المنصة — نفس القيمة المرجعية المستخدمة في .env.example.
+MAIL_FROM_NAME="${ATHAR_PROGRAM_NAME}"
 ```
 
 - `APP_DEBUG=false` is Article 12, **without exception**. A `true` here on production is a security incident.

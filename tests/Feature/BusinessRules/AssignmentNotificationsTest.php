@@ -38,6 +38,7 @@ beforeEach(function (): void {
 
     $this->cohort = makeCohort();
     $this->trainer = makeTrainer($this->cohort);
+    $this->admin = makeAdmin();
     $this->participant = makeParticipant($this->cohort);
     $this->week = makeWeek($this->cohort, 1);
 });
@@ -84,8 +85,8 @@ function withdraw(User $user, object $test): void
 */
 
 it('FR-NOTIF-13: حفظ مهمة جديدة مسودةً لا يرسل رسالة ولا يكتب إشعارًا', function (): void {
-    assertAccepted($this->actingAs($this->trainer)
-        ->post(route('trainer.assignments.store'), assignmentPayload($this, ['status' => 'draft'])));
+    assertAccepted($this->actingAs($this->admin)
+        ->post(route('trainer.assignments.store', ['cohort' => $this->cohort->id]), assignmentPayload($this, ['status' => 'draft'])));
 
     Mail::assertNotQueued(AtharLetter::class);
     expect(Notification::query()->where('type', 'assignment_published')->count())->toBe(0);
@@ -95,8 +96,8 @@ it('FR-NOTIF-13: مهمة تُنشأ منشورةً تصل كل متدرّب ن�
     $withdrawn = makeParticipant($this->cohort);
     withdraw($withdrawn, $this);
 
-    assertAccepted($this->actingAs($this->trainer)
-        ->post(route('trainer.assignments.store'), assignmentPayload($this)));
+    assertAccepted($this->actingAs($this->admin)
+        ->post(route('trainer.assignments.store', ['cohort' => $this->cohort->id]), assignmentPayload($this)));
 
     expect(lettersTo($this->participant, 'emails.assignment_published'))->toBe(1)
         ->and(noticesFor($this->participant, 'assignment_published'))->toBe(1)
@@ -109,7 +110,7 @@ it('FR-NOTIF-13: مهمة تُنشأ منشورةً تصل كل متدرّب ن�
 it('FR-NOTIF-13: نشر مسودة عبر التعديل يصل الدفعة على القناتين', function (): void {
     $draft = makeAssignment($this->cohort, ['status' => 'draft', 'week_id' => $this->week->id]);
 
-    assertAccepted($this->actingAs($this->trainer)
+    assertAccepted($this->actingAs($this->admin)
         ->patch(route('trainer.assignments.update', $draft), assignmentPayload($this)));
 
     expect(lettersTo($this->participant, 'emails.assignment_published'))->toBe(1)
@@ -120,9 +121,9 @@ it('FR-NOTIF-13: إعادة حفظ مهمة منشورة لا ترسل شيئً�
     $published = makeAssignment($this->cohort, ['status' => 'published', 'week_id' => $this->week->id]);
     $draft = makeAssignment($this->cohort, ['status' => 'draft', 'week_id' => $this->week->id]);
 
-    assertAccepted($this->actingAs($this->trainer)
+    assertAccepted($this->actingAs($this->admin)
         ->patch(route('trainer.assignments.update', $published), assignmentPayload($this, ['title' => 'CANARY-RENAMED'])));
-    assertAccepted($this->actingAs($this->trainer)
+    assertAccepted($this->actingAs($this->admin)
         ->patch(route('trainer.assignments.update', $draft), assignmentPayload($this, ['status' => 'draft'])));
 
     Mail::assertNotQueued(AtharLetter::class);
@@ -130,8 +131,8 @@ it('FR-NOTIF-13: إعادة حفظ مهمة منشورة لا ترسل شيئً�
 });
 
 it('FR-NOTIF-13: زرّ الرسالة ورابط الإشعار يفتحان صفحة المهمة عند المتدرّب لا لوحة المدرّب', function (): void {
-    assertAccepted($this->actingAs($this->trainer)
-        ->post(route('trainer.assignments.store'), assignmentPayload($this)));
+    assertAccepted($this->actingAs($this->admin)
+        ->post(route('trainer.assignments.store', ['cohort' => $this->cohort->id]), assignmentPayload($this)));
 
     $assignment = Assignment::query()->sole();
     $expected = route('assignments.show', $assignment);
@@ -154,8 +155,8 @@ it('FR-NOTIF-13: من أطفأ جرس المنصّة لهذا النوع تصل�
         'in_app_enabled' => false, 'email_enabled' => true,
     ]);
 
-    assertAccepted($this->actingAs($this->trainer)
-        ->post(route('trainer.assignments.store'), assignmentPayload($this)));
+    assertAccepted($this->actingAs($this->admin)
+        ->post(route('trainer.assignments.store', ['cohort' => $this->cohort->id]), assignmentPayload($this)));
 
     expect(lettersTo($this->participant, 'emails.assignment_published'))->toBe(1)
         ->and(noticesFor($this->participant, 'assignment_published'))->toBe(0);

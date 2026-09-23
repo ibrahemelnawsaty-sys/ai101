@@ -3,6 +3,11 @@
 > **`D-28` is closed.** The files that this directory used to only describe are
 > now committed here. `git pull` brings them; nothing has to be fetched by hand
 > on a deploy any more.
+>
+> **`D-86` retired the second face** (Reem Kufi, the display heading face) —
+> IBM Plex Sans Arabic is the platform's only face now, everywhere, no
+> exception. `D-108` reached the same decision independently the same day;
+> `D-86` is the canonical record.
 
 `resources/css/app.css` declares four `@font-face` rules that point at this
 directory. Each file below is referenced by that exact name — renaming one
@@ -20,8 +25,9 @@ different-looking page.
 
 The family is **SIL Open Font License 1.1**, which permits self-hosting and
 redistribution inside a project. That is what settled `D-28`: the open question
-was never the choice of face — `D-22` fixed that — but who supplies the binaries
-and under what licence.
+was never the choice of face — `D-22` fixed that, and `D-108` later replaced it
+with a single face everywhere — but who supplies the binaries and under what
+licence.
 
 Total: about 298 KB, served once and cached for a year by the `Cache-Control`
 rule in `deploy/.htaccess`.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\Time\Clock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,6 +43,7 @@ class FinalProject extends Model
         'unlocked_at',
         'unlocked_by',
         'due_at',
+        'allow_late',
         'max_score',
         'attachments',
     ];
@@ -58,9 +60,24 @@ class FinalProject extends Model
             'is_unlocked' => 'boolean',
             'unlocked_at' => 'datetime',
             'due_at' => 'datetime',
+            // BR-18's own switch, mirrored from Assignment: off refuses a late
+            // hand-in outright, on accepts it marked late (D-110).
+            'allow_late' => 'boolean',
             'max_score' => 'integer',
             'attachments' => 'array',
         ];
+    }
+
+    /**
+     * Whether the deadline has passed at `$at` — the same strict, UTC
+     * comparison Assignment::isPastDueAt() uses, so a submission and its
+     * reminder never disagree about the boundary (D-110).
+     */
+    public function isPastDueAt(\DateTimeInterface $at): bool
+    {
+        $dueAt = $this->due_at;
+
+        return $dueAt !== null && Clock::toUtc($at)->greaterThan(Clock::toUtc($dueAt));
     }
 
     /**

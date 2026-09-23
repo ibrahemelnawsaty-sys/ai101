@@ -148,6 +148,30 @@ return [
         'next_steps' => 'We would be glad to receive your request for the next cohort, and you are welcome to write to us at :email with any question.',
     ],
 
+    'attendance_exception_requested' => [
+        'subject' => 'We received your :type excuse request for :session',
+        'preheader' => 'Your request is under review now.',
+        'heading' => 'We received your request',
+        'body' => 'Your :type request for :session has reached us, and the program team is now reviewing it.',
+        'cta' => 'Open my attendance log',
+    ],
+
+    'attendance_exception_approved' => [
+        'subject' => 'Your request for :session was approved',
+        'preheader' => 'Your attendance record has been updated.',
+        'heading' => 'Your request was approved',
+        'body' => 'We approved your :type request for :session, and your attendance record has been updated to reflect it.',
+        'cta' => 'Open my attendance log',
+    ],
+
+    'attendance_exception_rejected' => [
+        'subject' => 'About your request for :session',
+        'preheader' => 'The details of the decision.',
+        'heading' => 'Your request was not approved',
+        'body' => 'We reviewed your :type request for :session and could not approve it. Reason: :reason',
+        'next_steps' => 'If you have anything to add, you are welcome to write to us at :email.',
+    ],
+
     'session_reminder' => [
         'subject' => 'Reminder: session :session :when',
         'preheader' => 'Session details and the join link are in your dashboard.',

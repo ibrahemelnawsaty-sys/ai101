@@ -191,10 +191,21 @@ final class DashboardController extends Controller
             return app(AdminDashboardController::class)();
         }
 
+        // PR-5, batch 2 — neither role had a stats home of its own before this;
+        // a trainer used to be bounced straight to the grading queue, and a
+        // coordinator fell through to the participant view below, which
+        // read attendance, journey and grades for an account that has none
+        // of those.
         if ($shell === 'trainer') {
             $request->session()->forget(self::WELCOME_KEY);
 
-            return redirect()->route('trainer.submissions');
+            return redirect()->route('trainer.dashboard');
+        }
+
+        if ($shell === 'coordinator') {
+            $request->session()->forget(self::WELCOME_KEY);
+
+            return redirect()->route('coordinator.dashboard');
         }
 
         $cohort = $this->activeCohort($user);

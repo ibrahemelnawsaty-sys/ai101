@@ -12,6 +12,22 @@ return [
 
     'col_participant' => 'Participant',
 
+    'dashboard' => [
+        'title' => 'Your cohort dashboard',
+        'error_title' => 'Could not load the dashboard',
+        'error_body' => 'Something went wrong while loading your dashboard data. Try again, and contact support if it keeps happening.',
+        'stat_participants' => 'Cohort participants',
+        'stat_avg_attendance' => 'Average attendance',
+        'stat_at_risk' => 'Below the attendance floor',
+        'stat_ungraded_weekly' => 'Weekly tasks awaiting grading',
+        'stat_ungraded_project' => 'Final projects awaiting grading',
+        'next_session_title' => 'Next session',
+        'next_session_empty_title' => 'No upcoming session',
+        'next_session_empty_body' => 'No upcoming session is scheduled for your cohort yet. It will appear here once one is set.',
+        'next_session_no_location' => 'Location not set yet',
+        'next_session_no_link' => 'Meeting link not set yet',
+    ],
+
     'participants' => [
         // Column headings for the exported participants report (CSV)
         'export' => [
@@ -89,11 +105,25 @@ return [
         'end_time' => 'End time',
         'end_after_start' => 'The end time must be after the start time.',
         'col_type' => 'Type',
+        'col_staff' => 'Staff',
         'col_link' => 'Meeting link',
         'meeting_url' => 'Meeting link',
         'meeting_url_hint' => 'This link is never sent to a participant browser before its time window opens.',
         'link_set' => 'Link added',
         'link_missing' => 'No link',
+        'delivery_mode' => 'Delivery mode',
+        'platform' => 'Streaming platform',
+        'platform_hint' => 'Shown to the trainee and the trainer alongside the join link.',
+        'coordinator' => 'Coordinator',
+        'coordinator_hint' => 'Optional — handles attendance for this session if assigned.',
+        'location_name' => 'Location name',
+        'location_map_url' => 'Map link',
+        'room_name' => 'Room number or name',
+        'room_name_hint' => 'Optional.',
+        'location_set' => 'Location added',
+        'location_missing' => 'No location',
+        'readonly_title' => 'Your schedule — view only',
+        'readonly_body' => 'The administrator and the coordinator create sessions and set their times and join links, so this data is never duplicated or in conflict. This is the list of sessions assigned to you; taking attendance from the attendance tab is still yours to do.',
 
         'cancel' => 'Cancel the session',
         'cancel_title' => 'Cancel a session',
@@ -112,6 +142,26 @@ return [
         'empty_body' => 'Add the sessions of your cohort weeks so they appear in the participant schedule.',
         'error_title' => 'The sessions could not be shown',
         'error_body' => 'Something went wrong while fetching them. Try again shortly — the schedule is unaffected.',
+
+        /*
+        |----------------------------------------------------------------------
+        | Recorded sessions — shared attendance screen (trainer/admin/coordinator) (D-107)
+        |----------------------------------------------------------------------
+        */
+
+        'recordings_title' => 'Recorded sessions',
+        'recordings_empty_title' => 'No finished sessions yet',
+        'recordings_empty_body' => 'Every session that ends in your cohort appears here, to upload its recording link.',
+        'col_recording' => 'Recording link',
+        'add_recording_action' => 'Add the recording link',
+        'recording_edit_title' => 'Recording link for :topic',
+        'recording_url' => 'Recording link',
+        'recording_url_hint' => 'Paste a zoom.us recording link, or the embed code Zoom itself copies, exactly as it is — the link is extracted from it automatically. A link from any other domain is rejected.',
+        'recording_saved' => 'The recording link was saved.',
+
+        'errors' => [
+            'recording_url_invalid' => 'A Zoom link could not be found in what you pasted. Make sure it is a recording link from zoom.us, or the embed code Zoom itself copies, unmodified.',
+        ],
     ],
 
     'attendance' => [
@@ -156,6 +206,8 @@ return [
         'description' => 'Assignment description',
         'create' => 'Create an assignment',
         'edit_title' => 'Edit the assignment',
+        'readonly_title' => 'Your weekly tasks — view only',
+        'readonly_body' => 'The administrator creates weekly tasks and sets their conditions, description, date and files. Grading hand-ins is still yours, from the "Submissions and grading" button on each row.',
         'filter_status' => 'Assignment status',
         'col_title' => 'Assignment',
         'col_submitted' => 'Submissions',
@@ -175,6 +227,8 @@ return [
 
         'empty_title' => 'No assignments created yet',
         'empty_body' => 'Create the first assignment for this week. A draft stays invisible to participants until you publish it.',
+        'empty_title_readonly' => 'No weekly tasks yet',
+        'empty_body_readonly' => 'The administrator creates the first task for this week, and it appears here once published.',
         'error_title' => 'The assignments could not be shown',
         'error_body' => 'Something went wrong while fetching them. Try again shortly — your assignments are safe and unaffected.',
     ],
@@ -259,6 +313,7 @@ return [
         'title' => 'Resources for your cohort',
         'upload_title' => 'Add a resource',
         'field_title' => 'Resource title',
+        'field_file' => 'Resource file',
         'field_description' => 'Short description',
         'external_url' => 'External link',
         'external_url_hint' => 'Leave it empty if you are uploading a file instead of a link.',

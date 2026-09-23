@@ -57,7 +57,40 @@
                 :description="__('trainer.attendance.no_session_body')"
                 :action-label="__('trainer.sessions.title')" :action-href="route('trainer.sessions')" />
         @else
-            <x-ui.card class="dc--span" flush>
+            {{-- D-106: the self-check-in QR, only while its window is actually
+                 open — the same [S, S+60m] the server itself enforces. The
+                 underlying signed url only ever changes once every ten
+                 minutes (CheckinCode), so polling this every minute is enough
+                 to catch that rotation without competing with the roster's
+                 own much faster poll below. --}}
+            <x-ui.card class="dc--span" icon="video" :title="__('attendance.checkin_code.title')"
+                x-data="atharCheckinCode({
+                        pollUrl: '{{ route('trainer.attendance.checkinCode', $roster->sessionId) }}',
+                        pollSeconds: 60,
+                        initialOpen: @js($checkInCode !== null),
+                        initialUrl: @js($checkInCode?->get('url') ?? ''),
+                        initialSvg: @js($checkInCode?->get('svg') ?? ''),
+                    })">
+                <template x-if="open">
+                    <div>
+                        <p class="u-muted">{{ __('attendance.checkin_code.body') }}</p>
+                        <div class="checkincode">
+                            <div class="checkincode__qr" x-html="svg"></div>
+                            <p>
+                                {{ __('attendance.checkin_code.link_label') }}
+                                <a :href="url" x-text="url" dir="ltr" class="u-num"></a>
+                            </p>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="! open">
+                    <x-ui.empty-state icon="clock" size="sm"
+                        :title="__('attendance.checkin_code.closed_title')"
+                        :description="__('attendance.checkin_code.closed_body')" />
+                </template>
+            </x-ui.card>
+
+            <x-ui.card class="dc--span u-mt-4" flush>
                 {{-- The roster refreshes itself while the session is live (PRD §9.9.7):
                      the server re-renders the four cells that can change, and only
                      those are replaced — never the checkboxes or the reason being
@@ -145,6 +178,135 @@
                     </form>
                 @endif
                 </div>
+            </x-ui.card>
+        @endif
+
+        {{-- Pending excuse requests (D-106) -------------------------------------- --}}
+        <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('attendance.exceptions_queue.title')" flush>
+            @if ($pendingExceptions->isEmpty())
+                <x-ui.empty-state icon="check" size="sm"
+                    :title="__('attendance.exceptions_queue.empty_title')"
+                    :description="__('attendance.exceptions_queue.empty_body')" />
+            @else
+                <div class="tscroll">
+                    <table class="atable">
+                        <caption class="sr">{{ __('attendance.exceptions_queue.title') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_participant') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_session') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_type') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_reason') }}</th>
+                                <th scope="col">{{ __('attendance.exceptions_queue.col_requested_at') }}</th>
+                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pendingExceptions as $item)
+                                <tr>
+                                    <th scope="row">{{ $item->participantName }}</th>
+                                    <td>{{ $item->sessionTitle }} <span class="u-num u-muted">{{ $item->sessionDate }}</span></td>
+                                    <td><x-ui.pill variant="neutral">{{ $item->typeLabel }}</x-ui.pill></td>
+                                    <td>{{ $item->reason }}</td>
+                                    <td class="u-num u-nowrap">{{ $item->requestedAt }}</td>
+                                    <td>
+                                        <div class="row__acts" x-data="{ rejecting: false }">
+                                            <form method="POST" action="{{ route('trainer.attendance-exceptions.approve', $item->id) }}">
+                                                @csrf
+                                                <x-ui.button variant="primary" size="sm" type="submit">
+                                                    {{ __('attendance.exceptions_queue.approve_action') }}
+                                                </x-ui.button>
+                                            </form>
+                                            <x-ui.button variant="danger" size="sm" type="button" x-on:click="rejecting = ! rejecting">
+                                                {{ __('attendance.exceptions_queue.reject_action') }}
+                                            </x-ui.button>
+                                            <form method="POST" x-show="rejecting" x-cloak
+                                                action="{{ route('trainer.attendance-exceptions.reject', $item->id) }}" class="u-mt-2">
+                                                @csrf
+                                                <x-ui.textarea name="decision_reason" rows="2" required minlength="10"
+                                                    :label="__('attendance.exceptions_queue.reject_reason_label')"
+                                                    :placeholder="__('attendance.exceptions_queue.reject_reason_placeholder')"
+                                                    :hint="__('attendance.exceptions_queue.reject_reason_hint', ['min' => 10])" />
+                                                <x-ui.button variant="danger" size="sm" type="submit" class="u-mt-2">
+                                                    {{ __('attendance.exceptions_queue.reject_action') }}
+                                                </x-ui.button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-ui.card>
+
+        {{-- Recorded sessions (D-107) — the one place a recording link is set;
+             trainer, admin and coordinator share this screen and this card,
+             since no session editor field exists for it anywhere else. --}}
+        <x-ui.card class="dc--span u-mt-4" icon="folder" :title="__('trainer.sessions.recordings_title')" flush>
+            @if ($recordingSessions->isEmpty())
+                <x-ui.empty-state icon="video" size="sm"
+                    :title="__('trainer.sessions.recordings_empty_title')"
+                    :description="__('trainer.sessions.recordings_empty_body')" />
+            @else
+                <div class="tscroll">
+                    <table class="atable">
+                        <caption class="sr">{{ __('trainer.sessions.recordings_title') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('attendance.col_session') }}</th>
+                                <th scope="col">{{ __('trainer.sessions.col_recording') }}</th>
+                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($recordingSessions as $row)
+                                <tr>
+                                    <th scope="row">
+                                        {{ $row->topic }}
+                                        <span class="u-num u-muted">{{ $row->date }}</span>
+                                    </th>
+                                    <td>
+                                        @if ($row->hasRecording)
+                                            <x-ui.pill variant="success">{{ __('trainer.sessions.link_set') }}</x-ui.pill>
+                                        @else
+                                            <x-ui.pill variant="neutral">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <x-ui.button variant="secondary" size="sm" :href="$row->editHref">
+                                            {{ $row->hasRecording ? __('app.edit') : __('trainer.sessions.add_recording_action') }}
+                                        </x-ui.button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-ui.card>
+
+        {{-- Recording upload panel, open on ?recording={id} (D-107) ----------- --}}
+        @if ($recordingEditing)
+            <x-ui.card class="dc--span u-mt-4" icon="video"
+                :title="__('trainer.sessions.recording_edit_title', ['topic' => $recordingEditing->topic])">
+
+                <form method="POST" action="{{ route('trainer.sessions.recording', $recordingEditing->id) }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <x-ui.input name="recording_url" type="url" dir="ltr" maxlength="3000"
+                        :label="__('trainer.sessions.recording_url')"
+                        :hint="__('trainer.sessions.recording_url_hint')"
+                        :value="old('recording_url', $recordingEditing->recordingUrl)" />
+
+                    <div class="row__acts u-mt-3">
+                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button variant="ghost" size="sm"
+                            :href="route('trainer.attendance', request()->except('recording'))">{{ __('app.cancel') }}</x-ui.button>
+                    </div>
+                </form>
             </x-ui.card>
         @endif
 
