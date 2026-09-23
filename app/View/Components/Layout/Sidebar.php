@@ -157,7 +157,9 @@ final class Sidebar extends UiComponent
     {
         return [
             ['items' => [
-                ['route' => 'admin.dashboard', 'icon' => 'i-home', 'label' => __('nav.admin.dashboard')],
+                // D-113 — the icon matches all three other roles' own
+                // "Info dashboard" tab now, not the public home page's i-home.
+                ['route' => 'admin.dashboard', 'icon' => 'i-panel', 'label' => __('nav.admin.dashboard')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
                 ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],

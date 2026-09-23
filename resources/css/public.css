@@ -348,7 +348,7 @@ border-block-end: var(--bw-hairline) solid var(--ln-02);
 .cd__cell {
   min-inline-size: var(--s14);
   padding: var(--s2) var(--s3);
-  border: 1px solid var(--violet-a20);
+  border: var(--bw-hairline) solid var(--violet-a20);
   border-radius: var(--r-md);
   background: var(--surface-2);
   text-align: center;
@@ -368,7 +368,7 @@ border-block-end: var(--bw-hairline) solid var(--ln-02);
 .closed {
   margin-block-start: var(--s6);
   padding: var(--s6);
-  border: 1px solid var(--violet-a20);
+  border: var(--bw-hairline) solid var(--violet-a20);
   border-radius: var(--r-lg);
   background: var(--surface-2);
   max-inline-size: var(--d-8);

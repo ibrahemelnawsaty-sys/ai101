@@ -53,7 +53,9 @@ return [
     'profile' => 'My account',
 
     'admin' => [
-        'dashboard' => 'Console',
+        // D-113 — unified with the other three roles' first tab, all now
+        // named "Info dashboard" (this one used to read "Console").
+        'dashboard' => 'Info dashboard',
         'programs' => 'Programmes',
         'cohorts' => 'Cohorts',
         'landing' => 'Landing page',
