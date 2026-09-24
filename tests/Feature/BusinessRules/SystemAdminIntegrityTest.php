@@ -209,6 +209,38 @@ it('BR-32: الفحص المقفل يعطي الجواب نفسه — آخر ح�
         ->and($roles->isLastActiveHolder($this->sysadmin))->toBeFalse();
 });
 
+it('BR-32 (D-119): حساب مدعوّ لم يقبل دعوته لا يُحسب — فلا يُعطَّل آخر حامل فعلي للدور، ويُسمح بعد قبول الدعوة', function (): void {
+    $roles = new RoleResolver;
+
+    // The system administrator's own role: an invited colleague does not count.
+    $invitedAdmin = makeSystemAdmin(['email_verified_at' => null]);
+
+    expect($roles->isLastActiveHolder($this->sysadmin))->toBeTrue()
+        ->and($roles->isLastActiveHolder($this->sysadmin, lock: true))->toBeTrue()
+        // The invited account itself may still be taken out of the role.
+        ->and($roles->isLastActiveHolder($invitedAdmin))->toBeFalse();
+
+    // Through the interface: the one real general supervisor, with an invited
+    // one waiting, cannot be suspended.
+    $supervisor = makeAdmin();
+    $invitedSupervisor = makeAdmin(['email_verified_at' => null]);
+
+    $this->actingAs($this->sysadmin)
+        ->patch(route('admin.users.status', $supervisor), ['status' => 'suspended'])
+        ->assertForbidden();
+
+    expect($supervisor->fresh()->status->value)->toBe('active');
+
+    // Once the invitation is accepted, the other holder is real.
+    $invitedSupervisor->forceFill(['email_verified_at' => riyadhAt('2026-10-12 11:00:00')])->save();
+
+    $this->actingAs($this->sysadmin)
+        ->patch(route('admin.users.status', $supervisor), ['status' => 'suspended'])
+        ->assertRedirect();
+
+    expect($supervisor->fresh()->status->value)->toBe('suspended');
+});
+
 /*
 |--------------------------------------------------------------------------
 | D-117 — nothing addressed to a cohort reaches a system administrator

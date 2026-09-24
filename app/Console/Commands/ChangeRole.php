@@ -83,7 +83,7 @@ final class ChangeRole extends Command
         } catch (PermissionException) {
             $this->error('Refused: this is the last active account holding the role '.$before->value.'.');
             $this->line('The platform always keeps one active general supervisor and one active system administrator (BR-32).');
-            $this->line('Give another active account that role first, then run this again.');
+            $this->line('Give that role to another active account whose holder has signed in (an invitation not yet accepted does not count, D-119), then run this again.');
 
             return self::FAILURE;
         }

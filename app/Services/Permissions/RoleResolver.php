@@ -20,7 +20,7 @@ use App\Models\User;
  * Answers are memoised per request only — never cached across requests, because
  * every permission is re-checked on every request (BR-28).
  *
- * @see BR-22, BR-23, BR-28, BR-32 · PRD §4.1, §4.2, §4.3, §4.4 · CONSTITUTION Art. 22 · D-117
+ * @see BR-22, BR-23, BR-28, BR-32 · PRD §4.1, §4.2, §4.3, §4.4 · CONSTITUTION Art. 22 · D-117, D-119
  */
 final class RoleResolver
 {
@@ -96,7 +96,10 @@ final class RoleResolver
      * a role it may never run out of?
      *
      * The subject's own status is deliberately not consulted: what matters is
-     * whether SOMEONE ELSE could still act in that role afterwards. Asked
+     * whether SOMEONE ELSE could still act in that role afterwards — and an
+     * invited account that has not accepted its invitation cannot yet: it has
+     * no password and the sign-in refuses it. So a holder counts only once its
+     * address is confirmed (D-119, the owner's decision). Asked
      * fresh on every call and never memoised — a request that changes one
      * account must see the other accounts as they are now (BR-28).
      *
@@ -115,7 +118,8 @@ final class RoleResolver
 
         $query = User::query()
             ->where('role', $subject->role->value)
-            ->where('status', UserStatus::Active->value);
+            ->where('status', UserStatus::Active->value)
+            ->whereNotNull('email_verified_at');
 
         if (! $lock) {
             return $query->whereKeyNot($subject->getKey())->doesntExist();
