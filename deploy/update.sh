@@ -24,6 +24,12 @@
 
 set -euo pipefail
 
+# Files this script creates must be readable by the web server. A shell left on
+# `umask 077` (the setting the backup option file is created under) made git and
+# rsync write every new asset as 600, and the whole site was served unstyled:
+# the CSS answered 403 (24 September 2026, D-114).
+umask 022
+
 APP="${APP:-$HOME/athar-app}"
 WEB="${WEB:-$HOME/domains/wareed.vip/public_html/AI}"
 
