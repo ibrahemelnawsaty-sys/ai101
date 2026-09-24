@@ -201,7 +201,7 @@ it('D-117: 403 — مدير النظام لا يصل شيئًا من شاشات 
 
     // Writes too, with a body that would otherwise pass.
     $this->actingAs($this->sysadmin)
-        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['email' => $this->participant->email])
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => $this->participant->email])
         ->assertForbidden();
     $this->actingAs($this->sysadmin)
         ->put(route('admin.settings.update'), ['locale' => 'ar', 'timezone' => 'Asia/Riyadh'])

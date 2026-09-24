@@ -128,7 +128,7 @@
                                             :href="route('admin.users.show', $user->id)">{{ __('admin.users.actions.view_profile') }}</x-ui.button>
 
                                         @if ($user->awaitingVerification)
-                                            <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}">
+                                            <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}" class="u-inline">
                                                 @csrf
                                                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.resend_verification') }}</x-ui.button>
                                             </form>
@@ -138,9 +138,10 @@
                                                 <x-ui.button variant="secondary" size="sm" icon="eye" type="submit">{{ __('admin.users.actions.preview') }}</x-ui.button>
                                             </form>
                                         @else
+                                            {{-- The server's own reason (D-117). --}}
                                             <span class="hint">
                                                 <x-ui.icon name="lock" />
-                                                {{ __('admin.preview.admin_blocked') }}
+                                                {{ $user->previewBlockedReason }}
                                             </span>
                                         @endif
                                     </td>

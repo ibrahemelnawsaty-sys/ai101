@@ -26,13 +26,14 @@ use Illuminate\Validation\Validator;
  * it (BR-23) — so only the supervisor may write one, only for a participant
  * account, and only into a cohort that has not finished.
  *
+ * The field is `participant_email`, not `email`: the trainer and coordinator
+ * forms on the same screen post `email`, and a refusal here must not paint
+ * its message and its old value into their fields.
+ *
  * @see BR-22, BR-23, BR-33 · PRD §4.2, §9.18 · D-69, D-84, D-117 · CONSTITUTION Art. 22
  */
 final class SeatParticipantRequest extends FormRequest
 {
-    /** A finished cohort has nothing left to join. */
-    public const SEATABLE = [CohortStatus::Upcoming, CohortStatus::Open, CohortStatus::Running];
-
     public function authorize(): bool
     {
         $cohort = $this->route('cohort');
@@ -43,10 +44,10 @@ final class SeatParticipantRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $email = $this->input('email');
+        $email = $this->input('participant_email');
 
         if (is_string($email)) {
-            $this->merge(['email' => mb_strtolower(trim($email))]);
+            $this->merge(['participant_email' => mb_strtolower(trim($email))]);
         }
     }
 
@@ -56,7 +57,7 @@ final class SeatParticipantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => [
+            'participant_email' => [
                 'bail', 'required', 'string', 'email:rfc', 'max:190',
                 Rule::exists('users', 'email')
                     ->whereNull('deleted_at')
@@ -78,12 +79,11 @@ final class SeatParticipantRequest extends FormRequest
                 return;
             }
 
-            $seatable = array_map(static fn (CohortStatus $status): string => $status->value, self::SEATABLE);
             $status = $this->cohort()->getAttribute('status');
-            $status = $status instanceof CohortStatus ? $status->value : (string) $status;
+            $status = $status instanceof CohortStatus ? $status : CohortStatus::tryFrom((string) $status);
 
-            if (! in_array($status, $seatable, true)) {
-                $validator->errors()->add('email', (string) __('admin.cohorts.seat_closed'));
+            if ($status === null || ! $status->seatable()) {
+                $validator->errors()->add('participant_email', (string) __('admin.cohorts.seat_closed'));
 
                 return;
             }
@@ -94,7 +94,7 @@ final class SeatParticipantRequest extends FormRequest
                 ->exists();
 
             if ($already) {
-                $validator->errors()->add('email', (string) __('admin.cohorts.participant_already'));
+                $validator->errors()->add('participant_email', (string) __('admin.cohorts.participant_already'));
             }
         });
     }
@@ -104,7 +104,7 @@ final class SeatParticipantRequest extends FormRequest
      */
     public function messages(): array
     {
-        return ['email.exists' => (string) __('admin.cohorts.participant_not_found')];
+        return ['participant_email.exists' => (string) __('admin.cohorts.participant_not_found')];
     }
 
     public function cohort(): Cohort
@@ -119,7 +119,7 @@ final class SeatParticipantRequest extends FormRequest
     {
         /** @var User $participant */
         $participant = User::query()
-            ->where('email', (string) $this->input('email'))
+            ->where('email', (string) $this->input('participant_email'))
             ->where('role', UserRole::Participant->value)
             ->sole();
 

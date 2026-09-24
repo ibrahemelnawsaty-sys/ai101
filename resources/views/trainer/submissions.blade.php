@@ -57,11 +57,14 @@
                             <x-ui.button variant="secondary" size="sm" icon="bell" type="submit">{{ __('trainer.submissions.remind') }}</x-ui.button>
                         </form>
                     @endif
-                    <x-ui.button variant="secondary" size="sm" icon="down"
-                        :href="$bulkDownloadHref"
-                        :disabled="is_null($bulkDownloadHref)">{{ __('trainer.submissions.bulk_download') }}</x-ui.button>
-                    <x-ui.button variant="secondary" size="sm"
-                        :href="route('trainer.submissions.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                    {{-- D-117 — no export or bulk download from inside an account preview. --}}
+                    @unless ($impersonation ?? null)
+                        <x-ui.button variant="secondary" size="sm" icon="down"
+                            :href="$bulkDownloadHref"
+                            :disabled="is_null($bulkDownloadHref)">{{ __('trainer.submissions.bulk_download') }}</x-ui.button>
+                        <x-ui.button variant="secondary" size="sm"
+                            :href="route('trainer.submissions.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                    @endunless
                 </div>
             </div>
 

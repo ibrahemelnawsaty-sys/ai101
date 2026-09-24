@@ -119,12 +119,16 @@
                                         <x-ui.pill :variant="$cohort->statusVariant" :icon="$cohort->statusIcon">{{ $cohort->statusLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
+                                        {{-- One panel at a time (D-117): each link drops the others'
+                                             parameters, so two forms never share a screen. --}}
                                         <x-ui.button variant="secondary" size="sm"
-                                            :href="route('admin.cohorts.index', array_merge(request()->query(), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
+                                            :href="route('admin.cohorts.index', array_merge(request()->except(['trainers', 'participants']), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button variant="secondary" size="sm"
-                                            :href="route('admin.cohorts.index', array_merge(request()->query(), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
-                                        <x-ui.button variant="secondary" size="sm"
-                                            :href="route('admin.cohorts.index', array_merge(request()->query(), ['participants' => $cohort->id]))">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
+                                            :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'participants']), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
+                                        @if ($cohort->canSeat)
+                                            <x-ui.button variant="secondary" size="sm"
+                                                :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'trainers']), ['participants' => $cohort->id])) . '#seat'">{{ __('admin.cohorts.add_participant_short') }}</x-ui.button>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -202,7 +206,7 @@
 
         {{-- Seating an existing participant (D-84; moved here from the account page by D-117) --}}
         @if ($seating)
-            <x-ui.card class="dc--span u-mt-4" icon="user"
+            <x-ui.card id="seat" class="dc--span u-mt-4" icon="user"
                 :title="__('admin.cohorts.add_participant')">
 
                 <p><b>{{ $seating->name }}</b> · {{ $seating->programName }}</p>
@@ -210,10 +214,11 @@
                 <form method="POST" action="{{ route('admin.cohorts.participants.attach', $seating->id) }}">
                     @csrf
 
-                    <x-ui.input name="email" type="email" dir="ltr" required
+                    {{-- Its own field name: the trainer and coordinator forms post `email`. --}}
+                    <x-ui.input name="participant_email" type="email" dir="ltr" required autofocus
                         :label="__('admin.cohorts.participant_email')"
                         :hint="__('admin.cohorts.participant_email_hint')"
-                        :value="old('email')" />
+                        :value="old('participant_email')" />
 
                     <div class="row__acts">
                         <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
@@ -259,7 +264,7 @@
                 <form method="POST" action="{{ route('admin.cohorts.trainers.attach', $assigning->id) }}">
                     @csrf
 
-                    <x-ui.input name="email" type="email" dir="ltr" required
+                    <x-ui.input name="email" id="trainer-email" type="email" dir="ltr" required
                         :label="__('admin.cohorts.trainer_email')"
                         :hint="__('admin.cohorts.trainer_email_hint')"
                         :value="old('email')" />
@@ -304,7 +309,7 @@
                 <form method="POST" action="{{ route('admin.cohorts.coordinators.attach', $assigning->id) }}">
                     @csrf
 
-                    <x-ui.input name="email" type="email" dir="ltr" required
+                    <x-ui.input name="email" id="coordinator-email" type="email" dir="ltr" required
                         :label="__('admin.cohorts.coordinator_email')"
                         :hint="__('admin.cohorts.coordinator_email_hint')"
                         :value="old('email')" />

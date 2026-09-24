@@ -168,6 +168,9 @@ return [
         'link_label' => 'Or share this link',
         'closed_title' => 'No code shown right now',
         'closed_body' => 'The self-check-in code appears as soon as the session starts, and disappears an hour after it does.',
+        // D-117 — a preview only looks, and the code checks in whoever holds it.
+        'preview_title' => 'The check-in code is not shown in preview mode',
+        'preview_body' => 'The code checks in any participant who gets it, so it is never shown while an account is being previewed. The account holder sees it when they open this screen themselves.',
     ],
 
     /*

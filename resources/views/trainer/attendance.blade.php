@@ -25,8 +25,11 @@
             <x-ui.select name="session" :label="__('trainer.attendance.pick_session')" :options="$sessionOptions" :value="request('session')" />
             <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.show') }}</x-ui.button>
             <div class="toolbar__end">
-                <x-ui.button variant="secondary" size="sm" icon="down"
-                    :href="route('trainer.attendance.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                {{-- D-117 — no export from inside an account preview. --}}
+                @unless ($impersonation ?? null)
+                    <x-ui.button variant="secondary" size="sm" icon="down"
+                        :href="route('trainer.attendance.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                @endunless
             </div>
         </form>
 
@@ -64,37 +67,46 @@
                  to catch that rotation without competing with the roster's
                  own much faster poll below. --}}
             <x-ui.card class="dc--span" icon="video" :title="__('attendance.checkin_code.title')">
-                {{-- D-116 — the state lives on a plain element inside the card, as
-                     the roster's does below it. It used to sit on the card tag
-                     itself, and inside a component tag's attributes Blade
-                     compiles no directive but @class and @style: the browser
-                     received the literal text `@js(...)`, the expression threw,
-                     and this card never once showed the code to anyone. --}}
-                <div x-data="atharCheckinCode({
-                        pollUrl: '{{ route('trainer.attendance.checkinCode', $roster->sessionId) }}',
-                        pollSeconds: 60,
-                        initialOpen: @js($checkInCode !== null),
-                        initialUrl: @js($checkInCode?->get('url') ?? ''),
-                        initialSvg: @js($checkInCode?->get('svg') ?? ''),
-                    })">
-                    <template x-if="open">
-                        <div>
-                            <p class="u-muted">{{ __('attendance.checkin_code.body') }}</p>
-                            <div class="checkincode">
-                                <div class="checkincode__qr" x-html="svg"></div>
-                                <p>
-                                    {{ __('attendance.checkin_code.link_label') }}
-                                    <a :href="url" x-text="url" dir="ltr" class="u-num"></a>
-                                </p>
+                @if ($impersonation ?? null)
+                    {{-- D-117 — the live code checks in whoever holds it, so a preview is
+                         never handed one: the server does not mint it and refuses its
+                         endpoint, and this card says so instead of polling for it. --}}
+                    <x-ui.empty-state icon="lock" size="sm"
+                        :title="__('attendance.checkin_code.preview_title')"
+                        :description="__('attendance.checkin_code.preview_body')" />
+                @else
+                    {{-- D-116 — the state lives on a plain element inside the card, as
+                         the roster's does below it. It used to sit on the card tag
+                         itself, and inside a component tag's attributes Blade
+                         compiles no directive but @class and @style: the browser
+                         received the literal text `@js(...)`, the expression threw,
+                         and this card never once showed the code to anyone. --}}
+                    <div x-data="atharCheckinCode({
+                            pollUrl: '{{ route('trainer.attendance.checkinCode', $roster->sessionId) }}',
+                            pollSeconds: 60,
+                            initialOpen: @js($checkInCode !== null),
+                            initialUrl: @js($checkInCode?->get('url') ?? ''),
+                            initialSvg: @js($checkInCode?->get('svg') ?? ''),
+                        })">
+                        <template x-if="open">
+                            <div>
+                                <p class="u-muted">{{ __('attendance.checkin_code.body') }}</p>
+                                <div class="checkincode">
+                                    <div class="checkincode__qr" x-html="svg"></div>
+                                    <p>
+                                        {{ __('attendance.checkin_code.link_label') }}
+                                        <a :href="url" x-text="url" dir="ltr" class="u-num"></a>
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </template>
-                    <template x-if="! open">
-                        <x-ui.empty-state icon="clock" size="sm"
-                            :title="__('attendance.checkin_code.closed_title')"
-                            :description="__('attendance.checkin_code.closed_body')" />
-                    </template>
-                </div>
+                        </template>
+                        <template x-if="! open">
+                            <x-ui.empty-state icon="clock" size="sm"
+                                :title="__('attendance.checkin_code.closed_title')"
+                                :description="__('attendance.checkin_code.closed_body')" />
+                        </template>
+                    </div>
+                @endif
             </x-ui.card>
 
             <x-ui.card class="dc--span u-mt-4" flush>

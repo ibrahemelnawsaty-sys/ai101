@@ -10,6 +10,7 @@ use App\Models\Certificate;
 use App\Models\Evaluation;
 use App\Models\User;
 use App\Policies\Concerns\InteractsWithScope;
+use App\Services\Permissions\ImpersonationService;
 
 /**
  * Accounts, roles, suspension, deletion and account preview.
@@ -156,15 +157,16 @@ final class UserPolicy
     /**
      * The account preview — the system administrator's alone (D-117). Any
      * account may be previewed, a supervisor's included, except another system
-     * administrator's (BR-35), one's own, and a deleted one.
+     * administrator's (BR-35), one's own, and one its holder cannot use —
+     * deleted, suspended, pending or not yet activated. The reasons are
+     * ImpersonationService::refusalReason()'s, the same list the service
+     * re-checks and the screens print.
      */
     public function preview(User $user, User $subject): bool
     {
         return $this->systemAdmin($user)
             && $this->writesAllowed()
-            && ! $user->is($subject)
-            && $subject->role !== UserRole::SystemAdmin
-            && $subject->status !== UserStatus::Deleted;
+            && app(ImpersonationService::class)->refusalReason($user, $subject) === null;
     }
 
     /**

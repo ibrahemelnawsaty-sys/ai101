@@ -199,8 +199,12 @@ final class ImpersonationService
     /**
      * D-117: the system administrator previews, nobody else. Any account may be
      * previewed, a general supervisor's included — the owner chose that — but
-     * never another system administrator's (BR-35), never one's own and never
-     * a deleted one.
+     * never another system administrator's (BR-35), never one's own, and only
+     * an account its holder can actually use: active and activated. A preview
+     * shows what the holder sees, and a suspended or not-yet-activated holder
+     * sees no screen at all — previewing one signed the system administrator
+     * out on the first page, or answered 500 on every page (the owner chose to
+     * refuse these with a visible reason, D-117).
      */
     public function canPreview(User $admin, User $target): bool
     {
@@ -208,16 +212,26 @@ final class ImpersonationService
             return false;
         }
 
-        if ($admin->is($target)) {
-            return false;
-        }
+        return $this->refusalReason($admin, $target) === null;
+    }
 
-        // BR-35: a system administrator's account is never previewable.
-        if ($target->role === UserRole::SystemAdmin) {
-            return false;
-        }
-
-        return $target->status !== UserStatus::Deleted;
+    /**
+     * Why this target may not be previewed by this system administrator, as a
+     * lang key the screens print — or null when it may. One answer for the
+     * policy, this service and the two screens, so the reason shown is always
+     * the reason enforced.
+     */
+    public function refusalReason(User $admin, User $target): ?string
+    {
+        return match (true) {
+            $admin->is($target) => 'admin.preview.self_blocked',
+            // BR-35: a system administrator's account is never previewable.
+            $target->role === UserRole::SystemAdmin => 'admin.preview.admin_blocked',
+            $target->status === UserStatus::Deleted => 'admin.preview.deleted_blocked',
+            $target->status !== UserStatus::Active => 'admin.preview.inactive_blocked',
+            $target->getAttribute('email_verified_at') === null => 'admin.preview.unverified_blocked',
+            default => null,
+        };
     }
 
     /**

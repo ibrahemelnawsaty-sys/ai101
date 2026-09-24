@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Services\Permissions\RoleResolver;
 use App\Support\ViewModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -75,19 +76,34 @@ final class UserProfile extends ViewModel
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
 
             'isSelf' => $viewer->is($subject),
-            // Staff are given a cohort from the cohorts screen by e-mail; a
-            // participant created without one is seated there too since
-            // D-117. Both are the supervisor's to do, so the empty state names
-            // who does it rather than linking to a screen the system
-            // administrator reading it cannot open (D-69, D-117).
-            'attachesFromCohorts' => in_array($role?->value, ['trainer', 'coordinator', 'admin'], true),
+            // What an empty enrolment list MEANS depends on the role, and the
+            // system administrator reading it cannot open the cohorts screen,
+            // so the text names who acts rather than linking there (D-69,
+            // D-117). It used to tell a system administrator's page that the
+            // supervisor would seat them in a cohort — a role that reaches none.
+            'enrollmentsEmptyBody' => (string) __(match ($role) {
+                UserRole::Trainer, UserRole::Coordinator => 'admin.users.enrollments_empty_body',
+                UserRole::Admin => 'admin.users.enrollments_empty_supervisor_body',
+                UserRole::SystemAdmin => 'admin.users.enrollments_empty_system_admin_body',
+                default => 'admin.users.enrollments_empty_participant_body',
+            }),
             'isSuspended' => $isSuspended,
             'toggleStatusValue' => $isSuspended ? UserStatus::Active->value : UserStatus::Suspended->value,
 
-            'canBeAdministered' => $gate->allows('update', $subject) && ! $viewer->is($subject),
+            // BR-32 is a reason the screen SHOWS: the last active supervisor
+            // or system administrator keeps their role and their status, and
+            // the note above the controls says why they are disabled (D-117 —
+            // they were disabled in silence once the reader and the account
+            // stopped sharing a role).
+            'canBeAdministered' => $gate->allows('update', $subject)
+                && ! $viewer->is($subject)
+                && ! app(RoleResolver::class)->isLastActiveHolder($subject),
             'canChangeRole' => $gate->allows('changeRole', $subject),
-            'canChangeStatus' => $gate->allows('suspend', $subject),
+            // Activating is `restore`, suspending is `suspend`: the button is
+            // one toggle, so it asks the ability of the way it will go.
+            'canChangeStatus' => $gate->allows($isSuspended ? 'restore' : 'suspend', $subject),
             'canBePreviewed' => $gate->allows('preview', $subject),
+            'previewBlockedReason' => UserRow::previewBlockedReason($viewer, $subject),
 
             'enrollments' => $enrollments->map(
                 static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row),

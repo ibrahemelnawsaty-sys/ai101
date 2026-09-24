@@ -57,7 +57,7 @@ it('D-84: المشرف يُجلس حسابًا قائمًا في دفعة من �
         ->assertSee(__('admin.cohorts.participant_email'), false);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['email' => ' Orphan@Example.com '])
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => ' Orphan@Example.com '])
         ->assertSessionHasNoErrors()
         ->assertSessionHas('status', __('admin.cohorts.participant_seated'));
 
@@ -80,12 +80,12 @@ it('D-84: مرّة ثانية تُرفض برسالة، ولا يُجلَس أح
     $finished = makeCohort(['status' => 'completed']);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['email' => 'seated@example.com'])
-        ->assertSessionHasErrors(['email' => __('admin.cohorts.participant_already')]);
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'seated@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.participant_already')]);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.cohorts.participants.attach', $finished), ['email' => 'seated@example.com'])
-        ->assertSessionHasErrors(['email' => __('admin.cohorts.seat_closed')]);
+        ->post(route('admin.cohorts.participants.attach', $finished), ['participant_email' => 'seated@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.seat_closed')]);
 
     expect(Enrollment::query()->where('user_id', $participant->id)->count())->toBe(1);
 });
@@ -107,17 +107,44 @@ it('D-117: لا يُجلَس إلا حساب متدرّب، ولا يُجلِس 
 
     // A trainer's address is not a participant's: refused as unknown, not seated.
     $this->actingAs($this->admin)
-        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['email' => 'lone-trainer@example.com'])
-        ->assertSessionHasErrors(['email' => __('admin.cohorts.participant_not_found')]);
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'lone-trainer@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.participant_not_found')]);
 
     foreach ([$this->sysadmin, makeTrainer($this->cohort)] as $actor) {
         $this->actingAs($actor)
-            ->post(route('admin.cohorts.participants.attach', $this->cohort), ['email' => 'orphan@example.com'])
+            ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'orphan@example.com'])
             ->assertForbidden();
     }
 
     expect(Enrollment::query()->where('user_id', $orphan->id)->exists())->toBeFalse()
         ->and(Enrollment::query()->where('user_id', $trainer->id)->exists())->toBeFalse();
+});
+
+it('D-117: دفعة منتهية بلا زر إضافة متدرب، واللوحة تُفتح وحدها باسم حقلها الخاص', function (): void {
+    $finished = makeCohort(['status' => 'completed']);
+    $seatLink = static fn (Cohort $cohort): string => e(route('admin.cohorts.index', ['participants' => $cohort->id]).'#seat');
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index'))
+        ->assertOk()
+        ->assertSee($seatLink($this->cohort), false)
+        ->assertDontSee($seatLink($finished), false);
+
+    // Opened from a screen that already had the trainer panel open: the seat
+    // panel replaces it, and its field is not the trainer form's `email`.
+    $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index', ['participants' => $this->cohort->id]))
+        ->assertOk()
+        ->assertSee('name="participant_email"', false)
+        ->assertDontSee(route('admin.cohorts.trainers.attach', $this->cohort), false);
+
+    $page = $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index', ['trainers' => $this->cohort->id]))
+        ->assertOk()
+        ->getContent();
+
+    expect($page)->toContain(e(route('admin.cohorts.index', ['participants' => $this->cohort->id]).'#seat'))
+        ->and($page)->not->toContain(e(route('admin.cohorts.index', ['trainers' => $this->cohort->id, 'participants' => $this->cohort->id])));
 });
 
 it('D-117: صفحة الحساب عند مدير النظام بلا سجل تدقيق وبلا زر إجلاس، وتسمّي من يُجلس', function (): void {

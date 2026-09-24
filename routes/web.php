@@ -26,10 +26,10 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
-use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -264,7 +264,11 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
          * limiter: ten attempts per user per minute (BR-33, PRD §12.4).
          */
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-        Route::get('/attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
+        // D-117 — no export while an account preview runs: the files are
+        // the general supervisor's to take out, and a preview only looks.
+        Route::get('/attendance/export', [AttendanceController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('attendance.export');
 
         Route::post('/attendance/{session}/check-in', [AttendanceController::class, 'checkIn'])
             ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
@@ -378,7 +382,9 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
             ->name('finalProject.submit');
 
         Route::get('/grades', [GradeController::class, 'index'])->name('grades');
-        Route::get('/grades/export', [GradeController::class, 'export'])->name('grades.export');
+        Route::get('/grades/export', [GradeController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('grades.export');
 
         Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
         Route::get('/certificate/download', [CertificateController::class, 'download'])
@@ -409,7 +415,9 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::get('/dashboard', TrainerDashboardController::class)->name('dashboard');
 
         Route::get('/submissions', [TrainerSubmissionController::class, 'index'])->name('submissions');
+        // D-117 — no export or bulk download while an account preview runs.
         Route::get('/submissions/export', [TrainerSubmissionController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('submissions.export');
         Route::post('/submissions/{submission}/grade', [TrainerSubmissionController::class, 'grade'])
             ->middleware('not.impersonating')
@@ -421,6 +429,7 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->middleware('not.impersonating')
             ->name('submissions.remind');
         Route::get('/assignments/{assignment}/download-all', [TrainerSubmissionController::class, 'bulkDownload'])
+            ->middleware('not.impersonating')
             ->name('submissions.bulkDownload');
 
         Route::get('/assignments', [TrainerAssignmentController::class, 'index'])->name('assignments');
@@ -449,10 +458,13 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
 
         Route::get('/participants', [TrainerParticipantController::class, 'index'])->name('participants');
         Route::get('/participants/export', [TrainerParticipantController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('participants.export');
 
         Route::get('/reports', [TrainerReportController::class, 'index'])->name('reports');
-        Route::get('/reports/export', [TrainerReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports/export', [TrainerReportController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('reports.export');
     });
 
 /*
@@ -478,6 +490,7 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
 
         Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
         Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('attendance.export');
         // The live roster (PRD §9.9.7), asked every few seconds while a session
         // runs: throttled, so a stuck tab cannot become a stream of PHP
@@ -495,8 +508,10 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
         // D-106 — the self-check-in QR, re-minted on a ten-minute boundary
         // (CheckinCode). Polled far more slowly than the roster above, since
         // the underlying signed url is only ever new once every ten minutes.
+        // D-117 — the live code checks in whoever holds it: never handed to a
+        // preview, which only looks (the screen does not mint it either).
         Route::get('/attendance/{session}/checkin-code', [TrainerAttendanceController::class, 'checkinCode'])
-            ->middleware('throttle:12,1')
+            ->middleware(['not.impersonating', 'throttle:12,1'])
             ->name('attendance.checkinCode');
 
         // D-107 — a coordinator's one write on a session they do not
@@ -629,7 +644,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->name('cohorts.participants.attach');
 
         Route::get('/registrations', [AdminRegistrationController::class, 'index'])->name('registrations.index');
+        // D-117 — the supervisor's exports are never taken from a preview.
         Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('registrations.export');
         Route::put('/registrations/{enrollment}/approve', [AdminRegistrationController::class, 'approve'])
             ->middleware('not.impersonating')
@@ -640,6 +657,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])
 
         Route::get('/certificates', [AdminCertificateController::class, 'index'])->name('certificates.index');
         Route::get('/certificates/export', [AdminCertificateController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('certificates.export');
         Route::post('/certificates', [AdminCertificateController::class, 'issue'])
             ->middleware('not.impersonating')
@@ -660,7 +678,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->name('certificates.revoke');
 
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/export', [AdminReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports/export', [AdminReportController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('reports.export');
 
         /*
          * Writing to a cohort's trainees, and the session and assignment
@@ -686,7 +706,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->name('finalProject.store');
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
-        Route::get('/audit/export', [AuditController::class, 'export'])->name('audit.export');
+        Route::get('/audit/export', [AuditController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('audit.export');
 
         Route::get('/settings', [AdminSettingController::class, 'edit'])->name('settings.edit');
         Route::get('/settings/templates/{template}', [AdminSettingController::class, 'template'])
