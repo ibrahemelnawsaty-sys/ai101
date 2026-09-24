@@ -137,6 +137,7 @@ export default function landingEditor() {
         pendingScroll: 0,
         previewReady: false,
         previewTimer: null,
+        previewTicket: 0,
         previewStale: false,
 
         confirm: { open: false, title: '', body: '', label: '', action: null, opener: null },
@@ -959,11 +960,20 @@ export default function landingEditor() {
             return name === 'a' ? this.$refs.frameA : this.$refs.frameB;
         },
 
-        /** Render the state into the hidden frame; it is shown once it has loaded. */
-        sendPreview(focus) {
-            const form = this.$refs.previewForm;
-            if (!form) return;
+        /**
+         * Render the state on the server and write it into the hidden frame;
+         * that frame becomes the visible one once it has loaded.
+         *
+         * The page arrives by fetch and goes into the frame through `srcdoc`;
+         * the frame never loads a URL. A document written that way is not a
+         * framed response, so no X-Frame-Options or frame-ancestors — the
+         * application's own, or one a hosting panel adds to every response —
+         * can blank the preview, and every page the platform serves stays
+         * unframable (production, 24 September 2026, D-114).
+         */
+        async sendPreview(focus) {
             window.clearTimeout(this.previewTimer);
+            if (!this.urls.preview) return;
 
             const target = this.activeFrame === 'a' ? 'b' : 'a';
             try {
@@ -973,12 +983,39 @@ export default function landingEditor() {
                 this.pendingScroll = 0;
             }
 
-            this.pendingFrame = target;
             this.pendingFocus = focus ? (this.current() || {}).anchor || 'top' : null;
-            this.$refs.previewState.value = JSON.stringify(this.previewState());
-            this.$refs.previewLang.value = this.previewLang();
-            form.setAttribute('target', 'le-frame-' + target);
-            form.submit();
+            const ticket = ++this.previewTicket;
+
+            const body = new FormData();
+            body.append('state', JSON.stringify(this.previewState()));
+            body.append('lang', this.previewLang());
+
+            let html = '';
+            try {
+                const response = await fetch(this.urls.preview, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { Accept: 'text/html', 'X-CSRF-TOKEN': this.csrf() },
+                    body,
+                });
+                html = response.ok ? await response.text() : '';
+            } catch (e) {
+                html = '';
+            }
+
+            // A newer render was asked for while this one travelled.
+            if (ticket !== this.previewTicket) return;
+
+            // Only the preview page is ever shown: a login page after an
+            // expired session, or any refusal, keeps the last good render.
+            if (html.indexOf('data-preview') === -1) {
+                this.previewReady = true;
+                this.toast(this.t('preview_failed'), 'warn');
+                return;
+            }
+
+            this.pendingFrame = target;
+            this.frameNamed(target).srcdoc = html;
         },
 
         frameLoaded(name) {

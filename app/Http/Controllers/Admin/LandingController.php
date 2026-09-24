@@ -135,9 +135,11 @@ final class LandingController extends Controller
 
     /**
      * The real landing page, rendered with the editor's draft and never
-     * stored. POST only, from the editor's own form: a GET that read a draft
-     * from the address would let a crafted link show made-up copy on a real
-     * admin address.
+     * stored. POST only, fetched by the editor's script: a GET that read a
+     * draft from the address would let a crafted link show made-up copy on a
+     * real admin address. The editor writes the page into its frame through
+     * srcdoc, so this response is never framed and keeps the platform's
+     * X-Frame-Options: DENY like every other.
      */
     public function preview(PreviewLandingRequest $request, RiyadhFormatter $formatter): Response
     {
@@ -165,11 +167,6 @@ final class LandingController extends Controller
         }
 
         $this->useLanguage($request->lang());
-
-        // The one response on the platform another page may frame — and only
-        // a page of the same origin (see SecurityHeaders). Set on the request
-        // the middleware holds: a FormRequest is a copy with its own attributes.
-        request()->attributes->set('athar.frameable', true);
 
         try {
             $html = $home->render($cohort, $formatter, preview: true)->render();
