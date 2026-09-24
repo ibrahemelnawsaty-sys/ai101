@@ -430,7 +430,9 @@ block-size: var(--s1);
     /* The divider faces the content, which in RTL is to the rail's left. */
     border-inline-end: var(--bw-hairline) solid var(--border-1);
     /* No top padding: the brand region is the app bar's height exactly, so
-       the rail's first divider and the app bar's run as one line. */
+       in the open rail the rail's first divider and the app bar's run as one
+       line — while the app bar keeps its 64px (a wrapped subtitle grows it),
+       and not in the 72px rail, whose stacked brand is taller. */
     padding: 0 var(--s3) var(--s3);
     grid-column: 1;
     grid-row: 1 / -1;
@@ -440,6 +442,10 @@ block-size: var(--s1);
     block-size: 100dvh;
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* On a screen short enough for the whole rail to scroll, focus scrolls it
+       only as far as the focused control's own box — which left sign-out's
+       focus ring cut off at the bottom edge. The same room the list keeps. */
+    scroll-padding-block: var(--s2);
   }
   @media (min-width: 1024px) { .side { display: flex; flex-direction: column; } }
 
@@ -470,9 +476,12 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
      and pays it back as its own, for two reasons: the active marker hangs in
      that gutter (below), and a scroller clips whatever lies outside its
      padding box; and the scrollbar then sits at the rail's edge rather than
-     between the links and the gutter. The block padding keeps the first and
-     last focus rings (2px + 4px offset) inside the clip. The covers and the
-     two soft shades are the scroll cue: the covers ride with the content
+     between the links and the gutter. The block padding is the focus ring's
+     reach and then some: a ring is a 2px outline 4px off its link, 6px in
+     all, and the first link sits on the list's top edge (no group of any
+     role opens with a label). At 4px the ring's whole top edge was clipped —
+     measured, and found by the independent review. The covers and the two
+     soft shades are the scroll cue: the covers ride with the content
      (`local`) and hide the shade at an end the list has reached, so a shade
      shows only where there is more to scroll to. */
   .side__nav {
@@ -481,7 +490,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     overflow-x: hidden;
     overflow-y: auto;
     margin-inline: calc(var(--s3) * -1);
-    padding: var(--s1) var(--s3);
+    padding: var(--s2) var(--s3);
     scroll-padding-block: var(--s2);
     scrollbar-width: thin;
     background:

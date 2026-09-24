@@ -573,6 +573,15 @@ function sidebar() {
             // After the collapsed state has reached the DOM, so the list is
             // measured at the width it will actually have.
             this.$nextTick(() => this.revealCurrent());
+
+            // The rail is display:none below 1024px, so a screen opened on a
+            // narrow window had nothing to measure; widening it past the
+            // breakpoint brings the rail back with its list at the top.
+            if (!window.matchMedia) return;
+            const wide = window.matchMedia('(min-width: 1024px)');
+            const reveal = () => { if (wide.matches) this.$nextTick(() => this.revealCurrent()); };
+            if (wide.addEventListener) wide.addEventListener('change', reveal);
+            else if (wide.addListener) wide.addListener(reveal); // Safari < 14
         },
 
         /**
@@ -580,7 +589,9 @@ function sidebar() {
          * than the space between the brand and the account block (D-115). A
          * screen opened from a link near the end of that list would open with
          * the link marked as the current page scrolled out of sight, so the
-         * list — only the list, never the page — is moved to show it.
+         * list — only the list, never the page — is moved to show it. Run on
+         * load, on every collapse or expand (the group labels come and go, so
+         * the list changes height), and when the rail reappears at 1024px.
          */
         revealCurrent() {
             const list = this.$el.querySelector('.side .side__nav');
@@ -599,6 +610,7 @@ function sidebar() {
             } catch (e) {
                 // Private mode: the preference simply does not persist.
             }
+            this.$nextTick(() => this.revealCurrent());
         },
     });
 }

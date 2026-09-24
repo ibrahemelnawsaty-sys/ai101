@@ -7,10 +7,11 @@ declare(strict_types=1);
  * working Alpine component (D-116, the display half of D-106).
  *
  * WHY THIS SUITE EXISTS
- * The card's state was written into the `x-data` attribute of `<x-ui.card>`,
- * and Blade compiles no directive inside a component tag's attributes: it
- * turns `{{ }}` there into PHP and leaves `@js(...)` as the literal text
- * `@js(...)`. The browser received `initialOpen: @js($checkInCode !== null)`,
+ * The card's state was written into the `x-data` attribute of `<x-ui.card>`.
+ * Inside a component tag's attributes Blade turns `{{ }}` into PHP and
+ * rewrites `@class(...)` and `@style(...)` into bound attributes — and
+ * compiles no other directive: `@js(...)` stays the literal text `@js(...)`.
+ * The browser received `initialOpen: @js($checkInCode !== null)`,
  * the expression threw a SyntaxError, and the card never once showed the code
  * — to the trainer, the coordinator or the administrator — although the server
  * minted it correctly on every request. Every server-side rule of D-106 had a
@@ -87,7 +88,8 @@ it('D-116: بطاقة رمز التحضير الذاتي تصل المتصفح �
 it('D-116: البطاقة تحمل قرار الخادم عند حدود نافذة التحضير الذاتي [S, S+60m] بثانية واحدة', function (): void {
     $trainer = makeTrainer($this->cohort);
 
-    // S-1s and S+60m+1s: closed, and no code at all reaches the page.
+    // Each edge at -1s, 0 and +1s. S-1s and S+60m+1s: closed, and no code at
+    // all reaches the page.
     foreach ([$this->start->subSecond(), $this->start->addMinutes(60)->addSecond()] as $instant) {
         freezeAt($instant);
         $config = checkinCardConfig(checkinCardPage($this, $trainer));
@@ -97,8 +99,9 @@ it('D-116: البطاقة تحمل قرار الخادم عند حدود ناف�
             ->and($config)->toContain("initialSvg: '',");
     }
 
-    // S and S+60m: open, carrying the code minted for that very instant.
-    foreach ([$this->start, $this->start->addMinutes(60)] as $instant) {
+    // S, S+1s, S+60m-1s and S+60m: open, carrying the code minted for that
+    // very instant.
+    foreach ([$this->start, $this->start->addSecond(), $this->start->addMinutes(60)->subSecond(), $this->start->addMinutes(60)] as $instant) {
         freezeAt($instant);
         $config = checkinCardConfig(checkinCardPage($this, $trainer));
 
@@ -107,7 +110,10 @@ it('D-116: البطاقة تحمل قرار الخادم عند حدود ناف�
     }
 });
 
-it('D-116: لا توجيه Blade داخل سمات وسم مكوّن <x-…> في أي قالب — Blade لا يترجمه هناك', function (): void {
+it('D-116: لا توجيه Blade داخل سمات وسم مكوّن <x-…> في أي قالب إلا @class و@style — وحدهما يترجمهما Blade هناك', function (): void {
+    // ComponentTagCompiler rewrites exactly these two into bound attributes
+    // (`:class` / `:style`); every other directive reaches the page as text.
+    $compiled = ['class', 'style'];
     $found = [];
 
     foreach (File::allFiles(resource_path('views')) as $view) {
@@ -135,7 +141,7 @@ it('D-116: لا توجيه Blade داخل سمات وسم مكوّن <x-…> ف�
             }
 
             if (preg_match_all('/(?<![\w@])@([a-zA-Z]\w*)\s*\(/', substr($source, $at, $end - $at), $directives) > 0) {
-                foreach ($directives[1] as $directive) {
+                foreach (array_diff($directives[1], $compiled) as $directive) {
                     $found[] = $view->getRelativePathname().' — @'.$directive;
                 }
             }

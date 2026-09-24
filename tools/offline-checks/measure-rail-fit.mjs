@@ -24,6 +24,7 @@
  *   · the account region is entirely on screen unless the rail scrolls, and
  *     the rail scrolls only once the list is down to its --side-nav-min floor;
  *   · the link marked as the current page is in view when the page opens;
+ *   · every focus ring in the rail is whole — none cut by the list's clip;
  *   · the app footer keeps the page's side gutter.
  *
  * Run: php tools/offline-checks/render-all-screens.php   (writes public/sweep)
@@ -31,7 +32,8 @@
  *      node tools/offline-checks/measure-rail-fit.mjs
  *
  * Exit code 1 on any failure, 2 when there is nothing to measure. Pass --json
- * for the full machine-readable report.
+ * for the full machine-readable report. Screen names narrow the sweep to the
+ * screens whose file starts with them: `… measure-rail-fit.mjs t-dashboard a-`.
  *
  * @see PRD §9.5.1 · CONSTITUTION art. 16, 18 · D-86, D-108, D-115
  */
@@ -69,9 +71,12 @@ const server = http.createServer((req, res) => {
   });
 });
 
+const only = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+
 const pages = fs.existsSync(SWEEP)
   ? fs.readdirSync(SWEEP)
     .filter((f) => f.endsWith('.html'))
+    .filter((f) => only.length === 0 || only.some((prefix) => f.startsWith(prefix)))
     .filter((f) => fs.readFileSync(path.join(SWEEP, f), 'utf8').includes('class="side"'))
     .sort()
   : [];
@@ -191,6 +196,33 @@ const MEASURE = ({ touch, phase }) => {
   // 8 · nothing in the list runs sideways.
   if (list.scrollWidth > list.clientWidth + 1) fail(`list scrolls sideways by ${list.scrollWidth - list.clientWidth}px`);
 
+  // 8b · every focus ring is whole. Each target is focused as the keyboard
+  //      would focus it (the caller pressed a key first, so script focus
+  //      matches :focus-visible), the browser scrolls it where it scrolls
+  //      it, and the ring (outline width + offset) must lie inside the
+  //      nearest box that clips it: the list for a link, the rail for the
+  //      rest. The list's first link used to lose its ring's top edge.
+  let rings = 0;
+  const clipOf = (el) => (list.contains(el) ? list : rail);
+  const targets = [...links, brand.querySelector('.side__collapse'), ...account.controls()].filter((el) => el && shown(el));
+  for (const el of targets) {
+    el.focus();
+    const s = getComputedStyle(el);
+    if (s.outlineStyle === 'none') continue;
+    rings++;
+    const reach = parseFloat(s.outlineWidth) + Math.max(0, parseFloat(s.outlineOffset));
+    const k = R(el), c = R(clipOf(el));
+    if (k.top - reach < c.top - 0.5 || k.bottom + reach > c.bottom + 0.5
+      || k.left - reach < c.left - 0.5 || k.right + reach > c.right + 0.5) {
+      fail(`focus ring of "${name(el)}" is clipped (${Math.round(k.top - reach)}-${Math.round(k.bottom + reach)} in ${Math.round(c.top)}-${Math.round(c.bottom)})`);
+    }
+  }
+  if (targets.length && rings === 0) fail('no focus ring could be measured — :focus-visible never applied');
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  list.scrollTop = 0;
+  rail.scrollTop = 0;
+  window.scrollTo(0, 0);
+
   // 9 · the footer keeps the page's side gutter.
   const foot = document.querySelector('.foot--app .foot__bot');
   const main = document.querySelector('.shell__main');
@@ -224,10 +256,14 @@ for (const file of pages) {
     await tab.goto(`${base}/sweep/${file}`, { waitUntil: 'load' });
     await tab.waitForTimeout(120);
 
+    // A key press first, so the focus the rings are judged under is the
+    // keyboard's (:focus-visible) and not a pointer's.
+    await tab.keyboard.press('Shift');
     const open = await tab.evaluate(MEASURE, { touch: TOUCH, phase: 'load' });
 
     await tab.click('aside.side .side__collapse');
     await tab.waitForTimeout(350);
+    await tab.keyboard.press('Shift');
     const collapsed = await tab.evaluate(MEASURE, { touch: TOUCH, phase: 'settled' });
     // A script error that stops the rail's own component leaves the button
     // dead and would have this "collapsed" pass measure the open rail again.

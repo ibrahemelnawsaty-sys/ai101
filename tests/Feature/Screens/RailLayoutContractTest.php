@@ -117,9 +117,11 @@ it('D-115: قائمة الروابط وحدها تتمرّر ولها أرضية
         ->and($list)->not->toContain('min-block-size: 0')
         // The active marker hangs 8px outside its link, in the gutter this
         // padding gives back; without it the scroller would clip the marker
-        // PRD §9.5.1 asks for on the item's right edge.
+        // PRD §9.5.1 asks for on the item's right edge. The block padding must
+        // outreach a focus ring (2px outline + 4px offset): at 4px the first
+        // link's ring lost its whole top edge.
         ->and($list)->toContain('margin-inline: calc(var(--s3) * -1)')
-        ->and($list)->toContain('padding: var(--s1) var(--s3)')
+        ->and($list)->toContain('padding: var(--s2) var(--s3)')
         ->and(railRule($app, '.side__brand'))->toContain('flex: none')
         ->and(railRule($app, '.side__account'))->toContain('flex: none')
         ->and(railCss('tokens.css'))->toContain('--side-nav-min: calc(var(--touch-min) * 3);');
@@ -141,9 +143,9 @@ it('D-115: تذييل اللوحة يأخذ الهامش الجانبي نفسه
 });
 
 it('D-115: كل صنف u-* تكتبه القوالب له قاعدة في الأنماط', function (): void {
-    // u-mb-4 and u-mt-3 were written into three screens and existed nowhere:
-    // a class with no rule fails silently, and the block it sat on touched
-    // the next one.
+    // u-mb-4 was written into two screens and u-mt-3 into one, and neither
+    // existed anywhere: a class with no rule fails silently, and the block it
+    // sat on touched the next one.
     $css = implode(' ', array_map(
         static fn (SplFileInfo $file): string => (string) File::get($file->getPathname()),
         File::allFiles(resource_path('css')),
@@ -166,14 +168,40 @@ it('D-115: كل صنف u-* تكتبه القوالب له قاعدة في الأ
     expect(array_values(array_unique($missing)))->toBe([]);
 });
 
-it('D-115: إظهار الرابط الحالي يحرّك القائمة وحدها ولا يحرّك الصفحة', function (): void {
-    $js = (string) File::get(resource_path('js/app.js'));
+/** The body of the first `name() { … }` in $js, found by matching braces, not by indentation. */
+function railMethodBody(string $js, string $name): string
+{
+    $start = strpos($js, $name.'() {');
+    expect($start)->not->toBeFalse("no {$name}() in app.js");
 
-    expect(preg_match('/revealCurrent\(\) \{(.*?)\n        \},/s', $js, $method))->toBe(1);
+    $open = (int) strpos($js, '{', (int) $start);
+
+    for ($depth = 0, $at = $open; $at < strlen($js); $at++) {
+        $depth += match ($js[$at]) {
+            '{' => 1, '}' => -1, default => 0
+        };
+
+        if ($depth === 0) {
+            return substr($js, $open + 1, $at - $open - 1);
+        }
+    }
+
+    return '';
+}
+
+it('D-115: إظهار الرابط الحالي يحرّك القائمة وحدها ولا يحرّك الصفحة — عند الفتح والطيّ وعودة الشريط', function (): void {
+    $js = (string) File::get(resource_path('js/app.js'));
+    $sidebar = railMethodBody($js, 'function sidebar');
+    $reveal = railMethodBody($sidebar, 'revealCurrent');
 
     // scrollIntoView() scrolls every scrollable ancestor, the page included:
     // a screen would open already moved away from where the reader left it.
-    expect($method[1])->toContain('list.scrollTop')
+    expect($reveal)->toContain('list.scrollTop')
         ->not->toContain('scrollIntoView')
-        ->and($js)->toContain('this.$nextTick(() => this.revealCurrent());');
+        // On load, after a collapse or an expand (the group labels come and
+        // go, so the list changes height), and when the rail comes back at
+        // 1024px after a screen opened narrower.
+        ->and(railMethodBody($sidebar, 'init'))->toContain('this.$nextTick(() => this.revealCurrent());')
+        ->and(railMethodBody($sidebar, 'init'))->toContain("matchMedia('(min-width: 1024px)')")
+        ->and(railMethodBody($sidebar, 'toggle'))->toContain('this.$nextTick(() => this.revealCurrent());');
 });

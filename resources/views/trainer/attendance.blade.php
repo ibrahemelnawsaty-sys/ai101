@@ -66,10 +66,10 @@
             <x-ui.card class="dc--span" icon="video" :title="__('attendance.checkin_code.title')">
                 {{-- D-116 — the state lives on a plain element inside the card, as
                      the roster's does below it. It used to sit on the card tag
-                     itself, and Blade compiles no directive inside a component
-                     tag's attributes: the browser received the literal text
-                     `@js(...)`, the expression threw, and this card never once
-                     showed the code to anyone. --}}
+                     itself, and inside a component tag's attributes Blade
+                     compiles no directive but @class and @style: the browser
+                     received the literal text `@js(...)`, the expression threw,
+                     and this card never once showed the code to anyone. --}}
                 <div x-data="atharCheckinCode({
                         pollUrl: '{{ route('trainer.attendance.checkinCode', $roster->sessionId) }}',
                         pollSeconds: 60,

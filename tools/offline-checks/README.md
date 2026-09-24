@@ -54,7 +54,7 @@ node tools/offline-checks/measure-rail-fit.mjs
 
 | script | covers |
 |---|---|
-| `measure-rail-fit.mjs` | Every rendered screen that has the rail, at seven screen heights (480–1080px), open and collapsed: the rail's three regions in order, no link painted over the identity, cohort or sign-out blocks, every link and account control reachable and 44×44, the account region on screen, the current page's link in view on load, and the app footer's side gutter. Exits 1 on any failure. `D-115`. |
+| `measure-rail-fit.mjs` | Every rendered screen that has the rail, at seven screen heights (480–1080px), open and collapsed: the rail's three regions in order, no link painted over the identity, cohort or sign-out blocks, every link and account control reachable and 44×44, the account region on screen, the current page's link in view on load, every focus ring in the rail whole, and the app footer's side gutter. Exits 1 on any failure; screen-name arguments narrow the sweep. `D-115`. |
 
 ## What they deliberately do not cover
 
