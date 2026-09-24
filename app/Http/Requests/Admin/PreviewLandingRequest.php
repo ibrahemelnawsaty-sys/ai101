@@ -14,9 +14,10 @@ use Illuminate\Validation\Rule;
 /**
  * The editor's draft, sent to be rendered — never to be stored.
  *
- * The draft arrives as one JSON string (`state`) because the preview frame is
- * the target of an ordinary form post, not of a script: the page it returns
- * must be the real landing page with its own scripts and its own nonce.
+ * The draft arrives as one JSON string (`state`) in a same-origin POST from
+ * the editor's script. The answer is the real landing page, with its own
+ * scripts; the editor writes it into the frame's `srcdoc`, so the page is
+ * never framed by URL and every response keeps `frame-ancestors 'none'`.
  *
  * Nothing here is trusted to be well formed. The accessors below rebuild the
  * draft from scratch: only keys the catalogue knows, only strings, only up to
@@ -55,7 +56,7 @@ final class PreviewLandingRequest extends FormRequest
     /**
      * A refused preview answers 422 in place. The default — a redirect back
      * with the input flashed — would copy a draft of hundreds of texts into
-     * the session, and send the frame to a page that refuses to be framed.
+     * the session, and hand the editor a whole admin page instead of a preview.
      */
     protected function failedValidation(Validator $validator): never
     {

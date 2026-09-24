@@ -216,18 +216,26 @@ it('BR-31: المعاينة تعرض الصفحة الحقيقية بالمسو�
         ->assertDontSee('CANARY-DRAFT-Q', escape: false);
 });
 
-it('المادة 24: المعاينة وحدها تُؤطَّر، ومن الأصل نفسه فقط', function (): void {
-    $preview = $this->actingAs($this->admin)->post(route('admin.landing.preview'))->assertOk();
+it('المادة 24: لا شيء يُؤطَّر — ولا المعاينة نفسها، فالمحرّر يكتبها في إطاره ولا يحمّلها', function (): void {
+    // The preview frame never loads a URL: the editor fetches the page and
+    // writes it in through srcdoc. So no response needs a framing exception,
+    // and a hosting panel that forces DENY on every response cannot blank the
+    // preview (production, 24 September 2026).
+    $responses = [
+        $this->actingAs($this->admin)->post(route('admin.landing.preview'))->assertOk(),
+        $this->actingAs($this->admin)->get(route('home'))->assertOk(),
+        $this->actingAs($this->admin)->get(route('admin.landing.edit'))->assertOk(),
+    ];
 
-    expect($preview->headers->get('X-Frame-Options'))->toBe('SAMEORIGIN')
-        ->and($preview->headers->get('Content-Security-Policy'))->toContain("frame-ancestors 'self'");
-
-    foreach ([route('home'), route('admin.landing.edit')] as $url) {
-        $response = $this->actingAs($this->admin)->get($url)->assertOk();
-
+    foreach ($responses as $response) {
         expect($response->headers->get('X-Frame-Options'))->toBe('DENY')
             ->and($response->headers->get('Content-Security-Policy'))->toContain("frame-ancestors 'none'");
     }
+
+    // The editor carries no form that posts into a frame.
+    $this->actingAs($this->admin)->get(route('admin.landing.edit'))
+        ->assertDontSee('target="le-frame', escape: false)
+        ->assertSee('"preview":"'.str_replace('/', '\\/', route('admin.landing.preview')).'"', escape: false);
 });
 
 /*

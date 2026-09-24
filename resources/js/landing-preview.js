@@ -40,13 +40,24 @@ function scrollToElement(el) {
     window.scrollTo(0, Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset));
 }
 
+/**
+ * The element a link points at when it points somewhere on this page. The page
+ * is written into the editor's frame through srcdoc, so its own address is
+ * `about:srcdoc`: a bare "#about" and a full link to the home page's "#about"
+ * both count, and anything that cannot be parsed counts as leaving.
+ */
 function targetOf(href) {
     if (!href) return null;
     const hash = href.indexOf('#');
     if (hash === -1) return null;
-    const url = new URL(href, window.location.href);
-    const home = url.pathname === '/' || url.pathname === window.location.pathname;
-    return home ? document.getElementById(decodeURIComponent(href.slice(hash + 1))) : null;
+    if (hash > 0) {
+        try {
+            if (new URL(href, document.baseURI).pathname !== '/') return null;
+        } catch (e) {
+            return null;
+        }
+    }
+    return document.getElementById(decodeURIComponent(href.slice(hash + 1)));
 }
 
 document.addEventListener(

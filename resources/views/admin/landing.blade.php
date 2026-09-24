@@ -245,7 +245,9 @@
 
                         {{-- The stage is LTR so the scaled frame anchors to its left
                              edge, whatever the page direction; the page inside the
-                             frame keeps its own direction. --}}
+                             frame keeps its own direction. The frames never load a
+                             URL: the script fetches the rendered page and writes it
+                             in through srcdoc, so no framing header can blank them. --}}
                         <div class="le__stage" dir="ltr" x-ref="stage" x-bind:class="'le__stage--' + device">
                             <div class="le__device" x-bind:style="stageStyle()">
                                 <iframe name="le-frame-a" x-ref="frameA" class="le__frame"
@@ -273,14 +275,6 @@
 
                         <p class="le__pv-note">{{ __('admin.landing_editor.preview.note') }}</p>
 
-                        {{-- The draft reaches the frame as an ordinary form post, so
-                             the page that comes back is the real page with its own
-                             scripts. Nothing here is stored (PreviewLandingRequest). --}}
-                        <form x-ref="previewForm" method="POST" action="{{ route('admin.landing.preview') }}" class="le__hidden">
-                            @csrf
-                            <input type="hidden" name="state" x-ref="previewState">
-                            <input type="hidden" name="lang" x-ref="previewLang">
-                        </form>
                     </aside>
                 </div>
 
