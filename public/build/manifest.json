@@ -4,17 +4,17 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DV_3E0E5.css",
+    "file": "assets/app-CsQ7ZKmA.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/public.css": {
-    "file": "assets/public-B4RSM0Zb.css",
+    "file": "assets/public-BcSpydeK.css",
     "src": "resources/css/public.css",
     "isEntry": true
   },
   "resources/js/admin-landing.js": {
-    "file": "assets/admin-landing-DpJEZzyf.js",
+    "file": "assets/admin-landing-BdmrpECc.js",
     "name": "admin-landing",
     "src": "resources/js/admin-landing.js",
     "isEntry": true,
@@ -24,7 +24,7 @@
     ]
   },
   "resources/js/auth.js": {
-    "file": "assets/auth-BhSPIogR.js",
+    "file": "assets/auth-Ouz--fHX.js",
     "name": "auth",
     "src": "resources/js/auth.js",
     "isEntry": true,
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-BNsrI_FI.js",
+    "file": "assets/dashboard-BBAGWJQD.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
     "isEntry": true,
@@ -43,7 +43,7 @@
     ]
   },
   "resources/js/landing-preview.js": {
-    "file": "assets/landing-preview-CvxswNCB.js",
+    "file": "assets/landing-preview-BNP_Y3C4.js",
     "name": "landing-preview",
     "src": "resources/js/landing-preview.js",
     "isEntry": true,
@@ -54,7 +54,7 @@
     ]
   },
   "resources/js/public.js": {
-    "file": "assets/public-xulhSmdZ.js",
+    "file": "assets/public-zjdtkLdn.js",
     "name": "public",
     "src": "resources/js/public.js",
     "isEntry": true,

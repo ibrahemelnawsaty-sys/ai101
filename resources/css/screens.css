@@ -74,7 +74,14 @@
 
 .u-mt-1 { margin-block-start: var(--s1); }
 .u-mt-2 { margin-block-start: var(--s2); }
+.u-mt-3 { margin-block-start: var(--s3); }
 .u-mt-4 { margin-block-start: var(--s4); }
+/* u-mb-4 was written into two screens and u-mt-3 into one, and neither
+   existed (D-115): the read-only notes on the sessions and assignments
+   screens sat flush against the block under them, and the recording form's
+   buttons against the field above them. The trainer dashboard's totals
+   warning, which touched its stat cards, now uses u-mb-4 as well. */
+.u-mb-4 { margin-block-end: var(--s4); }
 .u-inline { display: inline-flex; align-items: center; gap: var(--s2); }
 .u-muted { color: var(--text-muted); }
 
