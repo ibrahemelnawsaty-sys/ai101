@@ -23,6 +23,16 @@
     render the `:groups` array their controller passes in.  Escalated as D-30 in
     docs/03-decisions/DECISIONS.md.
 
+    THREE REGIONS, IN THIS ORDER (D-115)
+      side__brand    the mark and the collapse button
+      side__nav      the links — the only part that scrolls
+      side__account  the cohort, who is signed in, and sign-out
+    They are the rail's direct children and nothing else is. Each region is
+    sized as a unit in app.css: the two ends are pinned and the link list
+    scrolls between them. The cohort, identity and sign-out blocks used to be
+    loose siblings of the link list, which painted its last links over all
+    three wherever it outgrew the space they left it.
+
     Props
       groups   optional explicit structure; overrides the participant default
       badges   ['assignments' => int, 'messages' => int]
@@ -116,58 +126,66 @@
         @endforelse
     </nav>
 
-    {{-- D-108 — who is signed in, always visible (never hidden behind the
-         header dropdown alone), and the one role badge shown consistently
-         everywhere a name appears (Article 6, Article 18). --}}
-    <div class="side__identity">
-        <span class="av" aria-hidden="true">{{ $initials }}</span>
-        <div class="side__identity-text">
-            <b>{{ $displayName }}</b>
-            <x-ui.badge size="sm" :variant="$roleVariant">{{ $roleLabel }}</x-ui.badge>
+    {{-- D-115 — the rail's last region, pinned under the scrolling link list:
+         the cohort this screen acts on (PRD §9.5.1 puts it at the foot of the
+         rail), then who is signed in, then the way out — the account's two
+         rows next to each other instead of split by the cohort box. --}}
+    <div class="side__account">
+        @if ($cohort)
+            <div class="side__foot">
+                <b>{{ $cohort }}</b>
+                <span>{{ __('nav.chrome.current_cohort') }}</span>
+
+                {{-- `POST /dashboard/cohort` → `cohort.switch`, PROJECT-CONTRACT §10.
+                     The route guard lives in the component class: the switcher is
+                     pointless with a single cohort, and the check costs nothing.
+                     A plain form with a submit button. It auto-submitted from an
+                     inline onchange, which the CSP blocks, which fires on a keyboard
+                     arrow before the choice is made, and which left the form
+                     unsendable without JavaScript (D-75). --}}
+                @if ($showSwitcher)
+                    <form method="POST" action="{{ $switchUrl }}">
+                        @csrf
+                        <label class="sr" for="{{ $switchId }}">{{ __('nav.chrome.switch_cohort') }}</label>
+                        <select id="{{ $switchId }}" name="cohort_id" class="side__switch">
+                            @foreach ($cohorts as $option)
+                                <option value="{{ $option['id'] }}" @selected($option['is_current'] ?? false)>
+                                    {{ $option['name'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-ui.button type="submit" variant="secondary" size="sm">{{ __('nav.chrome.switch_cohort') }}</x-ui.button>
+                    </form>
+                @endif
+            </div>
+        @endif
+
+        {{-- D-108 — who is signed in, always visible (never hidden behind the
+             header dropdown alone), and the one role badge shown consistently
+             everywhere a name appears (Article 6, Article 18). In the 72px
+             rail only the initials show; the name becomes the pointer's
+             tooltip, as every link's label does. --}}
+        <div class="side__identity" x-bind:title="$data.collapsed ? @js($displayName) : null">
+            <span class="av" aria-hidden="true">{{ $initials }}</span>
+            <div class="side__identity-text">
+                <b>{{ $displayName }}</b>
+                <x-ui.badge size="sm" :variant="$roleVariant">{{ $roleLabel }}</x-ui.badge>
+            </div>
         </div>
+
+        {{-- D-108 — moved out of the header's account dropdown so it is reachable
+             in one step and stays visible even when the rail is collapsed to
+             72px (icon only, exactly like every other side__b item). Still a
+             POST: a GET link would be triggerable from any other site (Article
+             24, CSRF). --}}
+        @if ($logoutUrl !== null)
+            <form method="POST" action="{{ $logoutUrl }}" class="side__logout">
+                @csrf
+                <button type="submit" class="side__b" x-bind:title="$data.collapsed ? @js(__('nav.chrome.logout')) : null">
+                    <svg aria-hidden="true"><use href="#i-logout"></use></svg>
+                    <span class="side__label">{{ __('nav.chrome.logout') }}</span>
+                </button>
+            </form>
+        @endif
     </div>
-
-    @if ($cohort)
-        <div class="side__foot">
-            <b>{{ $cohort }}</b>
-            <span>{{ __('nav.chrome.current_cohort') }}</span>
-
-            {{-- `POST /dashboard/cohort` → `cohort.switch`, PROJECT-CONTRACT §10.
-                 The route guard lives in the component class: the switcher is
-                 pointless with a single cohort, and the check costs nothing.
-                 A plain form with a submit button. It auto-submitted from an
-                 inline onchange, which the CSP blocks, which fires on a keyboard
-                 arrow before the choice is made, and which left the form
-                 unsendable without JavaScript (D-75). --}}
-            @if ($showSwitcher)
-                <form method="POST" action="{{ $switchUrl }}">
-                    @csrf
-                    <label class="sr" for="{{ $switchId }}">{{ __('nav.chrome.switch_cohort') }}</label>
-                    <select id="{{ $switchId }}" name="cohort_id" class="side__switch">
-                        @foreach ($cohorts as $option)
-                            <option value="{{ $option['id'] }}" @selected($option['is_current'] ?? false)>
-                                {{ $option['name'] }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <x-ui.button type="submit" variant="secondary" size="sm">{{ __('nav.chrome.switch_cohort') }}</x-ui.button>
-                </form>
-            @endif
-        </div>
-    @endif
-
-    {{-- D-108 — moved out of the header's account dropdown so it is reachable
-         in one step and stays visible even when the rail is collapsed to
-         72px (icon only, exactly like every other side__b item). Still a
-         POST: a GET link would be triggerable from any other site (Article
-         24, CSRF). --}}
-    @if ($logoutUrl !== null)
-        <form method="POST" action="{{ $logoutUrl }}" class="side__logout">
-            @csrf
-            <button type="submit" class="side__b">
-                <svg aria-hidden="true"><use href="#i-logout"></use></svg>
-                <span class="side__label">{{ __('nav.chrome.logout') }}</span>
-            </button>
-        </form>
-    @endif
 </{{ $tag }}>

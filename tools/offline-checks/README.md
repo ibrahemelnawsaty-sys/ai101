@@ -40,6 +40,22 @@ own files, unmodified.**
 | `cross-reference.mjs` | Every `<x-…>` component, `route('…')` name, `__('…')` key and `use App\…` import resolves to something that exists. |
 | `view-model-inventory.mjs` | Regenerates `docs/04-design/VIEW-MODEL-INVENTORY.txt` — every `$var->property` the Blade layer dereferences. Run it after changing a view; anything it lists must be published by a presenter. |
 
+## In a real browser
+
+These need `vendor/` (the renderer boots the application on an in-memory SQLite database with the
+real seeders), a built `public/build`, and Playwright's Chromium. They measure what no stylesheet
+and no PHP test can show: the geometry a reader actually gets.
+
+```
+php tools/offline-checks/render-all-screens.php   # every screen, every role → public/sweep/
+npm run build
+node tools/offline-checks/measure-rail-fit.mjs
+```
+
+| script | covers |
+|---|---|
+| `measure-rail-fit.mjs` | Every rendered screen that has the rail, at seven screen heights (480–1080px), open and collapsed: the rail's three regions in order, no link painted over the identity, cohort or sign-out blocks, every link and account control reachable and 44×44, the account region on screen, the current page's link in view on load, and the app footer's side gutter. Exits 1 on any failure. `D-115`. |
+
 ## What they deliberately do not cover
 
 Authorization, tenancy scoping, impersonation read-only enforcement, grade recording,

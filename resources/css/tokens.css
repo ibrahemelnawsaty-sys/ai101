@@ -386,6 +386,9 @@
   --impbar-h:      0px;
   --touch-min:     44px;     /* WCAG 2.1 AA floor · PRD §5.9, §13.2 */
   --touch:         var(--touch-min);   /* legacy alias — same single value */
+  /* The rail's link list never shrinks below three links (D-115). Under that,
+     the whole rail scrolls instead of squeezing the list to nothing. */
+  --side-nav-min:  calc(var(--touch-min) * 3);
   --gutter:        24px;
   --z-base:     0;
   --z-raised:   20;

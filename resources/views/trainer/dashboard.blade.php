@@ -24,7 +24,7 @@
     @else
 
         @if ($totalsWarning)
-            <div class="note note--warn" role="status">
+            <div class="note note--warn u-mb-4" role="status">
                 <b>{{ __('trainer.grading.totals_warning_title') }}</b>
                 {{ __('trainer.grading.totals_warning_body', ['current' => $totalsWarning->current, 'expected' => $totalsWarning->expected]) }}
             </div>

@@ -570,6 +570,26 @@ function sidebar() {
             } catch (e) {
                 this.collapsed = Boolean(config.collapsed);
             }
+            // After the collapsed state has reached the DOM, so the list is
+            // measured at the width it will actually have.
+            this.$nextTick(() => this.revealCurrent());
+        },
+
+        /**
+         * The rail's link list scrolls inside its own region once it is taller
+         * than the space between the brand and the account block (D-115). A
+         * screen opened from a link near the end of that list would open with
+         * the link marked as the current page scrolled out of sight, so the
+         * list — only the list, never the page — is moved to show it.
+         */
+        revealCurrent() {
+            const list = this.$el.querySelector('.side .side__nav');
+            const current = list ? list.querySelector('[aria-current="page"]') : null;
+            if (!current || list.scrollHeight <= list.clientHeight) return;
+            const box = list.getBoundingClientRect();
+            const item = current.getBoundingClientRect();
+            if (item.top >= box.top && item.bottom <= box.bottom) return;
+            list.scrollTop += item.top - box.top - (box.height - item.height) / 2;
         },
 
         toggle() {
