@@ -6,6 +6,7 @@ namespace App\Services\Notifications;
 
 use App\Enums\ThreadType;
 use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Events\AnnouncementPublished;
 use App\Events\MessageReceived;
 use App\Events\SessionRescheduled;
@@ -147,6 +148,11 @@ final class CohortNotices
                     ->where('user_id', '!=', $author->getKey())
                     ->where('is_muted', false)
                     ->select('user_id'))
+                // A suspended account, or an invitation nobody accepted, is
+                // told nothing — not even a sender's name and an excerpt
+                // (D-118 review; D-119).
+                ->where('status', UserStatus::Active->value)
+                ->whereNotNull('email_verified_at')
                 // Whoever reads the thread (ThreadPolicy::view) is told of it,
                 // and nobody else — in one query, not one per member: a
                 // membership kept from an earlier role never makes a system

@@ -78,13 +78,20 @@ final class ConversationRules
         $asTrainer = $this->roles->trainerCohortIds($from);
         $asParticipant = $this->roles->participantCohortIds($from);
 
-        return $query->where(function (Builder $allowed) use ($asCoordinator, $asTrainer, $asParticipant): void {
+        $isCoordinator = $from->role === UserRole::Coordinator;
+
+        return $query->where(function (Builder $allowed) use ($isCoordinator, $asCoordinator, $asTrainer, $asParticipant): void {
             // Nothing matches until a capacity below adds its own branch.
             $allowed->whereIn('id', []);
 
+            // "The coordinator writes to the general supervisor" names no
+            // cohort: a coordinator not yet assigned one still reaches them.
+            if ($isCoordinator) {
+                $allowed->orWhere('role', UserRole::Admin->value);
+            }
+
             if ($asCoordinator !== []) {
                 $allowed
-                    ->orWhere('role', UserRole::Admin->value)
                     ->orWhere(fn (Builder $q) => $this->holding($q, UserRole::Trainer, EnrollmentRole::Trainer, $asCoordinator))
                     ->orWhere(fn (Builder $q) => $this->seatedIn($q, $asCoordinator));
             }

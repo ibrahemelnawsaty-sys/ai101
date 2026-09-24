@@ -90,7 +90,11 @@ final class ConversationStarter
         }
     }
 
-    /** Every active system administrator joins this inbox conversation. */
+    /**
+     * Every active system administrator joins this inbox conversation — one
+     * whose holder has signed in: an invitation not yet accepted, perhaps to
+     * a mistyped address, reads nothing (D-119).
+     */
     public function joinAdministrators(Thread $thread): void
     {
         if (! $thread->isInbox()) {
@@ -100,6 +104,7 @@ final class ConversationStarter
         User::query()
             ->where('role', UserRole::SystemAdmin->value)
             ->where('status', UserStatus::Active->value)
+            ->whereNotNull('email_verified_at')
             ->pluck('id')
             ->each(fn (mixed $id) => $this->join($thread, (string) $id));
     }
@@ -152,8 +157,10 @@ final class ConversationStarter
         try {
             return DB::transaction(static fn (): Thread => Thread::query()->create($attributes + ['pair_key' => $pairKey]));
         } catch (UniqueConstraintViolationException) {
-            // The other side started the same conversation a moment ago.
-            return Thread::query()->where('pair_key', $pairKey)->firstOrFail();
+            // The other side started the same conversation a moment ago. A
+            // locking read: inside the caller's transaction a plain one would
+            // read the snapshot taken before that row existed (InnoDB).
+            return Thread::query()->where('pair_key', $pairKey)->lockForUpdate()->firstOrFail();
         }
     }
 

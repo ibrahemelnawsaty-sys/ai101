@@ -399,3 +399,116 @@ it('D-118: الأسماء من الملف الشخصي — في «محادثة �
         ->assertOk()
         ->assertSee($supervisorName);
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent security review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('D-118: حساب معلَّق أو دعوة لم تُقبل لا يصلها إشعار ولا بريد — في الصندوق وفي المحادثة المباشرة', function (): void {
+    Illuminate\Support\Facades\Event::fake([App\Events\MessageReceived::class]);
+
+    $suspendedAdmin = makeSystemAdmin();
+    $invitedAdmin = makeSystemAdmin(['email_verified_at' => null]);
+
+    startConversation($this, $this->supervisor, 'system_admin', 'FIRST')->assertRedirect();
+    $inbox = Thread::query()->where('inbox', 'system_admin')->sole();
+
+    expect(ThreadParticipant::query()->where('thread_id', $inbox->id)->where('user_id', $invitedAdmin->id)->exists())->toBeFalse();
+
+    $suspendedAdmin->forceFill(['status' => 'suspended'])->save();
+    $this->actingAs($this->supervisor)->post(route('messages.store', $inbox), ['body' => 'SECOND'])->assertSessionHasNoErrors();
+
+    foreach ([$suspendedAdmin, $invitedAdmin] as $silent) {
+        expect(Notification::query()->where('user_id', $silent->id)->where('body', 'like', '%SECOND%')->count())->toBe(0);
+        Illuminate\Support\Facades\Event::assertNotDispatched(
+            App\Events\MessageReceived::class,
+            fn ($event) => $event->recipient->is($silent) && str_contains($event->excerpt, 'SECOND'),
+        );
+    }
+
+    // A direct conversation too.
+    startConversation($this, $this->participant, $this->coordinator, 'HELLO')->assertRedirect();
+    $this->coordinator->forceFill(['status' => 'suspended'])->save();
+    startConversation($this, $this->participant, $this->trainer, 'OTHER')->assertRedirect();
+    $direct = sharedThread($this->participant, $this->coordinator);
+    $this->actingAs($this->participant)->post(route('messages.store', $direct), ['body' => 'WHILE-SUSPENDED']);
+
+    expect(Notification::query()->where('user_id', $this->coordinator->id)->where('body', 'like', '%WHILE-SUSPENDED%')->count())->toBe(0);
+});
+
+it('D-118: بريد الرسالة يُعاد فحصه وقت الإرسال — من عُلّق بعد الرسالة لا يصله', function (): void {
+    startConversation($this, $this->participant, $this->coordinator, 'QUEUED')->assertRedirect();
+    $thread = sharedThread($this->participant, $this->coordinator);
+    $this->coordinator->forceFill(['status' => 'suspended'])->save();
+
+    // Only what the queued job does from here on.
+    Mail::fake();
+
+    app(App\Listeners\SendMessageReceived::class)->handle(
+        new App\Events\MessageReceived($this->coordinator, 'Sender', 'Title', 'QUEUED', (string) $thread->id),
+    );
+
+    Mail::assertNothingQueued();
+    Mail::assertNothingSent();
+});
+
+it('D-118: «تمت القراءة» في الصندوق عند مدير النظام تعني أن المشرف قرأ — لا زميلًا', function (): void {
+    $colleague = makeSystemAdmin();
+    startConversation($this, $this->supervisor, 'system_admin', 'ASK')->assertRedirect();
+    $inbox = Thread::query()->where('inbox', 'system_admin')->sole();
+
+    $this->actingAs($this->sysadmin)->post(route('messages.store', $inbox), ['body' => 'ANSWER'])->assertSessionHasNoErrors();
+
+    freezeAt(riyadhAt('2026-10-12 12:05:00'));
+    $this->actingAs($colleague)->get(route('messages.index', ['thread' => $inbox->id]))->assertOk();
+
+    $this->actingAs($this->sysadmin)->get(route('messages.index', ['thread' => $inbox->id]))
+        ->assertOk()->assertDontSee(__('messages.read'));
+
+    $this->actingAs($this->supervisor)->get(route('messages.index', ['thread' => $inbox->id]))->assertOk();
+
+    $this->actingAs($this->sysadmin)->get(route('messages.index', ['thread' => $inbox->id]))
+        ->assertOk()->assertSee(__('messages.read'));
+});
+
+it('D-118: منسق لم يُسنَد إلى دفعة بعد يراسل المشرف العام، ولا أحد غيره', function (): void {
+    $unassigned = makeCoordinator();
+
+    expect(recipientIds($unassigned))->toBe(idsOf([$this->supervisor]));
+});
+
+it('BR-22 (D-118): نطاقا الرسائل والعضوية لا يفتحان للمشرف العام محادثات غيره', function (): void {
+    startConversation($this, $this->participant, $this->coordinator, 'PRIVATE')->assertRedirect();
+
+    expect(Message::query()->visibleTo($this->supervisor)->where('body', 'PRIVATE')->exists())->toBeFalse()
+        ->and(ThreadParticipant::query()->visibleTo($this->supervisor)->count())->toBe(0)
+        ->and(Message::query()->visibleTo($this->participant)->where('body', 'PRIVATE')->exists())->toBeTrue()
+        ->and($this->supervisor->can('delete', Message::query()->where('body', 'PRIVATE')->sole()))->toBeFalse();
+});
+
+it('D-118: قائمة المحادثات تُقسَّم صفحات بعد 50، وفتح محادثة من صفحة أخرى يعمل', function (): void {
+    $people = collect(range(1, 51))->map(fn () => makeParticipant($this->cohort));
+    $starter = app(App\Services\Messages\ConversationStarter::class);
+
+    // Built through the service: fifty-one starts in one minute would, rightly,
+    // meet the endpoint's rate limit.
+    foreach ($people as $index => $person) {
+        $at = riyadhAt('2026-10-12 12:00:00')->addMinutes($index);
+        $thread = $starter->withPerson($this->supervisor, $person);
+        Message::query()->create(['thread_id' => $thread->id, 'sender_id' => $this->supervisor->id, 'body' => 'M-'.$index, 'sent_at' => $at]);
+        $thread->forceFill(['updated_at' => $at])->save();
+    }
+
+    $oldest = sharedThread($this->supervisor, $people->first());
+
+    $this->actingAs($this->supervisor)->get(route('messages.index'))
+        ->assertOk()
+        ->assertSee(route('messages.index', ['page' => 2]), false)
+        ->assertDontSee('M-0');
+
+    $this->actingAs($this->supervisor)->get(route('messages.index', ['thread' => $oldest->id]))
+        ->assertOk()
+        ->assertSee('M-0');
+});

@@ -114,6 +114,10 @@
                         @endif
                     </a>
                 @endforeach
+
+                @isset ($threadPages)
+                    <x-ui.pagination :paginator="$threadPages" />
+                @endisset
             </nav>
         </div>
     @endif

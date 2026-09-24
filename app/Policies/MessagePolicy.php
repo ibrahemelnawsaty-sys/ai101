@@ -44,9 +44,14 @@ final class MessagePolicy
             && $this->withinEditWindow($message);
     }
 
+    /**
+     * The general supervisor removes a message only in a conversation they
+     * read (D-118: nobody reads anybody else's); otherwise, the author within
+     * the edit window.
+     */
     public function delete(User $user, Message $message): bool
     {
-        if ($this->admin($user) && $this->writesAllowed()) {
+        if ($this->admin($user) && $this->writesAllowed() && $this->view($user, $message)) {
             return true;
         }
 

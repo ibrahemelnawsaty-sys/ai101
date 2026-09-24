@@ -27,6 +27,10 @@ final class StartConversationRequest extends FormRequest
 {
     public const INBOX = 'system_admin';
 
+    private bool $resolved = false;
+
+    private ?User $recipient = null;
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -85,17 +89,27 @@ final class StartConversationRequest extends FormRequest
         return $this->input('recipient') === self::INBOX;
     }
 
+    /**
+     * The account named as recipient, looked up ONCE — authorize() and the
+     * controller read the same instance, so an account removed between the
+     * two cannot turn into something else (D-118 review).
+     */
     public function recipientUser(): ?User
     {
+        if ($this->resolved) {
+            return $this->recipient;
+        }
+
+        $this->resolved = true;
         $id = $this->input('recipient');
 
         if (! is_string($id) || $id === '' || $id === self::INBOX) {
-            return null;
+            return $this->recipient = null;
         }
 
         /** @var User|null $user */
         $user = User::query()->find($id);
 
-        return $user;
+        return $this->recipient = $user;
     }
 }

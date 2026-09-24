@@ -28,6 +28,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Internal messaging (PRD §9.13).
@@ -61,6 +62,12 @@ final class MessageController extends Controller
     /** People per page in the recipient picker (art. 19: paginate past 50). */
     private const RECIPIENTS_PER_PAGE = 20;
 
+    /**
+     * Conversations per page in the list. A general supervisor may now talk
+     * to anyone (D-118), so the list is paginated like every list past 50.
+     */
+    private const THREADS_PER_PAGE = 50;
+
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly CohortNotices $notices,
@@ -84,13 +91,16 @@ final class MessageController extends Controller
             $this->starter->joinInbox($user);
         }
 
-        $threads = Thread::query()
+        $pages = Thread::query()
             ->visibleTo($user)
             ->with(['latestMessage.sender.profile', 'cohort', 'users.profile'])
             ->orderByDesc('updated_at')
-            ->get();
+            ->paginate(self::THREADS_PER_PAGE)
+            ->withQueryString();
 
-        $active = $this->activeThread($request, $threads);
+        $threads = $pages->getCollection();
+
+        $active = $this->activeThread($request, $threads, $user);
         $now = Clock::now();
 
         // Opening a conversation is reading it. Nothing wrote this marker, so
@@ -139,6 +149,7 @@ final class MessageController extends Controller
                     $isImpersonating,
                     $user,
                 ),
+            'threadPages' => $pages,
             'isImpersonating' => $isImpersonating,
             // D-118 — the "new conversation" door; its page and its start
             // endpoint refuse a preview again on their own.
@@ -217,21 +228,35 @@ final class MessageController extends Controller
         $user = $request->user();
         $to = $request->recipientUser();
 
-        $thread = $request->toInbox() || ! $to instanceof User
-            ? $this->starter->withInbox($user)
-            : $this->starter->withPerson($user, $to);
+        // The inbox only when it was asked for — never as a fallback for a
+        // recipient that is not there (D-118 review): that would hand a
+        // trainee a conversation with the system administrators.
+        if (! $request->toInbox() && ! $to instanceof User) {
+            abort(404);
+        }
 
         $body = (string) $request->validated('body');
 
-        Message::query()->create([
-            'thread_id' => $thread->getKey(),
-            'sender_id' => $user->getKey(),
-            'body' => $body,
-            'attachments' => [],
-            'sent_at' => Clock::now(),
-        ]);
+        // One unit: a failure never leaves a conversation without its first
+        // message.
+        $thread = DB::transaction(function () use ($request, $user, $to, $body): Thread {
+            $thread = $request->toInbox() || ! $to instanceof User
+                ? $this->starter->withInbox($user)
+                : $this->starter->withPerson($user, $to);
 
-        $thread->touch();
+            Message::query()->create([
+                'thread_id' => $thread->getKey(),
+                'sender_id' => $user->getKey(),
+                'body' => $body,
+                'attachments' => [],
+                'sent_at' => Clock::now(),
+            ]);
+
+            $thread->touch();
+
+            return $thread;
+        });
+
         $this->notices->posted($thread, $user, $body);
 
         return redirect()
@@ -268,11 +293,17 @@ final class MessageController extends Controller
             return null;
         }
 
-        $readAt = ThreadParticipant::query()
+        $others = ThreadParticipant::query()
             ->where('thread_id', $thread->getKey())
-            ->where('user_id', '!=', $user->getKey())
-            ->orderByDesc('last_read_at')
-            ->value('last_read_at');
+            ->where('user_id', '!=', $user->getKey());
+
+        // In the inbox a system administrator's "read" is the supervisor's
+        // reading, not a colleague's (D-118 review).
+        if ($thread->isInbox() && ! $thread->isInboxOwner($user)) {
+            $others->where('user_id', $thread->inboxOwnerId());
+        }
+
+        $readAt = $others->orderByDesc('last_read_at')->value('last_read_at');
 
         return $readAt instanceof \DateTimeInterface ? $readAt : null;
     }
@@ -364,7 +395,7 @@ final class MessageController extends Controller
     /**
      * @param  \Illuminate\Support\Collection<int, Thread>  $threads
      */
-    private function activeThread(Request $request, $threads): ?Thread
+    private function activeThread(Request $request, $threads, User $user): ?Thread
     {
         $requested = $request->query('thread');
 
@@ -373,8 +404,16 @@ final class MessageController extends Controller
                 static fn (Thread $thread): bool => (string) $thread->getKey() === $requested,
             );
 
-            // A thread the account is not in is simply not in this collection,
-            // so an unknown id falls back rather than leaking its existence.
+            // On another page of the list: asked through the same visibility
+            // rule, so a thread the account does not read is simply not
+            // found, and an unknown id falls back rather than leaking its
+            // existence.
+            $match ??= Thread::query()
+                ->visibleTo($user)
+                ->with(['latestMessage.sender.profile', 'cohort', 'users.profile'])
+                ->whereKey($requested)
+                ->first();
+
             if ($match instanceof Thread) {
                 return $match;
             }

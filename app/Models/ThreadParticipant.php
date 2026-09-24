@@ -97,20 +97,14 @@ class ThreadParticipant extends Model
     }
 
     /**
-     * BR-22: an account sees the membership rows of its own threads only.
+     * BR-22 · D-118: the membership rows of the conversations this account
+     * reads — Thread::scopeVisibleTo, with no role door.
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin()) {
-            return $query;
-        }
-
-        return $query->whereIn(
-            'thread_id',
-            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id'),
-        );
+        return $query->whereIn('thread_id', Thread::query()->visibleTo($user)->select('threads.id'));
     }
 }
