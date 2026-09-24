@@ -11,6 +11,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResendVerificationRequest;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Permissions\ImpersonationService;
 use App\Services\Security\KnownDevices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
@@ -34,7 +35,7 @@ use Illuminate\Support\Facades\Hash;
  * only ever reached after a *correct* password, so they cannot be used to probe
  * for addresses.
  *
- * @see BR-28, BR-29, BR-30 · PRD §9.3.1, §9.3.2, §12.1 · CONSTITUTION Art. 7, Art. 24
+ * @see BR-28, BR-29, BR-30, BR-33 · PRD §9.3.1, §9.3.2, §12.1 · CONSTITUTION Art. 7, Art. 23, Art. 24 · D-117
  */
 final class LoginController extends Controller
 {
@@ -156,10 +157,18 @@ final class LoginController extends Controller
      *
      * Ending an account preview is a different act with a different endpoint:
      * if one is running, it is closed first so the administrator is not left
-     * signed in as somebody else.
+     * signed in as somebody else — through the service, so the preview's end
+     * is written to the trail and its row closed like any other end (art. 23).
+     * Clearing the context alone left the row open with no end on record
+     * (D-117 — the preview button had never worked before, so nobody had
+     * signed out of one).
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, ImpersonationService $impersonation): RedirectResponse
     {
+        if (ImpersonationContext::isActive()) {
+            $impersonation->stop();
+        }
+
         ImpersonationContext::clear();
 
         Auth::guard('web')->logout();

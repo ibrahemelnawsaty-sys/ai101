@@ -10,6 +10,7 @@ use App\Exceptions\PermissionException;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Permissions\RoleGate;
+use App\Services\Permissions\RoleResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +49,7 @@ final class ChangeRole extends Command
     /** @var string */
     protected $description = 'Change the role of an existing account, keeping one active general supervisor and one active system administrator.';
 
-    public function handle(RoleGate $gate, AuditLogger $audit): int
+    public function handle(RoleGate $gate, RoleResolver $roles, AuditLogger $audit): int
     {
         $role = UserRole::tryFrom((string) $this->argument('role'));
 
@@ -106,7 +107,14 @@ final class ChangeRole extends Command
             return self::FAILURE;
         }
 
-        DB::transaction(function () use ($user, $before, $role, $reason, $audit): void {
+        $changed = DB::transaction(function () use ($user, $before, $role, $reason, $audit, $roles): bool {
+            // Counted again with every holder's row locked: someone may have
+            // changed the other holder while the confirmation was on screen,
+            // or be changing them right now (BR-32).
+            if ($roles->isLastActiveHolder($user, lock: true)) {
+                return false;
+            }
+
             // Written before the change is saved (art. 8), under the name the
             // interface uses, so the audit screen reads both the same way.
             $audit->log('user.role_changed', $user, ['role' => $before->value], [
@@ -117,7 +125,15 @@ final class ChangeRole extends Command
 
             $user->setAttribute('role', $role->value);
             $user->save();
+
+            return true;
         });
+
+        if (! $changed) {
+            $this->error('Refused: this is now the last active account holding the role '.$before->value.'. Nothing was changed.');
+
+            return self::FAILURE;
+        }
 
         $this->info('Role changed: '.(string) $user->getAttribute('email').' is now '.$role->value.'.');
         $this->line('It takes effect on the account\'s next request (BR-28); no sign-in is needed.');

@@ -338,6 +338,8 @@ return [
         'read_only_action' => 'This action is disabled in preview mode.',
         'started' => 'The read-only account preview has started, and the start was written to the audit log.',
         'ended' => 'The preview ended, the end was written to the audit log, and you are back in your own account.',
+        // D-117 — the account being previewed was deactivated mid-preview.
+        'target_inactive' => 'The preview ended because the account you were previewing is no longer active. The end was written to the audit log, and you are back in your own account.',
     ],
 
     'registrations' => [

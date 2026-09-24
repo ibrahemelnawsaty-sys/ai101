@@ -12,7 +12,9 @@ use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\Journey\JourneyEvaluator;
+use App\Services\Permissions\RoleResolver;
 use App\Services\Time\Clock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +56,7 @@ final class MakeDemoAccounts extends Command
     /** @var string */
     protected $description = 'Create a system administrator, a general supervisor, a trainer and an enrolled participant for walking the platform.';
 
-    public function handle(JourneyEvaluator $journey): int
+    public function handle(JourneyEvaluator $journey, RoleResolver $roles, AuditLogger $audit): int
     {
         if (app()->isProduction() && $this->option('force') !== true) {
             $this->error('This creates accounts with known addresses on a live host.');
@@ -70,7 +72,7 @@ final class MakeDemoAccounts extends Command
         $addresses = array_column($this->roster($domain), 'email');
 
         if ($this->option('remove') === true) {
-            return $this->remove($addresses);
+            return $this->remove($addresses, $roles, $audit);
         }
 
         $cohort = Cohort::query()->orderByDesc('start_date')->first();
@@ -252,9 +254,16 @@ final class MakeDemoAccounts extends Command
      * Soft-delete the demo accounts. Their attendance, submissions and audit
      * rows stay, because PRD §7.8 keeps those regardless of who created them.
      *
+     * BR-32 holds here as it holds everywhere (D-117): an account that is the
+     * last active general supervisor or the last active system administrator
+     * is kept, and said so. D-117 made the demo `admin@` the live platform's
+     * system administrator, so an unguarded --remove — the very step this
+     * command tells the operator to take — would have emptied both roles. Each
+     * removal is written to the trail before it happens (art. 8).
+     *
      * @param  list<string>  $addresses
      */
-    private function remove(array $addresses): int
+    private function remove(array $addresses, RoleResolver $roles, AuditLogger $audit): int
     {
         $users = User::query()->whereIn('email', $addresses)->get();
 
@@ -264,13 +273,34 @@ final class MakeDemoAccounts extends Command
             return self::SUCCESS;
         }
 
+        $removed = 0;
+
         foreach ($users as $user) {
-            Enrollment::query()->where('user_id', $user->getKey())->delete();
-            $user->delete();   // soft delete, per PRD §7.8
+            // Asked afresh for each account: removing one supervisor can make
+            // the next one the last.
+            if ($roles->isLastActiveHolder($user)) {
+                $this->warn('kept     '.(string) $user->getAttribute('email')
+                    .' — the last active '.$user->role->value.' (BR-32). Give another active account that role first.');
+
+                continue;
+            }
+
+            DB::transaction(function () use ($user, $audit): void {
+                $audit->log('user.deleted', $user, ['status' => $user->status->value], [
+                    'status' => UserStatus::Deleted->value,
+                    'reason' => 'athar:demo-accounts --remove',
+                    'via' => 'console',
+                ]);
+
+                Enrollment::query()->where('user_id', $user->getKey())->delete();
+                $user->delete();   // soft delete, per PRD §7.8
+            });
+
+            $removed++;
             $this->line('removed  '.(string) $user->getAttribute('email'));
         }
 
-        $this->info('Removed '.$users->count().' demo account(s).');
+        $this->info('Removed '.$removed.' demo account(s).');
 
         return self::SUCCESS;
     }

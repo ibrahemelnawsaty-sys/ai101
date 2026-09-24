@@ -98,17 +98,6 @@ final class ImpersonationService
             return null;
         }
 
-        /** @var User|null $admin */
-        $admin = User::query()->find($payload['admin_id']);
-
-        if ($admin === null || $admin->status !== UserStatus::Active) {
-            // The admin account vanished or was suspended mid-preview: refuse to
-            // restore anything and drop the session entirely (fail closed).
-            Auth::guard('web')->logout();
-
-            return null;
-        }
-
         // A preview never lasts longer than its ceiling, whatever the clock says
         // when the expiry is finally noticed: the request that discovers a stale
         // preview may arrive an hour later, but the session ENDED at
@@ -116,7 +105,11 @@ final class ImpersonationService
         // wrote a 90-minute preview into a table whose maximum is 30.
         $endedAt = $this->endInstantFor($payload['started_at']);
 
-        DB::transaction(function () use ($payload, $admin, $endedAt): void {
+        // The end is written whatever happens next — including when the one
+        // who previewed can no longer be restored. That path used to return
+        // before this, so a preview ended by suspending its previewer stayed
+        // open in the table with no end in the trail (art. 23, D-117).
+        DB::transaction(function () use ($payload, $endedAt): void {
             $this->audit->record(
                 action: 'impersonation.stop',
                 entityType: (new ImpersonationSession)->getMorphClass(),
@@ -128,7 +121,7 @@ final class ImpersonationService
                     'record_id' => $payload['record_id'],
                     'ended_at' => $endedAt->format('Y-m-d H:i:s'),
                 ],
-                actorId: (string) $admin->getKey(),
+                actorId: (string) $payload['admin_id'],
             );
 
             ImpersonationSession::query()
@@ -136,6 +129,17 @@ final class ImpersonationService
                 ->whereNull('ended_at')
                 ->update(['ended_at' => $endedAt]);
         });
+
+        /** @var User|null $admin */
+        $admin = User::query()->find($payload['admin_id']);
+
+        if ($admin === null || $admin->status !== UserStatus::Active) {
+            // The admin account vanished or was suspended mid-preview: refuse to
+            // restore anything and drop the session entirely (fail closed).
+            Auth::guard('web')->logout();
+
+            return null;
+        }
 
         Auth::guard('web')->login($admin, false);
 
@@ -154,6 +158,32 @@ final class ImpersonationService
         $now = Clock::now();
 
         return $now->greaterThan($ceiling) ? $ceiling : $now;
+    }
+
+    /**
+     * BR-28 for the one previewing: is the account that started this preview
+     * STILL entitled to it — present, active, and a system administrator?
+     *
+     * Asked on every request of a running preview (ImpersonationReadOnly), not
+     * only when it began. Without it a system administrator suspended, deleted
+     * or moved to another role mid-preview went on reading as someone else
+     * until the thirty-minute ceiling: their own session rows were deleted,
+     * but the preview runs on the TARGET's session (D-117).
+     */
+    public function previewerStillEntitled(): bool
+    {
+        $adminId = ImpersonationContext::adminId();
+
+        if ($adminId === null) {
+            return false;
+        }
+
+        /** @var User|null $admin */
+        $admin = User::query()->find($adminId);
+
+        return $admin !== null
+            && $this->roles->isSystemAdmin($admin)
+            && $this->roles->isActive($admin);
     }
 
     /** End the preview only when its 30-minute ceiling has been reached. */

@@ -99,18 +99,34 @@ final class RoleResolver
      * whether SOMEONE ELSE could still act in that role afterwards. Asked
      * fresh on every call and never memoised — a request that changes one
      * account must see the other accounts as they are now (BR-28).
+     *
+     * `$lock` is for the write itself, inside its transaction: it locks EVERY
+     * active holder's row — the subject's included — before counting, so two
+     * holders removing each other at the same moment cannot both see the
+     * other one still there. The second waits for the first and then counts
+     * one. Without the subject's own row in the lock, each request would lock
+     * a different row and both would pass.
      */
-    public function isLastActiveHolder(User $subject): bool
+    public function isLastActiveHolder(User $subject, bool $lock = false): bool
     {
         if (! in_array($subject->role, self::GUARDED_ROLES, true)) {
             return false;
         }
 
-        return User::query()
+        $query = User::query()
             ->where('role', $subject->role->value)
-            ->where('status', UserStatus::Active->value)
-            ->whereKeyNot($subject->getKey())
-            ->doesntExist();
+            ->where('status', UserStatus::Active->value);
+
+        if (! $lock) {
+            return $query->whereKeyNot($subject->getKey())->doesntExist();
+        }
+
+        $holders = $query->lockForUpdate()
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        return array_values(array_diff($holders, [(string) $subject->getKey()])) === [];
     }
 
     public function isActive(User $user): bool

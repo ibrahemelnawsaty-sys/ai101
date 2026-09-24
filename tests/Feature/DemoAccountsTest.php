@@ -54,6 +54,12 @@ it('إعادة التشغيل لا تكرّر الحسابات ولا تغيّر
 it('الإزالة تحذف الحسابات الأربعة', function (): void {
     makeCohort(['status' => 'open', 'capacity' => 60]);
 
+    // BR-32 (D-117): the demo supervisor and system administrator go only when
+    // another active holder of each role remains — SystemAdminIntegrityTest
+    // pins the other side, where they are kept.
+    makeAdmin();
+    makeSystemAdmin();
+
     $this->artisan('athar:demo-accounts', ['--password' => 'Demo-Passw0rd!'])->assertSuccessful();
     $this->artisan('athar:demo-accounts', ['--remove' => true])->assertSuccessful();
 

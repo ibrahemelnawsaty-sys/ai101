@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Notifications;
 
 use App\Enums\ThreadType;
+use App\Enums\UserRole;
 use App\Events\AnnouncementPublished;
 use App\Events\MessageReceived;
 use App\Events\SessionRescheduled;
@@ -39,7 +40,7 @@ use Illuminate\Support\Str;
  * method logs and returns; the failure is visible in the log and nowhere else
  * (art. 7).
  *
- * @see PRD §9.13, §9.16.1 · FR-NOTIF-12, FR-NOTIF-15, FR-NOTIF-16, FR-NOTIF-20, FR-NOTIF-21, FR-NOTIF-22 · D-83
+ * @see PRD §9.13, §9.16.1 · FR-NOTIF-12, FR-NOTIF-15, FR-NOTIF-16, FR-NOTIF-20, FR-NOTIF-21, FR-NOTIF-22 · D-83, D-117
  */
 final class CohortNotices
 {
@@ -139,6 +140,9 @@ final class CohortNotices
                     ->where('user_id', '!=', $author->getKey())
                     ->where('is_muted', false)
                     ->select('user_id'))
+                // A membership kept from an earlier role never makes a
+                // system administrator a reader of the cohort's talk (D-117).
+                ->where('role', '!=', UserRole::SystemAdmin->value)
                 ->get();
 
             $name = $this->nameOf($author);

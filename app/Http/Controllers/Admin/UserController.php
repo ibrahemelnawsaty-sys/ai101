@@ -210,21 +210,32 @@ final class UserController extends Controller
         $subject = $user;
         $role = $request->role();
 
-        if ($role !== $subject->role && $this->roles->isLastActiveHolder($subject)) {
+        // One transaction, the holders' rows locked before they are counted:
+        // two system administrators demoting each other at the same moment
+        // cannot both pass (BR-32, D-117).
+        $changed = DB::transaction(function () use ($subject, $role, $request): bool {
+            if ($role !== $subject->role && $this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $before = ['role' => $subject->role->value];
+
+            $subject->setAttribute('role', $role->value);
+
+            $this->audit->log('user.role_changed', $subject, $before, [
+                'role' => $role->value,
+                // Without this the row records that a role changed and never why.
+                'reason' => $request->validated('reason'),
+            ]);
+
+            $subject->save();
+
+            return true;
+        });
+
+        if (! $changed) {
             return back()->withErrors(['role' => __('admin.users.last_admin')]);
         }
-
-        $before = ['role' => $subject->role->value];
-
-        $subject->setAttribute('role', $role->value);
-
-        $this->audit->log('user.role_changed', $subject, $before, [
-            'role' => $role->value,
-            // Without this the row records that a role changed and never why.
-            'reason' => $request->validated('reason'),
-        ]);
-
-        $subject->save();
 
         return back()->with('status', __('admin.users.role_changed'));
     }
@@ -262,22 +273,31 @@ final class UserController extends Controller
         $subject = $user;
         $target = $request->target();
 
-        if ($target !== UserStatus::Active && $this->roles->isLastActiveHolder($subject)) {
+        // Locked and counted in the write's own transaction (BR-32, D-117).
+        $changed = DB::transaction(function () use ($subject, $target): bool {
+            if ($target !== UserStatus::Active && $this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $before = ['status' => $subject->status->value];
+
+            $subject->setAttribute('status', $target->value);
+
+            $this->audit->log(
+                action: $target === UserStatus::Active ? 'user.activated' : 'user.suspended',
+                entity: $subject,
+                before: $before,
+                after: ['status' => $target->value],
+            );
+
+            $subject->save();
+
+            return true;
+        });
+
+        if (! $changed) {
             return back()->withErrors(['status' => __('admin.users.last_admin')]);
         }
-
-        $before = ['status' => $subject->status->value];
-
-        $subject->setAttribute('status', $target->value);
-
-        $this->audit->log(
-            action: $target === UserStatus::Active ? 'user.activated' : 'user.suspended',
-            entity: $subject,
-            before: $before,
-            after: ['status' => $target->value],
-        );
-
-        $subject->save();
 
         if ($target !== UserStatus::Active) {
             $this->destroySessionsOf($subject);
@@ -388,18 +408,27 @@ final class UserController extends Controller
     {
         $subject = $user;
 
-        if ($this->roles->isLastActiveHolder($subject)) {
+        // Locked and counted in the write's own transaction (BR-32, D-117).
+        $deleted = DB::transaction(function () use ($subject, $request): bool {
+            if ($this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $this->audit->log('user.deleted', $subject, ['status' => $subject->status->value], [
+                'status' => UserStatus::Deleted->value,
+                'reason' => $request->reason(),
+            ]);
+
+            $subject->setAttribute('status', UserStatus::Deleted->value);
+            $subject->save();
+            $subject->delete();
+
+            return true;
+        });
+
+        if (! $deleted) {
             return back()->withErrors(['status' => __('admin.users.last_admin')]);
         }
-
-        $this->audit->log('user.deleted', $subject, ['status' => $subject->status->value], [
-            'status' => UserStatus::Deleted->value,
-            'reason' => $request->reason(),
-        ]);
-
-        $subject->setAttribute('status', UserStatus::Deleted->value);
-        $subject->save();
-        $subject->delete();
 
         $this->destroySessionsOf($subject);
 
