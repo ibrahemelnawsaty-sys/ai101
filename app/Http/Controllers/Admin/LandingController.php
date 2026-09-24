@@ -75,8 +75,6 @@ final class LandingController extends Controller
                     'preview' => route('admin.landing.preview'),
                     'reset' => route('admin.landing.reset'),
                     'home' => route('home'),
-                    'programs' => route('admin.programs.index'),
-                    'cohorts' => route('admin.cohorts.index'),
                 ],
             ),
             'errorState' => null,

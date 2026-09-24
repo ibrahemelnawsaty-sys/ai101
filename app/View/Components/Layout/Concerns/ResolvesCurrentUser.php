@@ -19,10 +19,11 @@ use Illuminate\Support\Facades\Route;
  * value RoleResolver::shellRole() reduces to for every reachable signed-in
  * request, since only an ACTIVE account ever renders a page at all. Colour
  * never carries this alone: the label text is the role name in Arabic, and
- * the badge variant is only ever one of the platform's four existing brand
- * pairs, never a new colour (D-108, art. 18).
+ * the badge variant is only ever one of the platform's existing brand pairs
+ * — five since D-117 gave the system administrator its own, from the violet
+ * scale in tokens.css — never a new colour (D-108, art. 18).
  *
- * @see D-108 · CONSTITUTION Art. 6, Art. 18
+ * @see D-108, D-117 · CONSTITUTION Art. 6, Art. 18
  */
 trait ResolvesCurrentUser
 {

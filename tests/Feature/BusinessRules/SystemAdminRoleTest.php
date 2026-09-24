@@ -420,3 +420,18 @@ it('D-117: أمر تغيير الدور يسجّل في سجل التدقيق ق
             'via' => 'console',
         ]);
 });
+
+it('D-117: صفحة الرفض تقترح على مدير النظام شاشاته هو لا جدول المتدرب ورسائله', function (): void {
+    $page = $this->actingAs($this->sysadmin)->get(route('admin.dashboard'))->assertForbidden()->getContent();
+
+    expect($page)->toContain('href="'.route('admin.users.index').'"')
+        ->and($page)->toContain('href="'.route('admin.landing.edit').'"')
+        ->and($page)->not->toContain('href="'.route('schedule').'"')
+        ->and($page)->not->toContain('href="'.route('messages.index').'"');
+
+    // Everyone else keeps the list they had.
+    $refused = $this->actingAs($this->participant)->get(route('admin.dashboard'))->assertForbidden()->getContent();
+
+    expect($refused)->toContain('href="'.route('schedule').'"')
+        ->and($refused)->not->toContain('href="'.route('admin.users.index').'"');
+});

@@ -1422,9 +1422,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   display: inline-flex;
   align-items: center;
   gap: var(--s1);
-  margin-block-start: var(--s2);
+  margin-block: var(--s2) 0;
   font-size: var(--fs-xs);
-  color: var(--text-accent);
+  color: var(--text-muted);
 }
 .le__results-note { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); }
 

@@ -195,8 +195,8 @@ return [
         'invited' => 'The account was created and the invitation was sent to their address.',
         'invitation_resent' => 'The invitation was sent again, and the earlier link no longer works.',
         'no_cohort_title' => 'No cohort yet',
-        'no_cohort_body' => 'A trainee is seated in a cohort, and none has been created yet. Create one first, then come back to this screen.',
-        'no_cohort_action' => 'Create a cohort',
+        // D-117 — cohorts are the general supervisor's, so the text points to them, not to a closed screen.
+        'no_cohort_body' => 'A trainee is seated in a cohort, and none has been created yet. The general supervisor creates cohorts on the Cohorts screen; ask them to create one, then come back to this screen.',
 
         /* Bulk import (D-63). */
         'import' => [
@@ -414,7 +414,7 @@ return [
         'about_body' => 'Text of the about section',
         'faq_empty_title' => 'No frequently asked questions yet',
         'faq_empty_body' => 'Add at least eight questions — they are the most read part of the page before someone registers.',
-        'no_cohort' => 'No cohort has been published for this programme yet, so no seats and no countdown are shown to visitors. Create a cohort first.',
+        'no_cohort' => 'No cohort has been published for this programme yet, so no seats and no countdown are shown to visitors. The general supervisor creates cohorts on the Cohorts screen; these settings can be saved after that.',
         'countdown_enabled' => 'Show the countdown',
         'faq' => 'Frequently asked questions',
         'faq_add' => 'Add a question',
@@ -460,8 +460,8 @@ return [
         'faq_number' => 'Question :n',
         'faq_hint' => 'Every question with an answer is shown to visitors, in the order you see here. Eight or more is recommended.',
         'no_cohort_title' => 'No cohort is published yet',
-        'no_cohort_body' => 'Registration, seats and the FAQ belong to a cohort, and none is published now. The texts in every other section stay editable.',
-        'no_cohort_action' => 'Open cohorts',
+        'no_cohort_body' => 'Seats, the countdown and the FAQ belong to a cohort, and none is published now; the general supervisor creates it on the Cohorts screen. The texts in every other section stay editable.',
+        'no_cohort_action' => 'See the page as a visitor does',
         'loading_label' => 'Preparing the landing page editor',
         'noscript' => 'The landing page editor needs JavaScript. Turn it on in your browser and reload the page.',
 
@@ -531,8 +531,8 @@ return [
         ],
 
         'source' => [
-            'programs' => 'The cards in this section come from the programme and are edited on the programmes screen.',
-            'cohorts' => 'This section comes from the cohort schedule and its trainers, edited on the cohorts screen.',
+            'programs' => 'The cards in this section come from the programme; the general supervisor edits them on the Programmes screen.',
+            'cohorts' => 'This section comes from the cohort schedule and its trainers; the general supervisor edits it on the Cohorts screen.',
         ],
 
         'groups' => [
