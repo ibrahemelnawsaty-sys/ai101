@@ -70,13 +70,10 @@ DirectoryIndex index.php
     Header always set X-Content-Type-Options "nosniff"
 
     # --- Clickjacking -------------------------------------------------------
-    # NOT SET HERE. App\Http\Middleware\SecurityHeaders sends it on every
-    # response: DENY everywhere, SAMEORIGIN on the one response the platform
-    # frames itself — the landing editor's live preview (D-114). "Header always
-    # set" REPLACES the application's header, so leaving this line active blocks
-    # that preview: the editor then shows an empty frame. That is exactly what
-    # happened in production on 24 September 2026.
-    # Header always set X-Frame-Options "DENY"
+    # The platform is never embedded in any frame — not even its own: the
+    # landing editor's live preview writes the page into its frame through
+    # srcdoc and loads no URL, so it needs no exception (D-114).
+    Header always set X-Frame-Options "DENY"
 
     # --- Referrer -----------------------------------------------------------
     # Certificate and card verification URLs contain a verification code; it
@@ -109,12 +106,14 @@ DirectoryIndex index.php
     # No external script, style, font or image origin is allowed: fonts are
     # self-hosted (Article 19) and there is no third-party analytics.
     #
-    # NOT SET HERE, for the same reason as X-Frame-Options above: the
-    # application sends the policy itself, with a per-request script nonce and
-    # with frame-ancestors 'self' on the landing editor's preview only (D-114).
-    # This line would replace that policy on every response. Kept, commented,
-    # as the record of what the application's policy must at least contain.
-    # Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+    # KEEP THIS LINE ACTIVE. On Hostinger, "Force HTTPS" in hPanel writes
+    #   Header always set Content-Security-Policy "upgrade-insecure-requests;"
+    # into the PARENT domain's .htaccess, and that directive reaches this
+    # subdirectory too, replacing the application's own policy on every
+    # response. This line runs after it and puts the full policy back. With it
+    # disabled, production was served "upgrade-insecure-requests" and nothing
+    # else (24 September 2026, D-114).
+    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
 
     # --- Never cache an authenticated HTML response ------------------------
     # Hashed Vite assets under /build/ are exempted further down.
