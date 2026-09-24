@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models;
+use App\Services\Landing\LandingCatalog;
+use App\Services\Landing\LandingContentLoader;
+use App\Services\Landing\LandingOverrides;
 use App\Services\Time\Clock;
 use App\Support\ConfiguredUrlGenerator;
 use App\View\Components\Ui\SwitchControl;
 use App\View\Composers\AppLayoutComposer;
 use App\View\Composers\PublicLayoutComposer;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
@@ -53,6 +57,14 @@ final class AppServiceProvider extends ServiceProvider
                 $app['config']['app.asset_url'],
             );
         });
+
+        // BR-31 / D-114: the landing page's published copy is laid over
+        // lang/*/landing.php when the group loads, so every __('landing.*')
+        // on the public pages prints the centre's words without a call site
+        // changing. One read of the table per request, at most.
+        $this->app->scoped(LandingOverrides::class);
+        $this->app->singleton(LandingCatalog::class);
+        $this->app->extend('translation.loader', static fn (Loader $loader, $app): Loader => new LandingContentLoader($loader, $app));
     }
 
     public function boot(): void

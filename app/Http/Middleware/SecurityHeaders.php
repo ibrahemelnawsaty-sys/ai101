@@ -26,6 +26,13 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * HSTS is emitted only over HTTPS, so local HTTP development is not poisoned.
  *
+ * FRAMING
+ * Nothing may be framed, with one exception: a response whose controller set
+ * the request attribute `athar.frameable` may be framed by a page of the SAME
+ * origin. Only the admin's live preview of the landing page sets it (D-114),
+ * so the landing editor can show the real page beside its fields; every other
+ * response keeps `DENY` and `frame-ancestors 'none'`.
+ *
  * @see PRD §12.3 · CONSTITUTION Art. 24
  */
 final class SecurityHeaders
@@ -44,12 +51,14 @@ final class SecurityHeaders
 
         $headers = $response->headers;
 
+        $frameable = $request->attributes->get('athar.frameable') === true;
+
         if (! $headers->has('Content-Security-Policy')) {
-            $headers->set('Content-Security-Policy', $this->policy($nonce));
+            $headers->set('Content-Security-Policy', $this->policy($nonce, $frameable));
         }
 
         $headers->set('X-Content-Type-Options', 'nosniff');
-        $headers->set('X-Frame-Options', 'DENY');
+        $headers->set('X-Frame-Options', $frameable ? 'SAMEORIGIN' : 'DENY');
         $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $headers->set('X-Permitted-Cross-Domain-Policies', 'none');
         $headers->set('Cross-Origin-Opener-Policy', 'same-origin');
@@ -65,13 +74,13 @@ final class SecurityHeaders
         return $response;
     }
 
-    private function policy(string $nonce): string
+    private function policy(string $nonce, bool $frameable = false): string
     {
         $directives = [
             "default-src 'self'",
             "base-uri 'self'",
             "object-src 'none'",
-            "frame-ancestors 'none'",
+            $frameable ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             "form-action 'self'",
             "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline'",

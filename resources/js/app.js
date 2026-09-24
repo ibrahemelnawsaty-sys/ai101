@@ -35,8 +35,12 @@ import './ui.js';
 const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 const mqFine = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-/** Reduced motion is re-read on every call so an OS-level change takes effect. */
-export const reduced = () => mqReduce.matches;
+/**
+ * Reduced motion is re-read on every call so an OS-level change takes effect.
+ * `data-still` on <html> asks for the same settled page: the landing editor's
+ * live preview sets it so a re-render never replays the entrance (D-114).
+ */
+export const reduced = () => mqReduce.matches || document.documentElement.hasAttribute('data-still');
 /** True only for a precise pointer — every tilt/magnet effect is gated on it. */
 export const finePointer = () => mqFine.matches;
 

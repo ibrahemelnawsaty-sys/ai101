@@ -38,7 +38,21 @@ final class HomeController extends Controller
 
     public function index(RiyadhFormatter $formatter): View
     {
-        $cohort = $this->featuredCohort();
+        return $this->render($this->featuredCohort(), $formatter);
+    }
+
+    /**
+     * The page for one cohort.
+     *
+     * Public so the admin's live preview renders THIS method rather than a
+     * second copy of it (D-114): the editor's draft is laid on the cohort's
+     * relations and on the translator before it is called, and the page it
+     * returns is byte for byte what a visitor would get with that draft
+     * published. `$preview` only swaps the script bundle for one that keeps
+     * the frame on the page, stills the motion and asks robots to stay out.
+     */
+    public function render(?Cohort $cohort, RiyadhFormatter $formatter, bool $preview = false): View
+    {
         $facts = $this->cohortFacts($cohort);
         $landing = $this->landingContent($cohort, $formatter);
 
@@ -63,7 +77,34 @@ final class HomeController extends Controller
             'cohort' => $facts,
             'serverNowIso' => Clock::now()->toIso8601String(),
             'copyrightYear' => Clock::riyadh()->year,
+            'landingPreview' => $preview,
+            'noIndex' => $preview ? true : null,
         ]);
+    }
+
+    /** A string with something in it, trimmed; null otherwise. */
+    private function filled(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    /**
+     * A block of text split into paragraphs on blank lines.
+     *
+     * @return list<string>
+     */
+    private function paragraphs(mixed $value): array
+    {
+        $text = $this->filled($value);
+
+        if ($text === null) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', preg_split('/\R\s*\R/u', $text) ?: []),
+            static fn (string $paragraph): bool => $paragraph !== '',
+        ));
     }
 
     /**
@@ -98,7 +139,7 @@ final class HomeController extends Controller
      * centre has published none, which the template renders as its own empty
      * state (Art. 17).
      */
-    private function featuredCohort(): ?Cohort
+    public function featuredCohort(): ?Cohort
     {
         return Cohort::featured(static fn ($query) => $query
             ->with(['program', 'landingSetting', 'weeks' => static fn ($weeks) => $weeks->withCount('sessions')->orderBy('index')])
@@ -122,7 +163,11 @@ final class HomeController extends Controller
         return [
             'hero' => [
                 'eyebrow' => $program?->getAttribute('name_ar'),
-                'title_lead' => $program?->getAttribute('name_ar'),
+                // The headline the centre wrote for this cohort in the landing
+                // editor, else the programme's name. The column was saved from
+                // the admin screen and read by nothing, so the field the editor
+                // filled in changed no pixel of the page (D-114).
+                'title_lead' => $this->filled($setting?->getAttribute('hero_title')) ?? $program?->getAttribute('name_ar'),
                 'title_gradient' => $program?->getAttribute('name_en'),
                 'subtitle' => $setting?->getAttribute('hero_text') ?? $program?->getAttribute('description'),
                 'chips' => $this->heroChips($cohort, $weeks),
@@ -132,7 +177,11 @@ final class HomeController extends Controller
             'about' => [
                 'kicker' => __('landing.headings.about.kicker'),
                 'title' => $program?->getAttribute('name_ar'),
-                'paragraphs' => array_filter([$program?->getAttribute('description')]),
+                // The centre's own about text when it wrote one — one paragraph
+                // per blank line — else the programme's description. Like the
+                // headline above, `about_body` was saved and never read (D-114).
+                'paragraphs' => $this->paragraphs($setting?->getAttribute('about_body'))
+                    ?: array_filter([$program?->getAttribute('description')]),
                 // PRD §9.1.1 asks this section for an image, and the programme
                 // already has one: `programs.banner_url` is read and rendered by
                 // the public directory. The landing page never read it, so the

@@ -263,9 +263,8 @@ function authorizationMatrix(object $test): array
 
         'admin.landing.edit' => ['get', [], ['admin']],
         'admin.landing.update' => ['put', [], ['admin']],
-        'admin.landing.faq.store' => ['post', [], ['admin']],
-        'admin.landing.faq.update' => ['put', ['entry' => 'faq-one'], ['admin']],
-        'admin.landing.faq.destroy' => ['delete', ['entry' => 'faq-one'], ['admin']],
+        'admin.landing.preview' => ['post', [], ['admin']],
+        'admin.landing.reset' => ['delete', [], ['admin']],
 
         'admin.reports.index' => ['get', [], ['admin']],
         'admin.reports.export' => ['get', [], ['admin']],

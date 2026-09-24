@@ -15,6 +15,7 @@ use App\Models\DigitalCard;
 use App\Models\Enrollment;
 use App\Models\Evaluation;
 use App\Models\FinalProject;
+use App\Models\LandingContent;
 use App\Models\LandingSetting;
 use App\Models\Message;
 use App\Models\Notification;
@@ -37,6 +38,7 @@ use App\Policies\DigitalCardPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\EvaluationPolicy;
 use App\Policies\FinalProjectPolicy;
+use App\Policies\LandingContentPolicy;
 use App\Policies\LandingSettingPolicy;
 use App\Policies\MessagePolicy;
 use App\Policies\NotificationPolicy;
@@ -93,6 +95,7 @@ final class AuthServiceProvider extends ServiceProvider
         Notification::class => NotificationPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
         LandingSetting::class => LandingSettingPolicy::class,
+        LandingContent::class => LandingContentPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Broadcast::class => BroadcastPolicy::class,
     ];

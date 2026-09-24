@@ -289,7 +289,7 @@
      half-built site. Admins see the empty state in the landing editor instead
      (BR-31), which is where it belongs. --}}
 @if (filled(data_get($landing, 'trust', [])))
-    <section class="trust">
+    <section class="trust" id="trust">
         <div class="wrap">
             <div class="trust__grid">
                 @foreach (data_get($landing, 'trust', []) as $stat)
@@ -643,7 +643,7 @@
              pass_score, min_attendance_rate and the score totals (BR-11, BR-26).
              Indicative preview for the visitor; the binding calculation runs server-side only.
              ------------------------------------------------------ --}}
-        <div class="sec__hd sec__hd--center sec__hd--sim rv">
+        <div class="sec__hd sec__hd--center sec__hd--sim rv" id="sim-intro">
             <span class="kicker"><svg aria-hidden="true"><use href="#i-chevup"/></svg> {{ __('landing.sim.kicker') }}</span>
             <h2 class="h2--display"><span class="hl">{{ __('landing.sim.title') }}</span></h2>
             <p class="lead">{{ __('landing.sim.lead') }}</p>
@@ -901,7 +901,7 @@
      Final call to action
      $landing['final'] = eyebrow, title, body
      ============================================================ --}}
-<section class="sec sec--final">
+<section class="sec sec--final" id="final">
     <div class="wrap">
         <div class="final rv">
             <div class="final__in">

@@ -19,7 +19,11 @@
 <!DOCTYPE html>
 {{-- data-server-now anchors every countdown to Clock::now(); the browser
      clock is never trusted (BR-07, Article 11). --}}
-<html lang="ar" dir="rtl" data-server-now="{{ \App\Services\Time\Clock::now()->toIso8601ZuluString() }}">
+{{-- $locale and $direction are shared by SetLocaleAndDirection: Arabic, RTL,
+     except inside the admin's live preview of the English copy (D-114).
+     data-still is that preview's flag: the page is shown settled, every
+     reveal and count already at its end, as reduced motion shows it. --}}
+<html lang="{{ $locale ?? 'ar' }}" dir="{{ $direction ?? 'rtl' }}" data-server-now="{{ \App\Services\Time\Clock::now()->toIso8601ZuluString() }}" @if ($landingPreview ?? false) data-still data-preview @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -52,11 +56,17 @@
     <link rel="icon" href="{{ asset('brand/icons/favicon-32.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" href="{{ asset('brand/icons/icon-180.png') }}">
 
-    @vite(['resources/css/app.css', 'resources/css/public.css', 'resources/js/public.js'])
+    {{-- The live preview (D-114) ships the same bundle plus the few lines that
+         keep its frame on the page; visitors never download them. --}}
+    @vite(['resources/css/app.css', 'resources/css/public.css', ($landingPreview ?? false) ? 'resources/js/landing-preview.js' : 'resources/js/public.js'])
 
     {{-- Structured data is built in PHP and encoded, so no user string is ever
          written into the script element unescaped (Article 24). --}}
-    <script type="application/ld+json">{!! json_encode($graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    {{-- JSON_HEX_TAG writes < and > as \u003C and \u003E: the graph carries
+         texts the centre edits (the site name and the hero sentence, D-114),
+         and without it a "</script>" typed into either closed this element and
+         ran whatever followed on every visitor's page. --}}
+    <script type="application/ld+json">{!! json_encode($graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
 
     @stack('head')
 </head>
