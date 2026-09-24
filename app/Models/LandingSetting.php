@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * countdown switch and the registration switch. All of it is managed from the
  * admin panel and never written in code (BR-31).
  *
- * @see BR-31, BR-36 · PRD §7.6, §9.1 · PROJECT-CONTRACT §4
+ * @see BR-31, BR-36 · PRD §7.6, §9.1 · PROJECT-CONTRACT §4 · D-117
  */
 class LandingSetting extends Model
 {
@@ -98,15 +98,16 @@ class LandingSetting extends Model
     }
 
     /**
-     * Only an administrator manages landing content. Anyone else gets an empty set,
-     * failing closed rather than open (Constitution, Article 7).
+     * Only the system administrator manages landing content (D-117). Anyone
+     * else — the general supervisor included — gets an empty set, failing
+     * closed rather than open (Constitution, Article 7).
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin()) {
+        if ($user->isSystemAdmin()) {
             return $query;
         }
 

@@ -38,7 +38,8 @@ use Illuminate\Support\Facades\Validator;
  * belongs to the operator, who is at the server, and the resend path refuses
  * a verified account anyway.
  *
- * ADMINS AND TRAINERS ONLY. A trainee made here belonged to no cohort, and the
+ * SUPERVISORS, SYSTEM ADMINISTRATORS AND TRAINERS ONLY (D-117 added the second).
+ * A trainee made here belonged to no cohort, and the
  * command then told the operator to "create the enrolment from the admin panel"
  * — a screen that does not exist: the panel seats only accounts it creates
  * itself, and refuses this address and mobile as taken (D-63, D-69). Trainees
@@ -46,7 +47,7 @@ use Illuminate\Support\Facades\Validator;
  * account, seat it and send the invitation in one step.
  *
  * @see BR-31, BR-36 · PRD §9.2.1, §4.2 · CONSTITUTION art. 5, art. 6, art. 8
- * @see D-11 (registration mechanism, open) · D-63, D-69
+ * @see D-11 (registration mechanism, open) · D-63, D-69, D-117
  */
 final class MakeUser extends Command
 {
@@ -54,7 +55,7 @@ final class MakeUser extends Command
 
     /** @var string */
     protected $signature = 'athar:make-user
-        {--role= : admin or trainer. Trainees are added from the admin panel}
+        {--role= : admin (general supervisor), system_admin or trainer. Trainees are invited from the accounts screen}
         {--email= : Login address}
         {--password= : Omit to be prompted without echo, which is preferred}
         {--phone= : Saudi mobile, 05XXXXXXXX or 9665XXXXXXXX}
@@ -69,7 +70,7 @@ final class MakeUser extends Command
         {--family-en= : Family name, Latin}';
 
     /** @var string */
-    protected $description = 'Create an admin or trainer account. Needed on a fresh deploy, where no account exists.';
+    protected $description = 'Create a general supervisor, system administrator or trainer account. Needed on a fresh deploy, where no account exists.';
 
     public function handle(AuditLogger $audit): int
     {
@@ -178,7 +179,7 @@ final class MakeUser extends Command
         // Refused BEFORE anything is asked or written.
         if ($role === UserRole::Participant) {
             $this->error('Trainees are not created from the console: an account made here belongs to no cohort.');
-            $this->line('Add them in the admin panel, which seats each one in the cohort you pick and sends the invitation:');
+            $this->line('The system administrator adds them from the accounts screen, which seats each one in the cohort picked and sends the invitation:');
             $this->line('  one person: '.route('admin.users.create'));
             $this->line('  a list:     '.route('admin.users.import'));
 
@@ -189,13 +190,15 @@ final class MakeUser extends Command
     }
 
     /**
-     * The roles this command may create.
+     * The roles this command may create. The system administrator is one of
+     * them since D-117: on a fresh deploy nobody can reach the accounts screen
+     * until one exists, exactly the locked door this command was written for.
      *
      * @return list<string>
      */
     private function consoleRoles(): array
     {
-        return [UserRole::Admin->value, UserRole::Trainer->value];
+        return [UserRole::Admin->value, UserRole::SystemAdmin->value, UserRole::Trainer->value];
     }
 
     /**

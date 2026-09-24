@@ -35,6 +35,8 @@ return [
         'trainer' => 'Trainer tools',
         'coordinator' => 'Coordinator tools',
         'admin' => 'Platform administration',
+        // D-117 — the system administrator's one group: accounts, landing page.
+        'system' => 'System administration',
     ],
 
     'dashboard' => 'Info dashboard',

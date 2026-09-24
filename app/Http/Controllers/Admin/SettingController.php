@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateNotificationDefaultsRequest;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
-use App\Models\LandingSetting;
 use App\Presenters\Admin\GeneralSettings;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Contracts\View\View;
@@ -26,7 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  * The display timezone is fixed at Asia/Riyadh by CONSTITUTION Art. 11 and is
  * likewise shown rather than offered.
  *
- * @see BR-36 · PRD §9.18 · CONSTITUTION Art. 11, Art. 6
+ * @see BR-36 · PRD §9.18 · CONSTITUTION Art. 11, Art. 6 · D-117
  */
 final class SettingController extends Controller
 {
@@ -34,7 +33,7 @@ final class SettingController extends Controller
 
     public function edit(): View
     {
-        $this->authorize('update', new LandingSetting);
+        $this->authorize('console.settings');
 
         return view('admin.settings', [
             'contextLabel' => null,
@@ -89,7 +88,7 @@ final class SettingController extends Controller
      */
     public function template(string $template): View
     {
-        $this->authorize('update', new LandingSetting);
+        $this->authorize('console.settings');
 
         $body = __('emails.'.$template);
 

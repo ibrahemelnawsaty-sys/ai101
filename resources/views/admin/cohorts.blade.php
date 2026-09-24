@@ -6,12 +6,16 @@
     are the two numbers BR-26 reads when it decides certificate eligibility, so
     they are edited here and nowhere else.
 
+    Seating an EXISTING participant account in a cohort lives here too since
+    D-117: the account page it used to sit on became the system
+    administrator's, and the seating stayed with the supervisor.
+
     Times are entered and displayed in Riyadh time and stored in UTC by the
     server; this template never converts anything itself.
 
     Four states: error · loading skeleton shaped like the table · empty · normal.
 
-    @see PRD §9.18, §7.2 · BR-07, BR-26, BR-27, BR-31
+    @see PRD §9.18, §7.2 · BR-07, BR-26, BR-27, BR-31 · D-84, D-117
 --}}
 @extends('layouts.app')
 
@@ -119,6 +123,8 @@
                                             :href="route('admin.cohorts.index', array_merge(request()->query(), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', array_merge(request()->query(), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
+                                        <x-ui.button variant="secondary" size="sm"
+                                            :href="route('admin.cohorts.index', array_merge(request()->query(), ['participants' => $cohort->id]))">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
                                     </td>
                                 </tr>
                             @endforeach
@@ -189,6 +195,30 @@
                         <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('edit'))">{{ __('app.cancel') }}</x-ui.button>
+                    </div>
+                </form>
+            </x-ui.card>
+        @endif
+
+        {{-- Seating an existing participant (D-84; moved here from the account page by D-117) --}}
+        @if ($seating)
+            <x-ui.card class="dc--span u-mt-4" icon="user"
+                :title="__('admin.cohorts.add_participant')">
+
+                <p><b>{{ $seating->name }}</b> · {{ $seating->programName }}</p>
+
+                <form method="POST" action="{{ route('admin.cohorts.participants.attach', $seating->id) }}">
+                    @csrf
+
+                    <x-ui.input name="email" type="email" dir="ltr" required
+                        :label="__('admin.cohorts.participant_email')"
+                        :hint="__('admin.cohorts.participant_email_hint')"
+                        :value="old('email')" />
+
+                    <div class="row__acts">
+                        <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
+                        <x-ui.button variant="ghost"
+                            :href="route('admin.cohorts.index', request()->except('participants'))">{{ __('app.close') }}</x-ui.button>
                     </div>
                 </form>
             </x-ui.card>

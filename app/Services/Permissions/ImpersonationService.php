@@ -20,16 +20,17 @@ use Illuminate\Support\Facades\DB;
  * Starting and ending an account preview.
  *
  * The preview is the strongest permission on the platform, so every rule is
- * re-checked here even though the Policy already checked it: an admin may not
- * preview another admin (BR-35), a preview lasts at most 30 minutes, and both
- * its start and its end are written to the audit log before they take effect.
+ * re-checked here even though the Policy already checked it: only the system
+ * administrator previews, never another system administrator (BR-35, D-117),
+ * a preview lasts at most 30 minutes, and both its start and its end are
+ * written to the audit log before they take effect.
  *
  * Nothing here touches the previewed user's own traces — no last-login stamp,
  * no read markers, no counters (BR-34). `ImpersonationContext::begin()` runs
  * *before* the auth swap precisely so that any login listener can see that a
  * preview is in progress and stand down.
  *
- * @see BR-27, BR-33, BR-34, BR-35 · PRD §4.5 · CONSTITUTION Art. 23
+ * @see BR-27, BR-33, BR-34, BR-35 · PRD §4.5 · CONSTITUTION Art. 23 · D-117
  */
 final class ImpersonationService
 {
@@ -165,9 +166,15 @@ final class ImpersonationService
         return $this->stop();
     }
 
+    /**
+     * D-117: the system administrator previews, nobody else. Any account may be
+     * previewed, a general supervisor's included — the owner chose that — but
+     * never another system administrator's (BR-35), never one's own and never
+     * a deleted one.
+     */
     public function canPreview(User $admin, User $target): bool
     {
-        if (! $this->roles->isAdmin($admin) || ! $this->roles->isActive($admin)) {
+        if (! $this->roles->isSystemAdmin($admin) || ! $this->roles->isActive($admin)) {
             return false;
         }
 
@@ -175,8 +182,8 @@ final class ImpersonationService
             return false;
         }
 
-        // BR-35: an admin account is never previewable.
-        if ($target->role === UserRole::Admin) {
+        // BR-35: a system administrator's account is never previewable.
+        if ($target->role === UserRole::SystemAdmin) {
             return false;
         }
 

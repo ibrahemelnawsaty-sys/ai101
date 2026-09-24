@@ -55,7 +55,9 @@ final class DashboardController extends Controller
 
     public function __invoke(): View
     {
-        $this->authorize('viewAny', User::class);
+        // Its own ability since D-117: it borrowed `viewAny` on accounts,
+        // which moved to the system administrator.
+        $this->authorize('console.view');
 
         $cohort = $this->currentCohort();
 

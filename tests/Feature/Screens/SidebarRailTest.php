@@ -32,7 +32,7 @@ function railRouteNames(): array
 
     $names = [];
 
-    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups'] as $method) {
+    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups', 'systemAdminGroups'] as $method) {
         $reflection = new ReflectionMethod(Sidebar::class, $method);
         $reflection->setAccessible(true);
 
@@ -87,13 +87,23 @@ it('D-30: المدير يرى وجهات الإدارة لا قائمة المت
 
     expect($hrefs)->toContain(route('admin.programs.index'))
         ->and($hrefs)->toContain(route('admin.cohorts.index'))
-        ->and($hrefs)->toContain(route('admin.users.index'))
         ->and($hrefs)->toContain(route('admin.certificates.index'))
         ->and($hrefs)->toContain(route('admin.audit.index'))
         ->and($hrefs)->toContain(route('admin.settings.edit'))
+        // D-117 — the accounts and the landing page left the supervisor.
+        ->and($hrefs)->not->toContain(route('admin.users.index'))
+        ->and($hrefs)->not->toContain(route('admin.landing.edit'))
         // The exact symptom that was reported: the participant rail served to
         // an administrator.
         ->and($hrefs)->not->toContain(route('participant.journey'));
+});
+
+it('D-117: مدير النظام يرى المستخدمين وصفحة الهبوط وحدهما', function (): void {
+    $hrefs = railHrefsFor(makeSystemAdmin());
+
+    // Exactly the two, in this order — and never the participant rail the
+    // role would have fallen through to without a shell of its own.
+    expect($hrefs)->toBe([route('admin.users.index'), route('admin.landing.edit')]);
 });
 
 it('D-30: المدرّب يرى وجهات المدرّب', function (): void {
@@ -159,7 +169,7 @@ it('المادة 16: كل أيقونة تذكرها القائمة موجودة 
 
     $missing = [];
 
-    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups'] as $method) {
+    foreach (['participantGroups', 'trainerGroups', 'coordinatorGroups', 'adminGroups', 'systemAdminGroups'] as $method) {
         $reflection = new ReflectionMethod(Sidebar::class, $method);
         $reflection->setAccessible(true);
 

@@ -6,7 +6,6 @@ namespace App\Presenters\Admin;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use App\Models\AuditLog;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
@@ -27,7 +26,10 @@ use Illuminate\Support\Facades\Gate;
  * `toggleStatusValue` is the value the suspend/activate form posts, decided
  * here rather than in the template, so the screen cannot invent a third state.
  *
- * @see BR-28, BR-29, BR-32, BR-33, BR-35 · PRD §4.4, §4.5, §9.18
+ * Since D-117 this is the system administrator's page: the account's own audit
+ * trail (IP addresses) and the cohort seating control left it.
+ *
+ * @see BR-28, BR-29, BR-32, BR-33, BR-35 · PRD §4.4, §4.5, §9.18 · D-117
  */
 final class UserProfile extends ViewModel
 {
@@ -36,13 +38,11 @@ final class UserProfile extends ViewModel
 
     /**
      * @param  Collection<int, Enrollment>  $enrollments
-     * @param  Collection<int, AuditLog>  $auditEntries
      */
     public static function from(
         User $subject,
         User $viewer,
         Collection $enrollments,
-        Collection $auditEntries,
     ): self {
         $profile = self::related($subject, 'profile');
 
@@ -75,11 +75,12 @@ final class UserProfile extends ViewModel
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
 
             'isSelf' => $viewer->is($subject),
-            // Only a trainer or an administrator can be given a cohort from
-            // the cohorts screen. A participant is seated when the account is
-            // created, and pointing their empty state at that screen sent the
-            // administrator to look for a control that is not there (D-69).
-            'attachesFromCohorts' => in_array($role?->value, ['trainer', 'admin'], true),
+            // Staff are given a cohort from the cohorts screen by e-mail; a
+            // participant created without one is seated there too since
+            // D-117. Both are the supervisor's to do, so the empty state names
+            // who does it rather than linking to a screen the system
+            // administrator reading it cannot open (D-69, D-117).
+            'attachesFromCohorts' => in_array($role?->value, ['trainer', 'coordinator', 'admin'], true),
             'isSuspended' => $isSuspended,
             'toggleStatusValue' => $isSuspended ? UserStatus::Active->value : UserStatus::Suspended->value,
 
@@ -87,13 +88,9 @@ final class UserProfile extends ViewModel
             'canChangeRole' => $gate->allows('changeRole', $subject),
             'canChangeStatus' => $gate->allows('suspend', $subject),
             'canBePreviewed' => $gate->allows('preview', $subject),
-            'canEnroll' => $gate->allows('enroll', $subject),
 
             'enrollments' => $enrollments->map(
                 static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row),
-            )->values(),
-            'auditEntries' => $auditEntries->map(
-                static fn (AuditLog $row): AuditEntry => AuditEntry::from($row),
             )->values(),
         ]);
     }

@@ -52,13 +52,13 @@ App\Console\Commands\*   أوامر artisan والبوابات
 
 | Enum | القيم |
 |---|---|
-| `UserRole` | `admin` · `trainer` · `participant` |
+| `UserRole` | `admin` (المشرف العام) · `system_admin` (مدير النظام) · `trainer` · `coordinator` · `participant` — `coordinator` من `D-105`، والانقسام من `D-117`: «مدير النظام» في وثيقة المتطلبات هو `admin` في كل شيء إلا الحسابات ومعاينتها وصفحة الهبوط، فهذه لـ`system_admin` وحده |
 | `UserStatus` | `pending` · `active` · `suspended` · `deleted` |
 | `Gender` | `male` · `female` |
 | `ProgramStatus` | `draft` · `published` · `archived` |
 | `CohortStatus` | `upcoming` · `open` · `running` · `completed` |
 | `EnrollmentStatus` | `pending` · `active` · `withdrawn` · `completed` |
-| `EnrollmentRole` | `participant` · `trainer` |
+| `EnrollmentRole` | `participant` · `trainer` · `coordinator` (`D-105`) |
 | `SessionType` | `intro` · `training` · `project` · `closing` |
 | `SessionStatus` | `scheduled` · `live` · `completed` · `cancelled` |
 | `AttendanceStatus` | `present` · `late` · `absent` · `excused` · `incomplete` |
@@ -272,28 +272,31 @@ final class CertificateEligibility
 | `GET /verify/{token}` | `card.verify` | — |
 | `GET /certificate/verify/{code}` | `certificate.verify` | — |
 | `GET /terms` · `/privacy` | `terms` · `privacy` | — |
-| `GET /dashboard` | `dashboard` | `auth` · `verified` |
-| `POST /dashboard/cohort` | `cohort.switch` | `auth` · `verified` |
+| `GET /dashboard` | `dashboard` | `auth` · `verified` — يوجّه `system_admin` إلى `admin.users.index` (`D-117`) |
+| `POST /dashboard/cohort` | `cohort.switch` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `GET /dashboard/card` | `participant.card` | `auth` · `role:participant` |
 | `GET /dashboard/journey` | `participant.journey` | `auth` · `role:participant` |
-| `GET /dashboard/schedule` | `schedule` | `auth` |
-| `GET /dashboard/attendance` | `attendance.index` | `auth` |
+| `GET /dashboard/schedule` | `schedule` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/attendance` | `attendance.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `POST /dashboard/attendance/{session}/check-in` | `attendance.checkIn` | `auth` · `role:participant` · `not.impersonating` · `throttle:attendance` |
 | `POST /dashboard/attendance/{session}/check-out` | `attendance.checkOut` | نفسه |
-| `GET /dashboard/live` | `live` | `auth` |
-| `GET /dashboard/assignments` | `assignments.index` | `auth` |
-| `GET /dashboard/assignments/{assignment}` | `assignments.show` | `auth` |
+| `GET /dashboard/live` | `live` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/assignments` | `assignments.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/assignments/{assignment}` | `assignments.show` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `POST /dashboard/assignments/{assignment}/submit` | `assignments.submit` | `auth` · `role:participant` · `not.impersonating` |
-| `GET /dashboard/resources` | `resources.index` | `auth` |
-| `GET /dashboard/messages` | `messages.index` | `auth` |
+| `GET /dashboard/resources` | `resources.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/messages` | `messages.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
 | `GET /dashboard/certificate` | `certificate` | `auth` · `role:participant` |
 | `GET /dashboard/profile` | `profile` | `auth` |
 | `GET /dashboard/notifications` | `notifications` | `auth` |
 | `/trainer/*` | `trainer.*` | `auth` · `role:trainer,admin` · `cohort.scope` |
-| `/admin/*` | `admin.*` | `auth` · `role:admin` |
-| `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:admin` · `not.impersonating` |
+| `/admin/*` | `admin.*` | `auth` · `role:admin` — عدا الثلاثة التالية (`D-117`) |
+| `/admin/users*` | `admin.users.*` | `auth` · `role:system_admin` (`D-117`) — `admin.users.export` يرفضه `UserPolicy::export()` للجميع |
+| `/admin/landing*` | `admin.landing.*` | `auth` · `role:system_admin` (`D-117`) |
+| `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
+| `POST /admin/cohorts/{cohort}/participants` | `admin.cohorts.participants.attach` | `auth` · `role:admin` · `not.impersonating` (`D-84` · `D-117`) |
 | `DELETE /admin/impersonation` | `admin.impersonation.stop` | `auth` |
 
 ---

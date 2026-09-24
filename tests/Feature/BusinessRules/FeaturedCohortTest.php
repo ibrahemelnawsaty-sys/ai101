@@ -32,7 +32,8 @@ beforeEach(function (): void {
 it('BR-31: صفحة الهبوط ولوحة الإدارة تختاران الدفعة نفسها في كل حالة', function (string $status): void {
     $cohort = makeCohort(['status' => $status]);
 
-    $admin = makeUser('admin');
+    // D-117 — the landing page is the system administrator's alone.
+    $admin = makeUser('system_admin');
 
     // What the visitor sees.
     $public = $this->get(route('home'))->assertOk()->getContent();

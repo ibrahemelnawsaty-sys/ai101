@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\LandingSetting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +22,7 @@ final class UpdateSettingsRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->can('update', new LandingSetting);
+        return $user !== null && $user->can('console.settings');
     }
 
     /**

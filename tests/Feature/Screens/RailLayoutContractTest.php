@@ -91,6 +91,8 @@ it('D-115: شريط كل دور ثلاث مناطق مباشرة بالترتي�
         'trainer' => [makeTrainer($cohort), route('trainer.dashboard', ['cohort' => $cohort->id]), ['side__foot', 'side__identity', 'side__logout']],
         'coordinator' => [makeCoordinator($cohort), route('coordinator.dashboard', ['cohort' => $cohort->id]), ['side__identity', 'side__logout']],
         'admin' => [makeAdmin(), route('admin.dashboard'), ['side__identity', 'side__logout']],
+        // D-117 — the fifth rail: no cohort, so no cohort box either.
+        'system_admin' => [makeSystemAdmin(), route('admin.users.index'), ['side__identity', 'side__logout']],
     ];
 
     foreach ($screens as $role => [$user, $url, $account]) {

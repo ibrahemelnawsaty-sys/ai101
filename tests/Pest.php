@@ -204,9 +204,16 @@ function makeUser(string $role, array $attributes = []): User
     ]);
 }
 
+/** The general supervisor — the role value `admin` (D-117). */
 function makeAdmin(array $attributes = []): User
 {
     return makeUser('admin', $attributes);
+}
+
+/** The system administrator: accounts, account preview, landing page (D-117). */
+function makeSystemAdmin(array $attributes = []): User
+{
+    return makeUser('system_admin', $attributes);
 }
 
 /**

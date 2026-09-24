@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
  * This is defence in depth, not the primary control: the Policies and the data
  * layer refuse the same writes on their own.
  *
- * @see BR-33, BR-34, BR-35 · PRD §4.5.2 · CONSTITUTION Art. 23
+ * @see BR-33, BR-34, BR-35 · PRD §4.5.2 · CONSTITUTION Art. 23 · D-117
  */
 final class ImpersonationReadOnly
 {
@@ -52,9 +52,12 @@ final class ImpersonationReadOnly
             $this->impersonation->stopIfExpired();
             View::share('impersonation', null);
 
+            // Back to the accounts list, as ending a preview by hand does: the
+            // one who previewed is a system administrator (D-117), and the
+            // supervisor's console home would refuse them.
             if ($request->isMethod('GET')) {
                 return redirect()
-                    ->route('admin.dashboard')
+                    ->route('admin.users.index')
                     ->with('status', __('admin.impersonation.expired'));
             }
 

@@ -126,7 +126,8 @@ it('لوحة المدير: الحالة العادية تعرض البطاقات
 });
 
 it('شريط المعاينة ظاهر طوال جلسة المعاينة مع زر الإنهاء', function (): void {
-    $this->actingAs($this->admin)->post(route('admin.users.preview', $this->participant));
+    // D-117 — the preview is the system administrator's.
+    $this->actingAs(makeSystemAdmin())->post(route('admin.users.preview', $this->participant));
 
     $body = $this->get(route('dashboard'))->assertOk()->getContent();
 

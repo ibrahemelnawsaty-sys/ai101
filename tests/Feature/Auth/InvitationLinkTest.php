@@ -39,7 +39,8 @@ beforeEach(function (): void {
     Mail::fake();
 
     $this->cohort = makeCohort();
-    $this->admin = makeAdmin();
+    // D-117 — invitations are the system administrator's.
+    $this->admin = makeSystemAdmin();
 });
 
 /** Invite through the admin form and hand back the raw token from the letter. */

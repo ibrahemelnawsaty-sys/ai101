@@ -22,7 +22,8 @@ beforeEach(function (): void {
     freezeAt(riyadhAt('2026-09-20 12:00:00'));
 
     $this->cohort = makeCohort(['status' => 'open']);
-    $this->admin = makeAdmin();
+    // D-117 — the landing page is the system administrator's alone.
+    $this->admin = makeSystemAdmin();
 });
 
 /** The publish endpoint, as the editor's script calls it. */

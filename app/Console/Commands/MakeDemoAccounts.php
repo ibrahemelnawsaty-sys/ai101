@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Provision the three accounts a reviewer needs to walk the platform: an admin,
- * a trainer and an enrolled participant.
+ * Provision the accounts a reviewer needs to walk the platform: a system
+ * administrator, a general supervisor, a trainer and an enrolled participant
+ * (D-117 split the one administrator into the first two).
  *
  * `athar:make-user` creates a single admin or trainer, and refuses the
  * participant role (D-69): a trainee needs an enrolment in a cohort and journey
@@ -39,19 +40,19 @@ use Illuminate\Support\Str;
  * These are demonstration accounts with known addresses. Remove them before the
  * cohort opens to real trainees (PRD §12.6).
  *
- * @see PRD §9.2, §4.1 · CONSTITUTION art. 24
+ * @see PRD §9.2, §4.1 · CONSTITUTION art. 24 · D-117
  */
 final class MakeDemoAccounts extends Command
 {
     /** @var string */
     protected $signature = 'athar:demo-accounts
         {--force : Required in production, where creating known logins is a deliberate act}
-        {--remove : Delete the three demo accounts instead of creating them}
-        {--password= : Use one password for all three; omit to have strong ones generated}
+        {--remove : Delete the demo accounts instead of creating them}
+        {--password= : Use one password for all of them; omit to have strong ones generated}
         {--domain=athar-demo.test : Address domain for the created accounts}';
 
     /** @var string */
-    protected $description = 'Create an admin, a trainer and an enrolled participant for walking the platform.';
+    protected $description = 'Create a system administrator, a general supervisor, a trainer and an enrolled participant for walking the platform.';
 
     public function handle(JourneyEvaluator $journey): int
     {
@@ -64,11 +65,9 @@ final class MakeDemoAccounts extends Command
 
         $domain = (string) $this->option('domain');
 
-        $addresses = [
-            'admin@'.$domain,
-            'trainer@'.$domain,
-            'student@'.$domain,
-        ];
+        // The addresses are the roster's, so adding a person to the file adds
+        // them to --remove too; a hand-kept second list forgot the supervisor.
+        $addresses = array_column($this->roster($domain), 'email');
 
         if ($this->option('remove') === true) {
             return $this->remove($addresses);
@@ -89,6 +88,9 @@ final class MakeDemoAccounts extends Command
         $people = $this->roster($domain);
 
         $rows = [];
+
+        /** @var list<string> $mismatches */
+        $mismatches = [];
 
         foreach ($people as $person) {
             $password = $shared ?? Str::password(16, true, true, false);
@@ -136,12 +138,22 @@ final class MakeDemoAccounts extends Command
                 return ['user' => $user, 'password' => $password, 'created' => true];
             });
 
+            // The ACCOUNT's role, not the file's: a reused account keeps the
+            // role it has, and printing the roster's would claim a change this
+            // command never makes (D-117 — `athar:change-role` makes it).
+            $actual = $result['user']->role;
+
             $rows[] = [
-                $person['role']->value,
+                $actual->value,
                 $person['email'],
                 $result['password'] ?? '(unchanged — account already existed)',
                 $result['created'] ? 'created' : 'reused',
             ];
+
+            if ($actual !== $person['role']) {
+                $mismatches[] = $person['email'].' is '.$actual->value.', the roster says '.$person['role']->value
+                    .': php artisan athar:change-role '.$person['email'].' '.$person['role']->value;
+            }
         }
 
         $this->newLine();
@@ -149,6 +161,10 @@ final class MakeDemoAccounts extends Command
         $this->newLine();
         $this->warn('Passwords are shown once and are not recoverable. Copy them now.');
         $this->line('Cohort used: '.(string) $cohort->getAttribute('name'));
+
+        foreach ($mismatches as $mismatch) {
+            $this->warn($mismatch);
+        }
         $this->newLine();
         $this->line('Remove these accounts when the review is over:');
         $this->line('  php artisan athar:demo-accounts --remove   (or delete them from the admin panel)');
@@ -261,11 +277,14 @@ final class MakeDemoAccounts extends Command
 
     /**
      * A participant with no enrolment sees an empty platform, and a trainer with
-     * none has no cohort to be scoped to (BR-23).
+     * none has no cohort to be scoped to (BR-23). Neither administrative role
+     * takes one: the supervisor reaches every cohort already, and the system
+     * administrator must reach none (D-117) — an enrolment written here would
+     * have seated them as a trainee.
      */
     private function ensureEnrolment(User $user, UserRole $role, Cohort $cohort, JourneyEvaluator $journey): void
     {
-        if ($role === UserRole::Admin) {
+        if ($role === UserRole::Admin || $role === UserRole::SystemAdmin) {
             return;
         }
 

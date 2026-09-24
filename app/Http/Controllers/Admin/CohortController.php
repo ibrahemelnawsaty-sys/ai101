@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\AssignCoordinatorRequest;
 use App\Http\Requests\Admin\AssignTrainerRequest;
 use App\Http\Requests\Admin\DetachCoordinatorRequest;
 use App\Http\Requests\Admin\DetachTrainerRequest;
+use App\Http\Requests\Admin\SeatParticipantRequest;
 use App\Http\Requests\Admin\StoreCohortRequest;
 use App\Http\Requests\Admin\UpdateCohortRequest;
 use App\Models\Cohort;
@@ -23,6 +24,7 @@ use App\Presenters\Admin\CohortRow;
 use App\Presenters\Admin\TrainerAssignment;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
+use App\Services\Credentials\AccountInviter;
 use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
@@ -40,7 +42,7 @@ use Illuminate\Http\Request;
  * `registration_closes_at` is typed in Riyadh wall time and stored in UTC by
  * Clock, never by a parse in this file (Art. 11).
  *
- * @see BR-26, BR-31 · PRD §4.2, §7.2 · CONSTITUTION Art. 8, Art. 11
+ * @see BR-26, BR-31 · PRD §4.2, §7.2 · CONSTITUTION Art. 8, Art. 11 · D-84, D-117
  */
 final class CohortController extends Controller
 {
@@ -49,6 +51,7 @@ final class CohortController extends Controller
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ThreadProvisioner $threads,
+        private readonly AccountInviter $inviter,
     ) {}
 
     public function index(Request $request): View
@@ -86,6 +89,7 @@ final class CohortController extends Controller
             'statusOptions' => Options::fromEnum(CohortStatus::class),
             'editing' => $this->editing($request),
             'assigning' => $this->assigning($request),
+            'seating' => $this->seating($request->query('participants')),
             'errorState' => null,
         ]);
     }
@@ -130,6 +134,23 @@ final class CohortController extends Controller
         $cohort = Cohort::query()->with(['program', 'trainers.profile', 'coordinators.profile'])->find($id);
 
         return $cohort === null ? null : TrainerAssignment::from($cohort);
+    }
+
+    /**
+     * The seat-an-existing-participant panel, open on `?participants={id}`
+     * (D-84, moved here by D-117). Its write is SeatParticipantRequest's and
+     * UserPolicy's to allow; this only names the cohort on the card.
+     */
+    private function seating(mixed $id): ?CohortRow
+    {
+        if (! is_string($id) || $id === '') {
+            return null;
+        }
+
+        /** @var Cohort|null $cohort */
+        $cohort = Cohort::query()->with(['program', 'trainers.profile', 'coordinators.profile'])->find($id);
+
+        return $cohort === null ? null : CohortRow::from($cohort);
     }
 
     public function store(StoreCohortRequest $request): RedirectResponse
@@ -181,6 +202,28 @@ final class CohortController extends Controller
         $cohort->save();
 
         return back()->with('status', __('admin.cohorts.updated'));
+    }
+
+    /**
+     * Seat an existing participant account in this cohort: the enrolment, the
+     * card and the cohort's conversations, as an invitation gives them (D-84).
+     * It moved here from the account's own page when D-117 gave that page to
+     * the system administrator and left this decision with the supervisor.
+     * UserPolicy answers for the account as the request answered for the
+     * cohort, so the rule on who may be seated lives in one place.
+     */
+    public function seatParticipant(SeatParticipantRequest $request, Cohort $cohort): RedirectResponse
+    {
+        $participant = $request->participant();
+
+        $this->authorize('enroll', $participant);
+
+        $seated = $this->inviter->enrollExisting($participant, $cohort);
+
+        return back()->with(
+            $seated ? 'status' : 'warning',
+            __($seated ? 'admin.cohorts.participant_seated' : 'admin.cohorts.participant_already'),
+        );
     }
 
     /**
