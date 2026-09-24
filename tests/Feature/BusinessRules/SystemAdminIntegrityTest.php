@@ -28,6 +28,7 @@ use App\Models\User;
 use App\Services\Attendance\AttendanceExceptionRequester;
 use App\Services\Mail\CohortAudience;
 use App\Services\Notifications\CohortNotices;
+use App\Services\Permissions\ImpersonationService;
 use App\Services\Permissions\RoleResolver;
 use Illuminate\Support\Facades\Mail;
 
@@ -101,6 +102,16 @@ it('BR-28: طلب كتابة من معاينة سُحبت صلاحيتها يُ�
 
     $this->assertGuest();
     expect(ImpersonationSession::query()->whereNull('ended_at')->count())->toBe(0);
+});
+
+it('BR-28: بلا معاينة جارية لا أحد «ما زال مخوّلًا» بها، ومع معاينة جارية يُسأل المعاين نفسه', function (): void {
+    $service = app(ImpersonationService::class);
+
+    expect($service->previewerStillEntitled())->toBeFalse();
+
+    integrityStartPreview($this, $this->participant);
+
+    expect($service->previewerStillEntitled())->toBeTrue();
 });
 
 /*

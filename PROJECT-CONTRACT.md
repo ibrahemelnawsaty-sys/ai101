@@ -52,7 +52,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 
 | Enum | القيم |
 |---|---|
-| `UserRole` | `admin` (المشرف العام) · `system_admin` (مدير النظام) · `trainer` · `coordinator` · `participant` — `coordinator` من `D-105`، والانقسام من `D-117`: «مدير النظام» في وثيقة المتطلبات هو `admin` في كل شيء إلا الحسابات ومعاينتها وصفحة الهبوط، فهذه لـ`system_admin` وحده |
+| `UserRole` | `admin` (المشرف العام) · `system_admin` (مدير النظام) · `trainer` · `coordinator` · `participant` — `coordinator` من `D-105`، والانقسام من `D-117`: «مدير النظام» في وثيقة المتطلبات هو `admin` في كل شيء إلا الحسابات ومعاينتها وصفحة الهبوط وإعدادات المنصة، فهذه لـ`system_admin` وحده؛ وفتح التسجيل وإغلاقه لـ`admin` |
 | `UserStatus` | `pending` · `active` · `suspended` · `deleted` |
 | `Gender` | `male` · `female` |
 | `ProgramStatus` | `draft` · `published` · `archived` |
@@ -292,9 +292,11 @@ final class CertificateEligibility
 | `GET /dashboard/profile` | `profile` | `auth` |
 | `GET /dashboard/notifications` | `notifications` | `auth` |
 | `/trainer/*` | `trainer.*` | `auth` · `role:trainer,admin` · `cohort.scope` |
-| `/admin/*` | `admin.*` | `auth` · `role:admin` — عدا الثلاثة التالية (`D-117`) |
+| `/admin/*` | `admin.*` | `auth` · `role:admin` — عدا الأربعة التالية (`D-117`) |
 | `/admin/users*` | `admin.users.*` | `auth` · `role:system_admin` (`D-117`) — `admin.users.export` يرفضه `UserPolicy::export()` للجميع |
-| `/admin/landing*` | `admin.landing.*` | `auth` · `role:system_admin` (`D-117`) |
+| `/admin/landing*` | `admin.landing.*` | `auth` · `role:system_admin` (`D-117`) — لا يحمل مفتاح التسجيل |
+| `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings` |
+| `PUT /admin/registrations/intake/{cohort}` | `admin.registrations.intake` | `auth` · `role:admin` · `not.impersonating` (`D-117`) — فتح التسجيل وإغلاقه، `CohortPolicy::manageRegistrations` |
 | `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
 | `POST /admin/cohorts/{cohort}/participants` | `admin.cohorts.participants.attach` | `auth` · `role:admin` · `not.impersonating` (`D-84` · `D-117`) |
 | `DELETE /admin/impersonation` | `admin.impersonation.stop` | `auth` |
