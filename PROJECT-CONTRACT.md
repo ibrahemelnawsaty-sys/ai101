@@ -66,7 +66,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `SubmissionStatus` | `submitted` · `under_review` · `graded` |
 | `EvaluationEntity` | `assignment` · `final_project` |
 | `JourneyStepStatus` | `locked` · `current` · `completed` |
-| `ThreadType` | `trainer_dm` · `group` · `announcement` |
+| `ThreadType` | `trainer_dm` · `group` · `announcement` · `direct` (`D-118`: محادثة يبدؤها شخص مع آخر) |
 | `EmailTokenType` | `verify` · `reset` |
 | `ResourceType` | `file` · `link` · `video` |
 
@@ -97,7 +97,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `resources` | `download_count` |
 | `journey_steps` | `index` 1..10 · `unlock_rule` |
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
-| `threads` · `thread_participants` · `messages` | `last_read_at` |
+| `threads` · `thread_participants` · `messages` | `last_read_at` · `threads.cohort_id` يقبل الفراغ لمحادثة `direct` · `threads.inbox` (`system_admin` = الصندوق المشترك) · `threads.pair_key` فريد — محادثة واحدة لكل زوجين (`D-118`) |
 | `notifications` | فهرس `(user_id, is_read)` |
 | `notification_preferences` | |
 | `certificates` | `serial_number` **فريد** · `verify_code` **فريد** · `revoked_at` |
@@ -285,7 +285,9 @@ final class CertificateEligibility
 | `GET /dashboard/assignments/{assignment}` | `assignments.show` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `POST /dashboard/assignments/{assignment}/submit` | `assignments.submit` | `auth` · `role:participant` · `not.impersonating` |
 | `GET /dashboard/resources` | `resources.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
-| `GET /dashboard/messages` | `messages.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/messages` | `messages.index` | `auth` · `role:participant,trainer,coordinator,admin,system_admin` (`D-118`) — ما يظهر: `Thread::scopeVisibleTo` |
+| `GET /dashboard/messages/new` | `messages.create` | `auth` · الأدوار نفسها · `not.impersonating` (`D-118`) — القائمة: `ConversationRules::recipients` |
+| `POST /dashboard/messages` | `messages.start` | `auth` · الأدوار نفسها · `not.impersonating` · `throttle:messages` (`D-118`) — `StartConversationRequest` + `ThreadPolicy::start/startInbox` |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
 | `GET /dashboard/certificate` | `certificate` | `auth` · `role:participant` |

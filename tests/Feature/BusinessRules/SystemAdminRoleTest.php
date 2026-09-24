@@ -233,7 +233,8 @@ it('D-117: 403 — شاشات الدفعة المشتركة مغلقة على م
         ['get', route('assignments.show', $assignment)],
         ['get', route('resources.index')],
         ['get', route('resources.download', $resource)],
-        ['get', route('messages.index')],
+        // D-118 opened the messages screen to this role (its inbox), but a
+        // cohort conversation stays closed to it — even by its id.
         ['get', route('messages.poll', $thread)],
         ['post', route('cohort.switch'), ['cohort_id' => $this->cohort->id]],
     ];
@@ -245,9 +246,12 @@ it('D-117: 403 — شاشات الدفعة المشتركة مغلقة على م
 
     expect(systemAdminRoleDeniedRows($this->sysadmin))->toBeGreaterThanOrEqual(count($refused));
 
-    // Their own account stays theirs.
+    // Their own account stays theirs — and, since D-118, their inbox, which
+    // does not list the cohort conversation.
     $this->actingAs($this->sysadmin)->get(route('profile'))->assertOk();
     $this->actingAs($this->sysadmin)->get(route('notifications'))->assertOk();
+    $this->actingAs($this->sysadmin)->get(route('messages.index'))->assertOk()
+        ->assertDontSee(route('messages.poll', $thread), false);
 
     // The same screens for someone in the cohort — the control.
     $this->actingAs($this->participant)->get(route('resources.index'))->assertOk();
@@ -283,13 +287,13 @@ it('D-117: تصدير قائمة الحسابات مرفوض على الجميع
         ->assertDontSee(route('admin.users.export'), false);
 });
 
-it('D-117: لا إشعارات لمدير النظام، وصفحة ملفه تعرض حالتها الفارغة', function (): void {
-    expect(NotificationTypes::forRole('system_admin'))->toBe([]);
+it('D-118: إشعار واحد لمدير النظام — رسائل صندوق التواصل، ولا شيء من الدفعات', function (): void {
+    expect(NotificationTypes::forRole('system_admin'))->toBe(['message_received']);
 
     $this->actingAs($this->sysadmin)
         ->get(route('profile'))
         ->assertOk()
-        ->assertSee(__('notifications.preferences_empty_title'), false);
+        ->assertDontSee(__('notifications.preferences_empty_title'), false);
 });
 
 /*
@@ -426,8 +430,8 @@ it('D-117: صفحة الرفض تقترح على مدير النظام شاشا�
 
     expect($page)->toContain('href="'.route('admin.users.index').'"')
         ->and($page)->toContain('href="'.route('admin.landing.edit').'"')
-        ->and($page)->not->toContain('href="'.route('schedule').'"')
-        ->and($page)->not->toContain('href="'.route('messages.index').'"');
+        ->and($page)->toContain('href="'.route('messages.index').'"')
+        ->and($page)->not->toContain('href="'.route('schedule').'"');
 
     // Everyone else keeps the list they had.
     $refused = $this->actingAs($this->participant)->get(route('admin.dashboard'))->assertForbidden()->getContent();

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
-use App\Enums\ThreadType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\ReportMessageRequest;
 use App\Http\Requests\Participant\SendMessageRequest;
+use App\Http\Requests\Participant\StartConversationRequest;
 use App\Http\Requests\Participant\UpdateMessageRequest;
 use App\Models\Message;
 use App\Models\Thread;
@@ -15,8 +15,11 @@ use App\Models\ThreadParticipant;
 use App\Models\User;
 use App\Presenters\Participant\ActiveThreadPresenter;
 use App\Presenters\Participant\MessagePresenter;
+use App\Presenters\Participant\RecipientPresenter;
 use App\Presenters\Participant\ThreadPresenter;
 use App\Services\Audit\AuditLogger;
+use App\Services\Messages\ConversationRules;
+use App\Services\Messages\ConversationStarter;
 use App\Services\Notifications\CohortNotices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
@@ -39,7 +42,13 @@ use Illuminate\Http\Request;
  *
  * While an account preview is running, no read receipt is written (BR-34).
  *
- * @see BR-22, BR-33, BR-34 · PRD §9.13 · CONSTITUTION Art. 5, Art. 22
+ * D-118 added the conversations people start themselves: `create` lists whom
+ * this account may write to (ConversationRules), `start` opens the one
+ * conversation with that person — or with the system administrators' shared
+ * inbox — and posts its first message. Which conversations the list shows is
+ * Thread::scopeVisibleTo, the same rule ThreadPolicy::view applies to one.
+ *
+ * @see BR-22, BR-33, BR-34 · PRD §9.13 · CONSTITUTION Art. 5, Art. 22 · D-118
  */
 final class MessageController extends Controller
 {
@@ -49,9 +58,14 @@ final class MessageController extends Controller
     /** The Article 17 screen name, and the name of its loading skeleton. */
     private const SCREEN = 'messages';
 
+    /** People per page in the recipient picker (art. 19: paginate past 50). */
+    private const RECIPIENTS_PER_PAGE = 20;
+
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly CohortNotices $notices,
+        private readonly ConversationRules $rules,
+        private readonly ConversationStarter $starter,
     ) {}
 
     public function index(Request $request): View
@@ -61,16 +75,22 @@ final class MessageController extends Controller
 
         $this->authorize('viewAny', Thread::class);
 
+        $isImpersonating = ImpersonationContext::isActive();
+
+        // A system administrator who arrived after an inbox conversation began
+        // joins it here, so it has their read marker (D-118). Never from a
+        // preview — and a system administrator is never the one previewed.
+        if ($user->isSystemAdmin() && ! $isImpersonating) {
+            $this->starter->joinInbox($user);
+        }
+
         $threads = Thread::query()
+            ->visibleTo($user)
             ->with(['latestMessage.sender.profile', 'cohort', 'users.profile'])
-            ->whereIn('id', ThreadParticipant::query()
-                ->where('user_id', $user->getKey())
-                ->select('thread_id'))
             ->orderByDesc('updated_at')
             ->get();
 
         $active = $this->activeThread($request, $threads);
-        $isImpersonating = ImpersonationContext::isActive();
         $now = Clock::now();
 
         // Opening a conversation is reading it. Nothing wrote this marker, so
@@ -120,11 +140,103 @@ final class MessageController extends Controller
                     $user,
                 ),
             'isImpersonating' => $isImpersonating,
+            // D-118 — the "new conversation" door; its page and its start
+            // endpoint refuse a preview again on their own.
+            'canStart' => ! $isImpersonating,
             'pollSeconds' => max(0, (int) config('athar.messages.poll_seconds')),
             'errorState' => null,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::of($threads->isEmpty()),
         ]);
+    }
+
+    /**
+     * The people this account may start a conversation with (D-118): exactly
+     * ConversationRules::recipients, searched by name or address, a page at a
+     * time — the start endpoint asks the same query, so nothing offered here
+     * is refused there, and nothing refused there is offered here.
+     */
+    public function create(Request $request): View
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->authorize('viewAny', Thread::class);
+
+        $search = $request->query('q');
+        $search = is_string($search) ? trim($search) : '';
+
+        $recipients = $this->rules->recipients($user)
+            ->with('profile')
+            ->when($search !== '', static function ($query) use ($search): void {
+                $term = '%'.$search.'%';
+                $query->where(static fn ($match) => $match
+                    ->where('email', 'like', $term)
+                    ->orWhereHas('profile', static fn ($profile) => $profile
+                        ->where('full_name_ar', 'like', $term)
+                        ->orWhere('full_name_en', 'like', $term)));
+            })
+            ->orderBy('role')
+            ->orderBy('email')
+            ->paginate(self::RECIPIENTS_PER_PAGE)
+            ->withQueryString()
+            ->through(static fn (User $person): RecipientPresenter => RecipientPresenter::from($person));
+
+        $options = [];
+
+        foreach ($recipients->items() as $person) {
+            $options[] = $person->option();
+        }
+
+        // The shared inbox heads the first page of an unfiltered list: it is
+        // one choice, not a person to search for.
+        if ($user->can('startInbox', Thread::class) && $recipients->currentPage() === 1 && $search === '') {
+            array_unshift($options, [
+                'value' => StartConversationRequest::INBOX,
+                'label' => (string) __('messages.inbox.title'),
+                'description' => (string) __('messages.inbox.option_hint'),
+            ]);
+        }
+
+        return view('participant.messages-new', [
+            'recipients' => $recipients,
+            'options' => $options,
+            'search' => $search,
+            'errorState' => null,
+        ]);
+    }
+
+    /**
+     * Open the one conversation with the chosen person — or the shared inbox
+     * — and post its first message (D-118). An existing conversation is
+     * reused, never duplicated; the message lands in it.
+     */
+    public function start(StartConversationRequest $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $to = $request->recipientUser();
+
+        $thread = $request->toInbox() || ! $to instanceof User
+            ? $this->starter->withInbox($user)
+            : $this->starter->withPerson($user, $to);
+
+        $body = (string) $request->validated('body');
+
+        Message::query()->create([
+            'thread_id' => $thread->getKey(),
+            'sender_id' => $user->getKey(),
+            'body' => $body,
+            'attachments' => [],
+            'sent_at' => Clock::now(),
+        ]);
+
+        $thread->touch();
+        $this->notices->posted($thread, $user, $body);
+
+        return redirect()
+            ->route('messages.index', ['thread' => $thread->getKey()])
+            ->with('status', __('messages.sent'));
     }
 
     /**
@@ -145,13 +257,14 @@ final class MessageController extends Controller
     }
 
     /**
-     * When the other side of a trainer DM last read it — the only thing the
-     * read marker may be built on. Group and announcement threads have
-     * no single other side, so they get none.
+     * When the other side of a one-to-one conversation last read it — the
+     * only thing the read marker may be built on. Group and announcement
+     * threads have no single other side, so they get none. In the inbox the
+     * other side is the system administrators: read when any of them read.
      */
     private function otherPartyReadAt(Thread $thread, User $user): ?\DateTimeInterface
     {
-        if (ThreadPresenter::typeOf($thread) !== ThreadType::TrainerDm) {
+        if (ThreadPresenter::typeOf($thread)?->isOneToOne() !== true) {
             return null;
         }
 

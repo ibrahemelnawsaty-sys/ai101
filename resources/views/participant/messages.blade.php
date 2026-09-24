@@ -6,7 +6,10 @@
     In preview (impersonation) mode nothing is marked as read — the read receipt is
     written by the server only when $isImpersonating is false (BR-34).
 
-    @see PRD §9.13 · BR-34
+    D-118 — «New conversation» opens the picker of the people this account may
+    write to; it is not offered in a preview, and its routes refuse one anyway.
+
+    @see PRD §9.13 · BR-34 · D-118
 --}}
 @extends('layouts.app')
 
@@ -14,6 +17,14 @@
 @section('subtitle', __('messages.subtitle'))
 
 @section('content')
+    @if (($canStart ?? false) && ! ($errorState ?? false) && ! is_null($threads) && $threads->isNotEmpty())
+        <div class="toolbar">
+            <div class="toolbar__end">
+                <x-ui.button variant="primary" size="sm" icon="plus" :href="route('messages.create')">{{ __('messages.new_conversation') }}</x-ui.button>
+            </div>
+        </div>
+    @endif
+
     @if ($errorState ?? false)
         <x-ui.empty-state variant="error" icon="warn"
             :title="__('messages.error_title')"
@@ -38,7 +49,9 @@
     @elseif ($threads->isEmpty())
         <x-ui.empty-state icon="chat"
             :title="__('messages.empty_title')"
-            :description="__('messages.empty_body')" />
+            :description="__('messages.empty_body')"
+            :action-label="($canStart ?? false) ? __('messages.new_conversation') : null"
+            :action-href="($canStart ?? false) ? route('messages.create') : null" />
     @else
         <div class="chat"
             x-data="atharThread({

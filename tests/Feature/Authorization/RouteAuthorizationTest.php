@@ -140,7 +140,9 @@ function authorizationMatrix(object $test): array
         'live' => ['get', [], ['participant', 'trainer', 'admin']],
         'assignments.index' => ['get', [], ['participant', 'trainer', 'admin']],
         'resources.index' => ['get', [], ['participant', 'trainer', 'admin']],
-        'messages.index' => ['get', [], ['participant', 'trainer', 'admin']],
+        // D-118 — every role converses; who with is ConversationRules.
+        'messages.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
+        'messages.create' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
         'profile' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
         'notifications' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
 

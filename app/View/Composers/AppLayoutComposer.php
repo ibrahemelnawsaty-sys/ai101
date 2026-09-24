@@ -10,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Cohort;
 use App\Models\Message;
 use App\Models\Notification;
+use App\Models\Thread;
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
 use App\Services\Time\Clock;
@@ -73,7 +74,7 @@ final class AppLayoutComposer
         if ($role === 'trainer') {
             // A trainer has conversations too (D-82): the badge counts theirs.
             $values['navBadges']['messages'] = $this->guard('badge.messages', $user,
-                static fn (): int => Message::query()->unreadBy($user)->count(), 0);
+                static fn (): int => self::unreadMessages($user), 0);
 
             // Trainer screens run behind cohort.scope, which names the cohort
             // they act on. No switcher here: the trainer area does not read the
@@ -116,8 +117,15 @@ final class AppLayoutComposer
                         ->openFor($user, Clock::now())
                         ->count(), 0),
                 'messages' => $this->guard('badge.messages', $user,
-                    static fn (): int => Message::query()->unreadBy($user)->count(), 0),
+                    static fn (): int => self::unreadMessages($user), 0),
             ];
+        }
+
+        // D-118 — the general supervisor, the coordinator and the system
+        // administrator have conversations too; their rails carry the badge.
+        if (in_array($role, ['admin', 'coordinator', 'system_admin'], true)) {
+            $values['navBadges']['messages'] = $this->guard('badge.messages', $user,
+                static fn (): int => self::unreadMessages($user), 0);
         }
 
         // A controller that passed its own value keeps it.
@@ -137,6 +145,20 @@ final class AppLayoutComposer
      * @param  T  $fallback
      * @return T
      */
+    /**
+     * Unread messages in the conversations this account reads — the same
+     * rule as the thread list (Thread::scopeVisibleTo, D-118), so the badge
+     * is always the sum of the list, and a row an earlier role left behind
+     * counts nothing.
+     */
+    private static function unreadMessages(User $user): int
+    {
+        return Message::query()
+            ->unreadBy($user)
+            ->whereIn('messages.thread_id', Thread::query()->visibleTo($user)->select('threads.id'))
+            ->count();
+    }
+
     private function guard(string $key, User $user, callable $build, mixed $fallback): mixed
     {
         try {

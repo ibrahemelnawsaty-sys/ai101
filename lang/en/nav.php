@@ -69,6 +69,9 @@ return [
         'reports' => 'Reports',
         'audit' => 'Audit log',
         'settings' => 'Platform settings',
+        // D-118 — the system administrator's tab: the shared inbox with the general supervisors.
+        'contact' => 'Contact',
+        'messages' => 'Messages',
     ],
 
     'trainer' => [

@@ -7,7 +7,10 @@
 
     Variables: $activeThread  App\Presenters\Participant\ActiveThreadPresenter
 
-    @see PRD §9.13, §9.13.2 · BR-22 · D-67
+    The edit control is a small PATCH form (D-118). It used to be a link — a
+    GET to a route that accepts PATCH only — so editing never worked.
+
+    @see PRD §9.13, §9.13.2 · BR-22 · D-67, D-118
 --}}
 @if ($activeThread->messages->isEmpty())
     <x-ui.empty-state icon="chat" size="sm"
@@ -39,15 +42,24 @@
                 {{ \App\Support\Dates::time12($message->sentAt) }}
             </time>
 
-            @if ($message->isMine && $activeThread->type === 'trainer_dm')
+            @if ($message->isMine && $activeThread->isOneToOne)
                 <span class="msg__read">{{ $message->isRead ? __('messages.read') : __('messages.sent') }}</span>
             @endif
 
             @if ($message->canEdit)
-                <div class="msg__acts">
-                    <x-ui.button variant="ghost" size="sm"
-                        :href="route('messages.edit', $message->id)">{{ __('app.edit') }}</x-ui.button>
-                </div>
+                <details class="msg__edit">
+                    <summary>{{ __('app.edit') }}</summary>
+                    <form method="POST" action="{{ route('messages.edit', $message->id) }}">
+                        @csrf
+                        @method('PATCH')
+                        <x-ui.textarea name="body" rows="2" required maxlength="5000"
+                            :id="'msg-edit-' . $message->id"
+                            :label="__('messages.compose_label')"
+                            :hint="__('messages.edit_hint')"
+                            :value="$message->body" />
+                        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                    </form>
+                </details>
             @endif
         </div>
     @endforeach

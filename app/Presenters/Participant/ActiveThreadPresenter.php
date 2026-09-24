@@ -43,6 +43,9 @@ final class ActiveThreadPresenter extends ViewModel
             'subtitle' => self::subtitle($thread, $type),
             'avatarVariant' => ThreadPresenter::avatarVariant($type),
             'type' => $type->value ?? ThreadType::Group->value,
+            // The read stamp belongs to a conversation with one other side
+            // (D-118: the trainer line and the direct conversations).
+            'isOneToOne' => $type?->isOneToOne() === true,
             'isLocked' => $isLocked,
             'canPost' => ! $isAnnouncement && ! $isLocked && ! $isImpersonating,
             'readOnlyReason' => self::readOnlyReason($isAnnouncement, $isLocked, $isImpersonating),

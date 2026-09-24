@@ -181,13 +181,17 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
+                // D-118 — the supervisor writes to anyone, and to the
+                // system administrators' inbox.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
             ]],
         ];
     }
 
     /**
-     * The system administrator's rail (D-117): the accounts, the landing page
-     * and the platform settings, and nothing else — the role reaches no cohort, so there is no
+     * The system administrator's rail (D-117): the accounts, the landing page,
+     * the platform settings and — D-118 — the contact tab, and nothing else —
+     * the role reaches no cohort, so there is no
      * programme group, no work group and no information home. The accounts
      * list is the home: /dashboard sends this role there.
      *
@@ -200,6 +204,9 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
                 ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
                 ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
+                // D-118 — "the contact tab": the shared inbox with the
+                // general supervisors, and nothing else.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
             ]],
         ];
     }
@@ -256,6 +263,9 @@ final class Sidebar extends UiComponent
                 ['route' => 'coordinator.dashboard', 'icon' => 'i-panel', 'label' => __('nav.coordinator.dashboard')],
                 ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
                 ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
+                // D-118 — the coordinator writes to the cohort's trainers
+                // and trainees, and to the general supervisor.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
             ]],
         ];
     }

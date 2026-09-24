@@ -127,6 +127,7 @@ return [
         'trainer_dm' => 'Trainer chat',
         'group' => 'Cohort group',
         'announcement' => 'Announcements channel',
+        'direct' => 'Direct conversation',
     ],
 
     'broadcast_kind' => [

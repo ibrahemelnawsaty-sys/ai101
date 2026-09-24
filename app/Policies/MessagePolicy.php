@@ -63,9 +63,15 @@ final class MessagePolicy
         return false;
     }
 
+    /**
+     * Fifteen minutes from `sent_at` — the instant the server's own clock
+     * stamped (BR-07), and the one the screen's edit control reads. It read
+     * `created_at`, which the framework stamps: the two could disagree, and
+     * the control offered an edit the endpoint then refused (D-118).
+     */
     private function withinEditWindow(Message $message): bool
     {
-        $sentAt = $message->created_at;
+        $sentAt = $message->getAttribute('sent_at');
 
         if ($sentAt === null) {
             return false;

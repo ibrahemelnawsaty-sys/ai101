@@ -238,8 +238,8 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
     Route::get('/', DashboardController::class)->name('dashboard');
 
     /*
-     * The cohort screens — schedule, attendance, live sessions, assignments,
-     * the training kit and the conversations. Every role that sits in a
+     * The cohort screens — schedule, attendance, live sessions, assignments
+     * and the training kit. Every role that sits in a
      * cohort reaches them; the system administrator, whose role reaches no
      * cohort and whose work is the accounts and the landing page alone, does
      * not (D-117). An allow-list, like every role check (art. 22): a role
@@ -319,11 +319,24 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
             ->name('resources.download');
         Route::get('/resources/{resource}/preview', [ResourceController::class, 'preview'])
             ->name('resources.preview');
+    });
 
-        /*
-         * Messaging.
-         */
+    /*
+     * Messaging — every role, the system administrator included (D-118): its
+     * "contact" tab is the shared inbox with the general supervisors. Which
+     * conversation each account reads is Thread::scopeVisibleTo and
+     * ThreadPolicy::view; who may start one with whom is ConversationRules.
+     */
+    Route::middleware('role:participant,trainer,coordinator,admin,system_admin')->group(function (): void {
         Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+        // D-118 — the people this account may start a conversation with, and
+        // the start itself. Neither is reachable from a preview.
+        Route::get('/messages/new', [MessageController::class, 'create'])
+            ->middleware('not.impersonating')
+            ->name('messages.create');
+        Route::post('/messages', [MessageController::class, 'start'])
+            ->middleware(['not.impersonating', 'throttle:messages'])
+            ->name('messages.start');
         // Asked every few seconds by an open conversation: throttled, so a stuck
         // tab cannot become a stream of PHP processes on shared hosting.
         Route::get('/messages/{thread}/poll', [MessageController::class, 'poll'])

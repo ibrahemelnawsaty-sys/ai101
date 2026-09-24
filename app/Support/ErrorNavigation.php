@@ -86,6 +86,7 @@ final class ErrorNavigation
         ['admin.users.index', 'nav.admin.users'],
         ['admin.landing.edit', 'nav.admin.landing'],
         ['admin.settings.edit', 'nav.admin.settings'],
+        ['messages.index', 'nav.admin.contact'],
         ['profile', 'nav.participant.profile'],
     ];
 

@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Presenters\Participant\ThreadPresenter;
 use App\Presenters\Support\Present;
 use App\Services\Mail\CohortAudience;
+use App\Services\Messages\ConversationStarter;
 use App\Services\Time\Clock;
 use App\Support\Dates;
 use Carbon\CarbonImmutable;
@@ -133,6 +134,12 @@ final class CohortNotices
                 return;
             }
 
+            // D-118 — the shared inbox reaches every active system
+            // administrator, one who arrived after it began included.
+            if ($thread->isInbox()) {
+                app(ConversationStarter::class)->joinAdministrators($thread);
+            }
+
             $recipients = User::query()
                 ->with('profile')
                 ->whereIn('id', ThreadParticipant::query()
@@ -140,9 +147,18 @@ final class CohortNotices
                     ->where('user_id', '!=', $author->getKey())
                     ->where('is_muted', false)
                     ->select('user_id'))
-                // A membership kept from an earlier role never makes a
-                // system administrator a reader of the cohort's talk (D-117).
-                ->where('role', '!=', UserRole::SystemAdmin->value)
+                // Whoever reads the thread (ThreadPolicy::view) is told of it,
+                // and nobody else — in one query, not one per member: a
+                // membership kept from an earlier role never makes a system
+                // administrator a reader of the cohort's talk (D-117), nor a
+                // former system administrator a reader of the inbox (D-118).
+                ->when(
+                    $thread->isInbox(),
+                    static fn ($inbox) => $inbox->where(static fn ($readers) => $readers
+                        ->where('role', UserRole::SystemAdmin->value)
+                        ->orWhere('id', $thread->inboxOwnerId())),
+                    static fn ($cohort) => $cohort->where('role', '!=', UserRole::SystemAdmin->value),
+                )
                 ->get();
 
             $name = $this->nameOf($author);

@@ -129,6 +129,7 @@ return [
         'trainer_dm' => 'محادثة المدرب',
         'group' => 'مجموعة الدفعة',
         'announcement' => 'قناة الإعلانات',
+        'direct' => 'محادثة مباشرة',
     ],
 
     'broadcast_kind' => [
