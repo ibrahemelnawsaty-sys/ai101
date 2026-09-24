@@ -371,6 +371,24 @@ return [
         'requested_at' => 'Requested on',
         'approve_hint' => 'Approving takes a seat in the cohort, creates the participant card and journey steps, and sends them a notification and an email.',
         'no_free_seat' => 'There are no free seats in this cohort. Raise the capacity in the cohort settings before approving.',
+        // D-117 — opening and closing registration is the general supervisor's, beside the requests.
+        'intake' => [
+            'title' => 'Open and close registration',
+            'body' => 'The registration form takes a cohort\'s registrations when its registration is open here, its status is "open", it has a free seat, and its registration closing time has not passed.',
+            'state_open' => 'Registration open',
+            'state_closed' => 'Registration closed',
+            'open' => 'Open registration',
+            'close' => 'Close registration',
+            'note_accepting' => 'The form is taking registrations now.',
+            'note_waiting' => 'Open here, but the form is not taking registrations yet: check the cohort\'s status, seats and registration closing time on the Cohorts screen.',
+            'note_closed' => 'The form takes no registrations for this cohort until you open it.',
+            'opened' => 'Registration is now open for :cohort.',
+            'closed' => 'Registration is now closed for :cohort. Requests that arrived before closing stay in the list.',
+            'unchanged' => 'Registration was already in that state, so nothing changed.',
+            'not_governed' => 'This cohort\'s registration is not opened or closed here: the cohort has started or finished. Change its status on the Cohorts screen if that is a mistake.',
+            'empty_title' => 'No upcoming or open cohort',
+            'empty_body' => 'Registration is opened and closed for upcoming and open cohorts only. Create a cohort or change a cohort\'s status on the Cohorts screen.',
+        ],
         'already_decided' => 'This request was already decided, so nothing changed and no letter was sent.',
         'approved_done' => 'The request was approved and the applicant was notified.',
         'rejected_done' => 'The request was declined and the applicant was notified with the reason.',
@@ -382,7 +400,11 @@ return [
 
     'landing' => [
         'title' => 'Landing page content',
-        'registration_open' => 'Registration is open',
+        // D-117 — shown here, not moved: the general supervisor opens and closes it.
+        'registration_state_open' => 'Registration for this cohort is open.',
+        'registration_state_closed' => 'Registration for this cohort is closed.',
+        'registration_moved' => 'The general supervisor opens and closes it from the Registrations screen.',
+        'registration_moved_error' => 'Opening and closing registration is now done by the general supervisor from the Registrations screen, so this change was not published. Reload the page, then publish the rest of your edits.',
         'seats_remaining' => 'Seats remaining',
         'seats_override' => 'Override the seat count manually',
         'seats_computed_hint' => 'This number is worked out automatically from the capacity and the active enrolments.',

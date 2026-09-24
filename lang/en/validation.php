@@ -509,6 +509,7 @@ return [
         'reject_reason' => 'reason for declining',
         'seats_remaining' => 'seats remaining',
         'is_registration_open' => 'registration state',
+        'open' => 'registration state',
         'faq' => 'frequently asked questions',
         'question' => 'question',
         'answer' => 'answer',

@@ -189,7 +189,6 @@ it('BR-31: المعاينة تعرض الصفحة الحقيقية بالمسو�
     $state = json_encode([
         'texts' => ['landing.hero.try_lab' => ['ar' => 'CANARY-DRAFT-TEXT', 'en' => null]],
         'settings' => [
-            'is_registration_open' => true,
             'countdown_enabled' => false,
             'seats_override' => null,
             'hero_title' => 'CANARY-DRAFT-TITLE',
@@ -240,7 +239,6 @@ it('المادة 24: المعاينة وحدها تُؤطَّر، ومن الأ�
 it('BR-31: عنوان البنر ونص «عن البرنامج» المكتوبان في المحرّر يظهران في الصفحة', function (): void {
     publishLanding($this, [
         'settings' => [
-            'is_registration_open' => true,
             'countdown_enabled' => false,
             'seats_override' => 7,
             'hero_title' => 'CANARY-HERO-TITLE',
@@ -313,19 +311,46 @@ it('BR-31: الأسئلة المبذورة بلا مفتاح تظهر في ال�
         ->and($faq[0]['answer'])->toBe('CANARY-SEEDED-A-EDITED');
 });
 
-it('BR-31: إغلاق التسجيل من المحرّر يُغلقه على الخادم من الطلب التالي', function (): void {
+it('D-117: المحرّر لا يُغلق التسجيل — يُرفض الطلب برسالة تدلّ على المشرف العام، والصفحة تبقى مفتوحة', function (): void {
+    // A cohort that takes registrations on every other count, so the page's
+    // answer turns on the switch alone.
+    $this->cohort->forceFill(['registration_closes_at' => null])->save();
+    LandingSetting::factory()->create(['cohort_id' => $this->cohort->id, 'is_registration_open' => true]);
+
     publishLanding($this, [
         'settings' => [
             'is_registration_open' => false,
-            'countdown_enabled' => false,
-            'seats_override' => null,
-            'hero_title' => null,
-            'hero_subtitle' => null,
-            'about_body' => null,
+            'hero_title' => 'CANARY-NOT-PUBLISHED',
         ],
-    ])->assertOk();
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['settings.is_registration_open' => __('admin.landing.registration_moved_error')]);
 
-    $this->get(route('home'))->assertSee('data-registration="closed"', escape: false);
+    $setting = LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole();
+
+    expect($setting->is_registration_open)->toBeTrue()
+        ->and($setting->hero_title)->not->toBe('CANARY-NOT-PUBLISHED');
+
+    $this->get(route('home'))->assertSee('data-registration="open"', escape: false);
+});
+
+it('D-117: أول نشر يُنشئ إعدادات الدفعة يُبقي التسجيل مفتوحًا كما كان، والمحرّر يعرض حالته ولا يحرّكها', function (): void {
+    // A cohort that takes registrations on every other count, so the page's
+    // answer turns on the switch alone.
+    $this->cohort->forceFill(['registration_closes_at' => null])->save();
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->exists())->toBeFalse();
+    $this->get(route('home'))->assertSee('data-registration="open"', escape: false);
+
+    publishLanding($this, ['settings' => ['hero_title' => 'CANARY-FIRST-ROW']])->assertOk();
+
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->is_registration_open)->toBeTrue();
+    $this->get(route('home'))->assertSee('data-registration="open"', escape: false);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.landing.edit'))
+        ->assertOk()
+        ->assertSee(__('admin.landing.registration_moved'))
+        ->assertDontSee('le-registration-open', false);
 });
 
 /*
@@ -353,12 +378,13 @@ it('BR-31: إعداد واحد يُنشر وحده — لا يُغلق التس�
         ->and($fresh->hero_title)->toBe('CANARY-KEEP-TITLE')
         ->and($fresh->about_body)->toBe('CANARY-KEEP-ABOUT');
 
-    // A switch that is not a boolean is refused, never read as "closed".
-    publishLanding($this, ['settings' => ['is_registration_open' => 'garbage']])
+    // A switch that is not a boolean is refused, never read as "off".
+    publishLanding($this, ['settings' => ['countdown_enabled' => 'garbage']])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['settings.is_registration_open']);
+        ->assertJsonValidationErrors(['settings.countdown_enabled']);
 
-    expect($setting->fresh()->is_registration_open)->toBeTrue();
+    expect($setting->fresh()->countdown_enabled)->toBeTrue()
+        ->and($setting->fresh()->is_registration_open)->toBeTrue();
 });
 
 it('BR-31: نشر لغة واحدة يُبقي اللغة الأخرى كما نُشرت', function (): void {
@@ -407,10 +433,10 @@ it('BR-31: إعدادات مسودة كُتبت لدفعة لم تعد المع�
 
     publishLanding($this, [
         'cohort_id' => (string) Illuminate\Support\Str::uuid(),
-        'settings' => ['is_registration_open' => false],
+        'settings' => ['hero_title' => 'CANARY-OTHER-COHORT'],
     ])->assertStatus(409);
 
-    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->is_registration_open)->toBeTrue();
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->hero_title)->not->toBe('CANARY-OTHER-COHORT');
 });
 
 it('المادة 24: المعاينة لا تُفتح برابط GET يحمل مسودة', function (): void {

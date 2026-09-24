@@ -166,8 +166,8 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],
                 ['route' => 'admin.cohorts.index', 'icon' => 'i-cal', 'label' => __('nav.admin.cohorts')],
             ]],
-            // D-117 — the accounts and the landing page left this rail for
-            // the system administrator's.
+            // D-117 — the accounts, the landing page and the platform
+            // settings left this rail for the system administrator's.
             ['label' => __('nav.groups.admin'), 'items' => [
                 ['route' => 'admin.registrations.index', 'icon' => 'i-user', 'label' => __('nav.admin.registrations')],
                 ['route' => 'admin.certificates.index', 'icon' => 'i-badge', 'label' => __('nav.admin.certificates')],
@@ -181,14 +181,13 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
-                ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
             ]],
         ];
     }
 
     /**
-     * The system administrator's rail (D-117): the accounts and the landing
-     * page, and nothing else — the role reaches no cohort, so there is no
+     * The system administrator's rail (D-117): the accounts, the landing page
+     * and the platform settings, and nothing else — the role reaches no cohort, so there is no
      * programme group, no work group and no information home. The accounts
      * list is the home: /dashboard sends this role there.
      *
@@ -200,6 +199,7 @@ final class Sidebar extends UiComponent
             ['label' => __('nav.groups.system'), 'items' => [
                 ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
                 ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
+                ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
             ]],
         ];
     }

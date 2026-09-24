@@ -26,13 +26,12 @@ use Illuminate\Validation\Validator;
  *     carries — the visitor would read ":count seats";
  *   - a counted text keeps the same forms, in the same order, as its original.
  *
- * @see BR-31, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5 · D-114
+ * @see BR-31, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5 · D-114, D-117
  */
 final class PublishLandingRequest extends FormRequest
 {
     /** The editor's setting names, and the landing_settings column of each. */
     private const SETTING_COLUMNS = [
-        'is_registration_open' => 'is_registration_open',
         'countdown_enabled' => 'countdown_enabled',
         'seats_override' => 'seats_remaining_override',
         'hero_title' => 'hero_title',
@@ -63,11 +62,9 @@ final class PublishLandingRequest extends FormRequest
             return;
         }
 
-        foreach (['is_registration_open', 'countdown_enabled'] as $flag) {
-            if (array_key_exists($flag, $settings)) {
-                $bool = filter_var($settings[$flag], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-                $settings[$flag] = $bool ?? $settings[$flag];
-            }
+        if (array_key_exists('countdown_enabled', $settings)) {
+            $bool = filter_var($settings['countdown_enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $settings['countdown_enabled'] = $bool ?? $settings['countdown_enabled'];
         }
 
         if (($settings['seats_override'] ?? null) === '') {
@@ -94,7 +91,10 @@ final class PublishLandingRequest extends FormRequest
 
             // A PATCH: each setting is optional, and only the ones sent change.
             'settings' => ['sometimes', 'array', 'min:1'],
-            'settings.is_registration_open' => ['sometimes', 'boolean'],
+            // D-117 — the registration switch is the general supervisor's, on
+            // the registrations screen. Refused, not ignored: a stale editor
+            // that still sends it is told where it went.
+            'settings.is_registration_open' => ['prohibited'],
             'settings.countdown_enabled' => ['sometimes', 'boolean'],
             'settings.seats_override' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10000'],
             'settings.hero_title' => ['sometimes', 'nullable', 'string', 'max:300'],
@@ -202,6 +202,14 @@ final class PublishLandingRequest extends FormRequest
         return $texts;
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['settings.is_registration_open.prohibited' => (string) __('admin.landing.registration_moved_error')];
+    }
+
     /** The cohort the editor was showing, when it said. */
     public function cohortId(): ?string
     {
@@ -237,7 +245,7 @@ final class PublishLandingRequest extends FormRequest
             $value = $data[$field];
 
             $columns[$column] = match ($field) {
-                'is_registration_open', 'countdown_enabled' => (bool) $value,
+                'countdown_enabled' => (bool) $value,
                 'seats_override' => $value === null ? null : (int) $value,
                 default => self::clean($value),
             };

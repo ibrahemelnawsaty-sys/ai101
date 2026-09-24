@@ -161,7 +161,7 @@ it('D-117: مدير النظام يحرّر صفحة الهبوط', function ():
     $this->actingAs($this->sysadmin)->get(route('admin.landing.edit'))->assertOk();
 
     assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.landing.update'), [
-        'settings' => ['hero_subtitle' => 'CANARY-AFTER', 'is_registration_open' => true, 'countdown_enabled' => false],
+        'settings' => ['hero_subtitle' => 'CANARY-AFTER', 'countdown_enabled' => false],
     ]));
 
     $this->get(route('home'))->assertSee('CANARY-AFTER', false);
@@ -186,7 +186,6 @@ it('D-117: 403 — مدير النظام لا يصل شيئًا من شاشات 
         route('admin.finalProject.index'),
         route('admin.reports.index'),
         route('admin.audit.index'),
-        route('admin.settings.edit'),
         route('trainer.dashboard', $cohort),
         route('trainer.attendance', $cohort),
         route('trainer.sessions', $cohort),
@@ -203,11 +202,13 @@ it('D-117: 403 — مدير النظام لا يصل شيئًا من شاشات 
     $this->actingAs($this->sysadmin)
         ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => $this->participant->email])
         ->assertForbidden();
+    // D-117 — opening and closing registration is the supervisor's, not the
+    // landing page's owner's.
     $this->actingAs($this->sysadmin)
-        ->put(route('admin.settings.update'), ['locale' => 'ar', 'timezone' => 'Asia/Riyadh'])
+        ->put(route('admin.registrations.intake', $this->cohort), ['open' => '0'])
         ->assertForbidden();
 
-    expect(systemAdminRoleDeniedRows($this->sysadmin))->toBeGreaterThanOrEqual(count($refused) + 1);
+    expect(systemAdminRoleDeniedRows($this->sysadmin))->toBeGreaterThanOrEqual(count($refused) + 2);
 });
 
 it('D-117: 403 — شاشات الدفعة المشتركة مغلقة على مدير النظام، وحسابه هو مفتوح له', function (): void {
@@ -297,13 +298,14 @@ it('D-117: لا إشعارات لمدير النظام، وصفحة ملفه ت�
 |--------------------------------------------------------------------------
 */
 
-it('D-117: 403 — المشرف العام لا يصل الحسابات ولا المعاينة ولا صفحة الهبوط، ويُسجَّل كل رفض', function (): void {
+it('D-117: 403 — المشرف العام لا يصل الحسابات ولا المعاينة ولا صفحة الهبوط ولا إعدادات المنصة، ويُسجَّل كل رفض', function (): void {
     $gets = [
         route('admin.users.index'),
         route('admin.users.create'),
         route('admin.users.import'),
         route('admin.users.show', $this->participant),
         route('admin.landing.edit'),
+        route('admin.settings.edit'),
     ];
 
     foreach ($gets as $url) {
@@ -325,6 +327,9 @@ it('D-117: 403 — المشرف العام لا يصل الحسابات ولا �
     $this->actingAs($this->supervisor)
         ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED']])
         ->assertForbidden();
+    $this->actingAs($this->supervisor)
+        ->put(route('admin.settings.update'), ['locale' => 'ar', 'timezone' => 'Asia/Riyadh'])
+        ->assertForbidden();
 
     $fresh = $this->participant->fresh();
 
@@ -332,30 +337,35 @@ it('D-117: 403 — المشرف العام لا يصل الحسابات ولا �
         ->and($fresh->role->value)->toBe('participant')
         ->and($fresh->status->value)->toBe('active')
         ->and(ImpersonationSession::query()->count())->toBe(0)
-        ->and(systemAdminRoleDeniedRows($this->supervisor))->toBeGreaterThanOrEqual(count($gets) + 5);
+        ->and(AuditLog::query()->where('action', 'settings.updated')->count())->toBe(0)
+        ->and(systemAdminRoleDeniedRows($this->supervisor))->toBeGreaterThanOrEqual(count($gets) + 6);
 });
 
-it('D-117: المشرف العام يحتفظ بلوحته وإعدادات المنصة — لكل منهما صلاحيته الخاصة', function (): void {
+it('D-117: المشرف العام يحتفظ بلوحته، وإعدادات المنصة لمدير النظام — لكل منهما صلاحيته الخاصة', function (): void {
     $this->actingAs($this->supervisor)->get(route('admin.dashboard'))->assertOk();
-    $this->actingAs($this->supervisor)->get(route('admin.settings.edit'))->assertOk();
     $this->actingAs($this->supervisor)->get(route('admin.cohorts.index'))->assertOk();
 
-    assertAccepted($this->actingAs($this->supervisor)->put(route('admin.settings.update'), [
+    $this->actingAs($this->sysadmin)->get(route('admin.settings.edit'))->assertOk();
+    $this->actingAs($this->sysadmin)->get(route('admin.settings.template', 'invitation'))->assertStatus(200);
+
+    assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.settings.update'), [
         'locale' => 'ar',
         'timezone' => 'Asia/Riyadh',
     ]));
 
-    expect(AuditLog::query()->where('action', 'settings.updated')->where('actor_id', $this->supervisor->id)->count())->toBe(1);
+    expect(AuditLog::query()->where('action', 'settings.updated')->where('actor_id', $this->sysadmin->id)->count())->toBe(1);
 });
 
-it('D-117: قائمة المشرف العام بلا الحسابات وصفحة الهبوط، وقائمة مدير النظام بهما وحدهما', function (): void {
+it('D-117: قائمة المشرف العام بلا الحسابات وصفحة الهبوط والإعدادات، وقائمة مدير النظام بها وحدها', function (): void {
     $supervisorRail = $this->actingAs($this->supervisor)->get(route('admin.dashboard'))->assertOk()->getContent();
     $sysadminRail = $this->actingAs($this->sysadmin)->get(route('admin.users.index'))->assertOk()->getContent();
 
     expect($supervisorRail)->not->toContain('href="'.route('admin.users.index').'"')
         ->and($supervisorRail)->not->toContain('href="'.route('admin.landing.edit').'"')
+        ->and($supervisorRail)->not->toContain('href="'.route('admin.settings.edit').'"')
         ->and($sysadminRail)->toContain('href="'.route('admin.users.index').'"')
         ->and($sysadminRail)->toContain('href="'.route('admin.landing.edit').'"')
+        ->and($sysadminRail)->toContain('href="'.route('admin.settings.edit').'"')
         ->and($sysadminRail)->not->toContain('href="'.route('admin.dashboard').'"');
 });
 

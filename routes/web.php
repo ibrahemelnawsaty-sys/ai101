@@ -648,6 +648,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])
             ->middleware('not.impersonating')
             ->name('registrations.export');
+        // D-117 — opening and closing a cohort's registration, beside the
+        // requests it lets in: the owner gave all three to the supervisor.
+        Route::put('/registrations/intake/{cohort}', [AdminRegistrationController::class, 'intake'])
+            ->middleware('not.impersonating')
+            ->name('registrations.intake');
         Route::put('/registrations/{enrollment}/approve', [AdminRegistrationController::class, 'approve'])
             ->middleware('not.impersonating')
             ->name('registrations.approve');
@@ -709,24 +714,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::get('/audit/export', [AuditController::class, 'export'])
             ->middleware('not.impersonating')
             ->name('audit.export');
-
-        Route::get('/settings', [AdminSettingController::class, 'edit'])->name('settings.edit');
-        Route::get('/settings/templates/{template}', [AdminSettingController::class, 'template'])
-            ->name('settings.template');
-        Route::put('/settings', [AdminSettingController::class, 'update'])
-            ->middleware('not.impersonating')
-            ->name('settings.update');
-        Route::put('/settings/notifications', [AdminSettingController::class, 'notifications'])
-            ->middleware('not.impersonating')
-            ->name('settings.notifications');
     });
 
 /*
 |--------------------------------------------------------------------------
 | Administration — the system administrator (D-117)
 |--------------------------------------------------------------------------
-| Three areas and nothing else: the accounts, the account preview and the
-| landing page. Same /admin prefix and admin.* names as before, so every form
+| Four areas and nothing else: the accounts, the account preview, the landing
+| page and the platform settings. Same /admin prefix and admin.* names as before, so every form
 | and link that already pointed at them still does — only the role at the
 | door changed. Every write is still refused while a preview runs (BR-33).
 */
@@ -806,6 +801,18 @@ Route::middleware(['auth', 'verified', 'role:system_admin'])
         Route::delete('/landing/texts', [AdminLandingController::class, 'reset'])
             ->middleware('not.impersonating')
             ->name('landing.reset');
+
+        // D-117 — the platform settings are the system administrator's: the
+        // role that runs the platform, not the programme (ConsolePolicy).
+        Route::get('/settings', [AdminSettingController::class, 'edit'])->name('settings.edit');
+        Route::get('/settings/templates/{template}', [AdminSettingController::class, 'template'])
+            ->name('settings.template');
+        Route::put('/settings', [AdminSettingController::class, 'update'])
+            ->middleware('not.impersonating')
+            ->name('settings.update');
+        Route::put('/settings/notifications', [AdminSettingController::class, 'notifications'])
+            ->middleware('not.impersonating')
+            ->name('settings.notifications');
     });
 
 /*

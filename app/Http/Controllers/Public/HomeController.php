@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
-use App\Enums\CohortStatus;
 use App\Enums\SessionType;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
@@ -287,7 +286,7 @@ final class HomeController extends Controller
         $closesAt = $cohort->registration_closes_at;
 
         return array_merge($points, [
-            'is_registration_open' => $this->registrationIsOpen($cohort),
+            'is_registration_open' => $cohort->acceptsRegistrations(),
             'seats_total' => $capacity,
             'seats_taken' => $taken,
             'seats_remaining' => is_numeric($override) ? (int) $override : $cohort->seatsRemaining(),
@@ -298,31 +297,6 @@ final class HomeController extends Controller
             'pass_score' => (int) $cohort->pass_score,
             'min_attendance_rate' => (int) $cohort->min_attendance_rate,
         ]);
-    }
-
-    /**
-     * Registration is open when the centre says so, seats remain, and the
-     * closing instant has not passed on the server clock (BR-07).
-     */
-    private function registrationIsOpen(Cohort $cohort): bool
-    {
-        $setting = $cohort->landingSetting;
-
-        if ($setting !== null && ! (bool) $setting->getAttribute('is_registration_open')) {
-            return false;
-        }
-
-        if ($cohort->status !== CohortStatus::Open) {
-            return false;
-        }
-
-        if ($cohort->seatsRemaining() <= 0) {
-            return false;
-        }
-
-        $closesAt = $cohort->registration_closes_at;
-
-        return $closesAt === null || Clock::now()->lessThan(Clock::toUtc($closesAt));
     }
 
     /**

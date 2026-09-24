@@ -263,6 +263,8 @@ function authorizationMatrix(object $test): array
         'admin.registrations.export' => ['get', [], ['admin']],
         'admin.registrations.approve' => ['put', [$test->enrollment], ['admin']],
         'admin.registrations.reject' => ['put', [$test->enrollment], ['admin']],
+        // D-117 — opening and closing registration, beside the requests.
+        'admin.registrations.intake' => ['put', [$test->cohort], ['admin']],
 
         'admin.certificates.index' => ['get', [], ['admin']],
         'admin.certificates.export' => ['get', [], ['admin']],
@@ -281,10 +283,11 @@ function authorizationMatrix(object $test): array
         'admin.reports.index' => ['get', [], ['admin']],
         'admin.reports.export' => ['get', [], ['admin']],
 
-        'admin.settings.edit' => ['get', [], ['admin']],
-        'admin.settings.update' => ['put', [], ['admin']],
-        'admin.settings.notifications' => ['put', [], ['admin']],
-        'admin.settings.template' => ['get', ['template' => 'welcome'], ['admin']],
+        // D-117 — the platform settings are the system administrator's.
+        'admin.settings.edit' => ['get', [], ['system_admin']],
+        'admin.settings.update' => ['put', [], ['system_admin']],
+        'admin.settings.notifications' => ['put', [], ['system_admin']],
+        'admin.settings.template' => ['get', ['template' => 'welcome'], ['system_admin']],
     ];
 }
 

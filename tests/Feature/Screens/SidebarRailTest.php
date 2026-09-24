@@ -89,21 +89,22 @@ it('D-30: المدير يرى وجهات الإدارة لا قائمة المت
         ->and($hrefs)->toContain(route('admin.cohorts.index'))
         ->and($hrefs)->toContain(route('admin.certificates.index'))
         ->and($hrefs)->toContain(route('admin.audit.index'))
-        ->and($hrefs)->toContain(route('admin.settings.edit'))
-        // D-117 — the accounts and the landing page left the supervisor.
+        // D-117 — the accounts, the landing page and the platform settings
+        // left the supervisor.
         ->and($hrefs)->not->toContain(route('admin.users.index'))
         ->and($hrefs)->not->toContain(route('admin.landing.edit'))
+        ->and($hrefs)->not->toContain(route('admin.settings.edit'))
         // The exact symptom that was reported: the participant rail served to
         // an administrator.
         ->and($hrefs)->not->toContain(route('participant.journey'));
 });
 
-it('D-117: مدير النظام يرى المستخدمين وصفحة الهبوط وحدهما', function (): void {
+it('D-117: مدير النظام يرى المستخدمين وصفحة الهبوط وإعدادات المنصة وحدها', function (): void {
     $hrefs = railHrefsFor(makeSystemAdmin());
 
-    // Exactly the two, in this order — and never the participant rail the
+    // Exactly the three, in this order — and never the participant rail the
     // role would have fallen through to without a shell of its own.
-    expect($hrefs)->toBe([route('admin.users.index'), route('admin.landing.edit')]);
+    expect($hrefs)->toBe([route('admin.users.index'), route('admin.landing.edit'), route('admin.settings.edit')]);
 });
 
 it('D-30: المدرّب يرى وجهات المدرّب', function (): void {

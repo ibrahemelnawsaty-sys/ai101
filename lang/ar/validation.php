@@ -515,6 +515,7 @@ return [
         'reject_reason' => 'سبب الرفض',
         'seats_remaining' => 'المقاعد المتبقية',
         'is_registration_open' => 'حالة التسجيل',
+        'open' => 'حالة التسجيل',
         'faq' => 'الأسئلة الشائعة',
         'question' => 'السؤال',
         'answer' => 'الجواب',

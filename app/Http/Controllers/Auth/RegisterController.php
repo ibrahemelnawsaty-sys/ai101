@@ -14,12 +14,10 @@ use App\Http\Controllers\Auth\Concerns\PasswordMeterCopy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Cohort;
-use App\Models\LandingSetting;
 use App\Models\Profile;
 use App\Models\User;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
-use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -138,26 +136,6 @@ final class RegisterController extends Controller
             ->orderBy('start_date')
             ->first();
 
-        if ($cohort === null) {
-            return null;
-        }
-
-        $setting = $cohort->landingSetting;
-
-        if ($setting instanceof LandingSetting && ! (bool) $setting->getAttribute('is_registration_open')) {
-            return null;
-        }
-
-        if ($cohort->seatsRemaining() <= 0) {
-            return null;
-        }
-
-        $closesAt = $cohort->registration_closes_at;
-
-        if ($closesAt !== null && Clock::now()->greaterThanOrEqualTo(Clock::toUtc($closesAt))) {
-            return null;
-        }
-
-        return $cohort;
+        return $cohort?->acceptsRegistrations() === true ? $cohort : null;
     }
 }

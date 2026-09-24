@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CohortStatus;
 use App\Enums\EnrollmentStatus;
 use App\Events\EnrollmentApproved;
 use App\Events\EnrollmentRejected;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RegistrationDecisionRequest;
+use App\Http\Requests\Admin\SetRegistrationIntakeRequest;
 use App\Models\Cohort;
 use App\Models\Enrollment;
+use App\Models\LandingSetting;
 use App\Models\User;
+use App\Presenters\Admin\RegistrationIntakeRow;
 use App\Presenters\Admin\RegistrationReview;
 use App\Presenters\Admin\RegistrationRow;
 use App\Presenters\Support\Options;
@@ -24,17 +28,23 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Registration requests awaiting a decision (PRD §9.2.3, §9.18).
+ * Registration requests awaiting a decision (PRD §9.2.3, §9.18), and the
+ * switch that opens and closes each cohort's registration (D-117).
  *
  * Approving takes a seat, so the cohort row is locked while the seat count
  * moves: two administrators approving at the same instant must not oversell the
  * last place. Rejecting demands a written reason, which the applicant is told
  * and the trail keeps.
  *
- * @see BR-27, BR-31 · PRD §4.2, §9.2.3 · CONSTITUTION Art. 8
+ * The owner put opening, closing and accepting in one person's hands — the
+ * general supervisor's — so the switch left the landing editor for this
+ * screen, beside the requests it lets in.
+ *
+ * @see BR-27, BR-31 · PRD §4.2, §9.1.2, §9.2.3 · CONSTITUTION Art. 8 · D-117
  */
 final class RegistrationController extends Controller
 {
@@ -98,8 +108,82 @@ final class RegistrationController extends Controller
                 static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
             ),
             'stateOptions' => Options::fromEnum(EnrollmentStatus::class),
+            'intake' => $this->intakeRows(),
             'errorState' => null,
         ]);
+    }
+
+    /**
+     * The cohorts whose registration the switch still governs (upcoming and
+     * open), soonest first. A centre runs a handful at a time; the list stops
+     * at one page all the same.
+     *
+     * @return Collection<int, RegistrationIntakeRow>
+     */
+    private function intakeRows(): Collection
+    {
+        return Cohort::query()
+            ->with(['program', 'landingSetting'])
+            ->whereIn('status', array_map(
+                static fn (CohortStatus $status): string => $status->value,
+                SetRegistrationIntakeRequest::GOVERNED,
+            ))
+            ->orderBy('start_date')
+            ->limit(self::PER_PAGE)
+            ->get()
+            ->map(static fn (Cohort $cohort): RegistrationIntakeRow => RegistrationIntakeRow::from($cohort));
+    }
+
+    /**
+     * Open or close one cohort's registration (D-117).
+     *
+     * The cohort's settings row is locked while it changes, and a cohort that
+     * has none yet gets one: until then the switch was on (a missing row does
+     * not close the form), so closing must write the row that says otherwise.
+     * Written to the trail before it is saved (art. 8); asking for the state
+     * the switch is already in changes nothing and writes nothing.
+     */
+    public function intake(SetRegistrationIntakeRequest $request, Cohort $cohort): RedirectResponse
+    {
+        $open = $request->open();
+
+        $changed = DB::transaction(function () use ($cohort, $open): bool {
+            /** @var LandingSetting|null $setting */
+            $setting = LandingSetting::query()
+                ->forCohort($cohort)
+                ->lockForUpdate()
+                ->first();
+
+            $before = LandingSetting::switchIsOn($setting);
+
+            if ($before === $open) {
+                return false;
+            }
+
+            $setting ??= new LandingSetting(['cohort_id' => $cohort->getKey()]);
+
+            $this->audit->log(
+                action: 'registration.intake_changed',
+                entity: $cohort,
+                before: ['is_registration_open' => $before],
+                after: ['is_registration_open' => $open],
+            );
+
+            $setting->setAttribute('is_registration_open', $open);
+            $setting->save();
+
+            return true;
+        });
+
+        $message = match (true) {
+            ! $changed => __('admin.registrations.intake.unchanged'),
+            $open => __('admin.registrations.intake.opened', ['cohort' => (string) $cohort->getAttribute('name')]),
+            default => __('admin.registrations.intake.closed', ['cohort' => (string) $cohort->getAttribute('name')]),
+        };
+
+        return redirect()
+            ->to(route('admin.registrations.index').'#intake')
+            ->with('status', $message);
     }
 
     /** The review panel, open on `?review={enrollment}`. */

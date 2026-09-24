@@ -6,9 +6,13 @@
     receives by email; approval and rejection are both written to the audit log
     before they take effect (Article 8).
 
+    Below the queue, the switch that opens and closes each cohort's
+    registration — moved here from the landing editor by D-117, so opening,
+    closing and accepting are the same person's.
+
     Four states: error · loading skeleton shaped like the table · empty · normal.
 
-    @see PRD §9.18, §9.2.3 · BR-27, BR-28, BR-31 · D-11 (open: open registration or screening;
+    @see PRD §9.18, §9.2.3, §9.1.2 · BR-27, BR-28, BR-31 · D-117 · D-11 (open: open registration or screening;
          D-05 is the storage ceiling, not this)
 --}}
 @extends('layouts.app')
@@ -175,5 +179,49 @@
                 </div>
             </x-ui.card>
         @endif
+
+        {{-- Opening and closing registration (D-117) — the general supervisor's,
+             beside the requests it lets in. Each row says whether the form takes
+             a registration today, not only where the switch stands: the cohort
+             must also be open, have a seat and not be past its closing time. --}}
+        <x-ui.card id="intake" class="dc--span u-mt-4" icon="lock" :title="__('admin.registrations.intake.title')">
+            <p class="u-muted">{{ __('admin.registrations.intake.body') }}</p>
+
+            @if ($intake->isEmpty())
+                <x-ui.empty-state icon="cal"
+                    :title="__('admin.registrations.intake.empty_title')"
+                    :description="__('admin.registrations.intake.empty_body')"
+                    :action-label="__('nav.admin.cohorts')"
+                    :action-href="route('admin.cohorts.index')" />
+            @else
+                <ul class="reslist" role="list">
+                    @foreach ($intake as $row)
+                        <li class="row">
+                            <div class="row__m">
+                                <b>{{ $row->name }}</b>
+                                <span class="u-muted">{{ $row->programName }}</span>
+                                <span>
+                                    <x-ui.pill :variant="$row->statusVariant" :icon="$row->statusIcon">{{ $row->statusLabel }}</x-ui.pill>
+                                    <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
+                                </span>
+                                <span class="u-muted">{{ $row->note }}</span>
+                            </div>
+                            <div class="row__e">
+                                <form method="POST" action="{{ route('admin.registrations.intake', $row->id) }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="open" value="{{ $row->nextValue }}">
+                                    <x-ui.button :variant="$row->isOpen ? 'secondary' : 'primary'" size="sm" type="submit">{{ $row->actionLabel }}</x-ui.button>
+                                </form>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            @error('open')
+                <div class="note note--warn" role="alert">{{ $message }}</div>
+            @enderror
+        </x-ui.card>
     @endif
 @endsection

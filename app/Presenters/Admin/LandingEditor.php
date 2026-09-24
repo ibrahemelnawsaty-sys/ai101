@@ -229,7 +229,8 @@ final class LandingEditor extends ViewModel
         $override = $setting?->getAttribute('seats_remaining_override');
 
         return [
-            'is_registration_open' => (bool) ($setting?->getAttribute('is_registration_open') ?? false),
+            // Shown, not edited (D-117): the supervisor moves it.
+            'is_registration_open' => LandingSetting::switchIsOn($setting),
             'countdown_enabled' => (bool) ($setting?->getAttribute('countdown_enabled') ?? false),
             'seats_override' => is_numeric($override) ? (int) $override : null,
             'hero_title' => (string) ($setting?->getAttribute('hero_title') ?? ''),

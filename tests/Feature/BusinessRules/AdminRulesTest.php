@@ -64,7 +64,6 @@ it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيا�
         'settings' => [
             'hero_title' => 'CANARY-HERO-TITLE',
             'hero_subtitle' => 'CANARY-HERO-AFTER',
-            'is_registration_open' => true,
             'countdown_enabled' => false,
         ],
     ]));
@@ -97,12 +96,11 @@ it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة
 });
 
 it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه فعلًا على الخادم', function (): void {
-    $settings = LandingSetting::factory()->create([
-        'cohort_id' => $this->cohort->id,
-        'is_registration_open' => false,
-    ]);
+    // D-117 — the general supervisor closes it, from the registrations screen.
+    assertAccepted($this->actingAs($this->admin)->put(route('admin.registrations.intake', $this->cohort), ['open' => '0']));
+    auth()->logout();
 
-    expect($settings->is_registration_open)->toBeFalse();
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->is_registration_open)->toBeFalse();
 
     assertRefused($this->post(route('register'), [
         'email' => 'late.applicant@example.test',
@@ -124,7 +122,7 @@ it('BR-31: المتدرب والمدرب والمشرف العام لا يعدّ
     // D-117 took the landing page from the general supervisor on purpose.
     foreach ([makeParticipant($this->cohort), makeTrainer($this->cohort), $this->admin] as $user) {
         $this->actingAs($user)
-            ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED', 'is_registration_open' => true, 'countdown_enabled' => false]])
+            ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED', 'countdown_enabled' => false]])
             ->assertForbidden();
     }
 
