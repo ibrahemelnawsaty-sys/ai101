@@ -6,7 +6,9 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\LandingContent;
 use App\Services\Landing\LandingCatalog;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 /**
@@ -48,6 +50,16 @@ final class PreviewLandingRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:'.self::STATE_MAX_BYTES],
             'lang' => ['nullable', 'string', Rule::in(LandingCatalog::LOCALES)],
         ];
+    }
+
+    /**
+     * A refused preview answers 422 in place. The default — a redirect back
+     * with the input flashed — would copy a draft of hundreds of texts into
+     * the session, and send the frame to a page that refuses to be framed.
+     */
+    protected function failedValidation(Validator $validator): never
+    {
+        throw new HttpResponseException(response('', 422));
     }
 
     /** The language the preview renders in. Arabic unless English was asked. */

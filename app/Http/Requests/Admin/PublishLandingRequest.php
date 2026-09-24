@@ -30,6 +30,16 @@ use Illuminate\Validation\Validator;
  */
 final class PublishLandingRequest extends FormRequest
 {
+    /** The editor's setting names, and the landing_settings column of each. */
+    private const SETTING_COLUMNS = [
+        'is_registration_open' => 'is_registration_open',
+        'countdown_enabled' => 'countdown_enabled',
+        'seats_override' => 'seats_remaining_override',
+        'hero_title' => 'hero_title',
+        'hero_subtitle' => 'hero_text',
+        'about_body' => 'about_body',
+    ];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -39,20 +49,32 @@ final class PublishLandingRequest extends FormRequest
             && $user->can('update', new LandingSetting);
     }
 
+    /**
+     * Only what was sent is normalised. A flag that is absent stays absent —
+     * the publish is a PATCH, so an absent flag means "unchanged", never
+     * "false" — and a flag that is not a boolean stays as sent, so the
+     * `boolean` rule refuses it instead of it becoming a closed registration.
+     */
     protected function prepareForValidation(): void
     {
         $settings = $this->input('settings');
 
-        if (is_array($settings)) {
-            foreach (['is_registration_open', 'countdown_enabled'] as $flag) {
-                $settings[$flag] = filter_var($settings[$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
-            }
-
-            $override = $settings['seats_override'] ?? null;
-            $settings['seats_override'] = $override === '' ? null : $override;
-
-            $this->merge(['settings' => $settings]);
+        if (! is_array($settings)) {
+            return;
         }
+
+        foreach (['is_registration_open', 'countdown_enabled'] as $flag) {
+            if (array_key_exists($flag, $settings)) {
+                $bool = filter_var($settings[$flag], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                $settings[$flag] = $bool ?? $settings[$flag];
+            }
+        }
+
+        if (($settings['seats_override'] ?? null) === '') {
+            $settings['seats_override'] = null;
+        }
+
+        $this->merge(['settings' => $settings]);
     }
 
     /**
@@ -67,16 +89,22 @@ final class PublishLandingRequest extends FormRequest
             'texts' => ['sometimes', 'array', 'max:'.count($keys)],
             'texts.*' => ['array'],
             'texts.*.key' => ['required', 'string', 'distinct', Rule::in($keys)],
-            'texts.*.ar' => ['present', 'nullable', 'string', 'max:'.LandingCatalog::MAX_LENGTH],
-            'texts.*.en' => ['present', 'nullable', 'string', 'max:'.LandingCatalog::MAX_LENGTH],
+            'texts.*.ar' => ['sometimes', 'nullable', 'string', 'max:'.LandingCatalog::MAX_LENGTH],
+            'texts.*.en' => ['sometimes', 'nullable', 'string', 'max:'.LandingCatalog::MAX_LENGTH],
 
-            'settings' => ['sometimes', 'array'],
-            'settings.is_registration_open' => ['required_with:settings', 'boolean'],
-            'settings.countdown_enabled' => ['required_with:settings', 'boolean'],
-            'settings.seats_override' => ['nullable', 'integer', 'min:0', 'max:10000'],
-            'settings.hero_title' => ['nullable', 'string', 'max:300'],
-            'settings.hero_subtitle' => ['nullable', 'string', 'max:2000'],
-            'settings.about_body' => ['nullable', 'string', 'max:5000'],
+            // A PATCH: each setting is optional, and only the ones sent change.
+            'settings' => ['sometimes', 'array', 'min:1'],
+            'settings.is_registration_open' => ['sometimes', 'boolean'],
+            'settings.countdown_enabled' => ['sometimes', 'boolean'],
+            'settings.seats_override' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10000'],
+            'settings.hero_title' => ['sometimes', 'nullable', 'string', 'max:300'],
+            'settings.hero_subtitle' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'settings.about_body' => ['sometimes', 'nullable', 'string', 'max:5000'],
+
+            // The cohort the editor was showing. When it is no longer the one
+            // the page features, the settings are refused rather than written
+            // to a cohort the editor never displayed.
+            'cohort_id' => ['sometimes', 'nullable', 'string', 'max:36'],
 
             'faq' => ['sometimes', 'array', 'max:100'],
             'faq.*' => ['array'],
@@ -113,15 +141,25 @@ final class PublishLandingRequest extends FormRequest
                         continue;
                     }
 
+                    if (! array_key_exists('ar', $row) && ! array_key_exists('en', $row)) {
+                        $validator->errors()->add("texts.{$index}", __('admin.landing_editor.errors.nothing'));
+
+                        continue;
+                    }
+
                     foreach (LandingCatalog::LOCALES as $locale) {
-                        $value = $row[$locale] ?? null;
+                        if (! array_key_exists($locale, $row)) {
+                            continue;
+                        }
+
+                        $value = $row[$locale];
 
                         foreach ($catalog->issues($key, $locale, is_string($value) ? $value : null) as $issue) {
                             $validator->errors()->add(
                                 "texts.{$index}.{$locale}",
                                 __('admin.landing_editor.errors.'.$issue, [
                                     'max' => LandingCatalog::MAX_LENGTH,
-                                    'vars' => implode(' ', LandingCatalog::placeholders($catalog->defaultOf($key, $locale))),
+                                    'vars' => implode(' ', $catalog->missingPlaceholders($key, $locale, is_string($value) ? $value : '')),
                                 ]),
                             );
                         }
@@ -132,33 +170,52 @@ final class PublishLandingRequest extends FormRequest
     }
 
     /**
-     * The texts to publish, each language already reduced to what is stored:
-     * NULL for empty or unchanged-from-file.
+     * The texts to publish, each SENT language already reduced to what is
+     * stored: NULL for empty or unchanged-from-file. A language that was not
+     * sent is absent here and keeps its published value — so an edit to the
+     * Arabic never reverts somebody else's newer English, and the reverse.
      *
-     * @return array<string, array{ar: string|null, en: string|null}>
+     * @return array<string, array<string, string|null>>
      */
     public function texts(): array
     {
         $catalog = app(LandingCatalog::class);
         $texts = [];
 
-        /** @var list<array{key: string, ar: string|null, en: string|null}> $rows */
+        /** @var list<array<string, mixed>> $rows */
         $rows = $this->validated('texts', []);
 
         foreach ($rows as $row) {
-            $texts[$row['key']] = [
-                'ar' => $catalog->storable($row['key'], 'ar', $row['ar']),
-                'en' => $catalog->storable($row['key'], 'en', $row['en']),
-            ];
+            $key = (string) $row['key'];
+            $entry = [];
+
+            foreach (LandingCatalog::LOCALES as $locale) {
+                if (array_key_exists($locale, $row)) {
+                    $value = $row[$locale];
+                    $entry[$locale] = $catalog->storable($key, $locale, is_string($value) ? $value : null);
+                }
+            }
+
+            $texts[$key] = $entry;
         }
 
         return $texts;
     }
 
+    /** The cohort the editor was showing, when it said. */
+    public function cohortId(): ?string
+    {
+        $id = $this->validated('cohort_id');
+
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+
     /**
-     * The cohort settings in column names, or null when the editor left them
-     * untouched. The hero subtitle is the existing `hero_text` column, which
-     * the public page already prints under the headline.
+     * The settings that were SENT, in column names, or null when none were.
+     * Everything not sent keeps its stored value (a PATCH): a draft that only
+     * touched the headline can never reopen or close the registration. The
+     * hero subtitle is the existing `hero_text` column, which the public page
+     * already prints under the headline.
      *
      * @return array<string, mixed>|null
      */
@@ -170,15 +227,23 @@ final class PublishLandingRequest extends FormRequest
 
         /** @var array<string, mixed> $data */
         $data = $this->validated('settings');
+        $columns = [];
 
-        return [
-            'is_registration_open' => (bool) $data['is_registration_open'],
-            'countdown_enabled' => (bool) $data['countdown_enabled'],
-            'seats_remaining_override' => isset($data['seats_override']) ? (int) $data['seats_override'] : null,
-            'hero_title' => self::clean($data['hero_title'] ?? null),
-            'hero_text' => self::clean($data['hero_subtitle'] ?? null),
-            'about_body' => self::clean($data['about_body'] ?? null),
-        ];
+        foreach (self::SETTING_COLUMNS as $field => $column) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $value = $data[$field];
+
+            $columns[$column] = match ($field) {
+                'is_registration_open', 'countdown_enabled' => (bool) $value,
+                'seats_override' => $value === null ? null : (int) $value,
+                default => self::clean($value),
+            };
+        }
+
+        return $columns === [] ? null : $columns;
     }
 
     /**

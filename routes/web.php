@@ -709,7 +709,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::put('/landing', [AdminLandingController::class, 'update'])
             ->middleware('not.impersonating')
             ->name('landing.update');
-        Route::match(['get', 'post'], '/landing/preview', [AdminLandingController::class, 'preview'])
+        Route::post('/landing/preview', [AdminLandingController::class, 'preview'])
             ->name('landing.preview');
         Route::delete('/landing/texts', [AdminLandingController::class, 'reset'])
             ->middleware('not.impersonating')

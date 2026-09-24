@@ -329,6 +329,105 @@ it('BR-31: إغلاق التسجيل من المحرّر يُغلقه على ا�
 
 /*
 |--------------------------------------------------------------------------
+| A publish changes only what the draft changed (review of D-114)
+|--------------------------------------------------------------------------
+*/
+
+it('BR-31: إعداد واحد يُنشر وحده — لا يُغلق التسجيل ولا يمحو غيره', function (): void {
+    $setting = LandingSetting::factory()->create([
+        'cohort_id' => $this->cohort->id,
+        'is_registration_open' => true,
+        'countdown_enabled' => true,
+        'hero_title' => 'CANARY-KEEP-TITLE',
+        'about_body' => 'CANARY-KEEP-ABOUT',
+    ]);
+
+    publishLanding($this, ['settings' => ['hero_subtitle' => 'CANARY-ONLY-THIS']])->assertOk();
+
+    $fresh = $setting->fresh();
+
+    expect($fresh->hero_text)->toBe('CANARY-ONLY-THIS')
+        ->and($fresh->is_registration_open)->toBeTrue()
+        ->and($fresh->countdown_enabled)->toBeTrue()
+        ->and($fresh->hero_title)->toBe('CANARY-KEEP-TITLE')
+        ->and($fresh->about_body)->toBe('CANARY-KEEP-ABOUT');
+
+    // A switch that is not a boolean is refused, never read as "closed".
+    publishLanding($this, ['settings' => ['is_registration_open' => 'garbage']])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['settings.is_registration_open']);
+
+    expect($setting->fresh()->is_registration_open)->toBeTrue();
+});
+
+it('BR-31: نشر لغة واحدة يُبقي اللغة الأخرى كما نُشرت', function (): void {
+    LandingContent::query()->create(['key' => 'landing.lab.title', 'ar' => 'CANARY-AR', 'en' => 'CANARY-EN-NEWER']);
+
+    publishLanding($this, ['texts' => [['key' => 'landing.lab.title', 'ar' => 'CANARY-AR-2']]])->assertOk();
+
+    expect(LandingContent::query()->findOrFail('landing.lab.title'))
+        ->ar->toBe('CANARY-AR-2')
+        ->en->toBe('CANARY-EN-NEWER');
+
+    publishLanding($this, ['texts' => [['key' => 'landing.lab.title']]])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['texts.0']);
+});
+
+it('BR-31: القيمة الحية تُفحص في كل صيغة عدد على حدة', function (): void {
+    // ":count" kept in the 11+ form does not excuse its loss from the 3–10 form.
+    publishLanding($this, ['texts' => [[
+        'key' => 'landing.facts.chip_weeks',
+        'ar' => '{1} أسبوع واحد|{2} أسبوعان|[3,10] أسابيع|[11,*] :count أسبوعًا',
+    ]]])->assertStatus(422)->assertJsonValidationErrors(['texts.0.ar']);
+
+    expect(LandingContent::query()->count())->toBe(0);
+});
+
+it('BR-31: مفتاح سؤال مكرَّر في النشر يُعطى مفتاحًا جديدًا', function (): void {
+    LandingSetting::factory()->create([
+        'cohort_id' => $this->cohort->id,
+        'faq' => [['key' => 'k1', 'question' => 'Q1', 'answer' => 'A1']],
+    ]);
+
+    publishLanding($this, ['faq' => [
+        ['key' => 'k1', 'question' => 'Q1', 'answer' => 'A1'],
+        ['key' => 'k1', 'question' => 'Q2', 'answer' => 'A2'],
+    ]])->assertOk();
+
+    $keys = array_column(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->faq, 'key');
+
+    expect($keys[0])->toBe('k1')
+        ->and($keys[1])->not->toBe('k1');
+});
+
+it('BR-31: إعدادات مسودة كُتبت لدفعة لم تعد المعروضة تُرفض ولا تُكتب على غيرها', function (): void {
+    LandingSetting::factory()->create(['cohort_id' => $this->cohort->id, 'is_registration_open' => true]);
+
+    publishLanding($this, [
+        'cohort_id' => (string) Illuminate\Support\Str::uuid(),
+        'settings' => ['is_registration_open' => false],
+    ])->assertStatus(409);
+
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->is_registration_open)->toBeTrue();
+});
+
+it('المادة 24: المعاينة لا تُفتح برابط GET يحمل مسودة', function (): void {
+    $state = json_encode(['texts' => ['landing.hero.try_lab' => ['ar' => 'CANARY-FROM-LINK', 'en' => null]]]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.landing.preview').'?state='.rawurlencode((string) $state))
+        ->assertStatus(405);
+
+    // A refused preview answers in place and flashes no draft into the session.
+    $this->actingAs($this->admin)
+        ->post(route('admin.landing.preview'), ['lang' => 'fr', 'state' => $state])
+        ->assertStatus(422)
+        ->assertSessionMissing('_old_input');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Reset
 |--------------------------------------------------------------------------
 */

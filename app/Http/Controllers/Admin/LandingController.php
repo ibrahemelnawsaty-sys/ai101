@@ -95,13 +95,23 @@ final class LandingController extends Controller
             return $this->refuse($request, 'settings', __('admin.landing.no_cohort'));
         }
 
+        // The editor names the cohort it was showing. If another cohort has
+        // become the featured one since, its settings are not this draft's to
+        // overwrite.
+        $shown = $request->cohortId();
+
+        if ($cohort !== null && $shown !== null && $shown !== (string) $cohort->getKey()
+            && ($settings !== null || $faq !== null)) {
+            return $this->refuse($request, 'cohort_id', __('admin.landing_editor.errors.cohort_changed'), 409);
+        }
+
         $texts = $request->texts();
 
         $count = DB::transaction(function () use ($texts, $settings, $faq, $cohort, $actor): int {
             $count = $this->publishTexts($texts, $actor);
 
             if ($cohort !== null && ($settings !== null || $faq !== null)) {
-                $count += $this->publishSettings($cohort, $settings, $faq);
+                $count += $this->publishSettings($cohort, $settings, $faq, $actor);
             }
 
             return $count;
@@ -125,8 +135,9 @@ final class LandingController extends Controller
 
     /**
      * The real landing page, rendered with the editor's draft and never
-     * stored. Opened in the editor's frame by GET (the published page) and
-     * refreshed by POST (the draft).
+     * stored. POST only, from the editor's own form: a GET that read a draft
+     * from the address would let a crafted link show made-up copy on a real
+     * admin address.
      */
     public function preview(PreviewLandingRequest $request, RiyadhFormatter $formatter): Response
     {
@@ -227,7 +238,7 @@ final class LandingController extends Controller
     }
 
     /**
-     * @param  array<string, array{ar: string|null, en: string|null}>  $texts
+     * @param  array<string, array<string, string|null>>  $texts  only the languages sent
      */
     private function publishTexts(array $texts, User $actor): int
     {
@@ -249,6 +260,9 @@ final class LandingController extends Controller
             $old = $row instanceof LandingContent
                 ? ['ar' => $row->getAttribute('ar'), 'en' => $row->getAttribute('en')]
                 : ['ar' => null, 'en' => null];
+
+            // A language that was not sent keeps its published value.
+            $values = array_merge($old, $values);
 
             if ($old === $values) {
                 continue;
@@ -296,9 +310,11 @@ final class LandingController extends Controller
      * @param  array<string, mixed>|null  $settings
      * @param  list<array{key: string|null, question: string, answer: string}>|null  $faq
      */
-    private function publishSettings(Cohort $cohort, ?array $settings, ?array $faq): int
+    private function publishSettings(Cohort $cohort, ?array $settings, ?array $faq, User $actor): int
     {
-        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
+        $setting = LandingSetting::query()
+            ->visibleTo($actor)
+            ->firstOrNew(['cohort_id' => $cohort->getKey()]);
         $count = 0;
         $touched = false;
         $tracked = ['is_registration_open', 'countdown_enabled', 'seats_remaining_override', 'hero_title', 'hero_text', 'about_body'];
@@ -325,14 +341,17 @@ final class LandingController extends Controller
             $known = array_column($stored, null, 'key');
             $entries = [];
 
+            $used = [];
+
             foreach ($faq as $entry) {
-                // A key is kept only when THIS row already holds it; every
-                // other one is generated here, so the browser can never aim an
-                // entry at another's key.
-                $key = $entry['key'] !== null && isset($known[$entry['key']])
+                // A key is kept only when THIS row already holds it, and only
+                // once; every other one is generated here, so the browser can
+                // never aim an entry at another's key or give two entries one.
+                $key = $entry['key'] !== null && isset($known[$entry['key']]) && ! isset($used[$entry['key']])
                     ? $entry['key']
                     : (string) Str::uuid();
 
+                $used[$key] = true;
                 $entries[] = ['key' => $key, 'question' => $entry['question'], 'answer' => $entry['answer']];
             }
 
@@ -340,8 +359,8 @@ final class LandingController extends Controller
                 $this->audit->log(
                     action: 'landing.faq_published',
                     entity: $setting,
-                    before: ['faq_count' => count($stored)],
-                    after: ['faq_count' => count($entries)],
+                    before: ['faq' => $stored],
+                    after: ['faq' => $entries],
                 );
 
                 $setting->fill(['cohort_id' => $cohort->getKey(), 'faq' => $entries]);
@@ -421,10 +440,10 @@ final class LandingController extends Controller
         ViewFactory::share('direction', in_array($lang, $rtl, true) ? 'rtl' : 'ltr');
     }
 
-    private function refuse(PublishLandingRequest $request, string $field, string $message): JsonResponse|RedirectResponse
+    private function refuse(PublishLandingRequest $request, string $field, string $message, int $status = 422): JsonResponse|RedirectResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['message' => $message, 'errors' => [$field => [$message]]], 422);
+            return response()->json(['message' => $message, 'errors' => [$field => [$message]]], $status);
         }
 
         return back()->withErrors([$field => $message]);

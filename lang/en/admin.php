@@ -447,6 +447,7 @@ return [
             'too_long' => 'The text is longer than allowed (:max characters). Shorten it a little.',
             'placeholders' => 'Put the live value :vars back into the text — it is replaced by a number or a name on the page, and the sentence makes no sense without it.',
             'plural' => 'The counted forms must stay as in the original, in the same order. Write each form in its own field.',
+            'cohort_changed' => 'The cohort shown on the landing page changed since you opened the editor, so its settings and questions were not saved. Reload the page to see the current cohort — your draft is kept.',
         ],
 
         'sections' => [
@@ -618,6 +619,7 @@ return [
             'server_error' => 'A temporary fault stopped the request and nothing changed for visitors. Try again in a moment — your draft is safe.',
             'session_expired' => 'Your session ended, so nothing changed. Reload the page and sign in — your draft is kept in this browser.',
             'invalid' => 'Some fields need fixing before publishing. They are marked in red.',
+            'preview_failed' => 'The preview could not be refreshed and still shows the last version that worked. Your session may have ended: reload the page — your draft is kept.',
         ],
     ],
 

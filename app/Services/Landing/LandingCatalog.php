@@ -389,22 +389,46 @@ final class LandingCatalog
             $issues[] = 'too_long';
         }
 
-        if (array_diff(self::placeholders($default), self::placeholders($text)) !== []) {
+        $expected = self::pluralForms($default);
+        $given = self::pluralForms($text);
+
+        if ($expected !== null
+            && ($given === null || array_column($given, 'marker') !== array_column($expected, 'marker'))) {
+            $issues[] = 'plural';
+        }
+
+        if ($this->missingPlaceholders($key, $locale, $text) !== []) {
             $issues[] = 'placeholders';
         }
 
+        return $issues;
+    }
+
+    /**
+     * The live values the edited text dropped. A counted text is checked form
+     * by form: ":count" kept in the "11 and above" form does not excuse its
+     * loss from the "3 to 10" form, where the visitor would read the noun with
+     * no number in front of it.
+     *
+     * @return list<string>
+     */
+    public function missingPlaceholders(string $key, string $locale, string $value): array
+    {
+        $default = $this->defaultOf($key, $locale);
         $expected = self::pluralForms($default);
+        $given = self::pluralForms(trim($value));
 
-        if ($expected !== null) {
-            $given = self::pluralForms($text);
-
-            if ($given === null
-                || array_column($given, 'marker') !== array_column($expected, 'marker')) {
-                $issues[] = 'plural';
-            }
+        if ($expected === null || $given === null || count($given) !== count($expected)) {
+            return array_values(array_diff(self::placeholders($default), self::placeholders($value)));
         }
 
-        return $issues;
+        $missing = [];
+
+        foreach ($expected as $index => $form) {
+            array_push($missing, ...array_diff(self::placeholders($form['text']), self::placeholders($given[$index]['text'])));
+        }
+
+        return array_values(array_unique($missing));
     }
 
     /**

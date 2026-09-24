@@ -137,6 +137,7 @@ export default function landingEditor() {
         pendingScroll: 0,
         previewReady: false,
         previewTimer: null,
+        previewStale: false,
 
         confirm: { open: false, title: '', body: '', label: '', action: null, opener: null },
 
@@ -175,7 +176,9 @@ export default function landingEditor() {
             this.$watch('device', () => this.fit());
             this.$watch('showPreview', (shown) => {
                 if (shown) this.$nextTick(() => this.fit());
+                this.catchUpPreview();
             });
+            this.$watch('search', () => this.catchUpPreview());
 
             this.bindWindow();
             this.ready = true;
@@ -320,9 +323,6 @@ export default function landingEditor() {
 
             if (text.length > this.max) issues.push('too_long');
 
-            const missing = placeholders(original).filter((name) => text.indexOf(name) === -1);
-            if (missing.length) issues.push('placeholders');
-
             const expected = splitForms(original);
             if (expected) {
                 const given = splitForms(text);
@@ -330,7 +330,35 @@ export default function landingEditor() {
                 if (!given || markers(given) !== markers(expected)) issues.push('plural');
             }
 
+            if (this.missingVars(key, lang).length) issues.push('placeholders');
+
             return issues;
+        },
+
+        /**
+         * The live values the text dropped — token by token, and form by form
+         * for a counted text, exactly as LandingCatalog::missingPlaceholders()
+         * decides on the server.
+         */
+        missingVars(key, lang) {
+            const original = this.def(key, lang);
+            const text = String(this.value(key, lang) || '').trim();
+            const expected = splitForms(original);
+            const given = splitForms(text);
+            const lost = (from, to) => {
+                const have = placeholders(to);
+                return placeholders(from).filter((name) => have.indexOf(name) === -1);
+            };
+
+            if (!expected || !given || expected.length !== given.length) return lost(original, text);
+
+            const missing = [];
+            expected.forEach((form, index) => {
+                lost(form.text, given[index].text).forEach((name) => {
+                    if (missing.indexOf(name) === -1) missing.push(name);
+                });
+            });
+            return missing;
         },
 
         issueText(key, lang) {
@@ -341,9 +369,7 @@ export default function landingEditor() {
             return this.issuesOf(key, lang)
                 .map((code) => fill(errors[code] || '', {
                     max: this.max,
-                    vars: placeholders(this.def(key, lang))
-                        .filter((name) => String(this.value(key, lang)).indexOf(name) === -1)
-                        .join(' '),
+                    vars: this.missingVars(key, lang).join(' '),
                 }))
                 .join(' ');
         },
@@ -385,6 +411,32 @@ export default function landingEditor() {
             const now = this.normalSettings(this.settingsDraft);
             const was = this.normalSettings(this.settings);
             return SETTING_KEYS.filter((key) => now[key] !== was[key]);
+        },
+
+        /**
+         * Only the settings this draft changed. Stored, restored and published
+         * as a patch: a draft that touched the headline never carries the
+         * registration switch it happened to see, so it cannot undo another
+         * administrator's newer decision.
+         */
+        settingsPatch() {
+            const now = this.normalSettings(this.settingsDraft);
+            const patch = {};
+            this.changedSettings().forEach((key) => {
+                patch[key] = now[key];
+            });
+            return patch;
+        },
+
+        /** The languages of one text this draft changed, and nothing else. */
+        textPatch(key) {
+            const row = this.draft[key];
+            const patch = {};
+            if (!row) return patch;
+            ['ar', 'en'].forEach((lang) => {
+                if (row[lang] !== this.publishedValue(key, lang)) patch[lang] = row[lang];
+            });
+            return patch;
         },
 
         /* -------------------------------------------------------- the FAQ */
@@ -595,7 +647,18 @@ export default function landingEditor() {
 
         changed() {
             this.persist();
-            this.schedulePreview();
+            if (this.showPreview && this.query === '') {
+                this.schedulePreview();
+            } else {
+                // Nobody is looking: render once, when the preview is back.
+                this.previewStale = true;
+            }
+        },
+
+        catchUpPreview() {
+            if (!this.previewStale || !this.showPreview || this.query !== '') return;
+            this.previewStale = false;
+            this.$nextTick(() => this.sendPreview(false));
         },
 
         persist() {
@@ -604,16 +667,17 @@ export default function landingEditor() {
             try {
                 const texts = {};
                 this.dirtyKeys().forEach((key) => {
-                    texts[key] = this.draft[key];
+                    texts[key] = this.textPatch(key);
                 });
-                const empty = !Object.keys(texts).length && !this.settingsDraft && !this.faqDraft;
+                const settings = this.changedSettings().length ? this.settingsPatch() : null;
+                const empty = !Object.keys(texts).length && !settings && !this.faqDraft;
                 if (empty) {
                     store.removeItem(STORAGE_KEY);
                 } else {
                     store.setItem(STORAGE_KEY, JSON.stringify({
                         cohort: this.cohortId,
                         texts,
-                        settings: this.settingsDraft,
+                        settings,
                         faq: this.faqDraft,
                     }));
                 }
@@ -637,17 +701,29 @@ export default function landingEditor() {
             }
             if (!saved || typeof saved !== 'object') return;
 
+            // Each saved text carries only the languages that were edited; the
+            // other language is read fresh, so a newer edit by someone else
+            // is kept.
             const texts = saved.texts && typeof saved.texts === 'object' ? saved.texts : {};
             Object.keys(texts).forEach((key) => {
                 const row = texts[key];
-                if (this.fieldIndex[key] && row && typeof row.ar === 'string' && typeof row.en === 'string') {
-                    this.draft[key] = { ar: row.ar, en: row.en };
+                if (!this.fieldIndex[key] || !row || typeof row !== 'object') return;
+                const next = {
+                    ar: typeof row.ar === 'string' ? row.ar : this.publishedValue(key, 'ar'),
+                    en: typeof row.en === 'string' ? row.en : this.publishedValue(key, 'en'),
+                };
+                if (next.ar !== this.publishedValue(key, 'ar') || next.en !== this.publishedValue(key, 'en')) {
+                    this.draft[key] = next;
                 }
             });
 
             if (saved.cohort && saved.cohort === this.cohortId && this.settings) {
                 if (saved.settings && typeof saved.settings === 'object') {
-                    this.settingsDraft = Object.assign({}, this.settings, saved.settings);
+                    const patch = {};
+                    SETTING_KEYS.forEach((key) => {
+                        if (Object.prototype.hasOwnProperty.call(saved.settings, key)) patch[key] = saved.settings[key];
+                    });
+                    this.settingsDraft = Object.assign({}, this.settings, patch);
                     if (!this.changedSettings().length) this.settingsDraft = null;
                 }
                 if (Array.isArray(saved.faq)) {
@@ -677,22 +753,28 @@ export default function landingEditor() {
                 return;
             }
 
+            // Only what this draft changed: the languages edited, the settings
+            // touched. Everything else keeps whatever is published NOW.
             const keys = this.dirtyKeys();
             const body = {};
             if (keys.length) {
-                body.texts = keys.map((key) => ({
-                    key,
-                    ar: String(this.draft[key].ar || '').trim(),
-                    en: String(this.draft[key].en || '').trim(),
-                }));
+                body.texts = keys.map((key) => {
+                    const row = { key };
+                    const patch = this.textPatch(key);
+                    Object.keys(patch).forEach((lang) => {
+                        row[lang] = String(patch[lang] || '').trim();
+                    });
+                    return row;
+                });
             }
-            if (this.changedSettings().length) body.settings = this.normalSettings(this.settingsDraft);
+            if (this.changedSettings().length) body.settings = this.settingsPatch();
             if (this.faqDirty()) body.faq = this.faqPayload(this.faqDraft);
+            if (body.settings || body.faq) body.cohort_id = this.cohortId;
 
             const answer = await this.send('PUT', this.urls.publish, body);
             if (!answer) return;
 
-            if (answer.status === 422) {
+            if (answer.status === 422 || answer.status === 409) {
                 this.absorbErrors(answer.data, body.texts || []);
                 return;
             }
@@ -745,7 +827,7 @@ export default function landingEditor() {
                 } catch (e) {
                     data = {};
                 }
-                if (response.ok || response.status === 422) return { status: response.status, data };
+                if (response.ok || response.status === 422 || response.status === 409) return { status: response.status, data };
                 this.toast(this.t(response.status === 419 || response.status === 401 ? 'session_expired' : 'server_error'), 'bad');
                 return null;
             } catch (e) {
@@ -912,21 +994,35 @@ export default function landingEditor() {
                 win = null;
             }
 
-            if (win) {
-                try {
-                    if (this.pendingFocus && win.AtharPreview) {
-                        win.AtharPreview.focus(this.pendingFocus, false);
-                    } else {
-                        win.scrollTo(0, this.pendingScroll);
-                    }
-                } catch (e) {
-                    /* A frame that is not the preview page is shown as it is. */
+            // Anything but the preview page — an expired session, a login
+            // page, a refusal — is never swapped in: the last good render stays
+            // visible and the editor says what happened.
+            let usable = false;
+            try {
+                usable = !!(win && win.AtharPreview);
+            } catch (e) {
+                usable = false;
+            }
+
+            this.pendingFrame = null;
+            this.previewReady = true;
+
+            if (!usable) {
+                this.toast(this.t('preview_failed'), 'warn');
+                return;
+            }
+
+            try {
+                if (this.pendingFocus) {
+                    win.AtharPreview.focus(this.pendingFocus, false);
+                } else {
+                    win.scrollTo(0, this.pendingScroll);
                 }
+            } catch (e) {
+                /* The page is shown where it opened. */
             }
 
             this.activeFrame = name;
-            this.pendingFrame = null;
-            this.previewReady = true;
         },
 
         /** Jump the visible frame to the section being edited, and flash it. */
