@@ -22,6 +22,11 @@ export default defineConfig({
                 'resources/js/dashboard.js',
                 'resources/js/public.js',
                 'resources/js/auth.js',
+                // The landing content editor and the page it previews (D-114):
+                // entries of their own, so neither the dashboard nor a visitor
+                // downloads them.
+                'resources/js/admin-landing.js',
+                'resources/js/landing-preview.js',
             ],
             refresh: [
                 'resources/views/**',

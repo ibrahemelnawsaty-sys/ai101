@@ -18,6 +18,7 @@
       @section('title')     required · the appbar heading
       @section('subtitle')  optional · the line under it
       @section('content')   required
+      @section('entry')     optional · a Vite entry that replaces dashboard.js
     Stacks: @push('head') · @push('body')
 
     The shell's own values come from App\View\Composers\AppLayoutComposer, on
@@ -49,7 +50,10 @@
     <link rel="icon" href="{{ asset('brand/icons/favicon-mark.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('brand/icons/icon-180.png') }}">
 
-    @vite(['resources/css/app.css', 'resources/js/dashboard.js'])
+    {{-- A screen with its own Alpine component names its entry in
+         @section('entry'); the entry imports dashboard.js, so the shell is the
+         same and the component is registered before Alpine starts (D-114). --}}
+    @vite(['resources/css/app.css', \Illuminate\Support\Facades\View::yieldContent('entry', 'resources/js/dashboard.js')])
 
     {{-- Without JavaScript — switched off, blocked, or a bundle that failed to
          load — the burger, the drawer and the account menu are all Alpine, so

@@ -698,19 +698,22 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->middleware('not.impersonating')
             ->name('certificates.revoke');
 
+        /*
+         * The landing-page content editor (D-114): one publish for every text
+         * and setting the draft changed, a live preview of the real page that
+         * stores nothing, and a reset of a section's texts or the page's. The
+         * question list is published with the rest, so the three per-question
+         * endpoints it used to have are gone.
+         */
         Route::get('/landing', [AdminLandingController::class, 'edit'])->name('landing.edit');
         Route::put('/landing', [AdminLandingController::class, 'update'])
             ->middleware('not.impersonating')
             ->name('landing.update');
-        Route::post('/landing/faq', [AdminLandingController::class, 'storeFaq'])
+        Route::match(['get', 'post'], '/landing/preview', [AdminLandingController::class, 'preview'])
+            ->name('landing.preview');
+        Route::delete('/landing/texts', [AdminLandingController::class, 'reset'])
             ->middleware('not.impersonating')
-            ->name('landing.faq.store');
-        Route::put('/landing/faq/{entry}', [AdminLandingController::class, 'updateFaq'])
-            ->middleware('not.impersonating')
-            ->name('landing.faq.update');
-        Route::delete('/landing/faq/{entry}', [AdminLandingController::class, 'destroyFaq'])
-            ->middleware('not.impersonating')
-            ->name('landing.faq.destroy');
+            ->name('landing.reset');
 
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export', [AdminReportController::class, 'export'])->name('reports.export');

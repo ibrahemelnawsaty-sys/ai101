@@ -52,14 +52,17 @@ it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيا�
 
     $this->get(route('home'))->assertOk()->assertSee('CANARY-HERO-BEFORE', escape: false);
 
-    // The editor's field names are the ones the form and UpdateLandingRequest
-    // publish, not the column names: `hero_subtitle` is the sentence the public
-    // page prints under the headline and is stored in the `hero_text` column.
-    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.update', $settings), [
-        'hero_title' => 'CANARY-HERO-TITLE',
-        'hero_subtitle' => 'CANARY-HERO-AFTER',
-        'is_registration_open' => true,
-        'countdown_enabled' => false,
+    // The editor's field names are the ones PublishLandingRequest accepts, not
+    // the column names: `hero_subtitle` is the sentence the public page prints
+    // under the headline and is stored in the `hero_text` column. The cohort's
+    // settings ride in the same publish as the page texts (D-114).
+    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.update'), [
+        'settings' => [
+            'hero_title' => 'CANARY-HERO-TITLE',
+            'hero_subtitle' => 'CANARY-HERO-AFTER',
+            'is_registration_open' => true,
+            'countdown_enabled' => false,
+        ],
     ]));
 
     $this->get(route('home'))
@@ -69,9 +72,9 @@ it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيا�
 });
 
 it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة لا من الكود', function (): void {
-    // The FAQ is a JSON column with its own three endpoints (PRD §9.1,
-    // PROJECT-CONTRACT §4) — it does not ride inside the settings form, and an
-    // entry is addressed by the key stored beside it.
+    // The FAQ is a JSON column (PROJECT-CONTRACT §4). Since D-114 the editor
+    // publishes the whole ordered list; an entry keeps the key stored beside it
+    // and the server generates every new one.
     LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'faq' => [['key' => 'canary-one', 'question' => 'CANARY-Q-ONE', 'answer' => 'CANARY-A-ONE']],
@@ -80,9 +83,8 @@ it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة
 
     $this->get(route('home'))->assertSee('CANARY-Q-ONE', escape: false);
 
-    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.faq.update', 'canary-one'), [
-        'question' => 'CANARY-Q-TWO',
-        'answer' => 'CANARY-A-TWO',
+    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.update'), [
+        'faq' => [['key' => 'canary-one', 'question' => 'CANARY-Q-TWO', 'answer' => 'CANARY-A-TWO']],
     ]));
 
     $this->get(route('home'))
@@ -117,7 +119,7 @@ it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صف
 
     foreach ([makeParticipant($this->cohort), makeTrainer($this->cohort)] as $user) {
         $this->actingAs($user)
-            ->put(route('admin.landing.update', $settings), ['hero_text' => 'CANARY-TAMPERED'])
+            ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED', 'is_registration_open' => true, 'countdown_enabled' => false]])
             ->assertForbidden();
     }
 

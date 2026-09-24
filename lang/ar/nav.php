@@ -68,7 +68,7 @@ return [
         'dashboard' => 'لوحة المعلومات',
         'programs' => 'البرامج',
         'cohorts' => 'الدفعات',
-        'landing' => 'صفحة الهبوط',
+        'landing' => 'محتوى صفحة الهبوط',
         'users' => 'المستخدمون',
         'registrations' => 'طلبات التسجيل',
         'certificates' => 'الشهادات',

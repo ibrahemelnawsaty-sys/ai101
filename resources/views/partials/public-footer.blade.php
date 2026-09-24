@@ -5,7 +5,7 @@
 
     @see BR-31, BR-36 · PRD §9.1.1
 --}}
-<footer class="foot">
+<footer class="foot" id="site-footer">
     <div class="wrap">
         <div class="foot__grid">
             <div>

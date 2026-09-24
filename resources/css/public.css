@@ -1315,3 +1315,68 @@ max-inline-size: var(--d-10);
   .gate__barf,
   .sl__fill { transition: none !important; }
 }
+
+/* ==========================================================================
+   19 · THE CONTENT EDITOR'S LIVE PREVIEW (D-114)
+        The landing page inside the admin's preview frame carries
+        <html data-still>. Every render shows the page settled — exactly as
+        section 18 and app.css show it under reduced motion — so a re-render
+        after each edit never replays the entrance. Only the preview renders
+        the attribute; a visitor's page is never affected.
+   ========================================================================== */
+
+html[data-still] { scroll-behavior: auto; }
+
+/* The English copy, previewed left to right. The base layer fixes the body to
+   RTL for the whole platform; only this preview ever renders the public page
+   with dir="ltr" — the site itself serves Arabic alone. */
+html[dir="ltr"] body { direction: ltr; }
+
+html[data-still] *,
+html[data-still] *::before,
+html[data-still] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-still] .cur,
+html[data-still] .tracer,
+html[data-still] .net,
+html[data-still] .grain,
+html[data-still] .hero__canvas,
+html[data-still] .rip,
+html[data-still] .cf { display: none !important; }
+
+html[data-still] .bp { -webkit-mask-image: none; mask-image: none; opacity: 0.35; }
+
+html[data-still] .rv { opacity: 1 !important; transform: none !important; }
+html[data-still] .wd { opacity: 1 !important; transform: none !important; filter: none !important; }
+html[data-still] .wipe-t { clip-path: none !important; }
+html[data-still] .hl::before { inline-size: calc(100% + 0.44em); }
+html[data-still] .logo--draw svg { clip-path: none !important; }
+
+html[data-still] .tilt,
+html[data-still] .tiltc,
+html[data-still] .tiltc__in,
+html[data-still] .mag,
+html[data-still] .mag__t { transform: none !important; }
+
+html[data-still] .deck { block-size: auto !important; }
+html[data-still] .deck__stick { position: static !important; block-size: auto !important; display: block !important; }
+html[data-still] .deck__cards { position: static !important; display: grid !important; gap: var(--s4); block-size: auto !important; inline-size: auto !important; }
+html[data-still] .deck__c { position: static !important; transform: none !important; opacity: 1 !important; }
+html[data-still] .deck__prog { display: none; }
+
+html[data-still] .flip__in { min-block-size: auto; }
+html[data-still] .flip:hover .flip__in,
+html[data-still] .flip:focus-within .flip__in { transform: none; }
+html[data-still] .flip__f { position: static; }
+html[data-still] .flip__b { position: static; transform: none; margin-block-start: var(--s3); }
+
+/* The section the editor just opened, outlined for a moment. */
+.lp-focus {
+  outline: var(--bw-strong) solid var(--violet-500);
+  outline-offset: calc(var(--s2) * -1);
+  border-radius: var(--r-md);
+}

@@ -58,7 +58,7 @@ return [
         'dashboard' => 'Info dashboard',
         'programs' => 'Programmes',
         'cohorts' => 'Cohorts',
-        'landing' => 'Landing page',
+        'landing' => 'Landing page content',
         'users' => 'Users',
         'registrations' => 'Registrations',
         'certificates' => 'Certificates',

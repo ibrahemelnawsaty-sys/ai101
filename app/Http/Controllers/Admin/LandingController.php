@@ -5,180 +5,448 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\FaqEntryRequest;
-use App\Http\Requests\Admin\UpdateLandingRequest;
+use App\Http\Controllers\Public\HomeController;
+use App\Http\Requests\Admin\PreviewLandingRequest;
+use App\Http\Requests\Admin\PublishLandingRequest;
+use App\Http\Requests\Admin\ResetLandingRequest;
 use App\Models\Cohort;
+use App\Models\LandingContent;
 use App\Models\LandingSetting;
-use App\Presenters\Admin\LandingSettings;
+use App\Models\User;
+use App\Presenters\Admin\LandingEditor;
 use App\Services\Audit\AuditLogger;
+use App\Services\Landing\LandingCatalog;
+use App\Services\Landing\LandingOverrides;
+use App\Services\Time\RiyadhFormatter;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View as ViewFactory;
 use Illuminate\Support\Str;
 
 /**
- * Landing-page settings (PRD §9.1, §9.18).
+ * The landing-page content editor — the "Landing page content" tab (PRD §9.1, §9.18).
  *
- * This screen is the answer to BR-31: the hero sentence, the questions and
- * answers, the seat figure and the registration switch are all data, edited by
- * the centre, never strings in a template. Turning registration off here closes
- * the public form on the next request — the check is re-read on every
- * registration attempt, not cached into the page (Art. 5).
+ * This screen is the answer to BR-31 for the whole page: every sentence a
+ * visitor reads, in Arabic and in English, plus this cohort's registration
+ * switches, seat figure, hero copy and questions. Four endpoints:
  *
- * @see BR-31, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5, Art. 6
+ *   edit     the editor, modelled on the approved Sajaya editor (D-114);
+ *   update   ONE publish of everything the draft changed, in one transaction;
+ *   preview  the real landing page rendered with the draft — nothing stored;
+ *   reset    a section's texts, or the page's, back to the lang files.
+ *
+ * The registration switch is still re-read on every registration attempt, not
+ * cached into the page, so closing it here closes the form on the very next
+ * request (Art. 5).
+ *
+ * @see BR-31, BR-33, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5, Art. 6, Art. 8 · D-114
  */
 final class LandingController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly LandingCatalog $catalog,
+        private readonly LandingOverrides $overrides,
+    ) {}
 
     public function edit(): View
     {
         $this->authorize('update', new LandingSetting);
+        $this->authorize('viewAny', LandingContent::class);
 
         $cohort = $this->currentCohort();
 
         return view('admin.landing', [
             'contextLabel' => $cohort?->getAttribute('name'),
-            'settings' => LandingSettings::from($cohort?->landingSetting()->first(), $cohort),
+            'editor' => LandingEditor::from(
+                $this->catalog,
+                $this->published($this->actor()),
+                $cohort,
+                $cohort?->landingSetting,
+                [
+                    'publish' => route('admin.landing.update'),
+                    'preview' => route('admin.landing.preview'),
+                    'reset' => route('admin.landing.reset'),
+                    'home' => route('home'),
+                    'programs' => route('admin.programs.index'),
+                    'cohorts' => route('admin.cohorts.index'),
+                ],
+            ),
             'errorState' => null,
         ]);
     }
 
-    public function update(UpdateLandingRequest $request): RedirectResponse
+    /**
+     * Publish the draft: the texts that changed, and the cohort's settings and
+     * questions when the editor touched them. All or nothing.
+     */
+    public function update(PublishLandingRequest $request): JsonResponse|RedirectResponse
     {
+        $actor = $this->actor();
         $cohort = $this->currentCohort();
+        $settings = $request->settingColumns();
+        $faq = $request->faq();
 
-        if ($cohort === null) {
-            return back()->withErrors(['hero_title' => __('admin.landing.no_cohort')]);
+        if ($cohort === null && ($settings !== null || $faq !== null)) {
+            return $this->refuse($request, 'settings', __('admin.landing.no_cohort'));
         }
 
-        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
+        $texts = $request->texts();
 
-        $before = $setting->exists
-            ? $this->audit->snapshot($setting, ['is_registration_open', 'seats_remaining_override'])
-            : null;
+        $count = DB::transaction(function () use ($texts, $settings, $faq, $cohort, $actor): int {
+            $count = $this->publishTexts($texts, $actor);
 
-        $setting->fill(array_merge($request->columns(), ['cohort_id' => $cohort->getKey()]));
+            if ($cohort !== null && ($settings !== null || $faq !== null)) {
+                $count += $this->publishSettings($cohort, $settings, $faq);
+            }
 
-        $this->audit->log(
-            action: 'landing.updated',
-            entity: $setting,
-            before: $before,
-            after: $this->audit->snapshot($setting, ['is_registration_open', 'seats_remaining_override']),
+            return $count;
+        });
+
+        $this->overrides->forget();
+
+        $message = trans_choice('admin.landing_editor.published', $count, ['count' => $count]);
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', $message);
+        }
+
+        $cohort = $this->currentCohort();
+
+        return response()->json([
+            'message' => $message,
+            'state' => $this->state($actor, $cohort),
+        ]);
+    }
+
+    /**
+     * The real landing page, rendered with the editor's draft and never
+     * stored. Opened in the editor's frame by GET (the published page) and
+     * refreshed by POST (the draft).
+     */
+    public function preview(PreviewLandingRequest $request, RiyadhFormatter $formatter): Response
+    {
+        /** @var HomeController $home */
+        $home = app(HomeController::class);
+        $cohort = $home->featuredCohort();
+
+        $settings = $request->settingColumns();
+        $faq = $request->faq();
+
+        if ($cohort !== null && ($settings !== null || $faq !== null)) {
+            // A copy of the row, never the row: the draft is laid on an
+            // unsaved clone that dies with this request (Art. 5 — a preview
+            // changes nothing).
+            $current = $cohort->landingSetting;
+            $draft = $current instanceof LandingSetting ? clone $current : new LandingSetting;
+            $draft->fill(array_merge($settings ?? [], $faq === null ? [] : ['faq' => $faq]));
+            $cohort->setRelation('landingSetting', $draft);
+        }
+
+        $texts = $request->texts($this->catalog);
+
+        if ($texts !== null) {
+            $this->overrides->preview($texts);
+        }
+
+        $this->useLanguage($request->lang());
+
+        // The one response on the platform another page may frame — and only
+        // a page of the same origin (see SecurityHeaders). Set on the request
+        // the middleware holds: a FormRequest is a copy with its own attributes.
+        request()->attributes->set('athar.frameable', true);
+
+        try {
+            $html = $home->render($cohort, $formatter, preview: true)->render();
+        } finally {
+            $this->overrides->endPreview();
+        }
+
+        return response($html)
+            ->header('Cache-Control', 'no-store')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /** A section's texts, or all of them, back to the lang files. */
+    public function reset(ResetLandingRequest $request): JsonResponse|RedirectResponse
+    {
+        $actor = $this->actor();
+        $section = $request->section();
+        $keys = $section === null ? null : $this->catalog->sectionKeys($section);
+
+        $count = DB::transaction(function () use ($actor, $keys, $section): int {
+            $query = LandingContent::query()->visibleTo($actor);
+
+            if ($keys !== null) {
+                $query->whereIn('key', $keys);
+            }
+
+            $rows = $query->get();
+
+            if ($rows->isEmpty()) {
+                return 0;
+            }
+
+            $before = [];
+
+            foreach ($rows as $row) {
+                $before[(string) $row->getAttribute('key')] = ['ar' => $row->getAttribute('ar'), 'en' => $row->getAttribute('en')];
+            }
+
+            $this->audit->record(
+                action: 'landing.content_reset',
+                entityType: 'landing_content',
+                entityId: null,
+                before: ['section' => $section, 'texts' => $before],
+                after: ['section' => $section, 'texts' => []],
+            );
+
+            LandingContent::query()->visibleTo($actor)->whereIn('key', array_keys($before))->delete();
+
+            return count($before);
+        });
+
+        $this->overrides->forget();
+
+        $message = $section === null
+            ? trans_choice('admin.landing_editor.reset_all_done', $count, ['count' => $count])
+            : trans_choice('admin.landing_editor.reset_section_done', $count, ['count' => $count]);
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', $message);
+        }
+
+        return response()->json([
+            'message' => $message,
+            'state' => $this->state($actor, $this->currentCohort()),
+        ]);
+    }
+
+    /**
+     * @param  array<string, array{ar: string|null, en: string|null}>  $texts
+     */
+    private function publishTexts(array $texts, User $actor): int
+    {
+        if ($texts === []) {
+            return 0;
+        }
+
+        $existing = LandingContent::query()
+            ->visibleTo($actor)
+            ->whereIn('key', array_keys($texts))
+            ->get()
+            ->keyBy('key');
+
+        $before = [];
+        $after = [];
+
+        foreach ($texts as $key => $values) {
+            $row = $existing->get($key);
+            $old = $row instanceof LandingContent
+                ? ['ar' => $row->getAttribute('ar'), 'en' => $row->getAttribute('en')]
+                : ['ar' => null, 'en' => null];
+
+            if ($old === $values) {
+                continue;
+            }
+
+            $before[$key] = $old;
+            $after[$key] = $values;
+        }
+
+        if ($after === []) {
+            return 0;
+        }
+
+        // Logged before the rows change, inside the same transaction (Art. 8).
+        $this->audit->record(
+            action: 'landing.content_published',
+            entityType: 'landing_content',
+            entityId: null,
+            before: ['texts' => $before],
+            after: ['texts' => $after],
         );
 
-        $setting->save();
+        foreach ($after as $key => $values) {
+            $row = $existing->get($key);
 
-        return back()->with('status', __('admin.landing.saved'));
+            if ($values['ar'] === null && $values['en'] === null) {
+                $row?->delete();
+
+                continue;
+            }
+
+            $row ??= new LandingContent(['key' => $key]);
+            $row->fill([
+                'ar' => $values['ar'],
+                'en' => $values['en'],
+                'updated_by' => (string) $actor->getKey(),
+            ]);
+            $row->save();
+        }
+
+        return count($after);
     }
 
     /**
-     * Add one question and answer.
-     *
-     * The FAQ is a JSON column on `landing_settings`, not a table of its own
-     * (PROJECT-CONTRACT §4), so an entry is addressed by the key stored beside
-     * it rather than by a database id. The key is generated here and never
-     * taken from the browser, so one entry can never overwrite another.
+     * @param  array<string, mixed>|null  $settings
+     * @param  list<array{key: string|null, question: string, answer: string}>|null  $faq
      */
-    public function storeFaq(FaqEntryRequest $request): RedirectResponse
+    private function publishSettings(Cohort $cohort, ?array $settings, ?array $faq): int
     {
-        $cohort = $this->currentCohort();
+        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
+        $count = 0;
+        $touched = false;
+        $tracked = ['is_registration_open', 'countdown_enabled', 'seats_remaining_override', 'hero_title', 'hero_text', 'about_body'];
 
-        if ($cohort === null) {
-            return back()->withErrors(['question' => __('admin.landing.no_cohort')]);
+        if ($settings !== null) {
+            $before = $setting->exists ? $this->audit->snapshot($setting, $tracked) : null;
+
+            $setting->fill(array_merge($settings, ['cohort_id' => $cohort->getKey()]));
+
+            if ($setting->isDirty()) {
+                $touched = true;
+                $this->audit->log(
+                    action: 'landing.updated',
+                    entity: $setting,
+                    before: $before,
+                    after: $this->audit->snapshot($setting, $tracked),
+                );
+                $count += count(array_intersect(array_keys($setting->getDirty()), $tracked));
+            }
         }
 
-        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
+        if ($faq !== null) {
+            $stored = $this->storedFaq($setting);
+            $known = array_column($stored, null, 'key');
+            $entries = [];
 
-        $entries = $this->entries($setting);
-        $entries[] = array_merge($request->entry(), ['key' => (string) Str::uuid()]);
+            foreach ($faq as $entry) {
+                // A key is kept only when THIS row already holds it; every
+                // other one is generated here, so the browser can never aim an
+                // entry at another's key.
+                $key = $entry['key'] !== null && isset($known[$entry['key']])
+                    ? $entry['key']
+                    : (string) Str::uuid();
 
-        $this->persistFaq($setting, $cohort->getKey(), $entries, 'landing.faq_added');
+                $entries[] = ['key' => $key, 'question' => $entry['question'], 'answer' => $entry['answer']];
+            }
 
-        return back()->with('status', __('admin.landing.faq_saved'));
-    }
+            if ($entries !== $stored) {
+                $this->audit->log(
+                    action: 'landing.faq_published',
+                    entity: $setting,
+                    before: ['faq_count' => count($stored)],
+                    after: ['faq_count' => count($entries)],
+                );
 
-    public function updateFaq(FaqEntryRequest $request, string $entry): RedirectResponse
-    {
-        $cohort = $this->currentCohort();
-
-        if ($cohort === null) {
-            return back()->withErrors(['question' => __('admin.landing.no_cohort')]);
+                $setting->fill(['cohort_id' => $cohort->getKey(), 'faq' => $entries]);
+                $touched = true;
+                $count++;
+            }
         }
 
-        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
-
-        $entries = array_map(
-            static fn (array $row): array => ($row['key'] ?? null) === $entry
-                ? array_merge($row, $request->entry())
-                : $row,
-            $this->entries($setting),
-        );
-
-        $this->persistFaq($setting, $cohort->getKey(), $entries, 'landing.faq_updated');
-
-        return back()->with('status', __('admin.landing.faq_saved'));
-    }
-
-    public function destroyFaq(string $entry): RedirectResponse
-    {
-        $this->authorize('update', new LandingSetting);
-
-        $cohort = $this->currentCohort();
-
-        if ($cohort === null) {
-            return back();
+        if ($touched) {
+            $setting->save();
         }
 
-        $setting = LandingSetting::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
-
-        $entries = array_values(array_filter(
-            $this->entries($setting),
-            static fn (array $row): bool => ($row['key'] ?? null) !== $entry,
-        ));
-
-        $this->persistFaq($setting, $cohort->getKey(), $entries, 'landing.faq_removed');
-
-        return back()->with('status', __('admin.landing.faq_removed'));
+        return $count;
     }
 
     /**
-     * @param  list<array<string, mixed>>  $entries
+     * @return list<array{key: string, question: string, answer: string}>
      */
-    private function persistFaq(LandingSetting $setting, mixed $cohortId, array $entries, string $action): void
-    {
-        $before = $setting->exists ? ['faq_count' => count($this->entries($setting))] : null;
-
-        $setting->fill(['cohort_id' => $cohortId, 'faq' => $entries]);
-
-        $this->audit->log($action, $setting, $before, ['faq_count' => count($entries)]);
-
-        $setting->save();
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function entries(LandingSetting $setting): array
+    private function storedFaq(LandingSetting $setting): array
     {
         $faq = $setting->getAttribute('faq');
+        $entries = [];
 
-        if (! is_array($faq)) {
-            return [];
+        foreach (is_array($faq) ? $faq : [] as $row) {
+            if (is_array($row) && is_string($row['key'] ?? null)) {
+                $entries[] = [
+                    'key' => $row['key'],
+                    'question' => (string) ($row['question'] ?? ''),
+                    'answer' => (string) ($row['answer'] ?? ''),
+                ];
+            }
         }
 
-        return array_values(array_filter($faq, 'is_array'));
+        return $entries;
+    }
+
+    /**
+     * What the editor holds as "published" after a write, so it can drop the
+     * published part of its draft without reloading the page.
+     *
+     * @return array<string, mixed>
+     */
+    private function state(User $actor, ?Cohort $cohort): array
+    {
+        return LandingEditor::publishedState($this->published($actor), $cohort, $cohort?->landingSetting);
+    }
+
+    /**
+     * @return array<string, array{ar: string|null, en: string|null}>
+     */
+    private function published(User $actor): array
+    {
+        $published = [];
+
+        foreach (LandingContent::query()->visibleTo($actor)->get(['key', 'ar', 'en']) as $row) {
+            $published[(string) $row->getAttribute('key')] = [
+                'ar' => $row->getAttribute('ar'),
+                'en' => $row->getAttribute('en'),
+            ];
+        }
+
+        return $published;
+    }
+
+    /**
+     * Render the preview in the language the editor is looking at. English
+     * copy is stored and previewed even while the public site serves Arabic
+     * only (config athar.locales.supported).
+     */
+    private function useLanguage(string $lang): void
+    {
+        /** @var list<string> $rtl */
+        $rtl = (array) config('athar.locales.rtl', ['ar']);
+
+        App::setLocale($lang);
+        ViewFactory::share('locale', $lang);
+        ViewFactory::share('direction', in_array($lang, $rtl, true) ? 'rtl' : 'ltr');
+    }
+
+    private function refuse(PublishLandingRequest $request, string $field, string $message): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'errors' => [$field => [$message]]], 422);
+        }
+
+        return back()->withErrors([$field => $message]);
+    }
+
+    private function actor(): User
+    {
+        $user = request()->user();
+
+        abort_unless($user instanceof User, 403);
+
+        return $user;
     }
 
     /**
      * The cohort the landing page is currently about: the open one, else the
-     * next one starting.
+     * next one starting, else the one running now.
      */
     private function currentCohort(): ?Cohort
     {
         // Cohort::featured() is the one place that decides this. When the rule
-        // lived here as well, the two copies drifted: this one never accepted a
-        // running cohort, so once a cohort started the visitor kept reading its
-        // landing page while every save here answered "no cohort" (BR-31).
-        return Cohort::featured(static fn ($query) => $query->with('landingSetting'));
+        // lived here as well, the two copies drifted (BR-31).
+        return Cohort::featured(static fn ($query) => $query->with(['landingSetting', 'program']));
     }
 }
