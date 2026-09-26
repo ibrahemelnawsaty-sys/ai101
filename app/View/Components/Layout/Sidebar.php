@@ -184,6 +184,8 @@ final class Sidebar extends UiComponent
                 // D-118 — the supervisor writes to anyone, and to the
                 // system administrators' inbox.
                 ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
+                // D-124 — every ticket, and the count waiting at this level.
+                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support'],
             ]],
         ];
     }
@@ -207,6 +209,8 @@ final class Sidebar extends UiComponent
                 // D-118 — "the contact tab": the shared inbox with the
                 // general supervisors, and nothing else.
                 ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
+                // D-124 — the tickets that reached the system administrator.
+                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support'],
             ]],
         ];
     }
@@ -266,6 +270,8 @@ final class Sidebar extends UiComponent
                 // D-118 — the coordinator writes to the cohort's trainers
                 // and trainees, and to the general supervisor.
                 ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                // D-124 — the cohort's tickets, and the count waiting on them.
+                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support'],
             ]],
         ];
     }

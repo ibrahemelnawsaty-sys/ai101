@@ -69,7 +69,8 @@ function accountMenuCss(string $file): string
 /**
  * Each role, signed in on its own home screen, with the entries the menu
  * owes it (D-123): the card for the trainee alone, no information dashboard
- * for the system administrator (D-117), the account page for everyone.
+ * for the system administrator (D-117), the account page for everyone, and
+ * «Support» for everyone who takes part in tickets — not the trainer (D-124).
  *
  * @return array<string, array{0: Closure(): array{0: User, 1: string}, 1: list<string>}>
  */
@@ -78,7 +79,7 @@ function accountMenuRoles(): array
     return [
         'participant' => [
             static fn (): array => [makeParticipant(makeCohort()), 'dashboard'],
-            ['participant.card', 'dashboard', 'profile'],
+            ['participant.card', 'dashboard', 'profile', 'support.index'],
         ],
         'trainer' => [
             static function (): array {
@@ -94,15 +95,15 @@ function accountMenuRoles(): array
 
                 return [makeCoordinator($cohort), route('coordinator.dashboard', ['cohort' => $cohort->id])];
             },
-            ['dashboard', 'profile'],
+            ['dashboard', 'profile', 'support.index'],
         ],
         'admin' => [
             static fn (): array => [makeAdmin(), route('admin.dashboard')],
-            ['dashboard', 'profile'],
+            ['dashboard', 'profile', 'support.index'],
         ],
         'system_admin' => [
             static fn (): array => [makeSystemAdmin(), route('admin.users.index')],
-            ['profile'],
+            ['profile', 'support.index'],
         ],
     ];
 }
@@ -149,8 +150,9 @@ it('D-123: قائمة الحساب تعرض لكل دور عناصره بالت�
 
     $html = (string) $this->actingAs($user)->get(accountMenuScreen($screen))->assertOk()->getContent();
 
-    // Exact equality: an extra entry — support, the tour, English, dark
-    // mode — fails here until its feature exists (D-54, D-66).
+    // Exact equality: an extra entry — the tour, English, dark mode — fails
+    // here until its feature exists (D-54, D-66). Support is built (D-124),
+    // for every role but the trainer, who takes no part in tickets.
     expect(accountMenuHrefs($html))->toBe(array_map(static fn (string $name): string => route($name), $expected));
 })->with(accountMenuRoles());
 
@@ -283,7 +285,7 @@ it('D-123: في المعاينة تعرض القائمة الحساب المعا
     // the previewed trainee's — its e-mail and its card — not the previewer's.
     expect($menu?->textContent)->toContain($participant->email)
         ->not->toContain($systemAdmin->email)
-        ->and(accountMenuHrefs($html))->toBe([route('participant.card'), route('dashboard'), route('profile')]);
+        ->and(accountMenuHrefs($html))->toBe([route('participant.card'), route('dashboard'), route('profile'), route('support.index')]);
 
     foreach (accountMenuHrefs($html) as $href) {
         $this->followingRedirects()->get($href)->assertOk();

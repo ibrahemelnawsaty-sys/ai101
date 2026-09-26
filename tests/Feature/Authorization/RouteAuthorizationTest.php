@@ -26,6 +26,7 @@ use App\Models\Enrollment;
 use App\Models\LandingSetting;
 use App\Models\Program;
 use App\Models\Resource;
+use App\Models\SupportTicket;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +78,35 @@ beforeEach(function (): void {
         'cohort_id' => $this->cohort->id,
         'faq' => [['key' => 'faq-one', 'question' => 'Q', 'answer' => 'A']],
     ]);
+
+    // D-124 — one ticket per state-changing support route, so the positive
+    // pass (which really closes, resolves and moves them) never leaves the
+    // next row a ticket in the wrong state. All opened by the participant, in
+    // the cohort, held by its only — so primary — coordinator.
+    $ticket = fn (array $state = []): SupportTicket => SupportTicket::factory()->create($state + [
+        'opener_id' => $this->participant->id,
+        'cohort_id' => $this->cohort->id,
+        'assignee_id' => $this->coordinator->id,
+        'level' => 'coordinator',
+        'status' => 'open',
+    ]);
+    $this->tickets = [
+        'show' => $ticket(),
+        'reply' => $ticket(),
+        'close' => $ticket(),
+        'note' => $ticket(),
+        'resolve' => $ticket(),
+        'escalate' => $ticket(),
+        'return' => $ticket(['level' => 'admin', 'status' => 'in_progress']),
+    ];
+
+    // Handing a ticket over needs a second coordinator: in a cohort of its own,
+    // so this file's cohort keeps its single, primary coordinator.
+    $handover = makeCohort();
+    enroll($this->coordinator, $handover, 'coordinator');
+    makeCoordinator($handover);
+    $handover->update(['primary_coordinator_id' => $this->coordinator->id]);
+    $this->tickets['assign'] = $ticket(['cohort_id' => $handover->id]);
 
     $this->actors = [
         'admin' => $this->admin,
@@ -297,6 +327,24 @@ function authorizationMatrix(object $test): array
         'admin.reports.index' => ['get', [], ['admin']],
         'admin.reports.export' => ['get', [], ['admin']],
 
+        // ---------------------------------------------------- support (D-124)
+        // Everyone who takes part in tickets reads the list; a trainer takes
+        // no part. The ticket itself: its owner, its cohort's coordinator and
+        // the general supervisor — not the system administrator, whom it has
+        // not reached. Each action is its holder's alone; the supervisor also
+        // adds internal notes to any ticket.
+        'support.index' => ['get', [], ['participant', 'coordinator', 'admin', 'system_admin']],
+        'support.create' => ['get', [], ['participant']],
+        'support.store' => ['post', [], ['participant']],
+        'support.show' => ['get', [$test->tickets['show']], ['participant', 'coordinator', 'admin']],
+        'support.reply' => ['post', [$test->tickets['reply']], ['participant']],
+        'support.close' => ['post', [$test->tickets['close']], ['participant']],
+        'support.note' => ['post', [$test->tickets['note']], ['coordinator', 'admin']],
+        'support.resolve' => ['post', [$test->tickets['resolve']], ['coordinator']],
+        'support.escalate' => ['post', [$test->tickets['escalate']], ['coordinator']],
+        'support.return' => ['post', [$test->tickets['return']], ['admin']],
+        'support.assign' => ['post', [$test->tickets['assign']], ['coordinator']],
+
         // D-117 — the platform settings are the system administrator's.
         'admin.settings.edit' => ['get', [], ['system_admin']],
         'admin.settings.update' => ['put', [], ['system_admin']],
@@ -378,7 +426,9 @@ it('لا يوجد مسار محمي بلا سطر في مصفوفة التفوي
             // D-109 introduced the first coordinator.* leaf (its own dashboard,
             // PR-5 دفعة 2) — a fourth prefix this walker must watch, or every
             // future route under it ships with no matrix row enforced.
-            || str_starts_with($name, 'coordinator.'),
+            || str_starts_with($name, 'coordinator.')
+            // D-124 — every support route answers to the matrix too.
+            || str_starts_with($name, 'support.'),
         )
         ->reject(fn (string $name): bool => in_array($name, $covered, true))
         // The impersonation stop route is deliberately reachable by whoever is

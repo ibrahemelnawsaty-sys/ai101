@@ -28,6 +28,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Cohorts\PrimaryCoordinator;
 use App\Services\Credentials\AccountInviter;
 use App\Services\Messages\ThreadProvisioner;
+use App\Services\Tickets\TicketWorkflow;
 use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -57,6 +58,7 @@ final class CohortController extends Controller
         private readonly ThreadProvisioner $threads,
         private readonly AccountInviter $inviter,
         private readonly PrimaryCoordinator $primary,
+        private readonly TicketWorkflow $workflow,
     ) {}
 
     public function index(Request $request): View
@@ -247,7 +249,7 @@ final class CohortController extends Controller
         // coordinator assigned here as a trainer leaves the coordination. The
         // rule AssignTrainerRequest asked is asked again under the cohort's
         // lock, so two requests cannot both take the last coordinator away.
-        DB::transaction(function () use ($cohort, $trainerId): void {
+        $leftCoordination = DB::transaction(function () use ($cohort, $trainerId): bool {
             $locked = $this->lockCohort($cohort);
             $wasCoordinator = $this->primary->isCoordinatorOf($locked, $trainerId);
             $refusal = $this->primary->departureRefusal($locked, $trainerId);
@@ -276,7 +278,13 @@ final class CohortController extends Controller
             if ($wasCoordinator) {
                 $this->forgetPrimary($locked, $trainerId);
             }
+
+            return $wasCoordinator;
         });
+
+        if ($leftCoordination) {
+            $this->workflow->rehome(Clock::now(), $cohort, $request->user());
+        }
 
         // The announcement channel, the group, and a direct line to each
         // participant (PRD §9.13, D-82).
@@ -400,6 +408,10 @@ final class CohortController extends Controller
         if (! $detached) {
             return back();
         }
+
+        // D-124 — their tickets go back to the primary coordinator now, not at
+        // the next scheduled pass.
+        $this->workflow->rehome(Clock::now(), $cohort, $request->user());
 
         return back()->with('status', __('admin.cohorts.coordinator_detached'));
     }

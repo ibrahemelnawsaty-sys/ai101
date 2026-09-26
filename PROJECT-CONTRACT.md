@@ -108,7 +108,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
 | `threads` · `thread_participants` · `messages` | `last_read_at` · `threads.cohort_id` يقبل الفراغ لمحادثة `direct` · `threads.inbox` (`system_admin` = الصندوق المشترك) · `threads.pair_key` فريد — محادثة واحدة لكل زوجين (`D-118`) |
 | `support_tickets` | `number` **فريد** `TK-XXXX-XXXX` · `opener_id` (`restrictOnDelete`) · `cohort_id` يقبل الفراغ (`nullOnDelete`) · `category` · `subject` · `status` · `level` · `assignee_id` المنسّق الذي عنده التذكرة (`nullOnDelete`) · `reached_system_admin_at` · `resolved_at` · `closed_at` · `closed_by` · `last_activity_at` — الكاتب الوحيد `TicketWorkflow` (`D-124`) |
-| `support_ticket_entries` | `support_ticket_id` (`cascadeOnDelete`) · `actor_id` يقبل الفراغ للنظام (`nullOnDelete`) · `type` · `body` · `is_internal` · `from_level` · `to_level` · `target_id` (`nullOnDelete`) · `link_url` · فهرس `(support_ticket_id, created_at)` (`D-124`) |
+| `support_ticket_entries` | `support_ticket_id` (`cascadeOnDelete`) · `position` ترتيب السطر في خطّها (فريد مع التذكرة) · `actor_id` يقبل الفراغ للنظام (`nullOnDelete`) · `type` · `body` · `is_internal` · `from_level` · `to_level` · `target_id` (`nullOnDelete`) · `link_url` — قيد فريد `(support_ticket_id, position)` (`D-124`) |
 | `support_ticket_attachments` | `support_ticket_entry_id` (`cascadeOnDelete`) · `disk` · `path` · `original_name` · `mime_type` · `size_bytes` · `checksum` · `kind` (`image`/`video`) — تُعرض برابط موقّع لا يُكشف مساره (`D-124`) |
 | `notifications` | فهرس `(user_id, is_read)` |
 | `notification_preferences` | |
@@ -304,7 +304,7 @@ final class CertificateEligibility
 | `GET /dashboard/support/new` · `POST /dashboard/support` | `support.create` · `support.store` | `auth` · `verified` · `role:participant` · `not.impersonating` · والحفظ `throttle:upload` (`D-124`) — `OpenTicketRequest` + `SupportTicketPolicy::create` |
 | `GET /dashboard/support/{ticket}` | `support.show` | `auth` · `verified` · `role:participant,coordinator,admin,system_admin` (`D-124`) — `SupportTicketPolicy::view` |
 | `POST /dashboard/support/{ticket}/reply` · `…/close` | `support.reply` · `support.close` | `auth` · `verified` · `role:participant` · `not.impersonating` · والرد `throttle:upload` (`D-124`) — صاحب التذكرة وحده |
-| `POST /dashboard/support/{ticket}/note` · `…/resolve` | `support.note` · `support.resolve` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · `throttle:upload` (`D-124`) — `SupportTicketPolicy::note/resolve` |
+| `POST /dashboard/support/{ticket}/note` · `…/resolve` | `support.note` · `support.resolve` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · الملاحظة `throttle:upload` (تحمل ملفات) و«تمت المعالجة» `throttle:messages` (`D-124`) — `SupportTicketPolicy::note/resolve` |
 | `POST /dashboard/support/{ticket}/escalate` · `…/return` · `…/assign` | `support.escalate` · `support.return` · `support.assign` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · `throttle:messages` (`D-124`) — `SupportTicketPolicy::escalate/returnDown/assign` |
 | `GET /files/support-attachments/{attachment}` | `files.supportAttachment` | `auth` · `verified` · `signed` — `SupportTicketPolicy::viewAttachment` عند الوصول؛ يُعرض داخل الصفحة ويدعم التشغيل المتقطّع (`D-124`) |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |

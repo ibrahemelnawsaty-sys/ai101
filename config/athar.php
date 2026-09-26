@@ -200,6 +200,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Support tickets (D-124)
+    |--------------------------------------------------------------------------
+    |
+    | A ticket marked resolved closes itself this many hours later unless the
+    | participant answers first — the owner's "after a day". Attachments: at
+    | most three files on one entry (opening, a reply or a note), each at most
+    | ten megabytes — the owner's later, narrower answer, not the first
+    | message's 25 MB. Three full files make a 30 MB body: deploy/README.md
+    | §2.4 asks for `post_max_size` 32M so the form fits beside them.
+    |
+    */
+    'support' => [
+        'auto_close_hours' => (int) env('ATHAR_SUPPORT_AUTO_CLOSE_HOURS', 24),
+        'max_files' => 3,
+        'max_kilobytes' => 10240,
+        'body_max' => 5000,
+        'subject_max' => 150,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------
     |

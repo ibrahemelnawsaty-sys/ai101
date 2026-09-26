@@ -1661,3 +1661,111 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 @media (prefers-reduced-motion: reduce) {
   .le__chev { transition: none; }
 }
+
+/* ==========================================================================
+   SUPPORT TICKETS · participant/support/* (D-124)
+   The list and its two tabs, a ticket's timeline, and the team's actions.
+   The participant's own lines carry the teal mark and the team's the
+   violet one; an internal line is dashed AND says «internal» in words, so
+   its colour is never the only sign (Article 18). Tokens only (G6).
+   ========================================================================== */
+
+.tkt-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  padding: var(--s1);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+}
+.tkt-tabs__a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-block-size: var(--touch);
+  padding-inline: var(--s4);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.tkt-tabs__a[aria-current="page"] { background: var(--surface-1); color: var(--text-strong); box-shadow: var(--sh-sm); }
+
+.tkt-list__meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin-block-start: var(--s1); }
+.tkt-list__state { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s1); }
+.tkt-list__where,
+.tkt-list__when { font-size: var(--fs-xs); color: var(--text-muted); }
+
+.tkt-meta { margin-block-start: var(--s2); }
+
+.tkt-log { display: grid; gap: var(--s4); margin: 0; padding: 0; list-style: none; }
+.tkt-log__i { display: flex; align-items: flex-start; gap: var(--s3); }
+.tkt-log__ic {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--s8);
+  block-size: var(--s8);
+  border-radius: var(--r-full);
+  background: var(--violet-050);
+  color: var(--violet-700);
+}
+.tkt-log__i--own .tkt-log__ic { background: var(--teal-100); color: var(--teal-800); }
+.tkt-log__b {
+  flex: 1;
+  min-inline-size: 0;
+  padding: var(--s3) var(--s4);
+  border: var(--bw-hairline) solid var(--border-1);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+}
+.tkt-log__i--internal .tkt-log__b { border-style: dashed; background: var(--surface-inset); }
+.tkt-log__hd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+}
+.tkt-log__when { margin-inline-start: auto; font-size: var(--fs-xs); color: var(--text-muted); }
+.tkt-log__body {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.tkt-log__link { display: flex; align-items: center; gap: var(--s1); margin: var(--s2) 0 0; font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.tkt-log__link a { color: var(--text-accent); }
+
+.tkt-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--d-3)), 1fr));
+  gap: var(--s3);
+  margin: var(--s3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tkt-files__i { display: grid; gap: var(--s1); }
+.tkt-files__media {
+  display: block;
+  inline-size: 100%;
+  max-block-size: var(--d-4);
+  object-fit: contain;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+}
+.tkt-files__name {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--touch-min);
+  font-size: var(--fs-xs);
+  color: var(--text-accent);
+  overflow-wrap: anywhere;
+}
+
+.tkt-acts { display: grid; gap: var(--s6); }
+.tkt-act + .tkt-act { padding-block-start: var(--s6); border-block-start: var(--bw-hairline) solid var(--border-1); }

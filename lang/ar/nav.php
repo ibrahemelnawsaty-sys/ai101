@@ -57,6 +57,9 @@ return [
     'certificate' => 'الشهادة',
     'notifications' => 'مركز الإشعارات',
     'profile' => 'حسابي',
+    // D-124 — «الدعم الفني» في قائمة الحساب، و«تذاكر الدعم» في الشريط لفريق الدعم.
+    'support' => 'الدعم الفني',
+    'support_tickets' => 'تذاكر الدعم',
 
     /*
     | The same labels addressed by role, for screens that build a link list

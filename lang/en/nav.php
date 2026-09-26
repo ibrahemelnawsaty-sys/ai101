@@ -53,6 +53,9 @@ return [
     'certificate' => 'Certificate',
     'notifications' => 'Notifications',
     'profile' => 'My account',
+    // D-124 — Support in the account menu, and the support team's tab in the rail.
+    'support' => 'Support',
+    'support_tickets' => 'Support tickets',
 
     'admin' => [
         // D-113 — unified with the other three roles' first tab, all now

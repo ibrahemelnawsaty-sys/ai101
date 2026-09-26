@@ -24,23 +24,27 @@ namespace App\Support;
  * Security letters (a password change, a sign-in from a new device) are not
  * types here: they are never suppressible, by design (D-66).
  *
- * @see PRD §9.16, §9.16.1 · BR-33 · D-66, D-78, D-117, D-118
+ * @see PRD §9.16, §9.16.1 · BR-33 · D-66, D-78, D-117, D-118, D-124
  */
 final class NotificationTypes
 {
     /** Types addressed to the trainer, per PRD §9.16.1. */
     private const TRAINER = ['submission_new', 'attendance_incomplete', 'message_received'];
 
-    /** Types an administrator receives: messages addressed to them. */
-    private const ADMIN = ['message_received'];
+    /**
+     * Types an administrator receives: messages addressed to them, and the
+     * support tickets that reach them (D-124).
+     */
+    private const ADMIN = ['message_received', 'support_ticket_team'];
 
     /**
      * Types the system administrator receives: messages in the shared inbox
-     * with the general supervisors (D-118), and nothing else — the role reaches
-     * no cohort, so every other type concerns someone else (D-117). Security
-     * letters still reach them — they are not types, and never suppressible.
+     * with the general supervisors (D-118), and the support tickets that reach
+     * them (D-124) — nothing else: the role reaches no cohort, so every other
+     * type concerns someone else (D-117). Security letters still reach them —
+     * they are not types, and never suppressible.
      */
-    private const SYSTEM_ADMIN = ['message_received'];
+    private const SYSTEM_ADMIN = ['message_received', 'support_ticket_team'];
 
     /**
      * @return array<string, array<string, mixed>>

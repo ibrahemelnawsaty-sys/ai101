@@ -287,8 +287,8 @@ it('D-117: تصدير قائمة الحسابات مرفوض على الجميع
         ->assertDontSee(route('admin.users.export'), false);
 });
 
-it('D-118: إشعار واحد لمدير النظام — رسائل صندوق التواصل، ولا شيء من الدفعات', function (): void {
-    expect(NotificationTypes::forRole('system_admin'))->toBe(['message_received']);
+it('D-118, D-124: إشعارا مدير النظام — رسائل صندوق التواصل وتذاكر الدعم الواصلة إليه، ولا شيء من الدفعات', function (): void {
+    expect(NotificationTypes::forRole('system_admin'))->toBe(['message_received', 'support_ticket_team']);
 
     $this->actingAs($this->sysadmin)
         ->get(route('profile'))

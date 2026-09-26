@@ -162,7 +162,7 @@ hPanel → **PHP Configuration → PHP options**. Set at least:
 | `memory_limit` | `256M` | PDF/report generation, Excel export |
 | `max_execution_time` | `30` | Article 10: no web request exceeds 30 s. Heavy work goes to the queue. |
 | `upload_max_filesize` | `25M` | PRD §9.11.2 default per-file ceiling |
-| `post_max_size` | `30M` | Must exceed `upload_max_filesize` plus form overhead |
+| `post_max_size` | `32M` | Must exceed `upload_max_filesize` plus form overhead — and a support ticket's three 10 MB attachments plus its text (D-124; was 30M) |
 | `max_file_uploads` | `5` | PRD §9.11.2 default file count |
 | `max_input_vars` | `3000` | Large admin forms |
 | `display_errors` | `Off` | Never leak stack traces |

@@ -33,6 +33,9 @@ final class Header extends UiComponent
     /** The shells (RoleResolver::shellRole) whose /dashboard is an information dashboard. */
     private const DASHBOARD_SHELLS = ['participant', 'trainer', 'coordinator', 'admin'];
 
+    /** The roles the support routes admit (D-124), one list with routes/web.php's. */
+    private const SUPPORT_ROLES = ['participant', 'coordinator', 'admin', 'system_admin'];
+
     public string $heading;
 
     public string $sub;
@@ -130,6 +133,13 @@ final class Header extends UiComponent
         }
 
         $items[] = self::menuItem('profile', 'profile', 'user', __('nav.chrome.account'), ['profile']);
+
+        // D-124 — «Support», in the owner's order after the account: for the
+        // roles the support routes admit (role:participant,coordinator,admin,
+        // system_admin). A trainer takes no part in tickets.
+        if ($roles->hasAnyRole($user, self::SUPPORT_ROLES)) {
+            $items[] = self::menuItem('support', 'support.index', 'help', __('nav.support'), ['support.*']);
+        }
 
         return array_values(array_filter($items));
     }

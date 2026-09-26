@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\FileException;
 use App\Models\Assignment;
 use App\Models\FinalProject;
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
+use App\Models\SupportTicket;
+use App\Models\SupportTicketAttachment;
+use App\Models\SupportTicketEntry;
 use App\Services\FinalProject\SubmissionFields;
+use App\Services\Storage\PrivateFileService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -36,10 +43,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * read back through SubmissionFields::read(), the same reader the screen that
  * minted the link used, so the two positions can never disagree.
  *
- * @see PRD §12.5 · BR-22, BR-23 · FR-PROJ-10 · CONSTITUTION art. 5, art. 24 · D-80, D-121
+ * @see PRD §12.5 · BR-22, BR-23 · FR-PROJ-10 · CONSTITUTION art. 5, art. 24 · D-80, D-121, D-124
  */
 final class FileDownloadController extends Controller
 {
+    public function __construct(private readonly PrivateFileService $files) {}
+
     public function submission(Submission $submission, int $index): StreamedResponse
     {
         $this->authorize('download', $submission);
@@ -76,6 +85,45 @@ final class FileDownloadController extends Controller
         $this->authorize('view', $project);
 
         return $this->stream($project, 'attachments', $index);
+    }
+
+    /**
+     * D-124 — a picture or a video on a support ticket, shown INSIDE the page:
+     * served inline, and as a file response so the browser can ask for ranges
+     * (a video seeks and plays without downloading first). Its policy is asked
+     * again on arrival — an internal line's file reaches the support team only
+     * — and the type served is the one sniffed when it was stored, never the
+     * name's. It may not be interpreted as anything else, and it runs nothing.
+     */
+    public function supportAttachment(SupportTicketAttachment $attachment): BinaryFileResponse
+    {
+        $entry = SupportTicketEntry::query()->find($attachment->support_ticket_entry_id);
+        $ticket = $entry === null ? null : SupportTicket::query()->find($entry->support_ticket_id);
+
+        if (! $ticket instanceof SupportTicket) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
+        $this->authorize('viewAttachment', [$ticket, $attachment]);
+
+        try {
+            $absolute = $this->files->absolutePath((string) $attachment->path, (string) $attachment->disk);
+        } catch (FileException) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
+        $name = (string) $attachment->original_name;
+        $fallback = preg_replace('/[^A-Za-z0-9._-]/', '_', $name) ?: 'file';
+
+        $response = response()->file($absolute, [
+            'Content-Type' => (string) $attachment->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+            'Cache-Control' => 'private, no-store',
+        ]);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $name, $fallback);
+
+        return $response;
     }
 
     private function stream(Model $owner, string $column, int $index): StreamedResponse

@@ -344,6 +344,58 @@
       "education_level": "ماجستير",
       "bio": "مدير منصة البرامج التدريبية في مركز أثر."
     },
+    "_system_admin_note": "D-117 split the PRD's administrator in two: `admin` above is the general supervisor, and this row is the system administrator (accounts, account preview, landing page). D-124 needs one to walk a support ticket to the top level by hand.",
+    "system_admin": {
+      "email": "sysadmin@athar-dev.edu.sa",
+      "phone": "0500000010",
+      "gender": "male",
+      "first_name_ar": "خالد",
+      "second_name_ar": "عبدالرحمن",
+      "third_name_ar": "فهد",
+      "last_name_ar": "العتيبي",
+      "first_name_en": "Khalid",
+      "second_name_en": "Abdulrahman",
+      "third_name_en": "Fahad",
+      "last_name_en": "Alotaibi",
+      "city": "الرياض",
+      "education_level": "بكالوريوس",
+      "bio": "مدير النظام في منصة البرامج التدريبية لمركز أثر."
+    },
+    "_coordinators_note": "D-124: every cohort has a coordinator, and with more than one the general supervisor chooses the primary one — the first row here, whom UserSeeder writes down as primary. Two, so a handover between coordinators can be tried by hand.",
+    "coordinators": [
+      {
+        "email": "coordinator1@athar-dev.edu.sa",
+        "phone": "0500000011",
+        "gender": "female",
+        "first_name_ar": "نورة",
+        "second_name_ar": "سليمان",
+        "third_name_ar": "علي",
+        "last_name_ar": "الشهري",
+        "first_name_en": "Noura",
+        "second_name_en": "Sulaiman",
+        "third_name_en": "Ali",
+        "last_name_en": "Alshehri",
+        "city": "الرياض",
+        "education_level": "بكالوريوس",
+        "bio": "منسّقة الدفعة الأساسية: تحضّر الجلسات وتتابع الحضور وتذاكر الدعم."
+      },
+      {
+        "email": "coordinator2@athar-dev.edu.sa",
+        "phone": "0500000012",
+        "gender": "male",
+        "first_name_ar": "فيصل",
+        "second_name_ar": "ناصر",
+        "third_name_ar": "عمر",
+        "last_name_ar": "الدوسري",
+        "first_name_en": "Faisal",
+        "second_name_en": "Nasser",
+        "third_name_en": "Omar",
+        "last_name_en": "Aldosari",
+        "city": "الرياض",
+        "education_level": "بكالوريوس",
+        "bio": "منسّق مساند في الدفعة."
+      }
+    ],
     "_trainers_note": "The two trainers named in the centre's official guide, with the job titles and biographies the guide publishes. E-mail and phone continue the placeholder sequence because both columns are NOT NULL and the guide does not publish personal contact details (D-59).",
     "trainers": [
       {

@@ -174,4 +174,43 @@ return [
         'webp' => 'WebP',
     ],
 
+    /*
+     * D-124 — support tickets: the stages, the level holding it now (a role,
+     * never a name), the category that never changes its route, and the kinds
+     * of line in its timeline.
+     */
+    'support_ticket_status' => [
+        'open' => 'Open',
+        'in_progress' => 'In progress',
+        'resolved' => 'Resolved',
+        'closed' => 'Closed',
+    ],
+
+    'support_ticket_level' => [
+        'coordinator' => 'The coordinator',
+        'admin' => 'The general supervisor',
+        'system_admin' => 'The system administrator',
+    ],
+
+    'support_ticket_category' => [
+        'account' => 'Account and sign-in',
+        'platform' => 'A platform fault',
+        'program' => 'Programme and content',
+        'other' => 'Other',
+    ],
+
+    'support_ticket_entry_type' => [
+        'opened' => 'Ticket opened',
+        'reply' => 'Participant reply',
+        'message' => 'Coordinator message',
+        'note' => 'Note',
+        'escalated' => 'Moved up a level',
+        'returned' => 'Returned down a level',
+        'assigned' => 'Handed to another coordinator',
+        'resolved' => 'Resolved',
+        'reopened' => 'Reopened',
+        'closed' => 'Closed',
+        'auto_closed' => 'Closed automatically',
+    ],
+
 ];

@@ -314,4 +314,57 @@ return [
         'body' => 'Registration for this cohort has closed. We will write to you as soon as the next one opens, before it is announced publicly.',
     ],
 
+    /*
+     * D-124 — support tickets. The first four go to the participant who
+     * opened the ticket, the last two to the support team (a temporary
+     * assumption D-124 records).
+     */
+    'support_ticket_opened' => [
+        'subject' => 'Your ticket :number arrived',
+        'preheader' => 'Keep the number to follow it up.',
+        'heading' => 'We received your ticket',
+        'body' => 'We received your ticket ":subject" as :number; it is now with :level. Replies will reach you on the platform and by e-mail.',
+        'cta' => 'Follow my ticket',
+    ],
+
+    'support_ticket_moved' => [
+        'subject' => 'Your ticket :number is now with :level',
+        'preheader' => 'Your ticket moved to be followed up.',
+        'heading' => 'Your ticket moved',
+        'body' => 'Your ticket ":subject" moved to :level to be followed up. Everything that happens to it is on the Support page.',
+        'cta' => 'Follow my ticket',
+    ],
+
+    'support_ticket_resolved' => [
+        'subject' => 'Your ticket :number was resolved',
+        'preheader' => 'If the problem remains, reply to it.',
+        'heading' => 'Your ticket was resolved',
+        'body' => 'Your ticket ":subject" was resolved. If the problem remains, reply to the ticket within :hours to send it back to the coordinator; otherwise it closes automatically.',
+        'cta' => 'Open the ticket',
+    ],
+
+    'support_ticket_closed' => [
+        'subject' => 'Your ticket :number was closed',
+        'preheader' => 'You can open a new ticket whenever you need.',
+        'heading' => 'Your ticket was closed',
+        'body' => 'Your ticket ":subject" was closed. If you need more help, open a new ticket from the Support page.',
+        'cta' => 'Open the ticket',
+    ],
+
+    'support_ticket_arrived' => [
+        'subject' => 'A support ticket is waiting on you: :number',
+        'preheader' => 'A ticket reached you to follow up.',
+        'heading' => 'A support ticket is waiting on you',
+        'body' => 'The ticket ":subject" (:number) reached you to follow up.',
+        'cta' => 'Open the ticket',
+    ],
+
+    'support_ticket_replied' => [
+        'subject' => 'A new reply on ticket :number',
+        'preheader' => 'The participant replied on a ticket you hold.',
+        'heading' => 'The participant replied',
+        'body' => 'The participant replied on the ticket ":subject" that you hold.',
+        'cta' => 'Open the ticket',
+    ],
+
 ];

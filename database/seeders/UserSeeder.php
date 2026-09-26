@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 /**
- * One administrator, three trainers and sixty participants, each with a
- * profile, an enrolment and notification preferences.
+ * One general supervisor, one system administrator, the trainers, two
+ * coordinators (the first primary, D-124) and sixty participants, each with a
+ * profile, an enrolment where they have one, and notification preferences.
  *
  * Not every participant is in the same state: 56 are active, 2 are still
  * pending and 2 have withdrawn. That is deliberate — the admin screens need
@@ -44,7 +45,9 @@ final class UserSeeder extends Seeder
         $cohort = Cohort::query()->firstOrFail();
 
         $this->createAdmin();
+        $this->createSystemAdmin();
         $this->createTrainers($cohort);
+        $this->createCoordinators($cohort);
         $this->createParticipants($cohort);
 
         $this->refreshSeatsTaken($cohort);
@@ -65,6 +68,68 @@ final class UserSeeder extends Seeder
 
         $this->createProfileFrom($admin, $row);
         $this->createNotificationPreferences($admin);
+    }
+
+    /**
+     * The system administrator (D-117): accounts, preview, landing page — and,
+     * since D-124, the top level a support ticket can climb to.
+     */
+    private function createSystemAdmin(): void
+    {
+        /** @var array<string, mixed> $staff */
+        $staff = SeedContent::section('staff');
+
+        /** @var array<string, mixed> $row */
+        $row = $staff['system_admin'];
+
+        $systemAdmin = User::factory()->create([
+            'email' => $row['email'],
+            'role' => 'system_admin',
+            'status' => 'active',
+        ]);
+
+        $this->createProfileFrom($systemAdmin, $row);
+        $this->createNotificationPreferences($systemAdmin);
+    }
+
+    /**
+     * Two coordinators for the cohort (D-124): every cohort has one, and a
+     * support ticket reaches the primary one first. With two, the general
+     * supervisor chooses — the first row is written down as primary, so the
+     * cohort can run and a handover between them can be tried by hand.
+     */
+    private function createCoordinators(Cohort $cohort): void
+    {
+        /** @var array<string, mixed> $staff */
+        $staff = SeedContent::section('staff');
+
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $staff['coordinators'];
+        $primaryId = null;
+
+        foreach ($rows as $row) {
+            $coordinator = User::factory()->create([
+                'email' => $row['email'],
+                'role' => 'coordinator',
+                'status' => 'active',
+            ]);
+
+            $this->createProfileFrom($coordinator, $row);
+            $this->createNotificationPreferences($coordinator);
+
+            Enrollment::factory()->create([
+                'cohort_id' => $cohort->getKey(),
+                'user_id' => $coordinator->getKey(),
+                'role_in_cohort' => 'coordinator',
+                'enrolled_at' => SeedContent::instant(-10, '11:00:00'),
+                'status' => 'active',
+            ]);
+
+            $primaryId ??= (string) $coordinator->getKey();
+        }
+
+        $cohort->setAttribute('primary_coordinator_id', $primaryId);
+        $cohort->save();
     }
 
     private function createTrainers(Cohort $cohort): void

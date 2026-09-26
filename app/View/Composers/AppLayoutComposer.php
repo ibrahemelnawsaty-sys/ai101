@@ -10,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Cohort;
 use App\Models\Message;
 use App\Models\Notification;
+use App\Models\SupportTicket;
 use App\Models\Thread;
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
@@ -55,7 +56,7 @@ final class AppLayoutComposer
         $empty = [
             'cohortName' => null,
             'sidebarCohorts' => [],
-            'navBadges' => ['assignments' => 0, 'messages' => 0],
+            'navBadges' => ['assignments' => 0, 'messages' => 0, 'support' => 0],
             'unreadNotifications' => 0,
         ];
 
@@ -126,6 +127,11 @@ final class AppLayoutComposer
         if (in_array($role, ['admin', 'coordinator', 'system_admin'], true)) {
             $values['navBadges']['messages'] = $this->guard('badge.messages', $user,
                 static fn (): int => self::unreadMessages($user), 0);
+
+            // D-124 — the support tickets waiting on this account now: the
+            // same rule as the list's "waiting on me" tab.
+            $values['navBadges']['support'] = $this->guard('badge.support', $user,
+                static fn (): int => SupportTicket::query()->visibleTo($user)->waitingOn($user)->count(), 0);
         }
 
         // A controller that passed its own value keeps it.

@@ -108,6 +108,7 @@ return [
 
     'file' => [
         'too_large' => 'The file is larger than the :max megabyte limit. Compress or split it, then upload again.',
+        'too_many' => 'At most :max files can be attached at once. Remove the extra ones, then send again.',
         'empty' => 'This file is empty. Choose a file with content in it and upload again.',
         'unreadable' => 'The file could not be read. Check your connection and upload again.',
         'mime_not_allowed' => 'This file format is not allowed. Upload a document, an image, or an archive.',
