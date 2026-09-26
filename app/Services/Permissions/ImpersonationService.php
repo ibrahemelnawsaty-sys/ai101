@@ -20,16 +20,17 @@ use Illuminate\Support\Facades\DB;
  * Starting and ending an account preview.
  *
  * The preview is the strongest permission on the platform, so every rule is
- * re-checked here even though the Policy already checked it: an admin may not
- * preview another admin (BR-35), a preview lasts at most 30 minutes, and both
- * its start and its end are written to the audit log before they take effect.
+ * re-checked here even though the Policy already checked it: only the system
+ * administrator previews, never another system administrator (BR-35, D-117),
+ * a preview lasts at most 30 minutes, and both its start and its end are
+ * written to the audit log before they take effect.
  *
  * Nothing here touches the previewed user's own traces — no last-login stamp,
  * no read markers, no counters (BR-34). `ImpersonationContext::begin()` runs
  * *before* the auth swap precisely so that any login listener can see that a
  * preview is in progress and stand down.
  *
- * @see BR-27, BR-33, BR-34, BR-35 · PRD §4.5 · CONSTITUTION Art. 23
+ * @see BR-27, BR-33, BR-34, BR-35 · PRD §4.5 · CONSTITUTION Art. 23 · D-117
  */
 final class ImpersonationService
 {
@@ -97,17 +98,6 @@ final class ImpersonationService
             return null;
         }
 
-        /** @var User|null $admin */
-        $admin = User::query()->find($payload['admin_id']);
-
-        if ($admin === null || $admin->status !== UserStatus::Active) {
-            // The admin account vanished or was suspended mid-preview: refuse to
-            // restore anything and drop the session entirely (fail closed).
-            Auth::guard('web')->logout();
-
-            return null;
-        }
-
         // A preview never lasts longer than its ceiling, whatever the clock says
         // when the expiry is finally noticed: the request that discovers a stale
         // preview may arrive an hour later, but the session ENDED at
@@ -115,7 +105,11 @@ final class ImpersonationService
         // wrote a 90-minute preview into a table whose maximum is 30.
         $endedAt = $this->endInstantFor($payload['started_at']);
 
-        DB::transaction(function () use ($payload, $admin, $endedAt): void {
+        // The end is written whatever happens next — including when the one
+        // who previewed can no longer be restored. That path used to return
+        // before this, so a preview ended by suspending its previewer stayed
+        // open in the table with no end in the trail (art. 23, D-117).
+        DB::transaction(function () use ($payload, $endedAt): void {
             $this->audit->record(
                 action: 'impersonation.stop',
                 entityType: (new ImpersonationSession)->getMorphClass(),
@@ -127,7 +121,7 @@ final class ImpersonationService
                     'record_id' => $payload['record_id'],
                     'ended_at' => $endedAt->format('Y-m-d H:i:s'),
                 ],
-                actorId: (string) $admin->getKey(),
+                actorId: (string) $payload['admin_id'],
             );
 
             ImpersonationSession::query()
@@ -135,6 +129,17 @@ final class ImpersonationService
                 ->whereNull('ended_at')
                 ->update(['ended_at' => $endedAt]);
         });
+
+        /** @var User|null $admin */
+        $admin = User::query()->find($payload['admin_id']);
+
+        if ($admin === null || $admin->status !== UserStatus::Active) {
+            // The admin account vanished or was suspended mid-preview: refuse to
+            // restore anything and drop the session entirely (fail closed).
+            Auth::guard('web')->logout();
+
+            return null;
+        }
 
         Auth::guard('web')->login($admin, false);
 
@@ -155,6 +160,32 @@ final class ImpersonationService
         return $now->greaterThan($ceiling) ? $ceiling : $now;
     }
 
+    /**
+     * BR-28 for the one previewing: is the account that started this preview
+     * STILL entitled to it — present, active, and a system administrator?
+     *
+     * Asked on every request of a running preview (ImpersonationReadOnly), not
+     * only when it began. Without it a system administrator suspended, deleted
+     * or moved to another role mid-preview went on reading as someone else
+     * until the thirty-minute ceiling: their own session rows were deleted,
+     * but the preview runs on the TARGET's session (D-117).
+     */
+    public function previewerStillEntitled(): bool
+    {
+        $adminId = ImpersonationContext::adminId();
+
+        if ($adminId === null) {
+            return false;
+        }
+
+        /** @var User|null $admin */
+        $admin = User::query()->find($adminId);
+
+        return $admin !== null
+            && $this->roles->isSystemAdmin($admin)
+            && $this->roles->isActive($admin);
+    }
+
     /** End the preview only when its 30-minute ceiling has been reached. */
     public function stopIfExpired(): ?User
     {
@@ -165,22 +196,42 @@ final class ImpersonationService
         return $this->stop();
     }
 
+    /**
+     * D-117: the system administrator previews, nobody else. Any account may be
+     * previewed, a general supervisor's included — the owner chose that — but
+     * never another system administrator's (BR-35), never one's own, and only
+     * an account its holder can actually use: active and activated. A preview
+     * shows what the holder sees, and a suspended or not-yet-activated holder
+     * sees no screen at all — previewing one signed the system administrator
+     * out on the first page, or answered 500 on every page (the owner chose to
+     * refuse these with a visible reason, D-117).
+     */
     public function canPreview(User $admin, User $target): bool
     {
-        if (! $this->roles->isAdmin($admin) || ! $this->roles->isActive($admin)) {
+        if (! $this->roles->isSystemAdmin($admin) || ! $this->roles->isActive($admin)) {
             return false;
         }
 
-        if ($admin->is($target)) {
-            return false;
-        }
+        return $this->refusalReason($admin, $target) === null;
+    }
 
-        // BR-35: an admin account is never previewable.
-        if ($target->role === UserRole::Admin) {
-            return false;
-        }
-
-        return $target->status !== UserStatus::Deleted;
+    /**
+     * Why this target may not be previewed by this system administrator, as a
+     * lang key the screens print — or null when it may. One answer for the
+     * policy, this service and the two screens, so the reason shown is always
+     * the reason enforced.
+     */
+    public function refusalReason(User $admin, User $target): ?string
+    {
+        return match (true) {
+            $admin->is($target) => 'admin.preview.self_blocked',
+            // BR-35: a system administrator's account is never previewable.
+            $target->role === UserRole::SystemAdmin => 'admin.preview.admin_blocked',
+            $target->status === UserStatus::Deleted => 'admin.preview.deleted_blocked',
+            $target->status !== UserStatus::Active => 'admin.preview.inactive_blocked',
+            $target->getAttribute('email_verified_at') === null => 'admin.preview.unverified_blocked',
+            default => null,
+        };
     }
 
     /**

@@ -6,7 +6,9 @@ namespace App\Http\Middleware;
 
 use App\Http\Middleware\Concerns\LogsDenials;
 use App\Services\Audit\AuditLogger;
+use App\Services\Permissions\ImpersonationService;
 use App\Services\Permissions\RoleResolver;
+use App\Support\ImpersonationContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +29,7 @@ use Symfony\Component\HttpFoundation\Response;
  * session to be invalidated, not for one answer to be withheld. The refusal is
  * written to the trail with the caller's IP first (PRD §4.3).
  *
- * @see BR-28 · PRD §4.3, §4.4 · CONSTITUTION Art. 5, Art. 22
+ * @see BR-28, BR-33 · PRD §4.3, §4.4 · CONSTITUTION Art. 5, Art. 22, Art. 23 · D-117
  */
 final class EnsureActiveAccount
 {
@@ -36,6 +38,7 @@ final class EnsureActiveAccount
     public function __construct(
         private readonly RoleResolver $roles,
         private readonly AuditLogger $audit,
+        private readonly ImpersonationService $impersonation,
     ) {}
 
     public function handle(Request $request, \Closure $next): Response
@@ -44,6 +47,21 @@ final class EnsureActiveAccount
 
         if ($user === null || $this->roles->isActive($user)) {
             return $next($request);
+        }
+
+        // During a preview the inactive account is the one being LOOKED AT,
+        // not the one looking. Signing the session out left the preview row
+        // open with no end in the trail (art. 23) and punished the system
+        // administrator for someone else's status. The preview ends through
+        // the service instead, and they return to their own account (D-117).
+        if (ImpersonationContext::isActive()) {
+            $this->logDenial($this->audit, $request, 'impersonation.target_inactive', 'user', (string) $user->getKey());
+
+            if ($this->impersonation->stop() !== null) {
+                return redirect()
+                    ->route('admin.users.index')
+                    ->with('warning', __('admin.impersonation.target_inactive'));
+            }
         }
 
         $this->logDenial($this->audit, $request, 'account.inactive', 'user', (string) $user->getKey());

@@ -13,7 +13,7 @@ use App\Support\ImpersonationContext;
  * cohort a caller may reach, and the blanket refusal of writes while an account
  * preview is running.
  *
- * @see BR-22, BR-23, BR-33 · PRD §4.3 · CONSTITUTION Art. 22, Art. 23
+ * @see BR-22, BR-23, BR-33 · PRD §4.3 · CONSTITUTION Art. 22, Art. 23 · D-117
  */
 trait InteractsWithScope
 {
@@ -25,9 +25,20 @@ trait InteractsWithScope
         return ! ImpersonationContext::isActive();
     }
 
+    /** The general supervisor, active (D-117). */
     protected function admin(User $user): bool
     {
         return $this->roles->isActive($user) && $this->roles->isAdmin($user);
+    }
+
+    /**
+     * The system administrator, active (D-117): the accounts, the account
+     * preview and the landing page. Never a supervisor power — no policy
+     * outside those three areas names this helper.
+     */
+    protected function systemAdmin(User $user): bool
+    {
+        return $this->roles->isActive($user) && $this->roles->isSystemAdmin($user);
     }
 
     protected function owns(User $user, ?string $ownerId): bool

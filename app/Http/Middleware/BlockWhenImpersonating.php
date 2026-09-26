@@ -18,7 +18,12 @@ use Symfony\Component\HttpFoundation\Response;
  * check-out, submitting work, sending a message, editing a profile — so that
  * calling them directly, outside the UI, still fails (BR-33).
  *
- * @see BR-33, BR-34 · PRD §4.5.2 · CONSTITUTION Art. 23
+ * Since D-117 it also sits on every export, the bulk download of submissions
+ * and the self-check-in code: the owner kept taking files out of the platform
+ * with the general supervisor and the account holders, and a preview is run
+ * by the system administrator, who only looks.
+ *
+ * @see BR-33, BR-34 · PRD §4.5.2 · CONSTITUTION Art. 23 · D-117
  */
 final class BlockWhenImpersonating
 {

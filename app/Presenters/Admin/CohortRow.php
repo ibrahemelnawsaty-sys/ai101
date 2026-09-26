@@ -22,7 +22,7 @@ use App\Support\ViewModel;
  * permission on this cohort (BR-23); an empty list is shown as "none" rather
  * than hidden, because an unstaffed cohort is something to notice.
  *
- * @see PRD §4.2, §7.2, §9.18 · BR-23, BR-26, BR-31
+ * @see PRD §4.2, §7.2, §9.18 · BR-23, BR-26, BR-31 · D-117
  */
 final class CohortRow extends ViewModel
 {
@@ -52,6 +52,9 @@ final class CohortRow extends ViewModel
             'statusLabel' => $status?->label() ?? '—',
             'statusVariant' => self::cohortVariantOf($status),
             'statusIcon' => self::cohortIconOf($status),
+            // D-117 — a finished cohort gets no "add a participant" button;
+            // SeatParticipantRequest refuses the write all the same.
+            'canSeat' => $status?->seatable() ?? false,
         ]);
     }
 

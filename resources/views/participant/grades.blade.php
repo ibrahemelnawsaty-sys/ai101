@@ -62,8 +62,11 @@
         @endif
 
         <div class="toolbar u-mt-4">
-            <x-ui.button variant="secondary" size="sm" icon="down"
-                :href="route('grades.export')">{{ __('grades.export_pdf') }}</x-ui.button>
+            {{-- D-117 — no export from inside an account preview. --}}
+            @unless ($impersonation ?? null)
+                <x-ui.button variant="secondary" size="sm" icon="down"
+                    :href="route('grades.export')">{{ __('grades.export_pdf') }}</x-ui.button>
+            @endunless
         </div>
 
         {{-- Per-item -------------------------------------------------------------- --}}

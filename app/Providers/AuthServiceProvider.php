@@ -34,6 +34,7 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\BroadcastPolicy;
 use App\Policies\CertificatePolicy;
 use App\Policies\CohortPolicy;
+use App\Policies\ConsolePolicy;
 use App\Policies\DigitalCardPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\EvaluationPolicy;
@@ -67,7 +68,7 @@ use Illuminate\Support\ServiceProvider;
  * (BR-33) and past cohort scoping (BR-22, BR-23). Administrator reach is
  * granted policy by policy, as an allow-list (art. 22).
  *
- * @see BR-22, BR-23, BR-28, BR-33 · PRD §4.2, §4.3 · CONSTITUTION art. 5, art. 22
+ * @see BR-22, BR-23, BR-28, BR-33 · PRD §4.2, §4.3 · CONSTITUTION art. 5, art. 22 · D-117
  */
 final class AuthServiceProvider extends ServiceProvider
 {
@@ -100,10 +101,26 @@ final class AuthServiceProvider extends ServiceProvider
         Broadcast::class => BroadcastPolicy::class,
     ];
 
+    /**
+     * Abilities that guard a screen rather than a model (D-117). Written out
+     * here for the same reason as the map above: the whole authorization
+     * surface stays readable in one file.
+     *
+     * @var array<string, array{0: class-string, 1: string}>
+     */
+    private array $abilities = [
+        'console.view' => [ConsolePolicy::class, 'view'],
+        'console.settings' => [ConsolePolicy::class, 'settings'],
+    ];
+
     public function boot(): void
     {
         foreach ($this->policies as $model => $policy) {
             Gate::policy($model, $policy);
+        }
+
+        foreach ($this->abilities as $ability => $callback) {
+            Gate::define($ability, $callback);
         }
     }
 }

@@ -136,6 +136,7 @@ final class Sidebar extends UiComponent
 
         return match (app(RoleResolver::class)->shellRole($user)) {
             'admin' => $this->adminGroups(),
+            'system_admin' => $this->systemAdminGroups(),
             'trainer' => $this->trainerGroups(),
             'coordinator' => $this->coordinatorGroups(),
             default => $this->participantGroups(),
@@ -164,10 +165,10 @@ final class Sidebar extends UiComponent
             ['label' => __('nav.groups.program'), 'items' => [
                 ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],
                 ['route' => 'admin.cohorts.index', 'icon' => 'i-cal', 'label' => __('nav.admin.cohorts')],
-                ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
             ]],
+            // D-117 — the accounts, the landing page and the platform
+            // settings left this rail for the system administrator's.
             ['label' => __('nav.groups.admin'), 'items' => [
-                ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
                 ['route' => 'admin.registrations.index', 'icon' => 'i-user', 'label' => __('nav.admin.registrations')],
                 ['route' => 'admin.certificates.index', 'icon' => 'i-badge', 'label' => __('nav.admin.certificates')],
                 // Messages and manual reminders to a cohort (D-87).
@@ -180,7 +181,32 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
                 ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
+                // D-118 — the supervisor writes to anyone, and to the
+                // system administrators' inbox.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
+            ]],
+        ];
+    }
+
+    /**
+     * The system administrator's rail (D-117): the accounts, the landing page,
+     * the platform settings and — D-118 — the contact tab, and nothing else —
+     * the role reaches no cohort, so there is no
+     * programme group, no work group and no information home. The accounts
+     * list is the home: /dashboard sends this role there.
+     *
+     * @return list<array{label?: string, items: list<array<string, mixed>>}>
+     */
+    private function systemAdminGroups(): array
+    {
+        return [
+            ['label' => __('nav.groups.system'), 'items' => [
+                ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
+                ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
                 ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
+                // D-118 — "the contact tab": the shared inbox with the
+                // general supervisors, and nothing else.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
             ]],
         ];
     }
@@ -237,6 +263,9 @@ final class Sidebar extends UiComponent
                 ['route' => 'coordinator.dashboard', 'icon' => 'i-panel', 'label' => __('nav.coordinator.dashboard')],
                 ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
                 ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
+                // D-118 — the coordinator writes to the cohort's trainers
+                // and trainees, and to the general supervisor.
+                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
             ]],
         ];
     }

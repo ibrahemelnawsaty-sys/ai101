@@ -203,9 +203,16 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // ----------------------------------------------------------------- roles
 
+    /** The general supervisor (D-117). */
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /** The system administrator: accounts, account preview, landing page (D-117). */
+    public function isSystemAdmin(): bool
+    {
+        return $this->role === UserRole::SystemAdmin;
     }
 
     public function isTrainer(): bool
@@ -254,12 +261,21 @@ class User extends Authenticatable implements MustVerifyEmail
      * Cohort ids this account may reach at all (BR-22, BR-23). Administrators are
      * unrestricted and never reach this method.
      *
+     * The system administrator reaches no cohort whatever enrolment rows the
+     * account still carries from an earlier role (D-117): every scope, policy
+     * and cohort switcher that falls through to this list then answers
+     * "nothing".
+     *
      * @return array<int, string>
      */
     public function accessibleCohortIds(): array
     {
         if ($this->accessibleCohortIdsCache !== null) {
             return $this->accessibleCohortIdsCache;
+        }
+
+        if ($this->isSystemAdmin()) {
+            return $this->accessibleCohortIdsCache = [];
         }
 
         $ids = Enrollment::query()

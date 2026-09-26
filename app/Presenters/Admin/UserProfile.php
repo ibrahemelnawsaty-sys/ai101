@@ -6,11 +6,11 @@ namespace App\Presenters\Admin;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use App\Models\AuditLog;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Services\Permissions\RoleResolver;
 use App\Support\ViewModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -27,7 +27,10 @@ use Illuminate\Support\Facades\Gate;
  * `toggleStatusValue` is the value the suspend/activate form posts, decided
  * here rather than in the template, so the screen cannot invent a third state.
  *
- * @see BR-28, BR-29, BR-32, BR-33, BR-35 · PRD §4.4, §4.5, §9.18
+ * Since D-117 this is the system administrator's page: the account's own audit
+ * trail (IP addresses) and the cohort seating control left it.
+ *
+ * @see BR-28, BR-29, BR-32, BR-33, BR-35 · PRD §4.4, §4.5, §9.18 · D-117
  */
 final class UserProfile extends ViewModel
 {
@@ -36,13 +39,11 @@ final class UserProfile extends ViewModel
 
     /**
      * @param  Collection<int, Enrollment>  $enrollments
-     * @param  Collection<int, AuditLog>  $auditEntries
      */
     public static function from(
         User $subject,
         User $viewer,
         Collection $enrollments,
-        Collection $auditEntries,
     ): self {
         $profile = self::related($subject, 'profile');
 
@@ -75,25 +76,37 @@ final class UserProfile extends ViewModel
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
 
             'isSelf' => $viewer->is($subject),
-            // Only a trainer or an administrator can be given a cohort from
-            // the cohorts screen. A participant is seated when the account is
-            // created, and pointing their empty state at that screen sent the
-            // administrator to look for a control that is not there (D-69).
-            'attachesFromCohorts' => in_array($role?->value, ['trainer', 'admin'], true),
+            // What an empty enrolment list MEANS depends on the role, and the
+            // system administrator reading it cannot open the cohorts screen,
+            // so the text names who acts rather than linking there (D-69,
+            // D-117). It used to tell a system administrator's page that the
+            // supervisor would seat them in a cohort — a role that reaches none.
+            'enrollmentsEmptyBody' => (string) __(match ($role) {
+                UserRole::Trainer, UserRole::Coordinator => 'admin.users.enrollments_empty_body',
+                UserRole::Admin => 'admin.users.enrollments_empty_supervisor_body',
+                UserRole::SystemAdmin => 'admin.users.enrollments_empty_system_admin_body',
+                default => 'admin.users.enrollments_empty_participant_body',
+            }),
             'isSuspended' => $isSuspended,
             'toggleStatusValue' => $isSuspended ? UserStatus::Active->value : UserStatus::Suspended->value,
 
-            'canBeAdministered' => $gate->allows('update', $subject) && ! $viewer->is($subject),
+            // BR-32 is a reason the screen SHOWS: the last active supervisor
+            // or system administrator keeps their role and their status, and
+            // the note above the controls says why they are disabled (D-117 —
+            // they were disabled in silence once the reader and the account
+            // stopped sharing a role).
+            'canBeAdministered' => $gate->allows('update', $subject)
+                && ! $viewer->is($subject)
+                && ! app(RoleResolver::class)->isLastActiveHolder($subject),
             'canChangeRole' => $gate->allows('changeRole', $subject),
-            'canChangeStatus' => $gate->allows('suspend', $subject),
+            // Activating is `restore`, suspending is `suspend`: the button is
+            // one toggle, so it asks the ability of the way it will go.
+            'canChangeStatus' => $gate->allows($isSuspended ? 'restore' : 'suspend', $subject),
             'canBePreviewed' => $gate->allows('preview', $subject),
-            'canEnroll' => $gate->allows('enroll', $subject),
+            'previewBlockedReason' => UserRow::previewBlockedReason($viewer, $subject),
 
             'enrollments' => $enrollments->map(
                 static fn (Enrollment $row): UserEnrollmentRow => UserEnrollmentRow::from($row),
-            )->values(),
-            'auditEntries' => $auditEntries->map(
-                static fn (AuditLog $row): AuditEntry => AuditEntry::from($row),
             )->values(),
         ]);
     }

@@ -33,7 +33,11 @@ beforeEach(function (): void {
     // `running` cohort — makeCohort()'s default — renders the empty state and
     // has no settings row to edit.
     $this->cohort = makeCohort(['status' => 'open']);
+
+    // D-117: the general supervisor (`admin`) and the system administrator,
+    // who alone edits the landing page and changes accounts.
     $this->admin = makeAdmin();
+    $this->sysadmin = makeSystemAdmin();
 });
 
 /*
@@ -56,11 +60,10 @@ it('BR-31: نصوص صفحة الهبوط تُقرأ من قاعدة البيا�
     // the column names: `hero_subtitle` is the sentence the public page prints
     // under the headline and is stored in the `hero_text` column. The cohort's
     // settings ride in the same publish as the page texts (D-114).
-    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.update'), [
+    assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.landing.update'), [
         'settings' => [
             'hero_title' => 'CANARY-HERO-TITLE',
             'hero_subtitle' => 'CANARY-HERO-AFTER',
-            'is_registration_open' => true,
             'countdown_enabled' => false,
         ],
     ]));
@@ -83,7 +86,7 @@ it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة
 
     $this->get(route('home'))->assertSee('CANARY-Q-ONE', escape: false);
 
-    assertAccepted($this->actingAs($this->admin)->put(route('admin.landing.update'), [
+    assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.landing.update'), [
         'faq' => [['key' => 'canary-one', 'question' => 'CANARY-Q-TWO', 'answer' => 'CANARY-A-TWO']],
     ]));
 
@@ -93,12 +96,11 @@ it('BR-31: الأسئلة الشائعة تُدار من لوحة الإدارة
 });
 
 it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه فعلًا على الخادم', function (): void {
-    $settings = LandingSetting::factory()->create([
-        'cohort_id' => $this->cohort->id,
-        'is_registration_open' => false,
-    ]);
+    // D-117 — the general supervisor closes it, from the registrations screen.
+    assertAccepted($this->actingAs($this->admin)->put(route('admin.registrations.intake', $this->cohort), ['open' => '0']));
+    auth()->logout();
 
-    expect($settings->is_registration_open)->toBeFalse();
+    expect(LandingSetting::query()->where('cohort_id', $this->cohort->id)->sole()->is_registration_open)->toBeFalse();
 
     assertRefused($this->post(route('register'), [
         'email' => 'late.applicant@example.test',
@@ -110,16 +112,17 @@ it('BR-31: إغلاق التسجيل من لوحة الإدارة يُغلقه �
     expect(User::query()->where('email', 'late.applicant@example.test')->count())->toBe(0);
 });
 
-it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صفحة الهبوط', function (): void {
+it('BR-31: المتدرب والمدرب والمشرف العام لا يعدّلون إعدادات صفحة الهبوط', function (): void {
     $settings = LandingSetting::factory()->create([
         'cohort_id' => $this->cohort->id,
         'hero_text' => 'CANARY-HERO-BEFORE',
         'is_registration_open' => true,
     ]);
 
-    foreach ([makeParticipant($this->cohort), makeTrainer($this->cohort)] as $user) {
+    // D-117 took the landing page from the general supervisor on purpose.
+    foreach ([makeParticipant($this->cohort), makeTrainer($this->cohort), $this->admin] as $user) {
         $this->actingAs($user)
-            ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED', 'is_registration_open' => true, 'countdown_enabled' => false]])
+            ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED', 'countdown_enabled' => false]])
             ->assertForbidden();
     }
 
@@ -128,78 +131,133 @@ it('BR-31: المتدرب والمدرب لا يعدّلان إعدادات صف
 
 /*
 |--------------------------------------------------------------------------
-| BR-32 — one active administrator, always
+| BR-32 — one active holder of each administrative role, always (D-117)
 |--------------------------------------------------------------------------
+| The system administrator changes accounts, so every row below acts as one.
+| The guarded roles are two: the general supervisor and the system
+| administrator. Through the interface only the supervisor's floor can be
+| reached by someone else — the last system administrator is the only person
+| who could act on their own account, and that is refused on its own — so the
+| system administrator's floor is also exercised from the console, the one
+| path that can demote anybody.
 */
 
-it('BR-32: حذف آخر مدير نظام فعّال مرفوض', function (): void {
-    $activeAdmins = static fn (): int => User::query()
+it('BR-32: حذف آخر مشرف عام فعّال مرفوض', function (): void {
+    $activeSupervisors = static fn (): int => User::query()
         ->where('role', 'admin')
         ->where('status', 'active')
         ->count();
 
-    expect($activeAdmins())->toBe(1);
+    expect($activeSupervisors())->toBe(1);
 
-    // With two administrators, removing one is allowed.
+    // With two supervisors, removing one is allowed.
     $second = makeAdmin();
-    expect($activeAdmins())->toBe(2);
+    expect($activeSupervisors())->toBe(2);
 
-    assertAccepted($this->actingAs($this->admin)->delete(route('admin.users.destroy', $second)));
-    expect($activeAdmins())->toBe(1);
+    assertAccepted($this->actingAs($this->sysadmin)->delete(route('admin.users.destroy', $second), [
+        'reason' => 'A duplicate supervisor account.',
+    ]));
+    expect($activeSupervisors())->toBe(1);
 
     // With one left, removing that one is refused, and nothing changes. The
-    // refusal is a 403, not a redirect: PRD §4.3 lists «مدير النظام لا يستطيع حذف
-    // حسابه الخاص، ويجب بقاء مدير واحد على الأقل» among the MANDATORY
-    // AUTHORISATION rules, so UserPolicy::delete() is where it lives and
-    // tests/Pest.php::assertRefused() says in as many words that a policy
-    // refusal is asserted with assertForbidden(), never through it.
-    $this->actingAs($this->admin)->delete(route('admin.users.destroy', $this->admin))->assertForbidden();
-    expect($activeAdmins())->toBe(1);
+    // refusal is a 403, not a redirect: PRD §4.3 lists the floor among the
+    // MANDATORY AUTHORISATION rules, so UserPolicy::delete() is where it
+    // lives, and tests/Pest.php::assertRefused() says a policy refusal is
+    // asserted with assertForbidden(), never through it.
+    $this->actingAs($this->sysadmin)->delete(route('admin.users.destroy', $this->admin), [
+        'reason' => 'Trying to remove the last one.',
+    ])->assertForbidden();
+    expect($activeSupervisors())->toBe(1);
 });
 
-it('BR-32: المدير لا يحذف حسابه هو', function (): void {
-    makeAdmin();
+it('BR-32: مدير النظام لا يحذف حسابه ولا يعطّله ولا يغيّر دوره', function (): void {
+    makeSystemAdmin();
 
-    // PRD §4.3, authorisation rules: «مدير النظام لا يستطيع حذف حسابه الخاص».
-    $this->actingAs($this->admin)->delete(route('admin.users.destroy', $this->admin))->assertForbidden();
+    // PRD §4.3, authorisation rules: no one acts on their own account here —
+    // even with a second system administrator standing by.
+    $this->actingAs($this->sysadmin)->delete(route('admin.users.destroy', $this->sysadmin), [
+        'reason' => 'Removing my own account.',
+    ])->assertForbidden();
+    $this->actingAs($this->sysadmin)->patch(route('admin.users.status', $this->sysadmin), [
+        'status' => 'suspended',
+    ])->assertForbidden();
+    $this->actingAs($this->sysadmin)->put(route('admin.users.role', $this->sysadmin), [
+        'role' => 'trainer',
+        'reason' => 'Demoting my own account.',
+    ])->assertForbidden();
 
-    expect($this->admin->fresh()->deleted_at)->toBeNull();
+    $fresh = $this->sysadmin->fresh();
+
+    expect($fresh->deleted_at)->toBeNull()
+        ->and($fresh->status->value)->toBe('active')
+        ->and($fresh->role->value)->toBe('system_admin');
 });
 
-it('BR-32: تعطيل آخر مدير نظام فعّال مرفوض', function (): void {
+it('BR-32: تعطيل آخر مشرف عام فعّال مرفوض', function (): void {
     // UserPolicy::suspend() refuses before the controller is reached: 403 (PRD §4.3).
-    $this->actingAs($this->admin)->patch(route('admin.users.status', $this->admin), [
+    $this->actingAs($this->sysadmin)->patch(route('admin.users.status', $this->admin), [
         'status' => 'suspended',
     ])->assertForbidden();
 
     expect($this->admin->fresh()->status->value)->toBe('active');
 });
 
-it('BR-32: تنزيل دور آخر مدير نظام إلى مدرب مرفوض', function (): void {
-    // Two authorisation guards forbid this and either alone is enough (PRD §4.3):
-    // an admin never changes their own role, and the last active admin is never
-    // demoted. Both live in UserPolicy, so the answer is 403.
-    $this->actingAs($this->admin)->put(route('admin.users.role', $this->admin), [
+it('BR-32: تنزيل دور آخر مشرف عام إلى مدرب مرفوض', function (): void {
+    $this->actingAs($this->sysadmin)->put(route('admin.users.role', $this->admin), [
         'role' => 'trainer',
+        'reason' => 'Moving the supervisor to training.',
     ])->assertForbidden();
 
     expect($this->admin->fresh()->role->value)->toBe('admin');
 });
 
-it('BR-32: مع وجود مديرين اثنين يمكن تعطيل أحدهما', function (): void {
+it('BR-32: مع وجود مشرفَين عامَّين يمكن تعطيل أحدهما وتغيير دوره', function (): void {
     $second = makeAdmin();
+    $third = makeAdmin();
 
-    assertAccepted($this->actingAs($this->admin)->patch(route('admin.users.status', $second), [
+    assertAccepted($this->actingAs($this->sysadmin)->patch(route('admin.users.status', $second), [
         'status' => 'suspended',
     ]));
 
-    expect(User::query()->where('role', 'admin')->where('status', 'active')->count())->toBe(1);
+    assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.users.role', $third), [
+        'role' => 'trainer',
+        'reason' => 'Moving this supervisor to training.',
+    ]));
+
+    expect(User::query()->where('role', 'admin')->where('status', 'active')->count())->toBe(1)
+        ->and($third->fresh()->role->value)->toBe('trainer');
+});
+
+it('BR-32: آخر مدير نظام فعّال لا يُنزَّل دوره ولو من الطرفية', function (): void {
+    $this->artisan('athar:change-role', [
+        'email' => $this->sysadmin->email,
+        'role' => 'trainer',
+        '--reason' => 'Trying to demote the last system administrator.',
+        '--force' => true,
+    ])->assertFailed();
+
+    expect($this->sysadmin->fresh()->role->value)->toBe('system_admin')
+        ->and(App\Models\AuditLog::query()->where('action', 'role.last_active_holder')->where('entity_id', $this->sysadmin->id)->count())->toBe(1);
+
+    // With a second system administrator, the same demotion goes through.
+    makeSystemAdmin();
+
+    $this->artisan('athar:change-role', [
+        'email' => $this->sysadmin->email,
+        'role' => 'trainer',
+        '--reason' => 'A second system administrator is in place now.',
+        '--force' => true,
+    ])->assertSuccessful();
+
+    expect($this->sysadmin->fresh()->role->value)->toBe('trainer');
 });
 
 it('BR-32: حذف المستخدم حذف ناعم لا فعلي', function (): void {
     $participant = makeParticipant($this->cohort);
 
-    assertAccepted($this->actingAs($this->admin)->delete(route('admin.users.destroy', $participant)));
+    assertAccepted($this->actingAs($this->sysadmin)->delete(route('admin.users.destroy', $participant), [
+        'reason' => 'Duplicate account created by mistake.',
+    ]));
 
     expect(User::query()->where('id', $participant->id)->count())->toBe(0)
         ->and(User::withTrashed()->where('id', $participant->id)->count())->toBe(1);

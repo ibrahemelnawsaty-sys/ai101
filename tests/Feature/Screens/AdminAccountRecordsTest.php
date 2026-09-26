@@ -14,7 +14,10 @@ declare(strict_types=1);
  *   · PRD §7.8 — "no user with evaluation records or an issued certificate is
  *     deleted" — was asked by nothing (D-84).
  *
- * @see PRD §4.2, §7.8, §9.18 · BR-23 · FR-CERT-13 · D-69, D-84
+ * D-117 moved the first of the three to the cohorts screen and the general
+ * supervisor, and left the other two with the system administrator.
+ *
+ * @see PRD §4.2, §7.8, §9.18 · BR-23 · FR-CERT-13 · D-69, D-84, D-117
  */
 
 use App\Models\Cohort;
@@ -29,31 +32,34 @@ beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
     Mail::fake();
 
+    // D-117: seating is the general supervisor's, from the cohorts screen; the
+    // accounts themselves are the system administrator's.
     $this->admin = makeAdmin();
+    $this->sysadmin = makeSystemAdmin();
     $this->cohort = makeCohort(['status' => 'open']);
     makeTrainer($this->cohort);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Seating an existing account
+| Seating an existing account — the cohorts screen (D-84, moved by D-117)
 |--------------------------------------------------------------------------
 */
 
-it('D-84: المدير يُجلس حسابًا قائمًا في دفعة — التحاق نشط وبطاقة ومحادثات وسطر تدقيق، ولا رسالة', function (): void {
-    $orphan = makeParticipant();
+it('D-84: المشرف يُجلس حسابًا قائمًا في دفعة من شاشة الدفعات — التحاق نشط وبطاقة ومحادثات وسطر تدقيق، ولا رسالة', function (): void {
+    $orphan = makeParticipant(null, ['email' => 'orphan@example.com']);
     $seatsBefore = (int) $this->cohort->seats_taken;
 
     $this->actingAs($this->admin)
-        ->get(route('admin.users.show', $orphan))
+        ->get(route('admin.cohorts.index', ['participants' => $this->cohort->id]))
         ->assertOk()
-        ->assertSee(route('admin.users.enroll', $orphan), false)
-        ->assertSee($this->cohort->name, false);
+        ->assertSee(route('admin.cohorts.participants.attach', $this->cohort), false)
+        ->assertSee(__('admin.cohorts.participant_email'), false);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.users.enroll', $orphan), ['cohort_id' => $this->cohort->id])
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => ' Orphan@Example.com '])
         ->assertSessionHasNoErrors()
-        ->assertSessionHas('status', __('admin.users.enrolled'));
+        ->assertSessionHas('status', __('admin.cohorts.participant_seated'));
 
     $enrollment = Enrollment::query()->where('user_id', $orphan->id)->sole();
     $threads = Thread::query()->whereIn('id', ThreadParticipant::query()->where('user_id', $orphan->id)->select('thread_id'))->pluck('type')
@@ -69,25 +75,19 @@ it('D-84: المدير يُجلس حسابًا قائمًا في دفعة — ا
     Mail::assertNothingQueued();
 });
 
-it('D-84: مرّة ثانية تُرفض برسالة، ولا تُعرض دفعة منتهية ولا دفعة التحق بها', function (): void {
-    $participant = makeParticipant($this->cohort);
-    $finished = makeCohort(['status' => 'completed', 'name' => 'CANARY-FINISHED']);
+it('D-84: مرّة ثانية تُرفض برسالة، ولا يُجلَس أحد في دفعة منتهية', function (): void {
+    $participant = makeParticipant($this->cohort, ['email' => 'seated@example.com']);
+    $finished = makeCohort(['status' => 'completed']);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.users.enroll', $participant), ['cohort_id' => $this->cohort->id])
-        ->assertSessionHasErrors(['cohort_id' => __('admin.users.enroll_already')]);
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'seated@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.participant_already')]);
 
     $this->actingAs($this->admin)
-        ->post(route('admin.users.enroll', $participant), ['cohort_id' => $finished->id])
-        ->assertSessionHasErrors('cohort_id');
+        ->post(route('admin.cohorts.participants.attach', $finished), ['participant_email' => 'seated@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.seat_closed')]);
 
     expect(Enrollment::query()->where('user_id', $participant->id)->count())->toBe(1);
-
-    $this->actingAs($this->admin)
-        ->get(route('admin.users.show', $participant))
-        ->assertOk()
-        ->assertDontSee('CANARY-FINISHED', false)
-        ->assertSee(__('admin.users.enroll_none'), false);
 });
 
 it('D-84: إجلاس ثانٍ لحساب في دفعته يعود false ولا يُكرّر شيئًا — جواب القفل لا ما قبله', function (): void {
@@ -101,20 +101,75 @@ it('D-84: إجلاس ثانٍ لحساب في دفعته يعود false ولا �
         ->and(App\Models\AuditLog::query()->where('action', 'enrollment.seated')->where('entity_id', $orphan->id)->count())->toBe(1);
 });
 
-it('D-84: لا يُجلَس إلا حساب متدرّب، ولا يُجلِس إلا المدير', function (): void {
-    $trainer = makeTrainer();
-    $orphan = makeParticipant();
+it('D-117: لا يُجلَس إلا حساب متدرّب، ولا يُجلِس إلا المشرف العام — لا مدير النظام ولا المدرب', function (): void {
+    $trainer = makeTrainer(null, ['email' => 'lone-trainer@example.com']);
+    $orphan = makeParticipant(null, ['email' => 'orphan@example.com']);
 
+    // A trainer's address is not a participant's: refused as unknown, not seated.
     $this->actingAs($this->admin)
-        ->post(route('admin.users.enroll', $trainer), ['cohort_id' => $this->cohort->id])
-        ->assertForbidden();
+        ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'lone-trainer@example.com'])
+        ->assertSessionHasErrors(['participant_email' => __('admin.cohorts.participant_not_found')]);
 
-    $this->actingAs(makeTrainer($this->cohort))
-        ->post(route('admin.users.enroll', $orphan), ['cohort_id' => $this->cohort->id])
-        ->assertForbidden();
+    foreach ([$this->sysadmin, makeTrainer($this->cohort)] as $actor) {
+        $this->actingAs($actor)
+            ->post(route('admin.cohorts.participants.attach', $this->cohort), ['participant_email' => 'orphan@example.com'])
+            ->assertForbidden();
+    }
 
     expect(Enrollment::query()->where('user_id', $orphan->id)->exists())->toBeFalse()
         ->and(Enrollment::query()->where('user_id', $trainer->id)->exists())->toBeFalse();
+});
+
+it('D-117: دفعة منتهية بلا زر إضافة متدرب، واللوحة تُفتح وحدها باسم حقلها الخاص', function (): void {
+    $finished = makeCohort(['status' => 'completed']);
+    $seatLink = static fn (Cohort $cohort): string => e(route('admin.cohorts.index', ['participants' => $cohort->id]).'#seat');
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index'))
+        ->assertOk()
+        ->assertSee($seatLink($this->cohort), false)
+        ->assertDontSee($seatLink($finished), false);
+
+    // Opened from a screen that already had the trainer panel open: the seat
+    // panel replaces it, and its field is not the trainer form's `email`.
+    $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index', ['participants' => $this->cohort->id]))
+        ->assertOk()
+        ->assertSee('name="participant_email"', false)
+        ->assertDontSee(route('admin.cohorts.trainers.attach', $this->cohort), false);
+
+    $page = $this->actingAs($this->admin)
+        ->get(route('admin.cohorts.index', ['trainers' => $this->cohort->id]))
+        ->assertOk()
+        ->getContent();
+
+    expect($page)->toContain(e(route('admin.cohorts.index', ['participants' => $this->cohort->id]).'#seat'))
+        ->and($page)->not->toContain(e(route('admin.cohorts.index', ['trainers' => $this->cohort->id, 'participants' => $this->cohort->id])));
+});
+
+it('D-117: صفحة الحساب عند مدير النظام بلا سجل تدقيق وبلا زر إجلاس، وتسمّي من يُجلس', function (): void {
+    $orphan = makeParticipant();
+    // A trail row about this account, written the way every row is, from a
+    // request whose address the page must not show.
+    request()->server->set('REMOTE_ADDR', '203.0.113.77');
+    app(App\Services\Audit\AuditLogger::class)->record(
+        action: 'user.updated',
+        entityType: 'user',
+        entityId: (string) $orphan->id,
+        actorId: (string) $this->admin->id,
+    );
+    expect(App\Models\AuditLog::query()->where('entity_id', $orphan->id)->value('ip_address'))->toBe('203.0.113.77');
+
+    $this->actingAs($this->sysadmin)
+        ->get(route('admin.users.show', $orphan))
+        ->assertOk()
+        ->assertDontSee('203.0.113.77', false)
+        // The card's own closing line; its title also names the trail in a
+        // form hint, so the title alone cannot tell the card is gone.
+        ->assertDontSee(__('admin.audit.immutable_note'), false)
+        ->assertDontSee(route('admin.audit.index'), false)
+        ->assertDontSee(route('admin.cohorts.index'), false)
+        ->assertSee(__('admin.users.enrollments_empty_participant_body'), false);
 });
 
 /*
@@ -127,7 +182,7 @@ it('D-84: عنوان حساب محذوف يُرفض برسالة لا بخطأ �
     $gone = makeParticipant(null, ['email' => 'gone@example.com']);
     $gone->delete();
 
-    $this->actingAs($this->admin)
+    $this->actingAs($this->sysadmin)
         ->post(route('admin.users.store'), [
             'email' => 'gone@example.com',
             'role' => 'participant',
@@ -189,14 +244,14 @@ it('FR-CERT-13: لا يُحذف مستخدم له شهادة صادرة — ول
     $clean = makeParticipant($this->cohort);
 
     foreach ([$certified, $graded] as $subject) {
-        $this->actingAs($this->admin)
+        $this->actingAs($this->sysadmin)
             ->delete(route('admin.users.destroy', $subject), ['reason' => 'Duplicate account created by mistake.'])
             ->assertForbidden();
 
         expect(User::query()->whereKey($subject->id)->exists())->toBeTrue();
     }
 
-    $this->actingAs($this->admin)
+    $this->actingAs($this->sysadmin)
         ->delete(route('admin.users.destroy', $clean), ['reason' => 'Duplicate account created by mistake.'])
         ->assertRedirect(route('admin.users.index'));
 

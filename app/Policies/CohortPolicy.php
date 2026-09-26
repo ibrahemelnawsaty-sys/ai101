@@ -13,7 +13,7 @@ use App\Policies\Concerns\InteractsWithScope;
  * attendance rate and its trainers is admin-only. Reading one requires an
  * actual link to it — a trainer assignment or an enrollment (BR-23).
  *
- * @see BR-22, BR-23 · PRD §4.2, §9.18 · CONSTITUTION Art. 22
+ * @see BR-22, BR-23 · PRD §4.2, §9.18 · CONSTITUTION Art. 22 · D-84, D-117
  */
 final class CohortPolicy
 {
@@ -64,6 +64,16 @@ final class CohortPolicy
     }
 
     public function assignCoordinator(User $user, Cohort $cohort): bool
+    {
+        return $this->admin($user) && $this->writesAllowed();
+    }
+
+    /**
+     * Seating an existing trainee account in this cohort — the supervisor's,
+     * from the cohorts screen (D-84, D-117). Who may BE seated is UserPolicy's
+     * `enroll`; which cohorts can still take a seat is the request's.
+     */
+    public function seatParticipant(User $user, Cohort $cohort): bool
     {
         return $this->admin($user) && $this->writesAllowed();
     }

@@ -44,7 +44,7 @@
         <x-ui.empty-state icon="users"
             :title="__('admin.users.no_cohort_title')"
             :description="__('admin.users.no_cohort_body')"
-            :action-label="__('admin.users.no_cohort_action')" :action-href="route('admin.cohorts.index')" />
+            :action-label="__('admin.users.back_to_list')" :action-href="route('admin.users.index')" />
     @else
         @if ($errors->any())
             <div class="note note--bad" role="alert" aria-live="polite">

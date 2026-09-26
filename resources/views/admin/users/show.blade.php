@@ -1,19 +1,23 @@
 {{--
     Admin · one user's full profile, with the account-preview entry point.
+    The system administrator's screen since D-117 — which took two sections
+    off it: the account's own audit trail (it carries IP addresses and stays on
+    the supervisor's audit screen) and seating the account in a cohort (the
+    supervisor does that from the cohorts screen now).
 
     Every action button below is rendered from a server-computed permission flag
     ($user->canChangeRole, canSuspend, canPreview …). The flags exist to explain
     WHY an action is unavailable — the authorisation itself is re-checked by the
     policy on the target route, on every request (Article 5, BR-28).
 
-    BR-32 (at least one active administrator) and the "no action on your own
-    account" rule are therefore shown here as reasons, never relied on as
-    protection.
+    BR-32 (at least one active supervisor and one active system administrator)
+    and the "no action on your own account" rule are therefore shown here as
+    reasons, never relied on as protection.
 
     Four states: error · loading skeleton shaped like the profile · empty
     (an account with no enrolment yet) · normal.
 
-    @see PRD §9.18, §4.4, §4.5 · BR-27, BR-28, BR-32, BR-33, BR-34, BR-35
+    @see PRD §9.18, §4.4, §4.5 · BR-27, BR-28, BR-32, BR-33, BR-34, BR-35 · D-117
 --}}
 @extends('layouts.app')
 
@@ -75,14 +79,17 @@
             @if ($user->canBePreviewed)
                 <p>{{ __('admin.preview.confirm', ['name' => $user->name]) }}</p>
 
-                <div class="row__acts">
-                    <x-ui.button variant="secondary" icon="eye"
-                        :href="route('admin.users.preview', $user->id)">{{ __('admin.preview.start') }}</x-ui.button>
-                </div>
+                {{-- A POST, like the route: a link's GET was answered 405 (D-117). --}}
+                <form method="POST" action="{{ route('admin.users.preview', $user->id) }}" class="row__acts">
+                    @csrf
+                    <x-ui.button variant="secondary" icon="eye" type="submit">{{ __('admin.preview.start') }}</x-ui.button>
+                </form>
             @else
+                {{-- The reason is the one the server enforces (D-117) — never
+                     "another administrator" for one's own or a suspended account. --}}
                 <x-ui.empty-state variant="locked" icon="lock"
-                    :title="__('admin.preview.admin_blocked')"
-                    :description="__('admin.preview.rules.no_admin')" />
+                    :title="$user->previewBlockedReason"
+                    :description="__('admin.preview.blocked_body')" />
             @endif
 
             <h3 class="abrief__sub">{{ __('admin.preview.rules_title') }}</h3>
@@ -149,16 +156,14 @@
 
         {{-- Enrolments ---------------------------------------------------------------- --}}
         <x-ui.card class="dc--span u-mt-4" icon="users" :title="__('admin.users.enrollments_title')">
-            @if ($user->enrollments->isEmpty() && $user->attachesFromCohorts)
+            @if ($user->enrollments->isEmpty())
+                {{-- The text says what an empty list means for THIS role (D-117);
+                     the action is one this screen's reader can take. --}}
                 <x-ui.empty-state icon="users"
                     :title="__('admin.users.enrollments_empty_title')"
-                    :description="__('admin.users.enrollments_empty_body')"
-                    :action-label="__('admin.cohorts.title')"
-                    :action-href="route('admin.cohorts.index')" />
-            @elseif ($user->enrollments->isEmpty())
-                <x-ui.empty-state icon="users"
-                    :title="__('admin.users.enrollments_empty_title')"
-                    :description="__('admin.users.enrollments_empty_participant_body')" />
+                    :description="$user->enrollmentsEmptyBody"
+                    :action-label="__('admin.users.back_to_list')"
+                    :action-href="route('admin.users.index')" />
             @endif
 
             @if ($user->enrollments->isNotEmpty())
@@ -196,53 +201,6 @@
                         </tbody>
                     </table>
                 </div>
-            @endif
-
-            @if ($user->canEnroll)
-                @if ($enrollOptions === [])
-                    <p class="footnote">{{ __('admin.users.enroll_none') }}</p>
-                @else
-                    <form method="POST" action="{{ route('admin.users.enroll', $user->id) }}" class="u-mt-4">
-                        @csrf
-                        <x-ui.select name="cohort_id" required :label="__('admin.users.enroll_label')"
-                            :hint="__('admin.users.enroll_hint')"
-                            :options="$enrollOptions" :value="old('cohort_id')" />
-
-                        <div class="row__acts">
-                            <x-ui.button variant="primary" size="sm" type="submit">{{ __('admin.users.enroll_submit') }}</x-ui.button>
-                        </div>
-                    </form>
-                @endif
-            @endif
-        </x-ui.card>
-
-        {{-- Recent audit entries for this account -------------------------------------- --}}
-        <x-ui.card class="dc--span u-mt-4" icon="shield" :title="__('admin.audit.title')">
-            <x-slot:action>
-                <a href="{{ route('admin.audit.index', ['entity' => $user->id]) }}">{{ __('app.view_all') }}</a>
-            </x-slot:action>
-
-            @if ($user->auditEntries->isEmpty())
-                <x-ui.empty-state icon="shield"
-                    :title="__('admin.audit.empty_title')"
-                    :description="__('admin.audit.empty_body')" />
-            @else
-                @foreach ($user->auditEntries as $entry)
-                    <div class="row">
-                        <div class="row__m">
-                            <b>{{ $entry->actionLabel }}</b>
-                            <span>
-                                {{ $entry->actorName }} ·
-                                <span class="u-num">{{ \App\Support\Dates::dateTime($entry->at) }}</span>
-                            </span>
-                        </div>
-                        <div class="row__e">
-                            <span class="u-num u-ltr" dir="ltr">{{ $entry->ipAddress }}</span>
-                        </div>
-                    </div>
-                @endforeach
-
-                <p class="footnote">{{ __('admin.audit.immutable_note') }}</p>
             @endif
         </x-ui.card>
     @endif

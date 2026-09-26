@@ -8,8 +8,34 @@
 
 return [
 
-    'subtitle' => 'Your trainer chat · the cohort group · the announcements channel',
+    'subtitle' => 'Your direct conversations · the cohort group · the announcements channel',
     'threads' => 'Conversations',
+    // D-118 — starting a one-to-one conversation.
+    'new_conversation' => 'New conversation',
+    'edit_hint' => 'You can edit your message within 15 minutes of sending it.',
+
+    'inbox' => [
+        'title' => 'System administration',
+        'option_hint' => 'Your message reaches every system administrator, and any of them can reply.',
+    ],
+
+    'start' => [
+        'title' => 'New conversation',
+        'subtitle' => 'Choose who to write to, and write your first message.',
+        'back' => 'Back to messages',
+        'search_label' => 'Search by name or email',
+        'search_submit' => 'Search',
+        'recipient_legend' => 'To',
+        'body_label' => 'Your first message',
+        'existing_note' => 'If you already have a conversation together, your message goes there and no second one is opened.',
+        'submit' => 'Send and start the conversation',
+        'recipient_required' => 'Choose who you want to write to from the list.',
+        'body_required' => 'Write your first message before sending.',
+        'empty_title' => 'Nobody you can write to right now',
+        'empty_body' => 'A conversation starts with whoever your role allows: a trainee with their cohort\'s trainer and coordinator, a trainer with their cohort\'s coordinator, a coordinator with their cohort\'s trainers and trainees and the general supervisor. None of them is available to you now; your existing conversations stay on the messages screen.',
+        'no_match_title' => 'No results for this search',
+        'no_match_body' => 'Nobody you can write to matches what you typed. Try part of the name or the email.',
+    ],
 
     'compose_label' => 'Message text',
     'compose_placeholder' => 'Write your message…',
@@ -41,7 +67,7 @@ return [
     ],
 
     'empty_title' => 'Start a conversation',
-    'empty_body' => 'Start a conversation with your trainer or with your peers.',
+    'empty_body' => 'You have no conversations yet. Start one with someone you may write to from the «New conversation» button.',
     'thread_empty_title' => 'No messages in this conversation yet',
     'thread_empty_body' => 'Write the first message — your trainer sees this thread and replies here.',
     'error_title' => 'Your conversations could not be shown',

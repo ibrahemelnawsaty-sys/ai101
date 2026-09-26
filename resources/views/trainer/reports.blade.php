@@ -36,8 +36,11 @@
                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
-                <x-ui.button variant="secondary" size="sm"
-                    :href="route('trainer.reports.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                {{-- D-117 — no export from inside an account preview. --}}
+                @unless ($impersonation ?? null)
+                    <x-ui.button variant="secondary" size="sm"
+                        :href="route('trainer.reports.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
+                @endunless
             </div>
         </div>
 

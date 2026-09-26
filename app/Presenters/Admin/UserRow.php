@@ -9,6 +9,7 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Services\Permissions\ImpersonationService;
 use App\Support\ViewModel;
 use Illuminate\Support\Facades\Gate;
 
@@ -49,6 +50,17 @@ final class UserRow extends ViewModel
             'lastLoginAt' => $subject->getAttribute('last_login_at'),
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
             'canBePreviewed' => Gate::forUser($viewer)->allows('preview', $subject),
+            // Why not, in words — the service's own reason, so the row never
+            // blames "another administrator" for one's own account (D-117).
+            'previewBlockedReason' => self::previewBlockedReason($viewer, $subject),
         ]);
+    }
+
+    /** The reason a preview is refused, or null when it is not. */
+    public static function previewBlockedReason(User $viewer, User $subject): ?string
+    {
+        $key = app(ImpersonationService::class)->refusalReason($viewer, $subject);
+
+        return $key === null ? null : (string) __($key);
     }
 }

@@ -48,10 +48,10 @@ return [
     ],
 
     'cohorts' => [
-        'trainer_not_found' => 'No trainer or administrator account uses this address. Check the spelling. If the person is new, add them from Users with the trainer role first; if they are registered as a participant, change their role first.',
+        'trainer_not_found' => 'No trainer or general supervisor account uses this address. Check the spelling. If the person is new, ask the system administrator to add them with the trainer role; if their account has another role, ask the system administrator to change it to trainer first.',
         'trainer_attached' => 'The trainer is attached to this cohort and can now see its sessions, participants and assignments.',
         'trainer_detached' => 'The trainer is detached from this cohort and can no longer see any of its data.',
-        'coordinator_not_found' => 'No coordinator or administrator account uses this address. Check the spelling. If the person is new, add them from Users with the coordinator role first.',
+        'coordinator_not_found' => 'No coordinator or general supervisor account uses this address. Check the spelling. If the person is new, ask the system administrator to add them with the coordinator role.',
         'coordinator_attached' => 'The coordinator is attached to this cohort and can now handle attendance for its sessions.',
         'coordinator_detached' => 'The coordinator is detached from this cohort and can no longer reach its attendance.',
         'title' => 'Cohorts',
@@ -83,6 +83,16 @@ return [
         'remove_coordinator' => 'Remove the assignment',
         'coordinators_empty_title' => 'No coordinators assigned to this cohort',
         'coordinators_empty_body' => 'Assign at least one coordinator to handle attendance for its sessions.',
+        // D-84, moved here from the account page by D-117.
+        'add_participant' => 'Add an existing participant',
+        // D-117 — the row button is short so the table stays inside its card.
+        'add_participant_short' => 'Add a participant',
+        'participant_email' => 'Participant email',
+        'participant_email_hint' => 'Enter the email of an existing participant account. They are seated at once, their card is issued and the cohort\'s conversations open. No email is sent; they already have their sign-in details.',
+        'participant_not_found' => 'No participant account uses this address. Check the spelling. If the person is new, ask the system administrator to invite them and choose this cohort in the invitation; if their account has another role, ask the system administrator to change it to participant first.',
+        'participant_already' => 'This account is already enrolled in this cohort, so nothing changed. If the enrolment is waiting for approval, approve it from Registrations.',
+        'participant_seated' => 'The participant was added to the cohort, their card issued and its conversations opened.',
+        'seat_closed' => 'This cohort has finished, so nobody can be added to it. Choose an upcoming, open or running cohort.',
         'created' => 'The cohort was created.',
         'updated' => 'Your changes to the cohort were saved.',
         'seats_taken' => 'Seats taken :taken of :capacity',
@@ -185,8 +195,8 @@ return [
         'invited' => 'The account was created and the invitation was sent to their address.',
         'invitation_resent' => 'The invitation was sent again, and the earlier link no longer works.',
         'no_cohort_title' => 'No cohort yet',
-        'no_cohort_body' => 'A trainee is seated in a cohort, and none has been created yet. Create one first, then come back to this screen.',
-        'no_cohort_action' => 'Create a cohort',
+        // D-117 — cohorts are the general supervisor's, so the text points to them, not to a closed screen.
+        'no_cohort_body' => 'A trainee is seated in a cohort, and none has been created yet. The general supervisor creates cohorts on the Cohorts screen; ask them to create one, then come back to this screen.',
 
         /* Bulk import (D-63). */
         'import' => [
@@ -281,33 +291,31 @@ return [
         ],
         'constraints_title' => 'Constraints enforced on the server',
         'constraints' => [
-            'no_self_delete' => 'An administrator cannot delete their own account.',
-            'last_admin' => 'At least one active administrator remains at all times.',
+            'no_self_delete' => 'A system administrator cannot delete their own account.',
+            'last_admin' => 'The platform always keeps at least one active general supervisor and at least one active system administrator.',
             'soft_delete' => 'Deletion is soft — records tied to grading and certificates are never removed.',
             'audited' => 'Every sensitive action is written to an audit log that cannot be edited or deleted.',
         ],
-        'last_admin_blocked' => 'This action would leave the platform without an active administrator, so it cannot be done.',
+        'last_admin_blocked' => 'This action cannot be done: this is the last active account in its role, and the platform always needs an active general supervisor and an active system administrator. Activate another account in the same role, or invite a new one to it and wait until its holder accepts the invitation, then try again.',
         'self_action_blocked' => 'You cannot perform this action on your own account.',
         'registered_at' => 'Registered on',
         'change_reason' => 'Reason for the change',
         'change_reason_hint' => 'A reason is required, and is stored with your name and the time in the audit log.',
         'enrollments_title' => 'Their cohort enrolments',
         'enrollments_empty_title' => 'No enrolments for this account',
-        'enrollments_empty_body' => 'This account is not enrolled in any cohort yet. Attach it to one from the Cohorts screen using its email address.',
-        'enrollments_empty_participant_body' => 'This account was created without a cohort. Choose one below to give it the cohort\'s content, its card and its conversations.',
-        'enroll_label' => 'Add to a cohort',
-        'enroll_hint' => 'They are seated at once, their card is issued and the cohort\'s conversations open. No letter is sent; they already have their sign-in details.',
-        'enroll_submit' => 'Add to the cohort',
-        'enroll_none' => 'There is no upcoming, open or running cohort this account has not joined.',
-        'enrolled' => 'The account was added to the cohort, its card issued and its conversations opened.',
-        'enroll_already' => 'This account is already enrolled in that cohort.',
+        'enrollments_empty_body' => 'This account is not enrolled in any cohort yet. The general supervisor attaches it to one from the Cohorts screen using its email address.',
+        'enrollments_empty_participant_body' => 'This account was created without a cohort. The general supervisor adds it to one from the Cohorts screen using its email address, which gives it the cohort\'s content, its card and its conversations.',
+        // D-117 — what an empty list means depends on the role.
+        'enrollments_empty_supervisor_body' => 'A general supervisor needs no enrolment: the role itself reaches every cohort.',
+        'enrollments_empty_system_admin_body' => 'A system administrator is not enrolled in cohorts: the role covers the accounts, the landing page and the platform settings.',
+        'back_to_list' => 'Back to the user list',
         'role_changed' => 'The role was changed and the change was written to the audit log.',
         'status_changed' => 'The account status was updated.',
         'created' => 'The account was created and an activation link was sent to it.',
         'updated' => 'Your changes to the account were saved and written to the audit log.',
         'suspended' => 'The account is suspended, and its owner cannot sign in until you activate it again.',
         'deleted' => 'The account was soft deleted, and its records tied to grading and certificates were kept as they are.',
-        'last_admin' => 'This action would leave the platform without an active administrator, so it cannot be done.',
+        'last_admin' => 'This action cannot be done: this is the last active account in its role, and the platform always needs an active general supervisor and an active system administrator. Activate another account in the same role, or invite a new one to it and wait until its holder accepts the invitation, then try again.',
         'empty_title' => 'No accounts match the search',
         'empty_body' => 'Try another search term, or clear the filters.',
     ],
@@ -316,14 +324,20 @@ return [
         'title' => 'Account preview',
         'start' => 'Preview the account',
         'confirm' => 'This opens the dashboard of :name exactly as they see it, read only, for 30 minutes. Continue?',
-        'admin_blocked' => 'Another administrator account cannot be previewed.',
+        'admin_blocked' => 'Another system administrator account cannot be previewed.',
+        // D-117 — the refusal reason, as the server enforces it, per case.
+        'self_blocked' => 'This is your own account, so there is nothing to preview.',
+        'deleted_blocked' => 'This account is deleted, so there is nothing in it to preview.',
+        'inactive_blocked' => 'This account is not active, and its holder sees no screen at all. Activate it first if you want to preview it.',
+        'unverified_blocked' => 'The holder of this account has not activated it yet, so it has no screens to preview. A preview becomes available once they accept their invitation.',
+        'blocked_body' => 'A preview shows an account exactly as its holder sees it, so it is only available for another user\'s active account that is not a system administrator.',
         'rules_title' => 'What the server enforces in preview mode',
         'rules' => [
             'write_blocked' => 'Every write is refused in the data access layer itself, not merely in the interface — even if the endpoint is called directly.',
             'no_traces' => 'Their last visit does not move, their notifications are not marked read, message read state does not change, and downloads are not counted.',
             'time_limit' => 'The session is capped at 30 minutes and then ends automatically, returning you to your own account.',
             'audited' => 'The start, the end and every tab change are written to the audit log with the IP address.',
-            'no_admin' => 'Another administrator account cannot be previewed.',
+            'no_admin' => 'Another system administrator account cannot be previewed.',
         ],
     ],
 
@@ -336,6 +350,8 @@ return [
         'read_only_action' => 'This action is disabled in preview mode.',
         'started' => 'The read-only account preview has started, and the start was written to the audit log.',
         'ended' => 'The preview ended, the end was written to the audit log, and you are back in your own account.',
+        // D-117 — the account being previewed was deactivated mid-preview.
+        'target_inactive' => 'The preview ended because the account you were previewing is no longer active. The end was written to the audit log, and you are back in your own account.',
     ],
 
     'registrations' => [
@@ -355,6 +371,24 @@ return [
         'requested_at' => 'Requested on',
         'approve_hint' => 'Approving takes a seat in the cohort, creates the participant card and journey steps, and sends them a notification and an email.',
         'no_free_seat' => 'There are no free seats in this cohort. Raise the capacity in the cohort settings before approving.',
+        // D-117 — opening and closing registration is the general supervisor's, beside the requests.
+        'intake' => [
+            'title' => 'Open and close registration',
+            'body' => 'The registration form takes a cohort\'s registrations when its registration is open here, its status is "open", it has a free seat, and its registration closing time has not passed.',
+            'state_open' => 'Registration open',
+            'state_closed' => 'Registration closed',
+            'open' => 'Open registration',
+            'close' => 'Close registration',
+            'note_accepting' => 'The form is taking registrations now.',
+            'note_waiting' => 'Open here, but the form is not taking registrations yet: check the cohort\'s status, seats and registration closing time on the Cohorts screen.',
+            'note_closed' => 'The form takes no registrations for this cohort until you open it.',
+            'opened' => 'Registration is now open for :cohort.',
+            'closed' => 'Registration is now closed for :cohort. Requests that arrived before closing stay in the list.',
+            'unchanged' => 'Registration was already in that state, so nothing changed.',
+            'not_governed' => 'This cohort\'s registration is not opened or closed here: the cohort has started or finished. Change its status on the Cohorts screen if that is a mistake.',
+            'empty_title' => 'No upcoming or open cohort',
+            'empty_body' => 'Registration is opened and closed for upcoming and open cohorts only. Create a cohort or change a cohort\'s status on the Cohorts screen.',
+        ],
         'already_decided' => 'This request was already decided, so nothing changed and no letter was sent.',
         'approved_done' => 'The request was approved and the applicant was notified.',
         'rejected_done' => 'The request was declined and the applicant was notified with the reason.',
@@ -366,7 +400,11 @@ return [
 
     'landing' => [
         'title' => 'Landing page content',
-        'registration_open' => 'Registration is open',
+        // D-117 — shown here, not moved: the general supervisor opens and closes it.
+        'registration_state_open' => 'Registration for this cohort is open.',
+        'registration_state_closed' => 'Registration for this cohort is closed.',
+        'registration_moved' => 'The general supervisor opens and closes it from the Registrations screen.',
+        'registration_moved_error' => 'Opening and closing registration is now done by the general supervisor from the Registrations screen, so this change was not published. Reload the page, then publish the rest of your edits.',
         'seats_remaining' => 'Seats remaining',
         'seats_override' => 'Override the seat count manually',
         'seats_computed_hint' => 'This number is worked out automatically from the capacity and the active enrolments.',
@@ -376,7 +414,7 @@ return [
         'about_body' => 'Text of the about section',
         'faq_empty_title' => 'No frequently asked questions yet',
         'faq_empty_body' => 'Add at least eight questions — they are the most read part of the page before someone registers.',
-        'no_cohort' => 'No cohort has been published for this programme yet, so no seats and no countdown are shown to visitors. Create a cohort first.',
+        'no_cohort' => 'No cohort has been published for this programme yet, so no seats and no countdown are shown to visitors. The general supervisor creates cohorts on the Cohorts screen; these settings can be saved after that.',
         'countdown_enabled' => 'Show the countdown',
         'faq' => 'Frequently asked questions',
         'faq_add' => 'Add a question',
@@ -422,8 +460,8 @@ return [
         'faq_number' => 'Question :n',
         'faq_hint' => 'Every question with an answer is shown to visitors, in the order you see here. Eight or more is recommended.',
         'no_cohort_title' => 'No cohort is published yet',
-        'no_cohort_body' => 'Registration, seats and the FAQ belong to a cohort, and none is published now. The texts in every other section stay editable.',
-        'no_cohort_action' => 'Open cohorts',
+        'no_cohort_body' => 'Seats, the countdown and the FAQ belong to a cohort, and none is published now; the general supervisor creates it on the Cohorts screen. The texts in every other section stay editable.',
+        'no_cohort_action' => 'See the page as a visitor does',
         'loading_label' => 'Preparing the landing page editor',
         'noscript' => 'The landing page editor needs JavaScript. Turn it on in your browser and reload the page.',
 
@@ -493,8 +531,8 @@ return [
         ],
 
         'source' => [
-            'programs' => 'The cards in this section come from the programme and are edited on the programmes screen.',
-            'cohorts' => 'This section comes from the cohort schedule and its trainers, edited on the cohorts screen.',
+            'programs' => 'The cards in this section come from the programme; the general supervisor edits them on the Programmes screen.',
+            'cohorts' => 'This section comes from the cohort schedule and its trainers; the general supervisor edits it on the Cohorts screen.',
         ],
 
         'groups' => [

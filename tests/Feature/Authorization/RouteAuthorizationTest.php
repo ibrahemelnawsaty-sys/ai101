@@ -18,7 +18,7 @@ declare(strict_types=1);
  * `cohort` as a QUERY parameter, not a path one: the trainer area takes its cohort
  * from `?cohort=`, read by EnsureCohortScope (BR-23).
  *
- * @see BR-22, BR-23, BR-28, BR-33, BR-35 · PRD §4.2, §4.3, §12.2
+ * @see BR-22, BR-23, BR-28, BR-33, BR-35 · PRD §4.2, §4.3, §12.2 · D-117
  * @see CONSTITUTION.md Articles 5, 22, 26 (G9)
  */
 
@@ -38,6 +38,8 @@ beforeEach(function (): void {
     $this->program = Program::query()->findOrFail($this->cohort->program_id);
 
     $this->admin = makeAdmin();
+    // D-117 — the accounts, the account preview and the landing page.
+    $this->sysadmin = makeSystemAdmin();
     $this->trainer = makeTrainer($this->cohort);
     $this->coordinator = makeCoordinator($this->cohort);
     $this->participant = makeParticipant($this->cohort);
@@ -76,6 +78,7 @@ beforeEach(function (): void {
 
     $this->actors = [
         'admin' => $this->admin,
+        'system_admin' => $this->sysadmin,
         'trainer' => $this->trainer,
         'coordinator' => $this->coordinator,
         'participant' => $this->participant,
@@ -127,15 +130,21 @@ function authorizationMatrix(object $test): array
         'assignments.submit' => ['post', [$test->assignment], ['participant']],
 
         // -------------------------------------------- shared authenticated area
-        'dashboard' => ['get', [], ['participant', 'trainer', 'admin']],
+        // D-117 — the system administrator keeps their own account (the home
+        // that sends them to the accounts list, the profile, the bell) and is
+        // refused every cohort screen: the role reaches no cohort, and the
+        // owner named its work as the accounts and the landing page alone.
+        'dashboard' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
         'schedule' => ['get', [], ['participant', 'trainer', 'admin']],
         'attendance.index' => ['get', [], ['participant', 'trainer', 'admin']],
         'live' => ['get', [], ['participant', 'trainer', 'admin']],
         'assignments.index' => ['get', [], ['participant', 'trainer', 'admin']],
         'resources.index' => ['get', [], ['participant', 'trainer', 'admin']],
-        'messages.index' => ['get', [], ['participant', 'trainer', 'admin']],
-        'profile' => ['get', [], ['participant', 'trainer', 'admin']],
-        'notifications' => ['get', [], ['participant', 'trainer', 'admin']],
+        // D-118 — every role converses; who with is ConversationRules.
+        'messages.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
+        'messages.create' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
+        'profile' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
+        'notifications' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
 
         // -------------------------------------------------------------- trainer
         // PR-5 دفعة 2 — the trainer's own information dashboard.
@@ -222,36 +231,42 @@ function authorizationMatrix(object $test): array
         'admin.cohorts.trainers.detach' => ['delete', [$test->cohort, $test->trainer], ['admin']],
         'admin.cohorts.coordinators.attach' => ['post', [$test->cohort], ['admin']],
         'admin.cohorts.coordinators.detach' => ['delete', [$test->cohort, $test->coordinator], ['admin']],
+        // D-117 — seating an existing participant moved here from the account
+        // page, and stayed the supervisor's.
+        'admin.cohorts.participants.attach' => ['post', [$test->cohort], ['admin']],
 
-        'admin.users.index' => ['get', [], ['admin']],
-        'admin.users.create' => ['get', [], ['admin']],
-        'admin.users.export' => ['get', [], ['admin']],
-        'admin.users.store' => ['post', [], ['admin']],
+        // D-117 — every account route is the system administrator's alone.
+        'admin.users.index' => ['get', [], ['system_admin']],
+        'admin.users.create' => ['get', [], ['system_admin']],
+        // Nobody exports the account list since D-117 (UserPolicy::export()).
+        'admin.users.export' => ['get', [], []],
+        'admin.users.store' => ['post', [], ['system_admin']],
         // The participant-import routes, added with the invitation batch and
         // never given matrix rows — so none of them had a 403 test, which is
         // exactly what this file exists to make impossible. They bulk-create
         // accounts, so an unauthorised caller here is worse than on any read.
-        'admin.users.import' => ['get', [], ['admin']],
-        'admin.users.import.template' => ['get', [], ['admin']],
-        'admin.users.import.templateCsv' => ['get', [], ['admin']],
-        'admin.users.import.preview' => ['post', [], ['admin']],
-        'admin.users.import.store' => ['post', [], ['admin']],
-        'admin.users.show' => ['get', [$test->participant], ['admin']],
-        'admin.users.update' => ['patch', [$test->participant], ['admin']],
-        'admin.users.role' => ['put', [$test->participant], ['admin']],
-        'admin.users.status' => ['patch', [$test->participant], ['admin']],
-        'admin.users.resetPassword' => ['post', [$test->participant], ['admin']],
-        'admin.users.resendVerification' => ['post', [$test->participant], ['admin']],
-        'admin.users.logoutEverywhere' => ['post', [$test->participant], ['admin']],
-        'admin.users.destroy' => ['delete', [$test->deletable], ['admin']],
-        'admin.users.enroll' => ['post', [$test->participant], ['admin']],
+        'admin.users.import' => ['get', [], ['system_admin']],
+        'admin.users.import.template' => ['get', [], ['system_admin']],
+        'admin.users.import.templateCsv' => ['get', [], ['system_admin']],
+        'admin.users.import.preview' => ['post', [], ['system_admin']],
+        'admin.users.import.store' => ['post', [], ['system_admin']],
+        'admin.users.show' => ['get', [$test->participant], ['system_admin']],
+        'admin.users.update' => ['patch', [$test->participant], ['system_admin']],
+        'admin.users.role' => ['put', [$test->participant], ['system_admin']],
+        'admin.users.status' => ['patch', [$test->participant], ['system_admin']],
+        'admin.users.resetPassword' => ['post', [$test->participant], ['system_admin']],
+        'admin.users.resendVerification' => ['post', [$test->participant], ['system_admin']],
+        'admin.users.logoutEverywhere' => ['post', [$test->participant], ['system_admin']],
+        'admin.users.destroy' => ['delete', [$test->deletable], ['system_admin']],
         // Starting a preview creates a row and rewrites the session; it is a POST.
-        'admin.users.preview' => ['post', [$test->participant], ['admin']],
+        'admin.users.preview' => ['post', [$test->participant], ['system_admin']],
 
         'admin.registrations.index' => ['get', [], ['admin']],
         'admin.registrations.export' => ['get', [], ['admin']],
         'admin.registrations.approve' => ['put', [$test->enrollment], ['admin']],
         'admin.registrations.reject' => ['put', [$test->enrollment], ['admin']],
+        // D-117 — opening and closing registration, beside the requests.
+        'admin.registrations.intake' => ['put', [$test->cohort], ['admin']],
 
         'admin.certificates.index' => ['get', [], ['admin']],
         'admin.certificates.export' => ['get', [], ['admin']],
@@ -261,18 +276,20 @@ function authorizationMatrix(object $test): array
         'admin.certificates.revoke' => ['delete', [$test->certificate], ['admin']],
         'admin.certificates.override' => ['post', [$test->participant], ['admin']],
 
-        'admin.landing.edit' => ['get', [], ['admin']],
-        'admin.landing.update' => ['put', [], ['admin']],
-        'admin.landing.preview' => ['post', [], ['admin']],
-        'admin.landing.reset' => ['delete', [], ['admin']],
+        // D-117 — the landing page is the system administrator's alone.
+        'admin.landing.edit' => ['get', [], ['system_admin']],
+        'admin.landing.update' => ['put', [], ['system_admin']],
+        'admin.landing.preview' => ['post', [], ['system_admin']],
+        'admin.landing.reset' => ['delete', [], ['system_admin']],
 
         'admin.reports.index' => ['get', [], ['admin']],
         'admin.reports.export' => ['get', [], ['admin']],
 
-        'admin.settings.edit' => ['get', [], ['admin']],
-        'admin.settings.update' => ['put', [], ['admin']],
-        'admin.settings.notifications' => ['put', [], ['admin']],
-        'admin.settings.template' => ['get', ['template' => 'welcome'], ['admin']],
+        // D-117 — the platform settings are the system administrator's.
+        'admin.settings.edit' => ['get', [], ['system_admin']],
+        'admin.settings.update' => ['put', [], ['system_admin']],
+        'admin.settings.notifications' => ['put', [], ['system_admin']],
+        'admin.settings.template' => ['get', ['template' => 'welcome'], ['system_admin']],
     ];
 }
 

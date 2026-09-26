@@ -31,19 +31,22 @@ use Illuminate\Support\Str;
  * The landing-page content editor — the "Landing page content" tab (PRD §9.1, §9.18).
  *
  * This screen is the answer to BR-31 for the whole page: every sentence a
- * visitor reads, in Arabic and in English, plus this cohort's registration
- * switches, seat figure, hero copy and questions. Four endpoints:
+ * visitor reads, in Arabic and in English, plus this cohort's countdown
+ * switch, seat figure, hero copy and questions. Four endpoints:
  *
  *   edit     the editor, modelled on the approved Sajaya editor (D-114);
  *   update   ONE publish of everything the draft changed, in one transaction;
  *   preview  the real landing page rendered with the draft — nothing stored;
  *   reset    a section's texts, or the page's, back to the lang files.
  *
- * The registration switch is still re-read on every registration attempt, not
- * cached into the page, so closing it here closes the form on the very next
- * request (Art. 5).
+ * The registration switch left this editor for the general supervisor's
+ * registrations screen (D-117): the owner put opening, closing and accepting
+ * in one person's hands. The editor shows where it stands and cannot move it
+ * (PublishLandingRequest refuses it) — and the first publish that creates a
+ * cohort's settings row leaves the switch on, as the missing row did, rather
+ * than closing the registration by default behind the supervisor's back.
  *
- * @see BR-31, BR-33, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5, Art. 6, Art. 8 · D-114
+ * @see BR-31, BR-33, BR-36 · PRD §9.1, §9.18 · CONSTITUTION Art. 5, Art. 6, Art. 8 · D-114, D-117
  */
 final class LandingController extends Controller
 {
@@ -72,8 +75,6 @@ final class LandingController extends Controller
                     'preview' => route('admin.landing.preview'),
                     'reset' => route('admin.landing.reset'),
                     'home' => route('home'),
-                    'programs' => route('admin.programs.index'),
-                    'cohorts' => route('admin.cohorts.index'),
                 ],
             ),
             'errorState' => null,
@@ -318,6 +319,13 @@ final class LandingController extends Controller
 
         if ($settings !== null) {
             $before = $setting->exists ? $this->audit->snapshot($setting, $tracked) : null;
+
+            if (! $setting->exists) {
+                // A missing row did not close the form (LandingSetting::switchIsOn);
+                // the row that replaces it must not either. The switch is the
+                // supervisor's to move, never a side effect of editing a headline.
+                $setting->setAttribute('is_registration_open', true);
+            }
 
             $setting->fill(array_merge($settings, ['cohort_id' => $cohort->getKey()]));
 

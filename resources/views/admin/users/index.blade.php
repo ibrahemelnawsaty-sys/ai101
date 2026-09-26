@@ -1,15 +1,20 @@
 {{--
     Admin · user management. Ported from the approved screen `scr-ausers`.
+    The system administrator's screen since D-117.
 
     The account-preview button is rendered only when the SERVER says it may be
-    previewed. An administrator account can never be previewed (BR-35), and the
-    row shows the reason instead of a disabled button, so the rule is visible
-    rather than merely unavailable. Hiding the button is not the protection —
-    the preview route re-checks the same rule on every request (Article 5).
+    previewed. A system administrator's account can never be previewed (BR-35),
+    and the row shows the reason instead of a disabled button, so the rule is
+    visible rather than merely unavailable. Hiding the button is not the
+    protection — the preview route re-checks the same rule on every request
+    (Article 5). It is a form that POSTs, like the route it calls: it used to be
+    a link, and a link's GET was answered 405 before any preview could begin.
+
+    No export button: UserPolicy::export() refuses every role since D-117.
 
     Four states: error · loading skeleton shaped like the table · empty · normal.
 
-    @see PRD §9.18, §4.5 · BR-27, BR-28, BR-32, BR-33, BR-34, BR-35
+    @see PRD §9.18, §4.5 · BR-27, BR-28, BR-32, BR-33, BR-34, BR-35 · D-117
 --}}
 @extends('layouts.app')
 
@@ -55,8 +60,6 @@
                     <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
-                    <x-ui.button variant="secondary" size="sm"
-                        :href="route('admin.users.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                     <x-ui.button variant="secondary" size="sm"
                         :href="route('admin.users.import')">{{ __('admin.users.import.button') }}</x-ui.button>
                     <x-ui.button variant="primary" size="sm"
@@ -125,17 +128,20 @@
                                             :href="route('admin.users.show', $user->id)">{{ __('admin.users.actions.view_profile') }}</x-ui.button>
 
                                         @if ($user->awaitingVerification)
-                                            <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}">
+                                            <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}" class="u-inline">
                                                 @csrf
                                                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.resend_verification') }}</x-ui.button>
                                             </form>
                                         @elseif ($user->canBePreviewed)
-                                            <x-ui.button variant="secondary" size="sm" icon="eye"
-                                                :href="route('admin.users.preview', $user->id)">{{ __('admin.users.actions.preview') }}</x-ui.button>
+                                            <form method="POST" action="{{ route('admin.users.preview', $user->id) }}" class="u-inline">
+                                                @csrf
+                                                <x-ui.button variant="secondary" size="sm" icon="eye" type="submit">{{ __('admin.users.actions.preview') }}</x-ui.button>
+                                            </form>
                                         @else
+                                            {{-- The server's own reason (D-117). --}}
                                             <span class="hint">
                                                 <x-ui.icon name="lock" />
-                                                {{ __('admin.preview.admin_blocked') }}
+                                                {{ $user->previewBlockedReason }}
                                             </span>
                                         @endif
                                     </td>

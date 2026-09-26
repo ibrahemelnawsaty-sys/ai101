@@ -1,24 +1,20 @@
 {{--
     The cohort's registration block inside the content editor (D-114): the
-    registration switch, the countdown switch, the computed seat figure and the
-    manual override. Part of the same draft as every text, published with it.
+    countdown switch, the computed seat figure and the manual override. Part of
+    the same draft as every text, published with it.
 
-    The switch is still re-read by the registration path on every attempt, so
-    closing it closes the form on the next request after publishing (Art. 5).
+    The registration switch itself is the general supervisor's, on the
+    registrations screen (D-117). This block says where it stands, from the
+    published settings — never from the draft, which cannot carry it.
 
-    @see BR-31 · PRD §9.1.2, §9.18 · D-114
+    @see BR-31 · PRD §9.1.2, §9.18 · D-114, D-117
 --}}
 <div class="le-settings">
-    <label class="ui-switch" for="le-registration-open">
-        <span class="ui-switch__control">
-            <input type="checkbox" role="switch" class="ui-switch__input" id="le-registration-open"
-                   x-bind:checked="setting('is_registration_open')"
-                   x-bind:aria-checked="setting('is_registration_open').toString()"
-                   x-on:change="setSetting('is_registration_open', $event.target.checked)">
-            <span class="ui-switch__track" aria-hidden="true"><span class="ui-switch__thumb"></span></span>
-        </span>
-        <span class="ui-check__text"><span class="ui-check__title">{{ __('admin.landing.registration_open') }}</span></span>
-    </label>
+    <p class="note" role="status">
+        <b x-show="settings.is_registration_open">{{ __('admin.landing.registration_state_open') }}</b>
+        <b x-show="! settings.is_registration_open">{{ __('admin.landing.registration_state_closed') }}</b>
+        {{ __('admin.landing.registration_moved') }}
+    </p>
 
     <label class="ui-switch" for="le-countdown">
         <span class="ui-switch__control">

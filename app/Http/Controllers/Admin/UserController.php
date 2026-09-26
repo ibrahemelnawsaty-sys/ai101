@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\CohortStatus;
 use App\Enums\EmailTokenType;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -13,11 +12,9 @@ use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ChangeUserRoleRequest;
 use App\Http\Requests\Admin\ChangeUserStatusRequest;
-use App\Http\Requests\Admin\EnrollUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\SuspendUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
-use App\Models\AuditLog;
 use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Profile;
@@ -28,6 +25,7 @@ use App\Presenters\Admin\UserRow;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
 use App\Services\Credentials\AccountInviter;
+use App\Services\Permissions\RoleResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,15 +35,17 @@ use Illuminate\Support\Facades\DB;
 /**
  * Accounts and roles (PRD §4.2, §4.5.1, §9.18).
  *
+ * The system administrator's screens since D-117.
+ *
  * Two rules are absolute here and are enforced by the policy and again in this
  * controller, because losing them locks the centre out of its own platform:
- * an administrator never deletes their own account, and at least one active
- * administrator must always remain (BR-32).
+ * nobody deletes their own account, and at least one active general supervisor
+ * and one active system administrator must always remain (BR-32).
  *
  * Deletion is a soft delete. The records attached to an account — attendance,
  * evaluations, certificates — are never touched (PRD §4.4, §7.8).
  *
- * @see BR-22, BR-29, BR-32, BR-33 · PRD §4.2, §4.4, §9.18 · CONSTITUTION Art. 8, Art. 22
+ * @see BR-22, BR-29, BR-32, BR-33 · PRD §4.2, §4.4, §9.18 · CONSTITUTION Art. 8, Art. 22 · D-117
  */
 final class UserController extends Controller
 {
@@ -54,12 +54,10 @@ final class UserController extends Controller
 
     private const PER_PAGE = 50;
 
-    /** How many trail entries the profile page shows before "view all". */
-    private const AUDIT_LIMIT = 10;
-
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly AccountInviter $inviter,
+        private readonly RoleResolver $roles,
     ) {}
 
     public function index(Request $request): View
@@ -125,7 +123,14 @@ final class UserController extends Controller
         );
     }
 
-    /** The full profile of one account (PRD §4.5.1) — read only. */
+    /**
+     * The full profile of one account (PRD §4.5.1) — read only.
+     *
+     * Two sections left this page with D-117: the account's own audit trail,
+     * which carries IP addresses and stays on the supervisor's audit screen,
+     * and seating the account in a cohort, which is the supervisor's decision
+     * and is now taken from the cohorts screen.
+     */
     public function show(Request $request, User $user): View
     {
         $this->authorize('view', $user);
@@ -140,50 +145,11 @@ final class UserController extends Controller
 
         return view('admin.users.show', [
             'contextLabel' => null,
-            'user' => UserProfile::from(
-                $user,
-                $viewer,
-                $enrollments,
-                AuditLog::query()
-                    ->with('actor.profile')
-                    ->where('entity_id', $user->getKey())
-                    ->orderByDesc('created_at')
-                    ->limit(self::AUDIT_LIMIT)
-                    ->get(),
-            ),
+            'user' => UserProfile::from($user, $viewer, $enrollments),
             'roleOptions' => Options::fromEnum(UserRole::class),
             'statusOptions' => Options::fromEnum(UserStatus::class),
-            // The cohorts this account may still be seated in: not finished,
-            // and not one it already has an enrolment in (D-84).
-            'enrollOptions' => Options::fromModels(
-                Cohort::query()
-                    ->whereIn('status', array_map(
-                        static fn (CohortStatus $s): string => $s->value,
-                        EnrollUserRequest::SEATABLE,
-                    ))
-                    ->whereNotIn('id', $enrollments->map(static fn (Enrollment $e): string => (string) $e->getAttribute('cohort_id'))->all())
-                    ->orderByDesc('start_date')
-                    ->get(),
-                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
-            ),
             'errorState' => null,
         ]);
-    }
-
-    /**
-     * Seat an existing participant account in a cohort: the enrolment, the
-     * card and the cohort's conversations, as an invitation gives them
-     * (D-84). Before this, an account created without a cohort had no way in
-     * from the interface (D-69).
-     */
-    public function enroll(EnrollUserRequest $request, User $user): RedirectResponse
-    {
-        $seated = $this->inviter->enrollExisting($request->subject(), $request->cohort());
-
-        return back()->with(
-            $seated ? 'status' : 'warning',
-            __($seated ? 'admin.users.enrolled' : 'admin.users.enroll_already'),
-        );
     }
 
     /**
@@ -235,31 +201,41 @@ final class UserController extends Controller
 
     /**
      * Changing a role is its own endpoint so it is audited on its own and can
-     * never ride inside a details edit. BR-32 is re-checked here: an
-     * administrator may not demote the last remaining active administrator.
+     * never ride inside a details edit. BR-32 is re-checked here: the last
+     * active supervisor, and the last active system administrator, keep their
+     * role (D-117).
      */
     public function changeRole(ChangeUserRoleRequest $request, User $user): RedirectResponse
     {
         $subject = $user;
         $role = $request->role();
 
-        if ($subject->role === UserRole::Admin
-            && $role !== UserRole::Admin
-            && ! $this->otherActiveAdminsExist($subject)) {
+        // One transaction, the holders' rows locked before they are counted:
+        // two system administrators demoting each other at the same moment
+        // cannot both pass (BR-32, D-117).
+        $changed = DB::transaction(function () use ($subject, $role, $request): bool {
+            if ($role !== $subject->role && $this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $before = ['role' => $subject->role->value];
+
+            $subject->setAttribute('role', $role->value);
+
+            $this->audit->log('user.role_changed', $subject, $before, [
+                'role' => $role->value,
+                // Without this the row records that a role changed and never why.
+                'reason' => $request->validated('reason'),
+            ]);
+
+            $subject->save();
+
+            return true;
+        });
+
+        if (! $changed) {
             return back()->withErrors(['role' => __('admin.users.last_admin')]);
         }
-
-        $before = ['role' => $subject->role->value];
-
-        $subject->setAttribute('role', $role->value);
-
-        $this->audit->log('user.role_changed', $subject, $before, [
-            'role' => $role->value,
-            // Without this the row records that a role changed and never why.
-            'reason' => $request->validated('reason'),
-        ]);
-
-        $subject->save();
 
         return back()->with('status', __('admin.users.role_changed'));
     }
@@ -297,24 +273,31 @@ final class UserController extends Controller
         $subject = $user;
         $target = $request->target();
 
-        if ($subject->role === UserRole::Admin
-            && $target !== UserStatus::Active
-            && ! $this->otherActiveAdminsExist($subject)) {
+        // Locked and counted in the write's own transaction (BR-32, D-117).
+        $changed = DB::transaction(function () use ($subject, $target): bool {
+            if ($target !== UserStatus::Active && $this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $before = ['status' => $subject->status->value];
+
+            $subject->setAttribute('status', $target->value);
+
+            $this->audit->log(
+                action: $target === UserStatus::Active ? 'user.activated' : 'user.suspended',
+                entity: $subject,
+                before: $before,
+                after: ['status' => $target->value],
+            );
+
+            $subject->save();
+
+            return true;
+        });
+
+        if (! $changed) {
             return back()->withErrors(['status' => __('admin.users.last_admin')]);
         }
-
-        $before = ['status' => $subject->status->value];
-
-        $subject->setAttribute('status', $target->value);
-
-        $this->audit->log(
-            action: $target === UserStatus::Active ? 'user.activated' : 'user.suspended',
-            entity: $subject,
-            before: $before,
-            after: ['status' => $target->value],
-        );
-
-        $subject->save();
 
         if ($target !== UserStatus::Active) {
             $this->destroySessionsOf($subject);
@@ -385,10 +368,14 @@ final class UserController extends Controller
         return back()->with('status', __('admin.users.sessions_revoked'));
     }
 
-    /** The account list as a CSV. Never a password, never a token. */
+    /**
+     * The account list as a CSV. Never a password, never a token — and, since
+     * D-117, never for anyone: UserPolicy::export() refuses every role until
+     * the owner decides otherwise.
+     */
     public function export(): Response
     {
-        $this->authorize('viewAny', User::class);
+        $this->authorize('export', User::class);
 
         $rows = User::query()
             ->with('profile')
@@ -415,39 +402,39 @@ final class UserController extends Controller
 
     /**
      * A soft delete, never a destruction. BR-32 again: never oneself, and never
-     * the last active administrator.
+     * the last active holder of either administrative role (D-117).
      */
     public function destroy(SuspendUserRequest $request, User $user): RedirectResponse
     {
         $subject = $user;
 
-        if ($subject->role === UserRole::Admin && ! $this->otherActiveAdminsExist($subject)) {
+        // Locked and counted in the write's own transaction (BR-32, D-117).
+        $deleted = DB::transaction(function () use ($subject, $request): bool {
+            if ($this->roles->isLastActiveHolder($subject, lock: true)) {
+                return false;
+            }
+
+            $this->audit->log('user.deleted', $subject, ['status' => $subject->status->value], [
+                'status' => UserStatus::Deleted->value,
+                'reason' => $request->reason(),
+            ]);
+
+            $subject->setAttribute('status', UserStatus::Deleted->value);
+            $subject->save();
+            $subject->delete();
+
+            return true;
+        });
+
+        if (! $deleted) {
             return back()->withErrors(['status' => __('admin.users.last_admin')]);
         }
-
-        $this->audit->log('user.deleted', $subject, ['status' => $subject->status->value], [
-            'status' => UserStatus::Deleted->value,
-            'reason' => $request->reason(),
-        ]);
-
-        $subject->setAttribute('status', UserStatus::Deleted->value);
-        $subject->save();
-        $subject->delete();
 
         $this->destroySessionsOf($subject);
 
         return redirect()
             ->route('admin.users.index')
             ->with('status', __('admin.users.deleted'));
-    }
-
-    private function otherActiveAdminsExist(User $subject): bool
-    {
-        return User::query()
-            ->where('role', UserRole::Admin->value)
-            ->where('status', UserStatus::Active->value)
-            ->whereKeyNot($subject->getKey())
-            ->exists();
     }
 
     /** Sessions live in a table on shared hosting; ending one means deleting it. */

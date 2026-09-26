@@ -20,10 +20,20 @@ use App\Models\User;
  * Answers are memoised per request only — never cached across requests, because
  * every permission is re-checked on every request (BR-28).
  *
- * @see BR-22, BR-23, BR-28 · PRD §4.1, §4.2, §4.3, §4.4 · CONSTITUTION Art. 22
+ * @see BR-22, BR-23, BR-28, BR-32 · PRD §4.1, §4.2, §4.3, §4.4 · CONSTITUTION Art. 22 · D-117, D-119
  */
 final class RoleResolver
 {
+    /**
+     * BR-32 as D-117 restates it: the two roles the platform may never run out
+     * of. The general supervisor runs the programme and the system
+     * administrator runs the accounts; once the last active holder of either is
+     * gone, nobody in the interface can give the role back.
+     *
+     * @var list<UserRole>
+     */
+    public const GUARDED_ROLES = [UserRole::Admin, UserRole::SystemAdmin];
+
     /** @var array<string, list<string>> */
     private array $cohortIdCache = [];
 
@@ -36,17 +46,25 @@ final class RoleResolver
     }
 
     /**
-     * Which shell this account gets: 'admin', 'trainer' or 'participant'.
+     * Which shell this account gets: 'admin', 'system_admin', 'trainer',
+     * 'coordinator' or 'participant'.
      *
      * The one statement of the precedence the dashboard, the rail and the
-     * layout composer all need — an administrator first; a trainer who is not
-     * also a participant; everyone else a participant. It was written out in
-     * two places and was about to be a third (D-75).
+     * layout composer all need — the two administrative roles first, by their
+     * own role column; a trainer who is not also a participant; everyone else a
+     * participant. It was written out in two places and was about to be a third
+     * (D-75). The system administrator has a shell of its own (D-117): falling
+     * through to 'participant' would have served an account manager the
+     * trainee's rail, home and notification list.
      */
     public function shellRole(User $user): string
     {
         if ($this->isAdmin($user)) {
             return 'admin';
+        }
+
+        if ($this->isSystemAdmin($user)) {
+            return 'system_admin';
         }
 
         if (! $this->hasRole($user, 'participant') && $this->hasRole($user, 'trainer')) {
@@ -60,9 +78,59 @@ final class RoleResolver
         return 'participant';
     }
 
+    /** The general supervisor (D-117) — what PRD §4.1 calls the system administrator. */
     public function isAdmin(User $user): bool
     {
         return $user->role === UserRole::Admin;
+    }
+
+    /** The system administrator: accounts, account preview, landing page (D-117). */
+    public function isSystemAdmin(User $user): bool
+    {
+        return $user->role === UserRole::SystemAdmin;
+    }
+
+    /**
+     * BR-32 (D-117): would taking this account out of its role — demoting,
+     * suspending or deleting it — leave the platform with no ACTIVE holder of
+     * a role it may never run out of?
+     *
+     * The subject's own status is deliberately not consulted: what matters is
+     * whether SOMEONE ELSE could still act in that role afterwards — and an
+     * invited account that has not accepted its invitation cannot yet: it has
+     * no password and the sign-in refuses it. So a holder counts only once its
+     * address is confirmed (D-119, the owner's decision). Asked
+     * fresh on every call and never memoised — a request that changes one
+     * account must see the other accounts as they are now (BR-28).
+     *
+     * `$lock` is for the write itself, inside its transaction: it locks EVERY
+     * active holder's row — the subject's included — before counting, so two
+     * holders removing each other at the same moment cannot both see the
+     * other one still there. The second waits for the first and then counts
+     * one. Without the subject's own row in the lock, each request would lock
+     * a different row and both would pass.
+     */
+    public function isLastActiveHolder(User $subject, bool $lock = false): bool
+    {
+        if (! in_array($subject->role, self::GUARDED_ROLES, true)) {
+            return false;
+        }
+
+        $query = User::query()
+            ->where('role', $subject->role->value)
+            ->where('status', UserStatus::Active->value)
+            ->whereNotNull('email_verified_at');
+
+        if (! $lock) {
+            return $query->whereKeyNot($subject->getKey())->doesntExist();
+        }
+
+        $holders = $query->lockForUpdate()
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        return array_values(array_diff($holders, [(string) $subject->getKey()])) === [];
     }
 
     public function isActive(User $user): bool
@@ -80,7 +148,11 @@ final class RoleResolver
     {
         $roles = [$user->role->value];
 
-        if ($user->role !== UserRole::Admin) {
+        // Neither administrative role takes anything from an enrolment row: the
+        // supervisor already reaches every cohort, and the system administrator
+        // reaches none (D-117) — a leftover row from before a role change must
+        // not hand an account manager a trainee's or a trainer's screens.
+        if (! in_array($user->role, self::GUARDED_ROLES, true)) {
             if ($this->trainerCohortIds($user) !== []) {
                 $roles[] = UserRole::Trainer->value;
             }
@@ -129,8 +201,8 @@ final class RoleResolver
      * The cohorts this account works in AS A TRAINER.
      *
      * An enrolment says WHICH cohorts a trainer is responsible for; it never
-     * says that an account IS a trainer. `users.role` decides that, and only an
-     * administrator may change it (PRD Â§4.2). Once it is changed the next
+     * says that an account IS a trainer. `users.role` decides that, and only the
+     * system administrator may change it (PRD Â§4.2, D-117). Once it is changed the next
      * request must already feel it (BR-28), so a leftover
      * `enrollments.role_in_cohort = 'trainer'` cannot hand the powers back -
      * that would be privilege escalation out of a data row, and it would make
@@ -151,9 +223,19 @@ final class RoleResolver
         return $this->cohortIds($user, EnrollmentRole::Trainer);
     }
 
-    /** @return list<string> */
+    /**
+     * The cohorts this account sits in AS A PARTICIPANT. Any role may be a
+     * trainee somewhere (PRD §4.4) — except the system administrator, whose
+     * role reaches no cohort at all (D-117), leftover enrolment or not.
+     *
+     * @return list<string>
+     */
     public function participantCohortIds(User $user): array
     {
+        if ($user->role === UserRole::SystemAdmin) {
+            return [];
+        }
+
         return $this->cohortIds($user, EnrollmentRole::Participant);
     }
 

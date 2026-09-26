@@ -35,6 +35,7 @@ use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Time\Clock;
+use App\Support\ImpersonationContext;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -56,7 +57,7 @@ use Illuminate\Support\Collection;
  * The roster is scoped to the cohort `cohort.scope` resolved; a session from
  * another cohort is refused by the policy with 403 (BR-23).
  *
- * @see BR-07, BR-08, BR-09, BR-10, BR-23, BR-27 · PRD §9.9.7 · CONSTITUTION Art. 8, Art. 22
+ * @see BR-07, BR-08, BR-09, BR-10, BR-23, BR-27, BR-33 · PRD §9.9.7 · CONSTITUTION Art. 8, Art. 22 · D-106, D-117
  */
 final class AttendanceController extends Controller
 {
@@ -256,9 +257,18 @@ final class AttendanceController extends Controller
             ->values();
     }
 
-    /** D-106 — null whenever there is no selected session or its self-check-in window is closed. */
+    /**
+     * D-106 — null whenever there is no selected session or its self-check-in
+     * window is closed; and, since D-117, whenever an account preview is
+     * running: the signed link checks in whoever holds it, and a preview only
+     * looks.
+     */
     private function checkInCodeFor(?Session $session): ?CheckinCode
     {
+        if (ImpersonationContext::isActive()) {
+            return null;
+        }
+
         if ($session === null || ! $this->window->canSelfCheckIn($session, Clock::now())) {
             return null;
         }

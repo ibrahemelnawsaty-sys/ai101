@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $en
  * @property string|null $updated_by
  *
- * @see BR-31, BR-36 · PRD §9.1, §9.18 · D-114
+ * @see BR-31, BR-36 · PRD §9.1, §9.18 · D-114, D-117
  */
 final class LandingContent extends Model
 {
@@ -54,15 +54,16 @@ final class LandingContent extends Model
     }
 
     /**
-     * Landing copy is managed by administrators only. Anyone else gets an empty
-     * set, failing closed rather than open (Constitution, Article 7).
+     * Landing copy is managed by the system administrator only (D-117). Anyone
+     * else — the general supervisor included — gets an empty set, failing
+     * closed rather than open (Constitution, Article 7).
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin()) {
+        if ($user->isSystemAdmin()) {
             return $query;
         }
 

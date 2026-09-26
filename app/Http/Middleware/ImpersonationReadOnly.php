@@ -16,17 +16,19 @@ use Symfony\Component\HttpFoundation\Response;
  * Registered as the `impersonation.readonly` alias and appended to the whole
  * `web` group, so it covers routes that forgot to ask for it.
  *
- * Three jobs, in order:
+ * Four jobs, in order:
  *   1. Retire a preview that has reached its 30-minute ceiling (PRD §4.5.2).
- *   2. Refuse any verb other than GET/HEAD/OPTIONS while a preview is running,
+ *   2. End a preview whose previewer is no longer entitled to it — suspended,
+ *      deleted or no longer a system administrator (BR-28, D-117).
+ *   3. Refuse any verb other than GET/HEAD/OPTIONS while a preview is running,
  *      except the two escapes — ending the preview and logging out (BR-33).
- *   3. Publish the preview banner facts to every view, so the fixed alert bar
+ *   4. Publish the preview banner facts to every view, so the fixed alert bar
  *      and its always-visible exit button can render.
  *
  * This is defence in depth, not the primary control: the Policies and the data
  * layer refuse the same writes on their own.
  *
- * @see BR-33, BR-34, BR-35 · PRD §4.5.2 · CONSTITUTION Art. 23
+ * @see BR-28, BR-33, BR-34, BR-35 · PRD §4.5.2 · CONSTITUTION Art. 23 · D-117
  */
 final class ImpersonationReadOnly
 {
@@ -48,21 +50,56 @@ final class ImpersonationReadOnly
             return $next($request);
         }
 
+        $route = (string) $request->route()?->getName();
+
         if (ImpersonationContext::hasExpired()) {
             $this->impersonation->stopIfExpired();
             View::share('impersonation', null);
 
-            if ($request->isMethod('GET')) {
+            // Signing out is still what was asked for; the session it now
+            // signs out is the restored one (D-117 — it used to answer 403).
+            if ($route === 'logout') {
+                return $next($request);
+            }
+
+            // Back to the accounts list, as ending a preview by hand does: the
+            // one who previewed is a system administrator (D-117), and the
+            // supervisor's console home would refuse them. "End the preview"
+            // lands there too: the preview it asked to end has just ended.
+            if ($request->isMethod('GET') || $route === 'admin.impersonation.stop') {
                 return redirect()
-                    ->route('admin.dashboard')
+                    ->route('admin.users.index')
                     ->with('status', __('admin.impersonation.expired'));
             }
 
             abort(Response::HTTP_FORBIDDEN);
         }
 
+        // BR-28 — the right to preview is re-checked on every request, not
+        // only when the preview began: a system administrator suspended,
+        // deleted or given another role mid-preview stops here (D-117). The
+        // preview is ended through the service, so its end is in the trail;
+        // an inactive previewer is signed out rather than restored.
+        if (! $this->impersonation->previewerStillEntitled()) {
+            $this->logDenial($this->audit, $request, 'impersonation.previewer_revoked', 'user', ImpersonationContext::adminId());
+
+            $restored = $this->impersonation->stop();
+            View::share('impersonation', null);
+
+            // The two exits still do what was asked, as after the ceiling.
+            if ($route === 'logout') {
+                return $next($request);
+            }
+
+            if ($request->isMethod('GET') || $route === 'admin.impersonation.stop') {
+                return redirect()->route($restored === null ? 'login' : 'dashboard');
+            }
+
+            abort(Response::HTTP_FORBIDDEN);
+        }
+
         if (! in_array($request->getMethod(), self::SAFE_METHODS, true)
-            && ! in_array((string) $request->route()?->getName(), ImpersonationContext::ESCAPE_ROUTES, true)) {
+            && ! in_array($route, ImpersonationContext::ESCAPE_ROUTES, true)) {
             $this->logDenial($this->audit, $request, 'impersonation.write_blocked', 'user', ImpersonationContext::targetId());
 
             abort(Response::HTTP_FORBIDDEN);

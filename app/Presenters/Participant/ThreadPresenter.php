@@ -10,6 +10,7 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Support\ViewModel;
+use Illuminate\Support\Collection;
 
 /**
  * One entry in the thread list beside the conversation (PRD §9.13).
@@ -53,21 +54,62 @@ final class ThreadPresenter extends ViewModel
      * conversations all labelled "trainer conversation" is not a list (D-82).
      * Needs `users.profile` loaded; without it, or for any other type, the
      * type's own title.
+     *
+     * The shared inbox (D-118) has two sides that are not two people: its
+     * supervisor reads it as "system administration", and each system
+     * administrator reads it by the supervisor's name.
      */
     public static function titleFor(Thread $thread, ?ThreadType $type, ?User $viewer): string
     {
-        if ($type === ThreadType::TrainerDm && $viewer instanceof User && $thread->relationLoaded('users')) {
-            foreach ($thread->getRelation('users') as $member) {
-                if ($member instanceof User && ! $member->is($viewer)) {
-                    $profile = $member->relationLoaded('profile') ? $member->getRelation('profile') : null;
-                    $name = $profile instanceof \App\Models\Profile ? Present::text($profile->getAttribute('full_name_ar')) : null;
+        if ($thread->isInbox() && $viewer instanceof User) {
+            if ($thread->isInboxOwner($viewer)) {
+                return (string) __('messages.inbox.title');
+            }
 
-                    return $name ?? (string) $member->getAttribute('email');
-                }
+            $owner = self::members($thread)->first(
+                static fn (User $member): bool => $thread->isInboxOwner($member),
+            );
+
+            return $owner instanceof User ? self::nameOf($owner) : (string) __('messages.inbox.title');
+        }
+
+        if ($type?->isOneToOne() === true && $viewer instanceof User) {
+            $other = self::members($thread)->first(
+                static fn (User $member): bool => ! $member->is($viewer),
+            );
+
+            if ($other instanceof User) {
+                return self::nameOf($other);
             }
         }
 
         return self::titleOf($thread, $type);
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private static function members(Thread $thread): Collection
+    {
+        $members = [];
+
+        if ($thread->relationLoaded('users')) {
+            foreach ($thread->getRelation('users') as $member) {
+                if ($member instanceof User) {
+                    $members[] = $member;
+                }
+            }
+        }
+
+        return new Collection($members);
+    }
+
+    private static function nameOf(User $member): string
+    {
+        $profile = $member->relationLoaded('profile') ? $member->getRelation('profile') : null;
+        $name = $profile instanceof \App\Models\Profile ? Present::text($profile->getAttribute('full_name_ar')) : null;
+
+        return $name ?? (string) $member->getAttribute('email');
     }
 
     /** The avatar component accepts default | teal | neutral only. */

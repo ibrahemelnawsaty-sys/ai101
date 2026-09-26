@@ -1,8 +1,8 @@
 {
-  "_note": "Roster for `php artisan athar:demo-accounts`. Lives beside the other seed content because it is data, not interface copy — which is also why Arabic is allowed here and not in app/ (CONSTITUTION art. 13 rule 3, gate G5). Arabic names are deliberate: a reviewer walking the platform should see real RTL name rendering on the digital card, the header and the certificate.",
+  "_note": "Roster for `php artisan athar:demo-accounts`. Lives beside the other seed content because it is data, not interface copy — which is also why Arabic is allowed here and not in app/ (CONSTITUTION art. 13 rule 3, gate G5). Arabic names are deliberate: a reviewer walking the platform should see real RTL name rendering on the digital card, the header and the certificate. D-117: `admin@` is the system administrator (accounts, account preview, landing page, platform settings) and `supervisor@` the general supervisor (role value `admin`).",
   "people": [
     {
-      "role": "admin",
+      "role": "system_admin",
       "local_part": "admin",
       "phone": "0590000001",
       "first_name_ar": "مدير",
@@ -13,6 +13,20 @@
       "second_name_en": "Abdullah",
       "third_name_en": "Saad",
       "last_name_en": "Platform",
+      "gender": "male"
+    },
+    {
+      "role": "admin",
+      "local_part": "supervisor",
+      "phone": "0590000004",
+      "first_name_ar": "المشرف",
+      "second_name_ar": "عبدالله",
+      "third_name_ar": "سعد",
+      "last_name_ar": "العام",
+      "first_name_en": "General",
+      "second_name_en": "Abdullah",
+      "third_name_en": "Saad",
+      "last_name_en": "Supervisor",
       "gender": "male"
     },
     {

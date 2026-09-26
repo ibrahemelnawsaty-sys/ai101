@@ -56,7 +56,7 @@ use Illuminate\Support\Facades\Log;
  * template reads `$attendance->rateVariant` and prints it, and the variant was
  * decided here from CertificateEligibility's answer (Art. 5, Art. 6).
  *
- * @see BR-07, BR-11, BR-22, BR-26, BR-31 · PRD §9.5.3 · CONSTITUTION Art. 5, Art. 17, Art. 22
+ * @see BR-07, BR-11, BR-22, BR-26, BR-31 · PRD §9.5.3 · CONSTITUTION Art. 5, Art. 17, Art. 22 · D-117
  */
 final class DashboardController extends Controller
 {
@@ -206,6 +206,16 @@ final class DashboardController extends Controller
             $request->session()->forget(self::WELCOME_KEY);
 
             return redirect()->route('coordinator.dashboard');
+        }
+
+        // D-117 — the system administrator has no information home: the role
+        // reaches no cohort, so the participant view below would read
+        // attendance, journey and grades for an account that has none. Its
+        // work starts at the accounts list.
+        if ($shell === 'system_admin') {
+            $request->session()->forget(self::WELCOME_KEY);
+
+            return redirect()->route('admin.users.index');
         }
 
         $cohort = $this->activeCohort($user);

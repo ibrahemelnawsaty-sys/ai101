@@ -10,7 +10,8 @@ declare(strict_types=1);
  *     guards, which is what "enforced at the data-access layer" means;
  *  2. previewing leaves no trace on the previewed account — not a last login, not a
  *     read notification, not a read message, not a download counter;
- *  3. an administrator can never preview another administrator.
+ *  3. only the system administrator previews, and never another system
+ *     administrator (D-117 moved the preview from the general supervisor).
  *
  * ASSUMPTIONS declared rather than made silently: the read routes that would normally
  * leave a trace are `notifications`, `messages.poll` and `resources.download`.
@@ -20,7 +21,7 @@ declare(strict_types=1);
  * PROJECT-CONTRACT.md §10 names `notifications` and `messages.index` but not the
  * message thread view or the resource download.
  *
- * @see BR-33, BR-34, BR-35 · PRD §4.5, §14.1 · CONSTITUTION.md Article 23
+ * @see BR-33, BR-34, BR-35 · PRD §4.5, §14.1 · CONSTITUTION.md Article 23 · D-117
  */
 
 use App\Models\Attendance;
@@ -37,7 +38,8 @@ beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
 
     $this->cohort = makeCohort();
-    $this->admin = makeAdmin();
+    // D-117 — the one who previews is the system administrator.
+    $this->admin = makeSystemAdmin();
     $this->target = makeParticipant($this->cohort, ['last_login_at' => riyadhAt('2026-10-01 08:00:00')]);
 });
 
@@ -236,7 +238,7 @@ it('BR-34: التصفح العادي خارج المعاينة يترك أثره
 */
 
 it('BR-35: لا يمكن معاينة حساب مدير نظام آخر', function (): void {
-    $otherAdmin = makeAdmin();
+    $otherAdmin = makeSystemAdmin();
 
     startPreview($this, $this->admin, $otherAdmin)->assertForbidden();
 
@@ -248,6 +250,37 @@ it('BR-35: المدير لا يعاين نفسه', function (): void {
     startPreview($this, $this->admin, $this->admin)->assertForbidden();
 
     expect(ImpersonationSession::query()->count())->toBe(0);
+});
+
+it('BR-35: المشرف العام لا يملك صلاحية المعاينة (D-117)', function (): void {
+    $supervisor = makeAdmin();
+
+    $this->actingAs($supervisor)
+        ->post(route('admin.users.preview', $this->target))
+        ->assertForbidden();
+
+    expect(ImpersonationSession::query()->count())->toBe(0)
+        ->and(app(App\Services\Permissions\ImpersonationService::class)->canPreview($supervisor, $this->target))->toBeFalse();
+});
+
+it('BR-33: مدير النظام يعاين حساب المشرف العام قراءةً فقط — يرى لوحته ولا يكتب فيها (D-117)', function (): void {
+    $supervisor = makeAdmin();
+
+    assertAccepted(startPreview($this, $this->admin, $supervisor));
+
+    // Everything the supervisor reads, the preview reads …
+    $this->get(route('admin.dashboard'))->assertOk();
+    $this->get(route('admin.cohorts.index'))->assertOk();
+
+    // … and every write is refused, the supervisor's own included.
+    $this->post(route('admin.programs.store'), [
+        'name_ar' => 'CANARY', 'name_en' => 'CANARY', 'slug' => 'canary-preview',
+    ])->assertForbidden();
+
+    expect(App\Models\Program::query()->where('slug', 'canary-preview')->exists())->toBeFalse();
+
+    assertAccepted($this->delete(route('admin.impersonation.stop')));
+    $this->assertAuthenticatedAs($this->admin->fresh());
 });
 
 it('BR-35: المدرب لا يملك صلاحية المعاينة إطلاقًا', function (): void {

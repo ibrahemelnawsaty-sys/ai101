@@ -122,8 +122,13 @@ it('BR-33: المعاينة لا تعرض المبدّل ولا تعلّم مح�
     enroll($this->participant, $second);
     $thread = makeThreadFor($this->participant, $this->cohort);
 
-    $admin = makeAdmin();
-    $this->actingAs($admin)->post(route('admin.users.preview', $this->participant));
+    // D-117 — the preview is the system administrator's; the supervisor's
+    // request would be refused and leave this test proving nothing, so the
+    // preview is asserted to have started before anything is read.
+    $admin = makeSystemAdmin();
+    $this->actingAs($admin)->post(route('admin.users.preview', $this->participant))->assertRedirect();
+
+    expect(App\Models\ImpersonationSession::query()->whereNull('ended_at')->count())->toBe(1);
 
     $this->get(route('dashboard'))->assertOk()->assertDontSee(route('cohort.switch'), false);
     $this->get(route('messages.index', ['thread' => $thread->id]))->assertOk();
@@ -136,6 +141,8 @@ it('D-30: قاعدة الدور الواحدة تتّفق للمدير والم�
     $roles = new RoleResolver;
 
     expect($roles->shellRole(makeAdmin()))->toBe('admin')
+        // D-117 — a shell of its own, never the participant's fall-through.
+        ->and($roles->shellRole(makeSystemAdmin()))->toBe('system_admin')
         ->and($roles->shellRole(makeTrainer($this->cohort)))->toBe('trainer')
         ->and($roles->shellRole($this->participant))->toBe('participant');
 });

@@ -24,7 +24,7 @@ namespace App\Support;
  * Security letters (a password change, a sign-in from a new device) are not
  * types here: they are never suppressible, by design (D-66).
  *
- * @see PRD §9.16, §9.16.1 · BR-33 · D-66, D-78
+ * @see PRD §9.16, §9.16.1 · BR-33 · D-66, D-78, D-117, D-118
  */
 final class NotificationTypes
 {
@@ -33,6 +33,14 @@ final class NotificationTypes
 
     /** Types an administrator receives: messages addressed to them. */
     private const ADMIN = ['message_received'];
+
+    /**
+     * Types the system administrator receives: messages in the shared inbox
+     * with the general supervisors (D-118), and nothing else — the role reaches
+     * no cohort, so every other type concerns someone else (D-117). Security
+     * letters still reach them — they are not types, and never suppressible.
+     */
+    private const SYSTEM_ADMIN = ['message_received'];
 
     /**
      * @return array<string, array<string, mixed>>
@@ -67,7 +75,8 @@ final class NotificationTypes
     /**
      * The types a shell role receives, in catalogue order.
      *
-     * @param  string  $role  'admin' | 'trainer' | 'participant' (RoleResolver::shellRole)
+     * @param  string  $role  'admin' | 'system_admin' | 'trainer' | 'coordinator' | 'participant'
+     *                        (RoleResolver::shellRole)
      * @return list<string>
      */
     public static function forRole(string $role): array
@@ -76,6 +85,7 @@ final class NotificationTypes
 
         return array_values(match ($role) {
             'admin' => array_intersect($keys, self::ADMIN),
+            'system_admin' => array_intersect($keys, self::SYSTEM_ADMIN),
             'trainer' => array_intersect($keys, self::TRAINER),
             default => array_diff($keys, array_diff(self::TRAINER, ['message_received'])),
         });

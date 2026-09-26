@@ -117,7 +117,6 @@ final class PreviewLandingRequest extends FormRequest
         $override = $settings['seats_override'] ?? null;
 
         return [
-            'is_registration_open' => filter_var($settings['is_registration_open'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'countdown_enabled' => filter_var($settings['countdown_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'seats_remaining_override' => is_numeric($override) ? max(0, min(10000, (int) $override)) : null,
             'hero_title' => self::text($settings['hero_title'] ?? null, 300),

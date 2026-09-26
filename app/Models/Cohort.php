@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Services\Time\Clock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -95,6 +96,30 @@ class Cohort extends Model
     public function seatsRemaining(): int
     {
         return max(0, (int) $this->capacity - (int) $this->seats_taken);
+    }
+
+    /**
+     * Whether the registration form takes a registration for this cohort now:
+     * the registration switch is on, the cohort is `open`, a seat is free, and
+     * the closing instant has not passed on the server clock (BR-07).
+     *
+     * One statement for the registration form, the landing page and the
+     * supervisor's switch (D-117); the first two each kept a private copy.
+     * Reads the `landingSetting` relation — eager-load it for a list.
+     */
+    public function acceptsRegistrations(): bool
+    {
+        if (! LandingSetting::switchIsOn($this->landingSetting)) {
+            return false;
+        }
+
+        if ($this->status !== CohortStatus::Open || $this->seatsRemaining() <= 0) {
+            return false;
+        }
+
+        $closesAt = $this->registration_closes_at;
+
+        return $closesAt === null || Clock::now()->lessThan(Clock::toUtc($closesAt));
     }
 
     // --------------------------------------------------------- relationships

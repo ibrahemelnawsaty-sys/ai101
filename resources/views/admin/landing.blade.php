@@ -154,11 +154,13 @@
                                     <div>
                                         <h2 class="le__panel-title" x-text="current().label"></h2>
                                         <p class="le__panel-hint" x-show="current().hint" x-text="current().hint"></p>
+                                        {{-- D-117 — a note, not a link: programmes and cohorts are the
+                                             general supervisor's screens. --}}
                                         <template x-if="current().source">
-                                            <a class="le__source" x-bind:href="current().source.href">
+                                            <p class="le__source">
                                                 <svg class="ui-icon ui-icon--sm" aria-hidden="true" focusable="false"><use href="#i-info"/></svg>
                                                 <span x-text="current().source.label"></span>
-                                            </a>
+                                            </p>
                                         </template>
                                     </div>
                                     <button type="button" class="le__linkbtn le__linkbtn--danger"
@@ -188,7 +190,7 @@
                                                         :title="__('admin.landing_editor.no_cohort_title')"
                                                         :description="__('admin.landing_editor.no_cohort_body')"
                                                         :action-label="__('admin.landing_editor.no_cohort_action')"
-                                                        :action-href="route('admin.cohorts.index')" />
+                                                        :action-href="route('home')" />
                                                 </div>
                                             </template>
                                             <template x-if="group.setting === 'registration' && settings !== null">

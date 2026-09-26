@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -19,10 +21,11 @@ use Illuminate\Support\Facades\Route;
  * Every link is guarded with Route::has(): an error page may be rendering
  * because the router, the session store or the database is the thing that
  * failed, so it resolves no model and assumes no route (CONSTITUTION art. 7).
- * The suggestion lists never differ by anything except "is anyone signed in",
- * so no page can leak whether a record exists (BR-22, BR-23, art. 22).
+ * The suggestion lists never differ by anything except "is anyone signed in"
+ * and, since D-117, the signed-in account's own role — so no page can leak
+ * whether a record exists (BR-22, BR-23, art. 22).
  *
- * @see PRD §8, §11.1, §12.4 · BR-07, BR-22, BR-23, BR-30
+ * @see PRD §8, §11.1, §12.4 · BR-07, BR-22, BR-23, BR-30 · D-117
  * @see CONSTITUTION.md Articles 7, 13, 15, 22, 24
  */
 final class ErrorNavigation
@@ -72,6 +75,24 @@ final class ErrorNavigation
         '503' => ['user' => [], 'guest' => []],
     ];
 
+    /**
+     * The system administrator's suggestions on a refused, missing or
+     * wrong-method page (D-117). The role reaches no cohort, so the trainee's
+     * schedule and messages would only lead to a second refusal.
+     *
+     * @var list<array{0: string, 1: string}>
+     */
+    private const SYSTEM_ADMIN_SUGGESTIONS = [
+        ['admin.users.index', 'nav.admin.users'],
+        ['admin.landing.edit', 'nav.admin.landing'],
+        ['admin.settings.edit', 'nav.admin.settings'],
+        ['messages.index', 'nav.admin.contact'],
+        ['profile', 'nav.participant.profile'],
+    ];
+
+    /** Codes whose suggestions are the system administrator's own list. */
+    private const SYSTEM_ADMIN_CODES = ['403', '404', '405'];
+
     /** Codes whose primary action returns the visitor to the page they came from. */
     private const BACK_CODES = ['405', '419', '429'];
 
@@ -81,6 +102,14 @@ final class ErrorNavigation
     public static function hasSession(): bool
     {
         return Auth::hasUser();
+    }
+
+    /** The signed-in account's own role, already loaded — nothing is queried. */
+    private static function isSystemAdmin(): bool
+    {
+        $user = Auth::hasUser() ? Auth::user() : null;
+
+        return $user instanceof User && $user->role === UserRole::SystemAdmin;
     }
 
     /**
@@ -166,6 +195,10 @@ final class ErrorNavigation
     {
         $table = self::SUGGESTIONS[(int) $code] ?? ['user' => [], 'guest' => []];
         $candidates = self::hasSession() ? $table['user'] : $table['guest'];
+
+        if (in_array($code, self::SYSTEM_ADMIN_CODES, true) && self::isSystemAdmin()) {
+            $candidates = self::SYSTEM_ADMIN_SUGGESTIONS;
+        }
 
         $links = [];
 

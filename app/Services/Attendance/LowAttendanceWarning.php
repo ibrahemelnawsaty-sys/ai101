@@ -7,6 +7,7 @@ namespace App\Services\Attendance;
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Enums\UserRole;
 use App\Events\AttendanceLow;
 use App\Models\Cohort;
 use App\Models\Enrollment;
@@ -41,7 +42,7 @@ use Carbon\CarbonImmutable;
  * THE CLAIM IS THE DE-DUPLICATION. Each notice is taken by a conditional
  * UPDATE on the enrolment; two overlapping reconciler runs cannot both win.
  *
- * @see PRD §9.16.1, §9.17 · BR-26 · D-26, D-77
+ * @see PRD §9.16.1, §9.17 · BR-26 · D-26, D-77, D-117
  */
 final class LowAttendanceWarning
 {
@@ -71,6 +72,9 @@ final class LowAttendanceWarning
             ->where('cohort_id', $cohort->getKey())
             ->where('role_in_cohort', EnrollmentRole::Participant->value)
             ->where('status', EnrollmentStatus::Active->value)
+            // An enrolment kept from an earlier role does not make a system
+            // administrator a trainee to be warned (D-117).
+            ->whereNotIn('user_id', User::query()->where('role', UserRole::SystemAdmin->value)->select('id'))
             ->pluck('user_id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->all();

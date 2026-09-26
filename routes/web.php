@@ -26,10 +26,10 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
-use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -237,94 +237,121 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
 Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
-    // Switching the active cohort is a preference; the request refuses any
-    // cohort the account cannot reach (PRD §4.4).
-    Route::post('/cohort', CohortSwitchController::class)->name('cohort.switch');
+    /*
+     * The cohort screens — schedule, attendance, live sessions, assignments
+     * and the training kit. Every role that sits in a
+     * cohort reaches them; the system administrator, whose role reaches no
+     * cohort and whose work is the accounts and the landing page alone, does
+     * not (D-117). An allow-list, like every role check (art. 22): a role
+     * added later is refused here until it is named.
+     */
+    Route::middleware('role:participant,trainer,coordinator,admin')->group(function (): void {
+        // Switching the active cohort is a preference; the request refuses any
+        // cohort the account cannot reach (PRD §4.4).
+        Route::post('/cohort', CohortSwitchController::class)->name('cohort.switch');
+
+        /*
+         * Schedule — readable by anyone in the cohort.
+         */
+        Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule');
+        Route::get('/schedule/print', [ScheduleController::class, 'print'])->name('schedule.pdf');
+        Route::get('/schedule/calendar.ics', [ScheduleController::class, 'calendar'])->name('schedule.ics');
+        Route::get('/schedule/{session}/calendar.ics', [ScheduleController::class, 'sessionCalendar'])
+            ->name('schedule.session.ics');
+
+        /*
+         * Attendance. The two writes carry `not.impersonating` and the attendance
+         * limiter: ten attempts per user per minute (BR-33, PRD §12.4).
+         */
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        // D-117 — no export while an account preview runs: the files are
+        // the general supervisor's to take out, and a preview only looks.
+        Route::get('/attendance/export', [AttendanceController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('attendance.export');
+
+        Route::post('/attendance/{session}/check-in', [AttendanceController::class, 'checkIn'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
+            ->name('attendance.checkIn');
+
+        Route::post('/attendance/{session}/check-out', [AttendanceController::class, 'checkOut'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
+            ->name('attendance.checkOut');
+
+        /*
+         * Self-check-in by QR code (D-106). `signed` is the only proof this link
+         * is genuine and unexpired — CheckinCode mints it, nothing else does — so
+         * it carries the same role/throttle guards as the two writes above, plus
+         * `signed` in front of them.
+         */
+        Route::get('/attendance/{session}/self-check-in', [AttendanceController::class, 'selfCheckIn'])
+            ->middleware(['signed', 'role:participant', 'not.impersonating', 'throttle:attendance'])
+            ->name('attendance.selfCheckIn');
+
+        /* D-106 — asking to be excused for an absence or an unexcused lateness. */
+        Route::post('/attendance/{attendance}/exception-request', [AttendanceController::class, 'requestException'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
+            ->name('attendance.exceptionRequest');
+
+        /*
+         * Live sessions. `join` is a POST because it hands over a meeting URL after
+         * re-checking the window on the server — it is an action, not a page (BR-24).
+         */
+        Route::get('/live', [LiveController::class, 'index'])->name('live');
+        Route::post('/live/{session}/join', [LiveController::class, 'join'])->name('live.join');
+        Route::get('/live/{session}/recording', [LiveController::class, 'recording'])->name('live.recording');
+
+        /*
+         * Assignments.
+         */
+        Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:upload'])
+            ->name('assignments.submit');
+
+        /*
+         * Training kit. Downloads are streamed after the policy check; the stored
+         * path is never exposed (PRD §12.5).
+         */
+        Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+        Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])
+            ->name('resources.download');
+        Route::get('/resources/{resource}/preview', [ResourceController::class, 'preview'])
+            ->name('resources.preview');
+    });
 
     /*
-     * Schedule — readable by anyone in the cohort.
+     * Messaging — every role, the system administrator included (D-118): its
+     * "contact" tab is the shared inbox with the general supervisors. Which
+     * conversation each account reads is Thread::scopeVisibleTo and
+     * ThreadPolicy::view; who may start one with whom is ConversationRules.
      */
-    Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule');
-    Route::get('/schedule/print', [ScheduleController::class, 'print'])->name('schedule.pdf');
-    Route::get('/schedule/calendar.ics', [ScheduleController::class, 'calendar'])->name('schedule.ics');
-    Route::get('/schedule/{session}/calendar.ics', [ScheduleController::class, 'sessionCalendar'])
-        ->name('schedule.session.ics');
-
-    /*
-     * Attendance. The two writes carry `not.impersonating` and the attendance
-     * limiter: ten attempts per user per minute (BR-33, PRD §12.4).
-     */
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::get('/attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
-
-    Route::post('/attendance/{session}/check-in', [AttendanceController::class, 'checkIn'])
-        ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
-        ->name('attendance.checkIn');
-
-    Route::post('/attendance/{session}/check-out', [AttendanceController::class, 'checkOut'])
-        ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
-        ->name('attendance.checkOut');
-
-    /*
-     * Self-check-in by QR code (D-106). `signed` is the only proof this link
-     * is genuine and unexpired — CheckinCode mints it, nothing else does — so
-     * it carries the same role/throttle guards as the two writes above, plus
-     * `signed` in front of them.
-     */
-    Route::get('/attendance/{session}/self-check-in', [AttendanceController::class, 'selfCheckIn'])
-        ->middleware(['signed', 'role:participant', 'not.impersonating', 'throttle:attendance'])
-        ->name('attendance.selfCheckIn');
-
-    /* D-106 — asking to be excused for an absence or an unexcused lateness. */
-    Route::post('/attendance/{attendance}/exception-request', [AttendanceController::class, 'requestException'])
-        ->middleware(['role:participant', 'not.impersonating', 'throttle:attendance'])
-        ->name('attendance.exceptionRequest');
-
-    /*
-     * Live sessions. `join` is a POST because it hands over a meeting URL after
-     * re-checking the window on the server — it is an action, not a page (BR-24).
-     */
-    Route::get('/live', [LiveController::class, 'index'])->name('live');
-    Route::post('/live/{session}/join', [LiveController::class, 'join'])->name('live.join');
-    Route::get('/live/{session}/recording', [LiveController::class, 'recording'])->name('live.recording');
-
-    /*
-     * Assignments.
-     */
-    Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
-    Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
-    Route::post('/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])
-        ->middleware(['role:participant', 'not.impersonating', 'throttle:upload'])
-        ->name('assignments.submit');
-
-    /*
-     * Training kit. Downloads are streamed after the policy check; the stored
-     * path is never exposed (PRD §12.5).
-     */
-    Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
-    Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])
-        ->name('resources.download');
-    Route::get('/resources/{resource}/preview', [ResourceController::class, 'preview'])
-        ->name('resources.preview');
-
-    /*
-     * Messaging.
-     */
-    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
-    // Asked every few seconds by an open conversation: throttled, so a stuck
-    // tab cannot become a stream of PHP processes on shared hosting.
-    Route::get('/messages/{thread}/poll', [MessageController::class, 'poll'])
-        ->middleware('throttle:30,1')
-        ->name('messages.poll');
-    Route::post('/messages/{thread}', [MessageController::class, 'store'])
-        ->middleware(['not.impersonating', 'throttle:messages'])
-        ->name('messages.store');
-    Route::patch('/messages/{message}', [MessageController::class, 'update'])
-        ->middleware('not.impersonating')
-        ->name('messages.edit');
-    Route::post('/messages/{message}/report', [MessageController::class, 'report'])
-        ->middleware('not.impersonating')
-        ->name('messages.report');
+    Route::middleware('role:participant,trainer,coordinator,admin,system_admin')->group(function (): void {
+        Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+        // D-118 — the people this account may start a conversation with, and
+        // the start itself. Neither is reachable from a preview.
+        Route::get('/messages/new', [MessageController::class, 'create'])
+            ->middleware('not.impersonating')
+            ->name('messages.create');
+        Route::post('/messages', [MessageController::class, 'start'])
+            ->middleware(['not.impersonating', 'throttle:messages'])
+            ->name('messages.start');
+        // Asked every few seconds by an open conversation: throttled, so a stuck
+        // tab cannot become a stream of PHP processes on shared hosting.
+        Route::get('/messages/{thread}/poll', [MessageController::class, 'poll'])
+            ->middleware('throttle:30,1')
+            ->name('messages.poll');
+        Route::post('/messages/{thread}', [MessageController::class, 'store'])
+            ->middleware(['not.impersonating', 'throttle:messages'])
+            ->name('messages.store');
+        Route::patch('/messages/{message}', [MessageController::class, 'update'])
+            ->middleware('not.impersonating')
+            ->name('messages.edit');
+        Route::post('/messages/{message}/report', [MessageController::class, 'report'])
+            ->middleware('not.impersonating')
+            ->name('messages.report');
+    });
 
     /*
      * Notifications. BR-34 — no read receipt is written during a preview.
@@ -368,7 +395,9 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
             ->name('finalProject.submit');
 
         Route::get('/grades', [GradeController::class, 'index'])->name('grades');
-        Route::get('/grades/export', [GradeController::class, 'export'])->name('grades.export');
+        Route::get('/grades/export', [GradeController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('grades.export');
 
         Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
         Route::get('/certificate/download', [CertificateController::class, 'download'])
@@ -399,7 +428,9 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::get('/dashboard', TrainerDashboardController::class)->name('dashboard');
 
         Route::get('/submissions', [TrainerSubmissionController::class, 'index'])->name('submissions');
+        // D-117 — no export or bulk download while an account preview runs.
         Route::get('/submissions/export', [TrainerSubmissionController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('submissions.export');
         Route::post('/submissions/{submission}/grade', [TrainerSubmissionController::class, 'grade'])
             ->middleware('not.impersonating')
@@ -411,6 +442,7 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
             ->middleware('not.impersonating')
             ->name('submissions.remind');
         Route::get('/assignments/{assignment}/download-all', [TrainerSubmissionController::class, 'bulkDownload'])
+            ->middleware('not.impersonating')
             ->name('submissions.bulkDownload');
 
         Route::get('/assignments', [TrainerAssignmentController::class, 'index'])->name('assignments');
@@ -439,10 +471,13 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
 
         Route::get('/participants', [TrainerParticipantController::class, 'index'])->name('participants');
         Route::get('/participants/export', [TrainerParticipantController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('participants.export');
 
         Route::get('/reports', [TrainerReportController::class, 'index'])->name('reports');
-        Route::get('/reports/export', [TrainerReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports/export', [TrainerReportController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('reports.export');
     });
 
 /*
@@ -468,6 +503,7 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
 
         Route::get('/attendance', [TrainerAttendanceController::class, 'index'])->name('attendance');
         Route::get('/attendance/export', [TrainerAttendanceController::class, 'export'])
+            ->middleware('not.impersonating')
             ->name('attendance.export');
         // The live roster (PRD §9.9.7), asked every few seconds while a session
         // runs: throttled, so a stuck tab cannot become a stream of PHP
@@ -485,8 +521,10 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin,coordinator', 'cohort
         // D-106 — the self-check-in QR, re-minted on a ten-minute boundary
         // (CheckinCode). Polled far more slowly than the roster above, since
         // the underlying signed url is only ever new once every ten minutes.
+        // D-117 — the live code checks in whoever holds it: never handed to a
+        // preview, which only looks (the screen does not mint it either).
         Route::get('/attendance/{session}/checkin-code', [TrainerAttendanceController::class, 'checkinCode'])
-            ->middleware('throttle:12,1')
+            ->middleware(['not.impersonating', 'throttle:12,1'])
             ->name('attendance.checkinCode');
 
         // D-107 — a coordinator's one write on a session they do not
@@ -558,12 +596,14 @@ Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope']
 
 /*
 |--------------------------------------------------------------------------
-| Administration
+| Administration — the general supervisor
 |--------------------------------------------------------------------------
-| Every route is admin-only and every write is refused while an account
-| preview is running (BR-33). Ending a preview is the one exception, and it
-| lives outside this group because the person calling it is, at that moment,
-| signed in as somebody else.
+| Every route is the supervisor's (`admin`) and every write is refused while an
+| account preview is running (BR-33). The accounts, the account preview and
+| the landing page are the system administrator's since D-117, in the group
+| below. Ending a preview is the one exception to both, and it lives outside
+| them because the person calling it is, at that moment, signed in as
+| somebody else.
 */
 
 Route::middleware(['auth', 'verified', 'role:admin'])
@@ -608,6 +648,101 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->middleware('not.impersonating')
             ->name('cohorts.coordinators.detach');
 
+        // Seat an existing participant account in a cohort by its e-mail
+        // address (D-84). It lived on the account's own page until D-117 gave
+        // that page to the system administrator; seating stayed with the
+        // supervisor, so it moved here, beside the trainer and coordinator.
+        Route::post('/cohorts/{cohort}/participants', [AdminCohortController::class, 'seatParticipant'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.participants.attach');
+
+        Route::get('/registrations', [AdminRegistrationController::class, 'index'])->name('registrations.index');
+        // D-117 — the supervisor's exports are never taken from a preview.
+        Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('registrations.export');
+        // D-117 — opening and closing a cohort's registration, beside the
+        // requests it lets in: the owner gave all three to the supervisor.
+        Route::put('/registrations/intake/{cohort}', [AdminRegistrationController::class, 'intake'])
+            ->middleware('not.impersonating')
+            ->name('registrations.intake');
+        Route::put('/registrations/{enrollment}/approve', [AdminRegistrationController::class, 'approve'])
+            ->middleware('not.impersonating')
+            ->name('registrations.approve');
+        Route::put('/registrations/{enrollment}/reject', [AdminRegistrationController::class, 'reject'])
+            ->middleware('not.impersonating')
+            ->name('registrations.reject');
+
+        Route::get('/certificates', [AdminCertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/export', [AdminCertificateController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('certificates.export');
+        Route::post('/certificates', [AdminCertificateController::class, 'issue'])
+            ->middleware('not.impersonating')
+            ->name('certificates.issue');
+        Route::post('/certificates/bulk', [AdminCertificateController::class, 'issueBulk'])
+            ->middleware('not.impersonating')
+            ->name('certificates.issueBulk');
+        // BR-26 — issuing against the rules is its own endpoint, so the trail
+        // records an override as an override and never as an ordinary issue.
+        Route::post('/certificates/{user}/override', [AdminCertificateController::class, 'override'])
+            ->middleware('not.impersonating')
+            ->name('certificates.override');
+        Route::post('/certificates/{certificate}/reissue', [AdminCertificateController::class, 'reissue'])
+            ->middleware('not.impersonating')
+            ->name('certificates.reissue');
+        Route::delete('/certificates/{certificate}', [AdminCertificateController::class, 'revoke'])
+            ->middleware('not.impersonating')
+            ->name('certificates.revoke');
+
+        Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [AdminReportController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('reports.export');
+
+        /*
+         * Writing to a cohort's trainees, and the session and assignment
+         * reminders by hand (D-87). The automatic reminders are not touched.
+         */
+        Route::get('/broadcasts', [AdminBroadcastController::class, 'index'])->name('broadcasts.index');
+        Route::post('/broadcasts', [AdminBroadcastController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('broadcasts.store');
+        Route::post('/broadcasts/reminders', [AdminBroadcastController::class, 'remind'])
+            ->middleware('not.impersonating')
+            ->name('broadcasts.remind');
+
+        /*
+         * The final project's brief, deadline, ceiling, late policy and open
+         * switch — an administrator affair only (D-109, D-110). A trainer's
+         * own screen (trainer.finalProject) keeps reading the brief and
+         * grading; it has no route here and never had one.
+         */
+        Route::get('/final-project', [AdminFinalProjectController::class, 'index'])->name('finalProject.index');
+        Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.store');
+
+        Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
+        Route::get('/audit/export', [AuditController::class, 'export'])
+            ->middleware('not.impersonating')
+            ->name('audit.export');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Administration — the system administrator (D-117)
+|--------------------------------------------------------------------------
+| Four areas and nothing else: the accounts, the account preview, the landing
+| page and the platform settings. Same /admin prefix and admin.* names as before, so every form
+| and link that already pointed at them still does — only the role at the
+| door changed. Every write is still refused while a preview runs (BR-33).
+*/
+
+Route::middleware(['auth', 'verified', 'role:system_admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
 
@@ -653,50 +788,15 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/users/{user}/logout-everywhere', [AdminUserController::class, 'logoutEverywhere'])
             ->middleware('not.impersonating')
             ->name('users.logoutEverywhere');
-        // Seat an existing participant account in a cohort (D-84).
-        Route::post('/users/{user}/enrollments', [AdminUserController::class, 'enroll'])
-            ->middleware('not.impersonating')
-            ->name('users.enroll');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
             ->middleware('not.impersonating')
             ->name('users.destroy');
 
-        // BR-35 — the policy refuses another administrator, a deleted account
-        // and one's own account before this ever starts.
+        // BR-35 — the policy refuses another system administrator, a deleted
+        // account and one's own account before this ever starts (D-117).
         Route::post('/users/{user}/preview', [ImpersonationController::class, 'start'])
             ->middleware('not.impersonating')
             ->name('users.preview');
-
-        Route::get('/registrations', [AdminRegistrationController::class, 'index'])->name('registrations.index');
-        Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])
-            ->name('registrations.export');
-        Route::put('/registrations/{enrollment}/approve', [AdminRegistrationController::class, 'approve'])
-            ->middleware('not.impersonating')
-            ->name('registrations.approve');
-        Route::put('/registrations/{enrollment}/reject', [AdminRegistrationController::class, 'reject'])
-            ->middleware('not.impersonating')
-            ->name('registrations.reject');
-
-        Route::get('/certificates', [AdminCertificateController::class, 'index'])->name('certificates.index');
-        Route::get('/certificates/export', [AdminCertificateController::class, 'export'])
-            ->name('certificates.export');
-        Route::post('/certificates', [AdminCertificateController::class, 'issue'])
-            ->middleware('not.impersonating')
-            ->name('certificates.issue');
-        Route::post('/certificates/bulk', [AdminCertificateController::class, 'issueBulk'])
-            ->middleware('not.impersonating')
-            ->name('certificates.issueBulk');
-        // BR-26 — issuing against the rules is its own endpoint, so the trail
-        // records an override as an override and never as an ordinary issue.
-        Route::post('/certificates/{user}/override', [AdminCertificateController::class, 'override'])
-            ->middleware('not.impersonating')
-            ->name('certificates.override');
-        Route::post('/certificates/{certificate}/reissue', [AdminCertificateController::class, 'reissue'])
-            ->middleware('not.impersonating')
-            ->name('certificates.reissue');
-        Route::delete('/certificates/{certificate}', [AdminCertificateController::class, 'revoke'])
-            ->middleware('not.impersonating')
-            ->name('certificates.revoke');
 
         /*
          * The landing-page content editor (D-114): one publish for every text
@@ -715,35 +815,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             ->middleware('not.impersonating')
             ->name('landing.reset');
 
-        Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/export', [AdminReportController::class, 'export'])->name('reports.export');
-
-        /*
-         * Writing to a cohort's trainees, and the session and assignment
-         * reminders by hand (D-87). The automatic reminders are not touched.
-         */
-        Route::get('/broadcasts', [AdminBroadcastController::class, 'index'])->name('broadcasts.index');
-        Route::post('/broadcasts', [AdminBroadcastController::class, 'store'])
-            ->middleware('not.impersonating')
-            ->name('broadcasts.store');
-        Route::post('/broadcasts/reminders', [AdminBroadcastController::class, 'remind'])
-            ->middleware('not.impersonating')
-            ->name('broadcasts.remind');
-
-        /*
-         * The final project's brief, deadline, ceiling, late policy and open
-         * switch — an administrator affair only (D-109, D-110). A trainer's
-         * own screen (trainer.finalProject) keeps reading the brief and
-         * grading; it has no route here and never had one.
-         */
-        Route::get('/final-project', [AdminFinalProjectController::class, 'index'])->name('finalProject.index');
-        Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
-            ->middleware('not.impersonating')
-            ->name('finalProject.store');
-
-        Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
-        Route::get('/audit/export', [AuditController::class, 'export'])->name('audit.export');
-
+        // D-117 — the platform settings are the system administrator's: the
+        // role that runs the platform, not the programme (ConsolePolicy).
         Route::get('/settings', [AdminSettingController::class, 'edit'])->name('settings.edit');
         Route::get('/settings/templates/{template}', [AdminSettingController::class, 'template'])
             ->name('settings.template');
@@ -757,9 +830,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])
 
 /*
  * Ending a preview. Only `auth` guards it, deliberately: the session belongs to
- * the previewed account at that moment, so an `role:admin` check would lock the
- * administrator inside the preview they are trying to leave. The service
- * verifies the stored preview payload before restoring anything (PRD §4.5.2).
+ * the previewed account at that moment, so a `role:system_admin` check would
+ * lock the system administrator inside the preview they are trying to leave.
+ * The service verifies the stored preview payload before restoring anything
+ * (PRD §4.5.2).
  */
 Route::delete('/admin/impersonation', [ImpersonationController::class, 'stop'])
     ->middleware('auth')

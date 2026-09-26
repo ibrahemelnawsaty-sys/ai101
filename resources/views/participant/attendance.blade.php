@@ -166,8 +166,11 @@
             {{-- Personal attendance log ---------------------------------------- --}}
             <x-ui.card class="dc--span" icon="cal" :title="__('attendance.log.title')">
                 <x-slot:action>
-                    <x-ui.button variant="secondary" size="sm" icon="down"
-                        :href="route('attendance.export')">{{ __('attendance.log.export_pdf') }}</x-ui.button>
+                    {{-- D-117 — no export from inside an account preview. --}}
+                    @unless ($impersonation ?? null)
+                        <x-ui.button variant="secondary" size="sm" icon="down"
+                            :href="route('attendance.export')">{{ __('attendance.log.export_pdf') }}</x-ui.button>
+                    @endunless
                 </x-slot:action>
 
                 <form method="GET" action="{{ route('attendance.index') }}" class="toolbar__filters">

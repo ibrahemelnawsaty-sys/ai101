@@ -52,13 +52,13 @@ App\Console\Commands\*   أوامر artisan والبوابات
 
 | Enum | القيم |
 |---|---|
-| `UserRole` | `admin` · `trainer` · `participant` |
+| `UserRole` | `admin` (المشرف العام) · `system_admin` (مدير النظام) · `trainer` · `coordinator` · `participant` — `coordinator` من `D-105`، والانقسام من `D-117`: «مدير النظام» في وثيقة المتطلبات هو `admin` في كل شيء إلا الحسابات ومعاينتها وصفحة الهبوط وإعدادات المنصة، فهذه لـ`system_admin` وحده؛ وفتح التسجيل وإغلاقه لـ`admin` |
 | `UserStatus` | `pending` · `active` · `suspended` · `deleted` |
 | `Gender` | `male` · `female` |
 | `ProgramStatus` | `draft` · `published` · `archived` |
 | `CohortStatus` | `upcoming` · `open` · `running` · `completed` |
 | `EnrollmentStatus` | `pending` · `active` · `withdrawn` · `completed` |
-| `EnrollmentRole` | `participant` · `trainer` |
+| `EnrollmentRole` | `participant` · `trainer` · `coordinator` (`D-105`) |
 | `SessionType` | `intro` · `training` · `project` · `closing` |
 | `SessionStatus` | `scheduled` · `live` · `completed` · `cancelled` |
 | `AttendanceStatus` | `present` · `late` · `absent` · `excused` · `incomplete` |
@@ -66,7 +66,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `SubmissionStatus` | `submitted` · `under_review` · `graded` |
 | `EvaluationEntity` | `assignment` · `final_project` |
 | `JourneyStepStatus` | `locked` · `current` · `completed` |
-| `ThreadType` | `trainer_dm` · `group` · `announcement` |
+| `ThreadType` | `trainer_dm` · `group` · `announcement` · `direct` (`D-118`: محادثة يبدؤها شخص مع آخر) |
 | `EmailTokenType` | `verify` · `reset` |
 | `ResourceType` | `file` · `link` · `video` |
 
@@ -97,7 +97,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `resources` | `download_count` |
 | `journey_steps` | `index` 1..10 · `unlock_rule` |
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
-| `threads` · `thread_participants` · `messages` | `last_read_at` |
+| `threads` · `thread_participants` · `messages` | `last_read_at` · `threads.cohort_id` يقبل الفراغ لمحادثة `direct` · `threads.inbox` (`system_admin` = الصندوق المشترك) · `threads.pair_key` فريد — محادثة واحدة لكل زوجين (`D-118`) |
 | `notifications` | فهرس `(user_id, is_read)` |
 | `notification_preferences` | |
 | `certificates` | `serial_number` **فريد** · `verify_code` **فريد** · `revoked_at` |
@@ -272,28 +272,35 @@ final class CertificateEligibility
 | `GET /verify/{token}` | `card.verify` | — |
 | `GET /certificate/verify/{code}` | `certificate.verify` | — |
 | `GET /terms` · `/privacy` | `terms` · `privacy` | — |
-| `GET /dashboard` | `dashboard` | `auth` · `verified` |
-| `POST /dashboard/cohort` | `cohort.switch` | `auth` · `verified` |
+| `GET /dashboard` | `dashboard` | `auth` · `verified` — يوجّه `system_admin` إلى `admin.users.index` (`D-117`) |
+| `POST /dashboard/cohort` | `cohort.switch` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `GET /dashboard/card` | `participant.card` | `auth` · `role:participant` |
 | `GET /dashboard/journey` | `participant.journey` | `auth` · `role:participant` |
-| `GET /dashboard/schedule` | `schedule` | `auth` |
-| `GET /dashboard/attendance` | `attendance.index` | `auth` |
+| `GET /dashboard/schedule` | `schedule` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/attendance` | `attendance.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `POST /dashboard/attendance/{session}/check-in` | `attendance.checkIn` | `auth` · `role:participant` · `not.impersonating` · `throttle:attendance` |
 | `POST /dashboard/attendance/{session}/check-out` | `attendance.checkOut` | نفسه |
-| `GET /dashboard/live` | `live` | `auth` |
-| `GET /dashboard/assignments` | `assignments.index` | `auth` |
-| `GET /dashboard/assignments/{assignment}` | `assignments.show` | `auth` |
+| `GET /dashboard/live` | `live` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/assignments` | `assignments.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/assignments/{assignment}` | `assignments.show` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
 | `POST /dashboard/assignments/{assignment}/submit` | `assignments.submit` | `auth` · `role:participant` · `not.impersonating` |
-| `GET /dashboard/resources` | `resources.index` | `auth` |
-| `GET /dashboard/messages` | `messages.index` | `auth` |
+| `GET /dashboard/resources` | `resources.index` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /dashboard/messages` | `messages.index` | `auth` · `role:participant,trainer,coordinator,admin,system_admin` (`D-118`) — ما يظهر: `Thread::scopeVisibleTo` |
+| `GET /dashboard/messages/new` | `messages.create` | `auth` · الأدوار نفسها · `not.impersonating` (`D-118`) — القائمة: `ConversationRules::recipients` |
+| `POST /dashboard/messages` | `messages.start` | `auth` · الأدوار نفسها · `not.impersonating` · `throttle:messages` (`D-118`) — `StartConversationRequest` + `ThreadPolicy::start/startInbox` |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
 | `GET /dashboard/certificate` | `certificate` | `auth` · `role:participant` |
 | `GET /dashboard/profile` | `profile` | `auth` |
 | `GET /dashboard/notifications` | `notifications` | `auth` |
 | `/trainer/*` | `trainer.*` | `auth` · `role:trainer,admin` · `cohort.scope` |
-| `/admin/*` | `admin.*` | `auth` · `role:admin` |
-| `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:admin` · `not.impersonating` |
+| `/admin/*` | `admin.*` | `auth` · `role:admin` — عدا الأربعة التالية (`D-117`) |
+| `/admin/users*` | `admin.users.*` | `auth` · `role:system_admin` (`D-117`) — `admin.users.export` يرفضه `UserPolicy::export()` للجميع |
+| `/admin/landing*` | `admin.landing.*` | `auth` · `role:system_admin` (`D-117`) — لا يحمل مفتاح التسجيل |
+| `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings` |
+| `PUT /admin/registrations/intake/{cohort}` | `admin.registrations.intake` | `auth` · `role:admin` · `not.impersonating` (`D-117`) — فتح التسجيل وإغلاقه، `CohortPolicy::manageRegistrations` |
+| `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
+| `POST /admin/cohorts/{cohort}/participants` | `admin.cohorts.participants.attach` | `auth` · `role:admin` · `not.impersonating` (`D-84` · `D-117`) |
 | `DELETE /admin/impersonation` | `admin.impersonation.stop` | `auth` |
 
 ---

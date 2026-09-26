@@ -27,4 +27,15 @@ enum CohortStatus: string
     {
         return __('enums.cohort_status.'.$this->value);
     }
+
+    /**
+     * Whether the general supervisor may still seat an existing participant
+     * in the cohort (D-84, D-117): a finished cohort has nothing left to join.
+     * One answer for the request that refuses the write and for the button
+     * that is not drawn.
+     */
+    public function seatable(): bool
+    {
+        return $this !== self::Completed;
+    }
 }

@@ -56,7 +56,7 @@ final class LandingEditor extends ViewModel
         return new self([
             'hasCohort' => $cohort !== null,
             'payload' => [
-                'sections' => self::sections($catalog, $urls),
+                'sections' => self::sections($catalog),
                 'published' => (object) $published,
                 'settings' => $cohort === null ? null : self::settings($setting),
                 'faq' => $cohort === null ? null : self::faq($setting),
@@ -88,10 +88,9 @@ final class LandingEditor extends ViewModel
     }
 
     /**
-     * @param  array<string, string>  $urls
      * @return list<array<string, mixed>>
      */
-    private static function sections(LandingCatalog $catalog, array $urls): array
+    private static function sections(LandingCatalog $catalog): array
     {
         $sections = [];
 
@@ -121,9 +120,11 @@ final class LandingEditor extends ViewModel
                 'label' => __('admin.landing_editor.sections.'.$key),
                 'hint' => self::optional('admin.landing_editor.section_hints.'.$key),
                 'anchor' => $section['anchor'],
+                // A note, not a link (D-117): programmes and cohorts are the
+                // general supervisor's screens, which this editor's reader —
+                // the system administrator — cannot open.
                 'source' => $source === null ? null : [
                     'label' => __('admin.landing_editor.source.'.$source),
-                    'href' => $urls[$source] ?? null,
                 ],
                 'groups' => $groups,
             ];
@@ -229,7 +230,8 @@ final class LandingEditor extends ViewModel
         $override = $setting?->getAttribute('seats_remaining_override');
 
         return [
-            'is_registration_open' => (bool) ($setting?->getAttribute('is_registration_open') ?? false),
+            // Shown, not edited (D-117): the supervisor moves it.
+            'is_registration_open' => LandingSetting::switchIsOn($setting),
             'countdown_enabled' => (bool) ($setting?->getAttribute('countdown_enabled') ?? false),
             'seats_override' => is_numeric($override) ? (int) $override : null,
             'hero_title' => (string) ($setting?->getAttribute('hero_title') ?? ''),

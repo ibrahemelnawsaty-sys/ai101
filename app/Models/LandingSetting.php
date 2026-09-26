@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Editable landing-page content for one cohort: hero copy, FAQ entries, the
  * countdown switch and the registration switch. All of it is managed from the
- * admin panel and never written in code (BR-31).
+ * admin panel and never written in code (BR-31) — the content by the system
+ * administrator from the landing editor, the registration switch by the
+ * general supervisor from the registrations screen (D-117).
  *
- * @see BR-31, BR-36 · PRD §7.6, §9.1 · PROJECT-CONTRACT §4
+ * @see BR-31, BR-36 · PRD §7.6, §9.1 · PROJECT-CONTRACT §4 · D-117
  */
 class LandingSetting extends Model
 {
@@ -64,6 +66,19 @@ class LandingSetting extends Model
     ];
 
     /**
+     * The registration switch as the registration path enforces it: a cohort
+     * with no settings row yet is not closed by the switch. One answer for the
+     * registration form, the landing page, the supervisor's switch and the
+     * landing editor's read-only line (D-117) — they used to disagree about a
+     * missing row, and a screen that says "closed" while the form accepts
+     * registrations is worse than either answer.
+     */
+    public static function switchIsOn(?self $setting): bool
+    {
+        return $setting === null || (bool) $setting->getAttribute('is_registration_open');
+    }
+
+    /**
      * @return BelongsTo<Cohort, $this>
      */
     public function cohort(): BelongsTo
@@ -98,15 +113,16 @@ class LandingSetting extends Model
     }
 
     /**
-     * Only an administrator manages landing content. Anyone else gets an empty set,
-     * failing closed rather than open (Constitution, Article 7).
+     * Only the system administrator manages landing content (D-117). Anyone
+     * else — the general supervisor included — gets an empty set, failing
+     * closed rather than open (Constitution, Article 7).
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin()) {
+        if ($user->isSystemAdmin()) {
             return $query;
         }
 

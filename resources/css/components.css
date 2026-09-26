@@ -635,13 +635,16 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .ui-badge--neutral, .ui-pill--neutral { background: var(--surface-3); color: var(--text-muted); }
 .ui-badge--solid,   .ui-pill--solid   { background: var(--violet-500); color: var(--white); }
 
-/* The four role badges (D-108) — one existing brand pair per role, opaque
-   rather than an alpha wash like --info/--brand above, so identity reads at
-   a glance beside a name. No new colour anywhere in this block. */
-.ui-badge--participant, .ui-pill--participant { background: var(--teal-100);   color: var(--teal-700); }
-.ui-badge--trainer,     .ui-pill--trainer     { background: var(--violet-100); color: var(--violet-700); }
-.ui-badge--coordinator, .ui-pill--coordinator { background: var(--n-150);      color: var(--n-600); }
-.ui-badge--admin,       .ui-pill--admin       { background: var(--ink);       color: var(--white); }
+/* The five role badges (D-108, D-117) — one existing brand pair per role,
+   opaque rather than an alpha wash like --info/--brand above, so identity
+   reads at a glance beside a name. No new colour anywhere in this block: the
+   system administrator wears the primary button's pair, white on violet-500,
+   which ContrastTest already holds to 4.5:1. */
+.ui-badge--participant,  .ui-pill--participant  { background: var(--teal-100);   color: var(--teal-700); }
+.ui-badge--trainer,      .ui-pill--trainer      { background: var(--violet-100); color: var(--violet-700); }
+.ui-badge--coordinator,  .ui-pill--coordinator  { background: var(--n-150);      color: var(--n-600); }
+.ui-badge--admin,        .ui-pill--admin        { background: var(--ink);        color: var(--white); }
+.ui-badge--system_admin, .ui-pill--system_admin { background: var(--violet-500); color: var(--white); }
 
 .ui-badge--outline {
   background: transparent;

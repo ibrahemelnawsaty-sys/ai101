@@ -38,7 +38,7 @@ use Illuminate\Support\Str;
  * calculation, because D-26 (how an excused session should weigh into the
  * certificate issuance rate) is still open.
  *
- * @see D-106, D-26 · PRD §9.9
+ * @see D-106, D-26, D-117 · PRD §9.9
  */
 final class AttendanceExceptionRequester
 {
@@ -278,6 +278,9 @@ final class AttendanceExceptionRequester
             ->where('cohort_id', $cohortId)
             ->whereIn('role_in_cohort', [EnrollmentRole::Trainer->value, EnrollmentRole::Coordinator->value])
             ->where('status', EnrollmentStatus::Active->value)
+            // A staff row kept from an earlier role does not make a system
+            // administrator a reviewer of excuses (D-117).
+            ->whereNotIn('user_id', User::query()->where('role', UserRole::SystemAdmin->value)->select('id'))
             ->pluck('user_id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->all();

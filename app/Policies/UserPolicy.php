@@ -10,32 +10,42 @@ use App\Models\Certificate;
 use App\Models\Evaluation;
 use App\Models\User;
 use App\Policies\Concerns\InteractsWithScope;
+use App\Services\Permissions\ImpersonationService;
 
 /**
  * Accounts, roles, suspension, deletion and account preview.
  *
- * Two rules here are absolute and are re-stated in the service layer:
- * an admin never deletes their own account and the platform never drops below
- * one active admin (BR-32); an admin never previews another admin (BR-35).
+ * D-117 gave all of it to the system administrator: the directory, every change
+ * to an account and the preview. The general supervisor keeps exactly one
+ * ability here — seating an existing trainee in a cohort, which is a decision
+ * about the programme and is taken from the cohorts screen.
  *
- * @see BR-22, BR-32, BR-33, BR-35 · PRD §4.2, §4.3, §4.5 · CONSTITUTION Art. 22
+ * Three rules here are absolute and are re-stated in the service layer:
+ * nobody acts on their own account through these screens; the platform never
+ * drops below one active holder of either administrative role (BR-32, asked of
+ * RoleResolver::isLastActiveHolder()); and a system administrator never
+ * previews another system administrator (BR-35).
+ *
+ * @see BR-22, BR-32, BR-33, BR-35 · PRD §4.2, §4.3, §4.5 · CONSTITUTION Art. 22 · D-117
  */
 final class UserPolicy
 {
     use InteractsWithScope;
 
+    /** The account directory — the system administrator's alone (D-117). */
     public function viewAny(User $user): bool
     {
-        return $this->admin($user);
+        return $this->systemAdmin($user);
     }
 
     /**
-     * Own account always; admins see everyone; a trainer sees the profile of a
-     * participant who shares one of their cohorts, and nobody else (BR-23).
+     * Own account always; the system administrator sees everyone; a trainer
+     * sees the profile of a participant who shares one of their cohorts, and
+     * nobody else (BR-23). The supervisor does not browse accounts (D-117).
      */
     public function view(User $user, User $subject): bool
     {
-        if ($this->owns($user, (string) $subject->getKey()) || $this->admin($user)) {
+        if ($this->owns($user, (string) $subject->getKey()) || $this->systemAdmin($user)) {
             return true;
         }
 
@@ -50,12 +60,12 @@ final class UserPolicy
 
     public function create(User $user): bool
     {
-        return $this->admin($user) && $this->writesAllowed();
+        return $this->systemAdmin($user) && $this->writesAllowed();
     }
 
     public function update(User $user, User $subject): bool
     {
-        return $this->admin($user) && $this->writesAllowed() && $subject->status !== UserStatus::Deleted;
+        return $this->systemAdmin($user) && $this->writesAllowed() && $subject->status !== UserStatus::Deleted;
     }
 
     /** Own profile edits. Never available while previewing (BR-33). */
@@ -64,41 +74,42 @@ final class UserPolicy
         return $this->owns($user, (string) $subject->getKey()) && $this->writesAllowed();
     }
 
-    /** Nobody but an admin changes a role, and never their own (PRD §4.3). */
+    /** Only the system administrator changes a role, and never their own (PRD §4.3, D-117). */
     public function changeRole(User $user, User $subject): bool
     {
-        if (! $this->admin($user) || ! $this->writesAllowed() || $user->is($subject)) {
+        if (! $this->systemAdmin($user) || ! $this->writesAllowed() || $user->is($subject)) {
             return false;
         }
 
-        // BR-32: demoting the last active administrator empties the platform of
-        // administrators just as surely as suspending or deleting them, so the
-        // same guard belongs here - it was only in the controller before.
-        return $subject->role !== UserRole::Admin || $this->otherActiveAdminsExist($subject);
+        // BR-32: demoting the last active holder of an administrative role
+        // empties the platform of it just as surely as suspending or deleting
+        // them would.
+        return ! $this->roles->isLastActiveHolder($subject);
     }
 
     public function suspend(User $user, User $subject): bool
     {
-        if (! $this->admin($user) || ! $this->writesAllowed() || $user->is($subject)) {
+        if (! $this->systemAdmin($user) || ! $this->writesAllowed() || $user->is($subject)) {
             return false;
         }
 
-        // Suspending the last active admin would lock the platform out (BR-32).
-        return $subject->role !== UserRole::Admin || $this->otherActiveAdminsExist($subject);
+        // Suspending the last active supervisor or system administrator would
+        // lock the platform out of that role (BR-32).
+        return ! $this->roles->isLastActiveHolder($subject);
     }
 
     public function restore(User $user, User $subject): bool
     {
-        return $this->admin($user) && $this->writesAllowed();
+        return $this->systemAdmin($user) && $this->writesAllowed();
     }
 
     /**
-     * Soft delete only. An admin never deletes their own account, and at least
-     * one active admin must remain at all times (BR-32).
+     * Soft delete only. Nobody deletes their own account, and at least one
+     * active holder of each administrative role remains at all times (BR-32).
      */
     public function delete(User $user, User $subject): bool
     {
-        if (! $this->admin($user) || ! $this->writesAllowed() || $user->is($subject)) {
+        if (! $this->systemAdmin($user) || ! $this->writesAllowed() || $user->is($subject)) {
             return false;
         }
 
@@ -110,13 +121,13 @@ final class UserPolicy
             return false;
         }
 
-        return $subject->role !== UserRole::Admin || $this->otherActiveAdminsExist($subject);
+        return ! $this->roles->isLastActiveHolder($subject);
     }
 
     /**
-     * Seat an EXISTING participant account in a cohort. Accounts created
-     * without one — from the command line, before D-63 — had no way in from
-     * the interface (D-69, D-84).
+     * Seat an EXISTING participant account in a cohort — the supervisor's, from
+     * the cohorts screen (D-84, D-117). Accounts created without one had no way
+     * in from the interface (D-69).
      */
     public function enroll(User $user, User $subject): bool
     {
@@ -134,25 +145,46 @@ final class UserPolicy
 
     public function resetPassword(User $user, User $subject): bool
     {
-        return $this->admin($user) && $this->writesAllowed();
+        return $this->systemAdmin($user) && $this->writesAllowed();
     }
 
     public function logoutEverywhere(User $user, User $subject): bool
     {
-        return ($this->admin($user) || $this->owns($user, (string) $subject->getKey()))
+        return ($this->systemAdmin($user) || $this->owns($user, (string) $subject->getKey()))
             && $this->writesAllowed();
     }
 
-    /** BR-35: an admin account is never previewable, nor is one's own account. */
+    /**
+     * The account preview — the system administrator's alone (D-117). Any
+     * account may be previewed, a supervisor's included, except another system
+     * administrator's (BR-35), one's own, and one its holder cannot use —
+     * deleted, suspended, pending or not yet activated. The reasons are
+     * ImpersonationService::refusalReason()'s, the same list the service
+     * re-checks and the screens print.
+     */
     public function preview(User $user, User $subject): bool
     {
-        return $this->admin($user)
+        return $this->systemAdmin($user)
             && $this->writesAllowed()
-            && ! $user->is($subject)
-            && $subject->role !== UserRole::Admin
-            && $subject->status !== UserStatus::Deleted;
+            && app(ImpersonationService::class)->refusalReason($user, $subject) === null;
     }
 
+    /**
+     * The whole account list as a spreadsheet. Nobody, since D-117: the
+     * supervisor does not browse accounts, and the owner chose that the system
+     * administrator reads them on screen without taking the personal data of
+     * every account off the platform. One line to change if that is revisited.
+     */
+    public function export(User $user): bool
+    {
+        return false;
+    }
+
+    /**
+     * The trail of what was done to one account. It carries IP addresses, so
+     * it stays with the supervisor's audit screen (AuditLogPolicy) and is not
+     * part of the system administrator's account page (D-117).
+     */
     public function viewAuditTrail(User $user): bool
     {
         return $this->admin($user);
@@ -163,14 +195,5 @@ final class UserPolicy
     {
         return Evaluation::query()->where('user_id', $subject->getKey())->exists()
             || Certificate::query()->where('user_id', $subject->getKey())->exists();
-    }
-
-    private function otherActiveAdminsExist(User $subject): bool
-    {
-        return User::query()
-            ->where('role', UserRole::Admin->value)
-            ->where('status', UserStatus::Active->value)
-            ->whereKeyNot($subject->getKey())
-            ->exists();
     }
 }

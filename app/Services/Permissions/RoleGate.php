@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Permissions;
 
-use App\Enums\UserRole;
-use App\Enums\UserStatus;
 use App\Exceptions\PermissionException;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
@@ -19,9 +17,10 @@ use App\Services\Audit\AuditLogger;
  *  · allow-lists only: a role that is not named is refused, and a call with no
  *    role named at all is refused too, because "everyone" is never a rule
  *  · fail closed: an inactive, locked or soft-deleted account holds no role
- *  · BR-32 the platform always keeps at least one active administrator
+ *  · BR-32 the platform always keeps at least one active holder of each of
+ *    its two administrative roles (D-117)
  *
- * @see BR-22, BR-23, BR-28, BR-32 · PRD §4.1, §4.2, §4.3, §4.4 · art. 5, art. 22
+ * @see BR-22, BR-23, BR-28, BR-32 · PRD §4.1, §4.2, §4.3, §4.4 · art. 5, art. 22 · D-117
  */
 final class RoleGate
 {
@@ -137,31 +136,27 @@ final class RoleGate
 
     /**
      * BR-32 - would demoting, suspending or deleting this account leave the
-     * platform without a single active administrator?
+     * platform without a single active holder of its role? Asked of
+     * RoleResolver, the one statement of which roles are guarded (D-117: the
+     * general supervisor and the system administrator both are).
      */
-    public function isLastActiveAdmin(User $user): bool
+    public function isLastActiveHolder(User $user): bool
     {
-        if ($user->role !== UserRole::Admin || ! $this->roles->isActive($user)) {
-            return false;
-        }
-
-        return User::query()
-            ->where('role', UserRole::Admin->value)
-            ->where('status', UserStatus::Active->value)
-            ->whereKeyNot($user->getKey())
-            ->doesntExist();
+        return $this->roles->isLastActiveHolder($user);
     }
 
     /**
      * @throws PermissionException
      */
-    public function assertNotLastActiveAdmin(User $user): void
+    public function assertNotLastActiveHolder(User $user): void
     {
-        if (! $this->isLastActiveAdmin($user)) {
+        if (! $this->isLastActiveHolder($user)) {
             return;
         }
 
-        $this->audit->denied('admin.last_active', 'user', (string) $user->getKey());
+        $this->audit->denied('role.last_active_holder', 'user', (string) $user->getKey(), [
+            'role' => $user->role->value,
+        ]);
 
         throw PermissionException::forbidden();
     }

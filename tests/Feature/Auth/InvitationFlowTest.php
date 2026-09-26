@@ -35,7 +35,8 @@ beforeEach(function (): void {
     freezeAt(riyadhAt('2026-09-20 09:00:00'));
 
     $this->cohort = makeCohort();
-    $this->admin = makeAdmin();
+    // D-117 — invitations are the system administrator's.
+    $this->admin = makeSystemAdmin();
 });
 
 /** The eleven facts the form and the import both collect. */

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Enums\UserStatus;
 use App\Events\MessageReceived;
 use App\Mail\AtharLetter;
+use App\Models\Thread;
 use App\Models\ThreadParticipant;
+use App\Models\User;
 use App\Services\Mail\MailPreferences;
 use App\Services\Messages\Presence;
 use App\Services\Time\Clock;
@@ -62,6 +65,18 @@ final class SendMessageReceived implements ShouldQueue
         // as it was then. Asked of reflection, because the type says string
         // and only the queue payload knows otherwise.
         $threadId = (new \ReflectionProperty($event, 'threadId'))->isInitialized($event) ? $event->threadId : '';
+
+        // Read again when the queue runs: an account suspended, deleted or
+        // moved out of the conversation since the message was sent is told
+        // nothing (D-118 review) — the excerpt may carry an account's details.
+        $recipient = User::query()->find($recipientId);
+        $thread = $threadId === '' ? null : Thread::query()->find($threadId);
+
+        if (! $recipient instanceof User
+            || $recipient->status !== UserStatus::Active
+            || ($thread instanceof Thread && ! $recipient->can('view', $thread))) {
+            return;
+        }
 
         if ($threadId === '') {
             $this->deliver($address, $event, route('messages.index'));

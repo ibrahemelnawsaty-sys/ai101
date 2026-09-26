@@ -39,11 +39,12 @@ const FRAMES = {
 /** Quiet time after the last keystroke before the preview is re-rendered. */
 const PREVIEW_DELAY = 450;
 
-const SETTING_KEYS = ['is_registration_open', 'countdown_enabled', 'seats_override', 'hero_title', 'hero_subtitle', 'about_body'];
+// D-117 — the registration switch is not here: the general supervisor moves it
+// from the registrations screen, and the publish refuses it.
+const SETTING_KEYS = ['countdown_enabled', 'seats_override', 'hero_title', 'hero_subtitle', 'about_body'];
 
 /** Which section each cohort setting belongs to, for the tab counters. */
 const SETTING_SECTION = {
-    is_registration_open: 'registration',
     countdown_enabled: 'registration',
     seats_override: 'registration',
     hero_title: 'hero',
@@ -402,7 +403,6 @@ export default function landingEditor() {
                 if (value === '' || value === undefined || Number.isNaN(value)) value = null;
                 out[key] = value;
             });
-            out.is_registration_open = !!out.is_registration_open;
             out.countdown_enabled = !!out.countdown_enabled;
             return out;
         },
@@ -417,8 +417,10 @@ export default function landingEditor() {
         /**
          * Only the settings this draft changed. Stored, restored and published
          * as a patch: a draft that touched the headline never carries the
-         * registration switch it happened to see, so it cannot undo another
-         * administrator's newer decision.
+         * countdown switch it happened to see, so it cannot undo another
+         * administrator's newer decision. A draft saved in this browser before
+         * D-117 may still hold the registration switch; SETTING_KEYS leaves it
+         * out, so it is never sent.
          */
         settingsPatch() {
             const now = this.normalSettings(this.settingsDraft);

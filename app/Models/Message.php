@@ -120,20 +120,15 @@ class Message extends Model
     }
 
     /**
-     * BR-22: only messages of threads the account belongs to.
+     * BR-22 · D-118: the messages of the conversations this account reads —
+     * Thread::scopeVisibleTo, and no role door: the general supervisor no
+     * longer reads everything.
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin()) {
-            return $query;
-        }
-
-        return $query->whereIn(
-            'thread_id',
-            ThreadParticipant::query()->where('user_id', $user->getKey())->select('thread_id'),
-        );
+        return $query->whereIn('thread_id', Thread::query()->visibleTo($user)->select('threads.id'));
     }
 }

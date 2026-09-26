@@ -35,6 +35,8 @@ return [
         'trainer' => 'Trainer tools',
         'coordinator' => 'Coordinator tools',
         'admin' => 'Platform administration',
+        // D-117 — the system administrator's one group: accounts, landing page.
+        'system' => 'System administration',
     ],
 
     'dashboard' => 'Info dashboard',
@@ -67,6 +69,9 @@ return [
         'reports' => 'Reports',
         'audit' => 'Audit log',
         'settings' => 'Platform settings',
+        // D-118 — the system administrator's tab: the shared inbox with the general supervisors.
+        'contact' => 'Contact',
+        'messages' => 'Messages',
     ],
 
     'trainer' => [

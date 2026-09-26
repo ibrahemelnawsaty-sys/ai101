@@ -10,7 +10,10 @@
 return [
 
     'user_role' => [
-        'admin' => 'Administrator',
+        // D-117 — `admin` is the general supervisor; `system_admin` runs the
+        // accounts, the account preview and the landing page.
+        'admin' => 'General supervisor',
+        'system_admin' => 'System administrator',
         'trainer' => 'Trainer',
         'coordinator' => 'Coordinator',
         'participant' => 'Participant',
@@ -124,6 +127,7 @@ return [
         'trainer_dm' => 'Trainer chat',
         'group' => 'Cohort group',
         'announcement' => 'Announcements channel',
+        'direct' => 'Direct conversation',
     ],
 
     'broadcast_kind' => [

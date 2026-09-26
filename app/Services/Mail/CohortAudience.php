@@ -6,6 +6,7 @@ namespace App\Services\Mail;
 
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Enums\UserRole;
 use App\Models\Enrollment;
 use App\Models\Submission;
 use App\Models\User;
@@ -28,7 +29,7 @@ use Illuminate\Support\Collection;
  * the second it reaches people whose enrolment was withdrawn. This is the same
  * scoping rule the screens follow (art. 5), applied to outbound mail.
  *
- * @see BR-23 · CONSTITUTION.md Article 5, Article 20 · D-51
+ * @see BR-23 · CONSTITUTION.md Article 5, Article 20 · D-51, D-117
  */
 final class CohortAudience
 {
@@ -54,6 +55,9 @@ final class CohortAudience
             // An account that is suspended or pending has no business being
             // written to about coursework.
             ->where('status', 'active')
+            // Nor has the system administrator, whose role reaches no cohort
+            // whatever enrolment row it kept from an earlier role (D-117).
+            ->where('role', '!=', UserRole::SystemAdmin->value)
             ->get();
     }
 
@@ -76,6 +80,7 @@ final class CohortAudience
                     ->select('user_id'),
             )
             ->where('status', 'active')
+            ->where('role', '!=', UserRole::SystemAdmin->value)
             ->pluck('id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->all());

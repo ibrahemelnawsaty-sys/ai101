@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Notifications;
 
 use App\Enums\ThreadType;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Events\AnnouncementPublished;
 use App\Events\MessageReceived;
 use App\Events\SessionRescheduled;
@@ -15,6 +17,7 @@ use App\Models\User;
 use App\Presenters\Participant\ThreadPresenter;
 use App\Presenters\Support\Present;
 use App\Services\Mail\CohortAudience;
+use App\Services\Messages\ConversationStarter;
 use App\Services\Time\Clock;
 use App\Support\Dates;
 use Carbon\CarbonImmutable;
@@ -39,7 +42,7 @@ use Illuminate\Support\Str;
  * method logs and returns; the failure is visible in the log and nowhere else
  * (art. 7).
  *
- * @see PRD §9.13, §9.16.1 · FR-NOTIF-12, FR-NOTIF-15, FR-NOTIF-16, FR-NOTIF-20, FR-NOTIF-21, FR-NOTIF-22 · D-83
+ * @see PRD §9.13, §9.16.1 · FR-NOTIF-12, FR-NOTIF-15, FR-NOTIF-16, FR-NOTIF-20, FR-NOTIF-21, FR-NOTIF-22 · D-83, D-117
  */
 final class CohortNotices
 {
@@ -132,6 +135,12 @@ final class CohortNotices
                 return;
             }
 
+            // D-118 — the shared inbox reaches every active system
+            // administrator, one who arrived after it began included.
+            if ($thread->isInbox()) {
+                app(ConversationStarter::class)->joinAdministrators($thread);
+            }
+
             $recipients = User::query()
                 ->with('profile')
                 ->whereIn('id', ThreadParticipant::query()
@@ -139,6 +148,23 @@ final class CohortNotices
                     ->where('user_id', '!=', $author->getKey())
                     ->where('is_muted', false)
                     ->select('user_id'))
+                // A suspended account, or an invitation nobody accepted, is
+                // told nothing — not even a sender's name and an excerpt
+                // (D-118 review; D-119).
+                ->where('status', UserStatus::Active->value)
+                ->whereNotNull('email_verified_at')
+                // Whoever reads the thread (ThreadPolicy::view) is told of it,
+                // and nobody else — in one query, not one per member: a
+                // membership kept from an earlier role never makes a system
+                // administrator a reader of the cohort's talk (D-117), nor a
+                // former system administrator a reader of the inbox (D-118).
+                ->when(
+                    $thread->isInbox(),
+                    static fn ($inbox) => $inbox->where(static fn ($readers) => $readers
+                        ->where('role', UserRole::SystemAdmin->value)
+                        ->orWhere('id', $thread->inboxOwnerId())),
+                    static fn ($cohort) => $cohort->where('role', '!=', UserRole::SystemAdmin->value),
+                )
                 ->get();
 
             $name = $this->nameOf($author);
