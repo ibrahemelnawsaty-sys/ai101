@@ -12,8 +12,11 @@ declare(strict_types=1);
  * @see BR-11, BR-15, BR-16, BR-18, BR-19, BR-22, BR-23 · FR-PROJ-10 · PRD §9.14 · D-109, D-110, D-121
  */
 
+use App\Models\AuditLog;
 use App\Models\FinalProject;
 use App\Models\ProjectSubmission;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -96,6 +99,38 @@ it('D-121: مشروع جديد يُنشأ من الشاشة يبدأ بالحق�
         ->assertSessionHasNoErrors();
 
     expect($project->fields()->count())->toBe(5);
+});
+
+it('D-121: سجل تثبيت الحقول الافتراضية يُكتب قبل الحقول نفسها — السجل أولًا ثم الكتابة (المادة 8)', function (): void {
+    $writes = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$writes): void {
+        if (preg_match('/^insert into ["`]?(audit_logs|final_project_fields)["`]?/i', $query->sql, $table) !== 1) {
+            return;
+        }
+
+        $writes[] = $table[1] === 'final_project_fields'
+            ? 'fields'
+            : (in_array('final_project.fields_installed', $query->bindings, true) ? 'trail' : 'other trail');
+    });
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.store'), [
+            'cohort_id' => $this->cohort->id,
+            'title' => 'CANARY-PROJECT-TITLE',
+            'brief' => 'CANARY-BRIEF',
+            'due_at' => '2026-12-01T23:59',
+            'max_score' => 100,
+        ])
+        ->assertSessionHasNoErrors();
+
+    $trail = array_search('trail', $writes, true);
+    $fields = array_search('fields', $writes, true);
+
+    expect($trail)->toBeInt()
+        ->and($fields)->toBeInt()
+        ->and($trail)->toBeLessThan($fields)
+        ->and(AuditLog::query()->where('action', 'final_project.fields_installed')->sole()->after)->toBe(['fields' => 5]);
 });
 
 it('D-121: التسليم يتطلب الحقول الإلزامية الثلاثة معًا — نقص أي منها يرفض التسليم بلا تسجيل ويسمّي الحقل', function (): void {

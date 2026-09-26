@@ -165,3 +165,32 @@ it('D-121: الرجوع عن الترحيل يعيد الجدول كما كان�
 
     expect(FinalProjectField::query()->where('final_project_id', $this->project->id)->count())->toBe(5);
 });
+
+it('D-121: الترحيل يُعاد تشغيله بعد توقّف بلا «الجدول موجود» ولا تكرار — ومشروع تعثّر تحويله يُعاد كاملًا لا نصفه', function (): void {
+    $participant = makeParticipant($this->cohort);
+    $sound = legacyHandIn($this->project->id, $participant->id, ['live_url' => 'https://example.test/live']);
+
+    // A second project whose hand-in cannot be carried across: bytes that are
+    // not UTF-8 fail its JSON, as a corrupt row on the live database would.
+    $broken = FinalProject::factory()->create(['cohort_id' => makeCohort()->id]);
+    $corrupt = legacyHandIn($broken->id, $participant->id, ['live_url' => 'https://example.test/'.chr(177)]);
+
+    expect(fn () => fieldsMigration()->up())->toThrow(JsonException::class);
+
+    // The schema stays, as MySQL keeps it; the broken project was undone
+    // whole — no fields, no half-converted row — so a second run takes it up.
+    expect(Schema::hasTable('final_project_fields'))->toBeTrue()
+        ->and(Schema::hasColumn('project_submissions', 'answers'))->toBeTrue()
+        ->and(FinalProjectField::query()->where('final_project_id', $broken->id)->count())->toBe(0)
+        ->and(DB::table('project_submissions')->where('id', $corrupt)->value('answers'))->toBeNull();
+
+    DB::table('project_submissions')->where('id', $corrupt)->update(['live_url' => 'https://example.test/mended']);
+
+    fieldsMigration()->up();
+    fieldsMigration()->up();
+
+    expect(FinalProjectField::query()->where('final_project_id', $this->project->id)->count())->toBe(5)
+        ->and(FinalProjectField::query()->where('final_project_id', $broken->id)->count())->toBe(5)
+        ->and((string) DB::table('project_submissions')->where('id', $corrupt)->value('answers'))->toContain('https://example.test/mended')
+        ->and((string) DB::table('project_submissions')->where('id', $sound)->value('answers'))->toContain('https://example.test/live');
+});

@@ -125,6 +125,9 @@ function authorizationMatrix(object $test): array
         'participant.card.print' => ['get', [], ['participant']],
         'participant.journey' => ['get', [], ['participant']],
         'finalProject' => ['get', [], ['participant']],
+        // D-122 — the receipt page a hand-in's QR opens: its owner, the
+        // cohort's trainer and the supervisor (ProjectSubmissionPolicy::view).
+        'finalProject.receipt' => ['get', ['code' => $test->projectSubmission->receipt_code], ['participant', 'trainer', 'admin']],
         'grades' => ['get', [], ['participant']],
         'certificate' => ['get', [], ['participant']],
         'attendance.checkIn' => ['post', [$test->session], ['participant']],

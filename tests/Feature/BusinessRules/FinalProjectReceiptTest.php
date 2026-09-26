@@ -17,8 +17,10 @@ use App\Models\Notification;
 use App\Models\NotificationPreference;
 use App\Models\ProjectSubmission;
 use App\Services\FinalProject\ReceiptCodes;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -212,6 +214,26 @@ it('D-122: ترحيل الرمز يعطي كل تسليم قائم رمزًا ف
     expect($codes)->toHaveCount(2)
         ->and(array_unique($codes))->toHaveCount(2)
         ->and(ReceiptCodes::isWellFormed((string) $codes[0]))->toBeTrue();
+
+    Mail::assertNothingQueued();
+});
+
+it('D-122: ترحيل الرمز يُعاد تشغيله بعد توقّف في منتصفه — العمود قائم بلا قيده الفريد — فيكمل ولا يفشل', function (): void {
+    $submission = makeProjectSubmission($this->project, $this->participant);
+    $migration = require database_path('migrations/2026_09_26_110000_add_receipt_code_to_project_submissions.php');
+    $migration->down();
+
+    // The column landed and the unique index did not: a run that stopped
+    // between MySQL's two schema statements.
+    Schema::table('project_submissions', function (Blueprint $table): void {
+        $table->string('receipt_code', 20)->nullable()->after('version');
+    });
+
+    $migration->up();
+    $migration->up();
+
+    expect(Schema::hasIndex('project_submissions', ['receipt_code'], 'unique'))->toBeTrue()
+        ->and(ReceiptCodes::isWellFormed((string) DB::table('project_submissions')->where('id', $submission->id)->value('receipt_code')))->toBeTrue();
 
     Mail::assertNothingQueued();
 });

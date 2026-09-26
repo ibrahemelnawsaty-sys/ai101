@@ -133,17 +133,19 @@ final class FinalProjectController extends Controller
 
         // D-121 — a new project starts with the default hand-in fields, so
         // it is never opened with nothing to hand in. Every later save leaves
-        // the fields to their own card.
+        // the fields to their own card. The trail first, then the write
+        // (art. 8): a project just created has no fields, so the whole
+        // default set is what is about to be written.
         if ($isNew) {
-            $installed = $this->fields->installDefaults($project);
-
             $this->audit->log(
                 action: 'final_project.fields_installed',
                 entity: $project,
                 before: null,
-                after: ['fields' => $installed],
+                after: ['fields' => count(SubmissionFields::DEFAULTS)],
                 actor: $admin,
             );
+
+            $this->fields->installDefaults($project);
         }
 
         // Only the move from locked to unlocked announces (D-77): saving an

@@ -262,7 +262,13 @@ it('D-121: حقل مشروع آخر تحت رابط هذا المشروع يُج
         ->delete(route('admin.finalProject.fields.destroy', [$this->project, $foreign]))
         ->assertNotFound();
 
-    expect($foreign->fresh())->not->toBeNull();
+    $this->actingAs($this->admin)
+        ->patch(route('admin.finalProject.fields.move', [$this->project, $foreign]), ['direction' => 'down'])
+        ->assertNotFound();
+
+    expect($foreign->fresh())->not->toBeNull()
+        ->and($foreign->fresh()?->position)->toBe($foreign->position)
+        ->and($other->fields()->pluck('position')->all())->toBe([1, 2, 3, 4, 5]);
 });
 
 it('BR-33: معاينة حساب المشرف العام لا تغيّر حقول التسليم — 403', function (): void {

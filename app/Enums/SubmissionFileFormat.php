@@ -16,11 +16,12 @@ use App\Enums\Concerns\HasEnumValues;
  * never widens it — the platform-wide list is still D-17's to settle, and a
  * test holds the two in step.
  *
- * `mimeTypes()` is what content sniffing may report for a genuine file of the
+ * `mimeTypes()` is what content sniffing reports for a genuine file of the
  * format, so the check runs on the bytes and not on the name (art. 24). The
- * OOXML formats (pptx, docx, xlsx) are ZIP containers that most libmagic
- * builds report as `application/zip`, which is why that type is listed beside
- * their own.
+ * OOXML formats (pptx, docx, xlsx) are ZIP containers: the platform names one
+ * by its package structure, not by libmagic's first look (OfficeOpenXml), so
+ * `application/zip` is NOT one of their types — an archive renamed `.pptx` is
+ * refused by a deck field (D-121, security review).
  *
  * @see PROJECT-CONTRACT.md §3 · PRD §12.5 · D-17, D-121 · CONSTITUTION art. 22, art. 24
  */
@@ -82,17 +83,14 @@ enum SubmissionFileFormat: string
             self::Powerpoint => [
                 'application/vnd.ms-powerpoint',
                 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'application/zip',
             ],
             self::Word => [
                 'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/zip',
             ],
             self::Excel => [
                 'application/vnd.ms-excel',
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/zip',
             ],
             self::Csv => ['text/csv', 'text/plain'],
             self::Text => ['text/plain'],

@@ -13,8 +13,10 @@ declare(strict_types=1);
  */
 
 use App\Enums\SubmissionFileFormat;
+use App\Models\AuditLog;
 use App\Models\FinalProjectField;
 use App\Models\ProjectSubmission;
+use App\Services\Audit\AuditLogger;
 use App\Support\SignedFiles;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -100,16 +102,47 @@ it('FR-PROJ-10: صورة سُمّيت pdf تُرفض في حقل PDF من محت
 
     expect(ProjectSubmission::query()->count())->toBe(0)
         ->and(Storage::disk('private')->allFiles())->toBe([]);
+
+    // The logo's FILE_STORED row went with the rollback while its bytes stayed
+    // on disk; it is written again before the removal, so the trail reads
+    // "stored, then deleted" and never a deletion of a file it never saw
+    // arrive (art. 8 — security review of D-121).
+    $stored = AuditLog::query()->where('action', AuditLogger::FILE_STORED)->get();
+    $deleted = AuditLog::query()->where('action', AuditLogger::FILE_DELETED)->get();
+
+    expect($stored)->toHaveCount(1)
+        ->and($deleted)->toHaveCount(1)
+        ->and($stored[0]->after['rolled_back'] ?? null)->toBeTrue()
+        ->and($stored[0]->after['mime_type'] ?? null)->toBe('image/png')
+        ->and($stored[0]->after['path'] ?? null)->toBe($deleted[0]->before['path'] ?? 'missing')
+        ->and($stored[0]->actor_id)->toBe($this->participant->id);
 });
 
-it('FR-PROJ-10: عرض PowerPoint حقيقي يُقبل في حقل العرض التقديمي', function (): void {
+it('FR-PROJ-10: عرض PowerPoint حقيقي يُقبل في حقل العرض التقديمي ويُخزَّن بنوعه وامتداده', function (): void {
     submitHandIn($this, handInPayload($this->project, ['presentation_file' => [fakeUpload('deck.pptx', 'pptx')]]))
         ->assertSessionHasNoErrors();
 
     $answers = ProjectSubmission::query()->sole()->answers;
 
     expect($answers[2]['files'][0]['original_name'])->toBe('deck.pptx')
-        ->and($answers[2]['files'][0]['mime_type'])->toBeIn(SubmissionFileFormat::Powerpoint->mimeTypes());
+        ->and($answers[2]['files'][0]['mime_type'])->toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation')
+        ->and($answers[2]['files'][0]['mime_type'])->toBeIn(SubmissionFileFormat::Powerpoint->mimeTypes())
+        ->and($answers[2]['files'][0]['path'])->toEndWith('.pptx');
+});
+
+it('FR-PROJ-10: أرشيف ZIP سُمّي deck.pptx يُرفض في حقل العرض — بنيته أرشيف لا عرض — ولا يُكتب منه شيء', function (): void {
+    $deck = defaultField($this->project, 'presentation_file');
+
+    submitHandIn($this, handInPayload($this->project, [
+        'presentation_file' => [fakeUpload('deck.pptx', 'zip')],
+    ]))->assertSessionHasErrors(['answers.'.$deck->id => __('project.errors.field_file_type', [
+        'field' => $deck->label,
+        'formats' => 'PDF'.__('app.list_separator').'PowerPoint',
+    ])]);
+
+    expect(ProjectSubmission::query()->count())->toBe(0)
+        ->and(Storage::disk('private')->allFiles())->toBe([])
+        ->and(AuditLog::query()->where('action', AuditLogger::FILE_STORED)->count())->toBe(0);
 });
 
 it('FR-PROJ-10: ملف أكبر من حد الحقل يُرفض، وعدد ملفات فوق حد الحقل يُرفض', function (): void {
@@ -187,6 +220,35 @@ it('FR-PROJ-09: المدرب يرى عناصر التسليم في لوحة ال
 
     $response->assertOk();
     expect((string) $response->headers->get('content-disposition'))->toContain('slides.pdf');
+});
+
+it('FR-PROJ-09: روابط الملفات تُصنع للتسليم المفتوح في لوحة التصحيح وحده، لا لكل صف في الجدول', function (): void {
+    submitHandIn($this, handInPayload($this->project))->assertSessionHasNoErrors();
+    $mine = ProjectSubmission::query()->sole();
+
+    $peer = makeParticipant($this->cohort);
+    $this->actingAs($peer)->post(route('finalProject.submit'), handInPayload($this->project))->assertSessionHasNoErrors();
+    $theirs = ProjectSubmission::query()->where('user_id', $peer->id)->sole();
+
+    $page = route('trainer.finalProject', ['cohort' => $this->cohort->id]);
+    $answersOf = static function (Illuminate\Testing\TestResponse $response): array {
+        $answers = [];
+
+        foreach ($response->viewData('submissions') as $row) {
+            $answers[(string) $row['id']] = $row['answers'];
+        }
+
+        return $answers;
+    };
+
+    $table = $answersOf($this->actingAs($this->trainer)->get($page)->assertOk());
+    $panel = $this->actingAs($this->trainer)->get($page.'&grade='.$mine->id)->assertOk();
+
+    expect(array_keys($table))->toEqualCanonicalizing([(string) $mine->id, (string) $theirs->id])
+        ->and(array_filter($table))->toBe([])
+        ->and($answersOf($panel)[(string) $mine->id])->not->toBe([])
+        ->and($answersOf($panel)[(string) $theirs->id])->toBe([])
+        ->and(substr_count((string) $panel->getContent(), '/files/project-submissions/'.$mine->id.'/answers/'))->toBeGreaterThan(0);
 });
 
 it('BR-22: المتدرب يفتح ملفّه ولا يفتح ملف زميله ولو حمل رابطًا موقَّعًا، وBR-23: ولا مدرب دفعة أخرى', function (): void {

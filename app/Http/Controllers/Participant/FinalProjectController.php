@@ -276,25 +276,20 @@ final class FinalProjectController extends Controller
     }
 
     /**
-     * Remove the files one failed attempt already wrote; the service records
-     * each removal in audit_logs (art. 8). Best effort: a file that cannot be
-     * removed is left where it is rather than turning a refused hand-in into
-     * an error page.
+     * Remove the files one failed attempt already wrote. They were stored
+     * inside the transaction just rolled back, which took their FILE_STORED
+     * rows with it; the service writes each one again before recording the
+     * removal, so the trail shows both (art. 8). Best effort: a file that
+     * cannot be removed is left where it is rather than turning a refused
+     * hand-in into an error page.
      *
      * @param  list<array<string, mixed>>  $descriptors
      */
     private function discard(array $descriptors, User $user): void
     {
         foreach ($descriptors as $descriptor) {
-            $path = $descriptor['path'] ?? null;
-            $disk = $descriptor['disk'] ?? null;
-
-            if (! is_string($path)) {
-                continue;
-            }
-
             try {
-                $this->files->delete($path, $user, is_string($disk) ? $disk : null);
+                $this->files->discardRolledBack($descriptor, $user);
             } catch (FileException) {
                 // The path came from the service itself; nothing else to do.
             }

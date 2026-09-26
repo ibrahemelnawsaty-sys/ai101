@@ -778,24 +778,65 @@ function fakeUpload(string $name, string $type = 'pdf'): Illuminate\Http\Uploade
 
             return $bytes;
         })(),
-        // An OOXML deck is a ZIP container: libmagic reports it as
-        // application/zip or as the presentation type, and a PowerPoint field
-        // accepts both (D-121). Built with ZipArchive so the bytes are a real
-        // archive, not a magic number.
-        'pptx' => (static function (): string {
-            $path = (string) tempnam(sys_get_temp_dir(), 'pptx');
-            $zip = new ZipArchive;
-            $zip->open($path, ZipArchive::OVERWRITE);
-            $zip->addFromString('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
-            $zip->addFromString('ppt/presentation.xml', '<presentation/>');
-            $zip->close();
-            $bytes = (string) file_get_contents($path);
-            unlink($path);
-
-            return $bytes;
-        })(),
+        // An OOXML deck: a ZIP whose package declares a presentation and holds
+        // it — the structure the platform names a deck by, whatever libmagic
+        // makes of the archive's first entries (OfficeOpenXml, D-121).
+        'pptx' => ooxmlBytes(['ppt/presentation.xml' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml']),
+        // An archive of anything else — the file a deck field must refuse when
+        // it arrives renamed `deck.pptx` (D-121, security review).
+        'zip' => zipBytes(['run.js' => 'CANARY', 'invoice.lnk' => 'CANARY']),
         default => throw new InvalidArgumentException("fakeUpload() has no bytes for type [{$type}]."),
     };
 
     return Illuminate\Http\UploadedFile::fake()->createWithContent($name, $bytes);
+}
+
+/**
+ * The bytes of a real ZIP archive holding the given entries, built with
+ * ZipArchive so they are an archive and not a magic number.
+ *
+ * @param  array<string, string>  $entries  name => content
+ */
+function zipBytes(array $entries): string
+{
+    $path = (string) tempnam(sys_get_temp_dir(), 'zip');
+    $zip = new ZipArchive;
+    $zip->open($path, ZipArchive::OVERWRITE);
+
+    foreach ($entries as $name => $content) {
+        $zip->addFromString($name, $content);
+    }
+
+    $zip->close();
+    $bytes = (string) file_get_contents($path);
+    unlink($path);
+
+    return $bytes;
+}
+
+/**
+ * The smallest Office Open XML package: a `[Content_Types].xml` declaring
+ * each part with its content type, then the parts themselves, then anything
+ * else the archive should carry.
+ *
+ * @param  array<string, string>  $declared  part => declared content type
+ * @param  array<string, string>  $extra  further entries, name => content
+ */
+function ooxmlBytes(array $declared, array $extra = []): string
+{
+    $overrides = '';
+
+    foreach ($declared as $part => $contentType) {
+        $overrides .= '<Override PartName="/'.$part.'" ContentType="'.$contentType.'"/>';
+    }
+
+    $entries = ['[Content_Types].xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        .'<Default Extension="xml" ContentType="application/xml"/>'.$overrides.'</Types>'];
+
+    foreach (array_keys($declared) as $part) {
+        $entries[$part] = '<?xml version="1.0" encoding="UTF-8"?><root/>';
+    }
+
+    return zipBytes($entries + $extra);
 }

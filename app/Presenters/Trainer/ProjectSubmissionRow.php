@@ -23,6 +23,9 @@ use App\Support\ViewModel;
  * What was handed in is `answers` (D-121): every item in the order the form
  * asked for it, under the label it was asked by, each file with a signed link
  * valid fifteen minutes — the download route asks the policy again (D-80).
+ * Only the row the grading panel is open on is built with them (`withAnswers`);
+ * the table never shows them, and a link per file per version would be minted
+ * for nothing.
  *
  * @see BR-12, BR-13, BR-23 · FR-PROJ-10 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 18, art. 24 · D-121
  */
@@ -31,7 +34,7 @@ final class ProjectSubmissionRow extends ViewModel
     use PresentsPeople;
     use PresentsVariants;
 
-    public static function from(ProjectSubmission $submission, float $maxScore): self
+    public static function from(ProjectSubmission $submission, float $maxScore, bool $withAnswers = false): self
     {
         $user = self::related($submission, 'user');
         $evaluation = self::related($submission, 'latestEvaluation');
@@ -49,7 +52,7 @@ final class ProjectSubmissionRow extends ViewModel
             'email' => self::personEmail($user),
 
             'hasSubmission' => true,
-            'answers' => HandInAnswer::collection($submission),
+            'answers' => $withAnswers ? HandInAnswer::collection($submission) : [],
             'version' => (int) $submission->getAttribute('version'),
             'submittedAt' => $submission->getAttribute('submitted_at'),
             'isLate' => (bool) $submission->getAttribute('is_late'),

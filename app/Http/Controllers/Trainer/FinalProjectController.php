@@ -57,23 +57,31 @@ final class FinalProjectController extends Controller
             ]);
         }
 
-        $submissions = $this->submissions($project);
+        $selectedId = $this->selectedId($request);
+        $submissions = $this->submissions($project, $selectedId);
 
         return view('trainer.final-project', [
             'contextLabel' => $cohort?->getAttribute('name'),
             'project' => FinalProjectBrief::from($project),
             'submissions' => $submissions,
-            'selected' => $this->selected($request, $submissions),
+            'selected' => $selectedId === null ? null : $submissions->first(
+                // ArrayAccess, not ->id: the ViewModel publishes through __get,
+                // so only the declared offsetGet() has a type the analyser can read.
+                static fn (ProjectSubmissionRow $row): bool => (string) $row['id'] === $selectedId,
+            ),
             'errorState' => null,
         ]);
     }
 
     /**
-     * Everything handed in for this project, newest first.
+     * Everything handed in for this project, newest first. Only the row the
+     * grading panel is open on carries what was handed in: the table never
+     * shows it, and each of its files is a signed link to mint (D-121,
+     * security review).
      *
      * @return Collection<int, ProjectSubmissionRow>
      */
-    private function submissions(FinalProject $project): Collection
+    private function submissions(FinalProject $project, ?string $selectedId): Collection
     {
         $maxScore = (float) ($project->getAttribute('max_score') ?? 0);
 
@@ -85,6 +93,7 @@ final class FinalProjectController extends Controller
             ->map(static fn (ProjectSubmission $row): ProjectSubmissionRow => ProjectSubmissionRow::from(
                 $row,
                 $maxScore,
+                withAnswers: (string) $row->getKey() === $selectedId,
             ))
             ->values();
     }
@@ -92,26 +101,16 @@ final class FinalProjectController extends Controller
     /**
      * The grading panel, open on `?grade={submission}`.
      *
-     * The id is matched against the rows already loaded for THIS project, so an
-     * id belonging to another cohort's project finds nothing and the panel
-     * stays shut. The write endpoint runs its own policy check regardless — a
-     * hidden panel is not a permission (art. 5, art. 22).
-     *
-     * @param  Collection<int, ProjectSubmissionRow>  $submissions
+     * The id is matched against the rows loaded for THIS project, so an id
+     * belonging to another cohort's project finds nothing and the panel stays
+     * shut. The write endpoint runs its own policy check regardless — a hidden
+     * panel is not a permission (art. 5, art. 22).
      */
-    private function selected(Request $request, Collection $submissions): ?ProjectSubmissionRow
+    private function selectedId(Request $request): ?string
     {
         $id = $request->query('grade');
 
-        if (! is_string($id) || $id === '') {
-            return null;
-        }
-
-        return $submissions->first(
-            // ArrayAccess, not ->id: the ViewModel publishes through __get, so
-            // only the declared offsetGet() has a type the analyser can read.
-            static fn (ProjectSubmissionRow $row): bool => (string) $row['id'] === $id,
-        );
+        return is_string($id) && $id !== '' ? $id : null;
     }
 
     /** BR-12, BR-13 — record the project grade. */
