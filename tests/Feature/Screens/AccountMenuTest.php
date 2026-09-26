@@ -131,6 +131,9 @@ it('D-123: زر الحساب يعرض الاسم والدور، واسمه ال�
     // is what the old icon button did (WCAG 2.5.3).
     expect($button->hasAttribute('aria-label'))->toBeFalse()
         ->and($button->getAttribute('aria-expanded'))->toBe('false')
+        // Escape returns focus HERE: Safari and Firefox on macOS never focus
+        // a button on a click, so "what was focused before" can be <body>.
+        ->and($button->getAttribute('x-ref'))->toBe('trigger')
         ->and($button->getAttribute('class'))->toContain('acct');
 
     $nameNode = $xpath->query('.//*['.accountMenuClass('acct__name').']', $button)->item(0);
@@ -247,11 +250,14 @@ it('D-123: الأنماط — القائمة داخل الشاشة وتتمرّ�
     preg_match('/@media \(max-width: 767px\) \{ \.acct \{[^}]*\} \.acct__who \{([^}]*)\}/', $app, $phone);
     preg_match('/\.acct \{([^}]*)\}/', $app, $button);
 
-    // Opens INTO the screen (D-86) and stops at its bottom, scrolling inside.
+    // Opens INTO the screen (D-86) and stops at its bottom — below the preview
+    // banner too (--impbar-h) — scrolling inside.
     expect($panel[1] ?? '')->toContain('inset-inline-end: 0')
-        ->toContain('max-block-size: calc(100vh - var(--header-h) - var(--s6))')
-        ->toContain('max-block-size: calc(100dvh - var(--header-h) - var(--s6))')
-        ->toContain('overflow-y: auto');
+        ->toContain('max-block-size: calc(100vh - var(--impbar-h) - var(--header-h) - var(--s6))')
+        ->toContain('max-block-size: calc(100dvh - var(--impbar-h) - var(--header-h) - var(--s6))')
+        ->toContain('overflow-y: auto')
+        // Focus scrolls only to the entry's own box; the ring needs the room.
+        ->toContain('scroll-padding-block: var(--s2)');
 
     // Visually hidden, never display:none — the name is the button's name.
     expect($phone[1] ?? '')->toContain('clip-path: inset(50%)')

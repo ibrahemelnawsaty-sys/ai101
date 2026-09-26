@@ -548,7 +548,12 @@ function menu() {
         close(returnFocus = true) {
             if (!this.open) return;
             this.open = false;
-            if (returnFocus && this.trigger && this.trigger.focus) this.trigger.focus();
+            if (!returnFocus) return;
+            // Safari and Firefox on macOS do not focus a button on a click, so
+            // what was focused before opening may be <body>: the menu's own
+            // button (x-ref="trigger") is where focus returns (D-123).
+            const back = this.$refs.trigger || this.trigger;
+            if (back && back.focus) back.focus();
         },
 
         /** Tab past the last entry: the menu closes and focus goes on. */

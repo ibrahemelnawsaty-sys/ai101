@@ -169,3 +169,42 @@ it('المادة 14: لا أصفر ولا ذهبي في ملف الرموز', fu
 
     expect($offenders)->toBe([]);
 });
+
+it('D-123: شارات الأدوار الخمس تبلغ 4.5:1 — تظهر على زر الحساب في كل شاشة', function (): void {
+    $t = tokenHexes();
+    $css = (string) File::get(resource_path('css/components.css'));
+    $failures = [];
+    $seen = 0;
+
+    // Read from the stylesheet itself, so the day a badge's pair changes the
+    // new pair is what is measured. Small bold text: 4.5:1 (Article 18).
+    // teal-700 on teal-100 measured 4.35: the trainee's badge since D-108,
+    // which D-123 then put on every trainee's account button.
+    foreach (['participant', 'trainer', 'coordinator', 'admin', 'system_admin'] as $role) {
+        $rule = '/\.ui-badge--'.$role.',\s*\.ui-pill--'.$role.'\s*\{\s*background:\s*var\(--([a-z0-9-]+)\);\s*color:\s*var\(--([a-z0-9-]+)\);\s*\}/';
+
+        if (preg_match($rule, $css, $m) !== 1) {
+            $failures[] = $role.' — no badge rule in components.css';
+
+            continue;
+        }
+
+        $seen++;
+        [, $background, $foreground] = $m;
+
+        if (! isset($t[$foreground], $t[$background])) {
+            $failures[] = sprintf('%s: %s / %s — token missing from tokens.css', $role, $foreground, $background);
+
+            continue;
+        }
+
+        $ratio = contrastRatio($t[$foreground], $t[$background]);
+
+        if ($ratio < 4.5) {
+            $failures[] = sprintf('%s: %s on %s = %.2f, needs 4.5', $role, $foreground, $background, $ratio);
+        }
+    }
+
+    expect($seen)->toBe(5)
+        ->and($failures)->toBe([]);
+});

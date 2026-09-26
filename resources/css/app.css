@@ -801,11 +801,13 @@ border: var(--bw-hairline) solid var(--border-1);
   }
   .acct:hover { background: var(--surface-3); }
   .acct__who { display: grid; justify-items: start; min-inline-size: 0; }
+  /* Room above and below for stacked Arabic marks (a sukun over a hamza):
+     overflow is hidden for the ellipsis and cut them at a tighter height. */
   .acct__name {
     max-inline-size: 100%;
     font-size: var(--fs-sm);
     font-weight: var(--fw-semi);
-    line-height: var(--lh-stat);
+    line-height: var(--lh-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1786,11 +1788,17 @@ border: var(--bw-hairline) solid var(--border-2);
   inset-inline-end: 0;
   max-inline-size: calc(100vw - var(--s6));
   /* D-123 — eight entries do not fit a phone held sideways: the panel stops
-     at the bottom of the screen and scrolls inside. */
-  max-block-size: calc(100vh - var(--header-h) - var(--s6));
-  max-block-size: calc(100dvh - var(--header-h) - var(--s6));
+     at the bottom of the screen and scrolls inside. The preview banner sits
+     above the bar (--impbar-h, 0 outside a preview), so it is taken off too,
+     exactly as the rail takes it off; without it sign-out fell off a short
+     screen in a preview. */
+  max-block-size: calc(100vh - var(--impbar-h) - var(--header-h) - var(--s6));
+  max-block-size: calc(100dvh - var(--impbar-h) - var(--header-h) - var(--s6));
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Focus scrolls a scroller only as far as the focused entry's own box, and
+     the ring sits outside it: the same room the rail keeps for sign-out. */
+  scroll-padding-block: var(--s2);
 }
 
 /* 3 · Finger-sized controls in the chrome (Article 18 · --touch-min). */

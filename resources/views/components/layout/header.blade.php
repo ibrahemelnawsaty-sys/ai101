@@ -83,6 +83,7 @@
                  On a phone the name is hidden from the eye, never removed. --}}
             <button type="button"
                     class="acct"
+                    x-ref="trigger"
                     x-on:click="toggle()"
                     aria-expanded="false"
                     x-bind:aria-expanded="open.toString()"
