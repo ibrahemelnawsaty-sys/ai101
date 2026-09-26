@@ -49,6 +49,10 @@
          referenced by the rail from the beginning and never existed, so that
          item has always rendered with an empty square where its icon goes. --}}
     <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.2 12 3.6l8.5 6.6"/><path d="M5.6 11.9V19a1.4 1.4 0 0 0 1.4 1.4h10a1.4 1.4 0 0 0 1.4-1.4v-7.1"/><path d="M9.8 20.4v-5.2h4.4v5.2"/></symbol>
+    {{-- The information dashboard (D-108). Only the dashboard's sprite had it,
+         so the rail named an icon this file — the one PROJECT-CONTRACT §17
+         calls the source — did not carry. The same drawing as layout/icons. --}}
+    <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
     {{-- Close glyph: used by the toast and by every dismissible notice. --}}
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></symbol>
   </defs>

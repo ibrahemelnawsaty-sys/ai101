@@ -521,7 +521,12 @@ function trapTab(event, container) {
     }
 }
 
-/** Dropdown menu: Escape closes and returns focus, click outside closes. */
+/**
+ * Dropdown menu: Escape closes and returns focus, click outside closes, and
+ * focus leaving the menu closes it (D-123). The arrow keys, Home and End walk
+ * the entries of the open panel; it stays a disclosure of links, not an ARIA
+ * menu (D-86).
+ */
 function menu() {
     return () => ({
         open: false,
@@ -544,6 +549,32 @@ function menu() {
             if (!this.open) return;
             this.open = false;
             if (returnFocus && this.trigger && this.trigger.focus) this.trigger.focus();
+        },
+
+        /** Tab past the last entry: the menu closes and focus goes on. */
+        leave(event) {
+            const next = event.relatedTarget;
+            if (!this.open || !next || this.$root.contains(next)) return;
+            this.close(false);
+        },
+
+        move(event) {
+            const steps = { ArrowDown: 1, ArrowUp: -1, Home: 'first', End: 'last' };
+            if (!this.open || !(event.key in steps) || !this.$refs.panel) return;
+
+            const items = Array.from(this.$refs.panel.querySelectorAll(FOCUSABLE));
+            if (!items.length) return;
+            event.preventDefault();
+
+            const step = steps[event.key];
+            const at = items.indexOf(document.activeElement);
+            let next;
+            if (step === 'first') next = 0;
+            else if (step === 'last') next = items.length - 1;
+            else if (at === -1) next = step === 1 ? 0 : items.length - 1;
+            else next = (at + step + items.length) % items.length;
+
+            items[next].focus();
         },
     });
 }

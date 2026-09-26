@@ -781,6 +781,78 @@ border: var(--bw-hairline) solid var(--border-1);
   .menu__i:hover { background: var(--surface-2); }
   .menu__i svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; color: var(--text-muted); }
 
+  /* D-123 — the account button: the initials, the name over the role, and a
+     chevron that turns while the menu is open. The same identity the rail's
+     foot shows (D-108), on a quiet surface of its own. */
+  .acct {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--s2);
+    min-block-size: var(--touch);
+    max-inline-size: var(--d-5);
+    padding-block: var(--s1);
+    padding-inline: var(--s1) var(--s2);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+    color: var(--text-strong);
+    text-align: start;
+    transition: background var(--t-fast);
+  }
+  .acct:hover { background: var(--surface-3); }
+  .acct__who { display: grid; justify-items: start; min-inline-size: 0; }
+  .acct__name {
+    max-inline-size: 100%;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semi);
+    line-height: var(--lh-stat);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .acct__who .ui-badge { margin-block-start: var(--s1); }
+  .acct__chev { color: var(--text-muted); transition: transform var(--t-fast); }
+  .acct[aria-expanded="true"] .acct__chev { transform: rotate(180deg); }
+
+  /* The name and role in the menu's head are for the screens where the
+     button shows the initials alone (below). */
+  .menu__who { display: none; }
+  .menu__sep {
+    border: 0;
+    border-block-start: var(--bw-hairline) solid var(--border-1);
+    margin-block: var(--s2);
+  }
+  .menu__form { display: block; }
+  /* The page you are on: heavier as well as coloured, because colour alone
+     never carries a meaning (Article 18). */
+  .menu__i[aria-current="page"],
+  .menu__i[aria-current="page"] svg { color: var(--text-accent); }
+  .menu__i[aria-current="page"] { font-weight: var(--fw-semi); }
+  .menu__i--danger,
+  .menu__i--danger svg { color: var(--bad-700); }
+  .menu__i--danger:hover { background: var(--bad-100); }
+
+  /* A phone's bar also carries the burger, the page title and the bell, so
+     the button keeps the initials and the chevron. The name and the role are
+     hidden from the eye, never from the button's accessible name, and the
+     menu's head shows them instead. */
+  @media (max-width: 767px) {
+    .acct { padding-inline: var(--s1); }
+    .acct__who {
+      position: absolute;
+      inline-size: var(--s1);
+      block-size: var(--s1);
+      margin: calc(var(--s1) * -1);
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+    .menu__who { display: block; }
+  }
+
   /* --------------------------------------------------- IMPERSONATION BAR */
   /* Burnt orange · sticky · the end button is ALWAYS visible (Article 23). */
   .impbar {
@@ -1713,6 +1785,12 @@ border: var(--bw-hairline) solid var(--border-2);
   inset-inline-start: auto;
   inset-inline-end: 0;
   max-inline-size: calc(100vw - var(--s6));
+  /* D-123 — eight entries do not fit a phone held sideways: the panel stops
+     at the bottom of the screen and scrolls inside. */
+  max-block-size: calc(100vh - var(--header-h) - var(--s6));
+  max-block-size: calc(100dvh - var(--header-h) - var(--s6));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* 3 · Finger-sized controls in the chrome (Article 18 · --touch-min). */
