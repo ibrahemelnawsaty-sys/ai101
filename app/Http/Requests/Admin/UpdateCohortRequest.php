@@ -6,8 +6,10 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CohortStatus;
 use App\Models\Cohort;
+use App\Services\Cohorts\PrimaryCoordinator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Editing a cohort. The capacity may never drop below the number of seats
@@ -44,6 +46,32 @@ final class UpdateCohortRequest extends FormRequest
             'requires_approval' => ['nullable', 'boolean'],
             'status' => ['required', Rule::enum(CohortStatus::class)],
         ];
+    }
+
+    /**
+     * D-124 — a cohort is opened for registration or started only once it
+     * has a primary coordinator, the one its support tickets reach first.
+     * Only the move INTO those states is refused: a cohort that is already
+     * open or running keeps every other edit, and the safety net sends its
+     * tickets to the general supervisor meanwhile.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $next = CohortStatus::tryFrom((string) $this->input('status'));
+            $current = $this->cohort()->getAttribute('status');
+            $current = $current instanceof CohortStatus ? $current : CohortStatus::tryFrom((string) $current);
+
+            if (in_array($next, PrimaryCoordinator::REQUIRED_FOR, true)
+                && $next !== $current
+                && ! app(PrimaryCoordinator::class)->has($this->cohort())) {
+                $validator->errors()->add('status', (string) __('admin.cohorts.needs_primary_coordinator'));
+            }
+        });
     }
 
     public function cohort(): Cohort

@@ -13,6 +13,7 @@ use App\Http\Requests\Admin\AssignTrainerRequest;
 use App\Http\Requests\Admin\DetachCoordinatorRequest;
 use App\Http\Requests\Admin\DetachTrainerRequest;
 use App\Http\Requests\Admin\SeatParticipantRequest;
+use App\Http\Requests\Admin\SetPrimaryCoordinatorRequest;
 use App\Http\Requests\Admin\StoreCohortRequest;
 use App\Http\Requests\Admin\UpdateCohortRequest;
 use App\Models\Cohort;
@@ -24,6 +25,7 @@ use App\Presenters\Admin\CohortRow;
 use App\Presenters\Admin\TrainerAssignment;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
+use App\Services\Cohorts\PrimaryCoordinator;
 use App\Services\Credentials\AccountInviter;
 use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
@@ -42,7 +44,7 @@ use Illuminate\Http\Request;
  * `registration_closes_at` is typed in Riyadh wall time and stored in UTC by
  * Clock, never by a parse in this file (Art. 11).
  *
- * @see BR-26, BR-31 · PRD §4.2, §7.2 · CONSTITUTION Art. 8, Art. 11 · D-84, D-117
+ * @see BR-26, BR-31 · PRD §4.2, §7.2 · CONSTITUTION Art. 8, Art. 11 · D-84, D-117, D-124
  */
 final class CohortController extends Controller
 {
@@ -52,6 +54,7 @@ final class CohortController extends Controller
         private readonly AuditLogger $audit,
         private readonly ThreadProvisioner $threads,
         private readonly AccountInviter $inviter,
+        private readonly PrimaryCoordinator $primary,
     ) {}
 
     public function index(Request $request): View
@@ -295,6 +298,16 @@ final class CohortController extends Controller
     {
         $coordinator = $request->coordinator();
 
+        // D-124 — a single coordinator is primary without being chosen. When a
+        // second one joins, the first stays primary: written down now, or the
+        // cohort would silently lose its primary coordinator (and the route
+        // its tickets take) the moment it gained a coordinator.
+        $current = $this->primary->idOf($cohort);
+
+        if ($current !== null && $current !== (string) $coordinator->getKey() && $cohort->getAttribute('primary_coordinator_id') === null) {
+            $cohort->update(['primary_coordinator_id' => $current]);
+        }
+
         $enrollment = Enrollment::query()->firstOrNew([
             'cohort_id' => $cohort->getKey(),
             'user_id' => $coordinator->getKey(),
@@ -336,6 +349,30 @@ final class CohortController extends Controller
 
         $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
 
+        // D-124 — DetachCoordinatorRequest let the primary coordinator go only
+        // when one coordinator remains, who is then primary on their own.
+        if ($cohort->getAttribute('primary_coordinator_id') === (string) $coordinator->getKey()) {
+            $cohort->update(['primary_coordinator_id' => null]);
+        }
+
         return back()->with('status', __('admin.cohorts.coordinator_detached'));
+    }
+
+    /**
+     * D-124 — choose the cohort's primary coordinator: the one a support
+     * ticket reaches first. SetPrimaryCoordinatorRequest admits the cohort's
+     * active coordinators alone.
+     */
+    public function setPrimaryCoordinator(SetPrimaryCoordinatorRequest $request, Cohort $cohort): RedirectResponse
+    {
+        $coordinatorId = $request->coordinatorId();
+
+        $this->audit->log('cohort.primary_coordinator_set', $cohort, [
+            'primary_coordinator_id' => $cohort->getAttribute('primary_coordinator_id'),
+        ], ['primary_coordinator_id' => $coordinatorId]);
+
+        $cohort->update(['primary_coordinator_id' => $coordinatorId]);
+
+        return back()->with('status', __('admin.cohorts.primary_set'));
     }
 }

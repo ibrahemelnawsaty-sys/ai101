@@ -281,6 +281,33 @@
             <x-ui.card class="dc--span u-mt-4" icon="check"
                 :title="__('admin.cohorts.assign_coordinator')">
 
+                {{-- D-124 — why the primary coordinator matters, said where it
+                     can be fixed. Text rides with the colour (Article 18). --}}
+                @if ($assigning->hasNoCoordinator)
+                    <p class="note note--warn" role="note">
+                        <x-ui.icon name="warn" />
+                        <span>{{ __('admin.cohorts.no_coordinator_note') }}</span>
+                    </p>
+                @elseif ($assigning->needsPrimary)
+                    <p class="note note--warn" role="note">
+                        <x-ui.icon name="warn" />
+                        <span>{{ __('admin.cohorts.needs_primary_note') }}</span>
+                    </p>
+                @endif
+
+                @error('coordinator')
+                    <p class="note note--bad" role="alert">
+                        <x-ui.icon name="warn" />
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
+                @error('coordinator_id')
+                    <p class="note note--bad" role="alert">
+                        <x-ui.icon name="warn" />
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
+
                 @if (count($assigning->coordinators) === 0)
                     <x-ui.empty-state icon="check"
                         :title="__('admin.cohorts.coordinators_empty_title')"
@@ -292,8 +319,20 @@
                                 <div class="row__m">
                                     <b>{{ $coordinator->name }}</b>
                                     <span dir="ltr">{{ $coordinator->email }}</span>
+                                    @if ($coordinator->isPrimary)
+                                        <x-ui.badge size="sm" variant="brand">{{ __('admin.cohorts.primary_badge') }}</x-ui.badge>
+                                    @endif
                                 </div>
                                 <div class="row__e">
+                                    @if ($coordinator->canMakePrimary)
+                                        <form method="POST"
+                                            action="{{ route('admin.cohorts.coordinators.primary', $assigning->id) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="coordinator_id" value="{{ $coordinator->id }}">
+                                            <x-ui.button variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
+                                        </form>
+                                    @endif
                                     <form method="POST"
                                         action="{{ route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id]) }}">
                                         @csrf

@@ -661,6 +661,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::delete('/cohorts/{cohort}/coordinators/{coordinator}', [AdminCohortController::class, 'detachCoordinator'])
             ->middleware('not.impersonating')
             ->name('cohorts.coordinators.detach');
+        // D-124 — choosing the primary coordinator: the one a support ticket
+        // reaches first, chosen by the general supervisor among several.
+        Route::put('/cohorts/{cohort}/primary-coordinator', [AdminCohortController::class, 'setPrimaryCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.primary');
 
         // Seat an existing participant account in a cohort by its e-mail
         // address (D-84). It lived on the account's own page until D-117 gave

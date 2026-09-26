@@ -6,6 +6,8 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CohortStatus;
 use App\Models\Cohort;
+use App\Models\LandingSetting;
+use App\Services\Cohorts\PrimaryCoordinator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -21,7 +23,7 @@ use Illuminate\Validation\Validator;
  * the registration form admits an `open` cohort alone, so a running or a
  * finished cohort would show a switch that changes nothing.
  *
- * @see BR-31 · PRD §9.1.2, §9.2.3, §9.18 · CONSTITUTION Art. 5, Art. 8 · D-117
+ * @see BR-31 · PRD §9.1.2, §9.2.3, §9.18 · CONSTITUTION Art. 5, Art. 8 · D-117, D-124
  */
 final class SetRegistrationIntakeRequest extends FormRequest
 {
@@ -60,6 +62,16 @@ final class SetRegistrationIntakeRequest extends FormRequest
 
             if (! in_array($status, self::GOVERNED, true)) {
                 $validator->errors()->add('open', (string) __('admin.registrations.intake.not_governed'));
+            }
+
+            // D-124 — a cohort opens for registration only with a primary
+            // coordinator: its support tickets reach them first. Closing is
+            // always allowed, and so is asking for the state it is already in
+            // (the controller answers "unchanged" and writes nothing).
+            $alreadyOpen = LandingSetting::switchIsOn(LandingSetting::query()->forCohort($this->cohort())->first());
+
+            if ($this->boolean('open') && ! $alreadyOpen && ! app(PrimaryCoordinator::class)->has($this->cohort())) {
+                $validator->errors()->add('open', (string) __('admin.registrations.intake.needs_primary_coordinator'));
             }
         });
     }

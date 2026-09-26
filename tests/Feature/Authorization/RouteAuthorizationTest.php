@@ -241,6 +241,8 @@ function authorizationMatrix(object $test): array
         'admin.cohorts.trainers.detach' => ['delete', [$test->cohort, $test->trainer], ['admin']],
         'admin.cohorts.coordinators.attach' => ['post', [$test->cohort], ['admin']],
         'admin.cohorts.coordinators.detach' => ['delete', [$test->cohort, $test->coordinator], ['admin']],
+        // D-124 — choosing the primary coordinator: the supervisor alone.
+        'admin.cohorts.coordinators.primary' => ['put', [$test->cohort], ['admin']],
         // D-117 — seating an existing participant moved here from the account
         // page, and stayed the supervisor's.
         'admin.cohorts.participants.attach' => ['post', [$test->cohort], ['admin']],
