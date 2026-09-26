@@ -188,4 +188,7 @@ return [
 
     'unknown' => 'Unknown',
 
+    // Between the items of a short inline list («PDF، PowerPoint») — D-121.
+    'list_separator' => ', ',
+
 ];

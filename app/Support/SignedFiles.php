@@ -22,12 +22,17 @@ final class SignedFiles
     /**
      * A builder of the link for the file at a given position.
      *
+     * `$extra` carries any further route parameter that sits before the
+     * file's position — the entry of a final-project hand-in (D-121).
+     *
+     * @param  array<string, int|string>  $extra
      * @return callable(int): string
      */
-    public static function for(string $routeName, string $parameter, Model $owner): callable
+    public static function for(string $routeName, string $parameter, Model $owner, array $extra = []): callable
     {
         return static fn (int $index): string => app(PrivateFileService::class)->temporaryUrl($routeName, [
             $parameter => $owner->getKey(),
+            ...$extra,
             'index' => $index,
         ]);
     }

@@ -9,6 +9,7 @@ use App\Models\FinalProject;
 use App\Models\Program;
 use App\Models\Session;
 use App\Models\Week;
+use App\Services\FinalProject\SubmissionFields;
 use App\Services\Time\Clock;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -213,7 +214,8 @@ final class GuideScheduleSeeder extends Seeder
     }
 
     /**
-     * The final project, one per cohort.
+     * The final project, one per cohort, with the default hand-in fields when
+     * it has none yet (D-121).
      *
      * `is_unlocked` is not written. BR-15 makes unlocking a trainer's act, and a
      * seeder that unlocked it would hand every participant a deliverable the
@@ -226,7 +228,7 @@ final class GuideScheduleSeeder extends Seeder
         /** @var array<string, mixed> $row */
         $row = $guide['final_project'];
 
-        FinalProject::query()->updateOrCreate(
+        $project = FinalProject::query()->updateOrCreate(
             ['cohort_id' => $cohort->getKey()],
             [
                 'title' => $row['title'],
@@ -235,6 +237,10 @@ final class GuideScheduleSeeder extends Seeder
                 'due_at' => Clock::fromRiyadh((string) $row['due_at']),
             ],
         );
+
+        // D-121 — the default hand-in fields, only when the project has none:
+        // fields the supervisor already shaped are never rewritten by a re-run.
+        app(SubmissionFields::class)->installDefaults($project);
     }
 
     /** The week's public title: its ordinal and the theme the guide gives it. */

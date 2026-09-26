@@ -117,6 +117,13 @@ return [
             'title' => 'استلمنا تسليمك لمهمة :assignment',
             'body' => 'سجّلنا وقت التسليم وأشعرنا مدربك. تصلك الدرجة والملاحظة فور التقييم.',
         ],
+        // D-122 — six reminders before the final project closes, to whoever
+        // has not handed it in; switchable like every other type.
+        'final_project_due_reminder' => [
+            'label' => 'تذكير بموعد المشروع الختامي',
+            'title' => 'يقترب موعد تسليم المشروع الختامي',
+            'body' => 'تبقّى :countdown على إغلاق تسليم «:project». سلّم قبل الموعد لتُحتسب في الموعد.',
+        ],
         'submission_new' => [
             'label' => 'وصول تسليم جديد',
             'title' => 'تسليم جديد من :name',

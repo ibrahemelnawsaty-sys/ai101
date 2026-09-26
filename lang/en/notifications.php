@@ -87,6 +87,11 @@ return [
             'title' => 'We received your submission for :assignment',
             'body' => 'We recorded the time and notified your trainer. Your score and feedback arrive once it is graded.',
         ],
+        'final_project_due_reminder' => [
+            'label' => 'Final project deadline reminder',
+            'title' => 'The final project deadline is near',
+            'body' => ':countdown left before “:project” closes for submission. Hand it in before the deadline so it counts on time.',
+        ],
         'submission_new' => [
             'label' => 'New submission arrived',
             'title' => 'New submission from :name',

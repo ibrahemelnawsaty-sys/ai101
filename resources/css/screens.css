@@ -277,6 +277,15 @@ min-block-size: var(--s15);
 .checkincode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s5); margin-block-start: var(--s4); }
 .checkincode__qr { inline-size: var(--d-2); block-size: var(--d-2); flex: none; }
 .checkincode__qr svg { inline-size: 100%; block-size: 100%; }
+/* A hand-in receipt (D-122): the QR beside the code, the code read from the
+   start edge in Latin order whatever the page direction. */
+.receipt { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); }
+.receipt__qr { inline-size: var(--d-2); block-size: var(--d-2); flex: none; background: var(--white); padding: var(--s1); border-radius: var(--r-md); }
+.receipt__qr svg { inline-size: 100%; block-size: 100%; }
+.receipt__body { display: grid; gap: var(--s1); min-inline-size: 0; }
+.receipt__label { font-size: var(--fs-xs); color: var(--text-muted); }
+.receipt__code { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); direction: ltr; unicode-bidi: isolate; text-align: start; }
+.receipt__hint { font-size: var(--fs-xs); color: var(--text-muted); }
 
 /* The tick draws itself once, then stays. */
 .ck-path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: ckDraw 480ms var(--e-out) forwards; }
@@ -675,6 +684,9 @@ min-block-size: var(--s9);
 .deflist > div:last-child { border-block-end: 0; }
 .deflist dt { color: var(--text-muted); }
 .deflist dd { margin: 0; color: var(--text-strong); font-weight: var(--fw-semi); text-align: end; }
+/* A long answer of a final-project hand-in (D-121): its own full-width line,
+   read from the start edge, the participant's line breaks kept. */
+.deflist .deflist__long { flex-basis: 100%; text-align: start; font-weight: var(--fw-regular); white-space: pre-line; overflow-wrap: anywhere; }
 
 .codebox {
   font-family: var(--font-mono);

@@ -275,6 +275,29 @@ return [
         'cta' => 'افتح المشروع الختامي',
     ],
 
+    // D-122 — the receipt of a final-project hand-in, with its code and QR.
+    'final_project_received' => [
+        'subject' => 'استلمنا مشروعك الختامي — رمز التسليم :code',
+        'preheader' => 'احتفظ برمز التسليم :code إثباتًا لاستلام مشروعك.',
+        'heading' => 'استلمنا مشروعك الختامي',
+        'body' => 'وصل تسليمك لمشروع «:project» وسجّلنا وقته، وأشعرنا مدربك. هذا الإيصال إثبات الاستلام — احتفظ به.',
+        'code_label' => 'رمز التسليم',
+        'qr_alt' => 'رمز QR يفتح إيصال التسليم :code',
+        'qr_hint' => 'امسح الرمز لفتح الإيصال في المنصة بعد تسجيل الدخول.',
+        'items_label' => 'ما سلّمته',
+        'cta' => 'اعرض إيصال التسليم',
+        'next_steps' => 'الخطوة التالية: انتظار نتيجة تقييم مشروعك. يصلك إشعار وبريد فور رصد الدرجة.',
+    ],
+
+    // D-122 — six reminders before the deadline, to whoever has not handed in.
+    'final_project_due_reminder' => [
+        'subject' => 'تذكير: يقترب موعد تسليم المشروع الختامي',
+        'preheader' => 'تبقّى :countdown على إغلاق التسليم.',
+        'heading' => 'لم نستلم مشروعك الختامي بعد',
+        'body' => 'تبقّى :countdown على إغلاق تسليم «:project». سلّم قبل الموعد لتُحتسب في الموعد.',
+        'cta' => 'سلّم المشروع',
+    ],
+
     'announcement' => [
         'subject' => 'إعلان جديد في :program',
         'preheader' => ':excerpt',

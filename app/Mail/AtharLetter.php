@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Mail\Concerns\ResolvesLetterCopy;
 use App\Services\Mail\EmailPalette;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -45,6 +46,7 @@ use Illuminate\Queue\SerializesModels;
 final class AtharLetter extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
+    use ResolvesLetterCopy;
     use SerializesModels;
 
     public int $tries = 3;
@@ -112,63 +114,5 @@ final class AtharLetter extends Mailable implements ShouldBeEncrypted, ShouldQue
                 'contactEmail' => (string) config('athar.email'),
             ],
         );
-    }
-
-    /** A required line: its absence is a copy bug, and an empty string shows it. */
-    private function line(string $name): string
-    {
-        $key = $this->copyKey.'.'.$name;
-        $text = __($key, $this->values);
-
-        // `__()` hands back the key itself when nothing is translated. A visitor
-        // must never read "emails.certificate_issued.subject".
-        return is_string($text) && $text !== $key ? $text : '';
-    }
-
-    /** An optional line: many letters have no button and no note. */
-    private function optionalLine(string $name): ?string
-    {
-        $text = $this->line($name);
-
-        return $text === '' ? null : $text;
-    }
-
-    /**
-     * The detail strip, with every label resolved here and nowhere else.
-     *
-     * A row is dropped rather than printed broken. A label that resolves to a
-     * group, to nothing, or to its own key is a copy bug — and a copy bug must
-     * not become a line of ASCII in the middle of an Arabic letter. Dropping
-     * one row still delivers the letter; the alternative used to be no letter
-     * at all.
-     *
-     * @return array<string, string>
-     */
-    private function metaRows(): array
-    {
-        $rows = [];
-
-        foreach ($this->meta as $key => $value) {
-            $label = __($key);
-
-            // `__()` returns the key when nothing is translated, and the whole
-            // array when the key names a group. Neither is a label.
-            if (! is_string($label) || $label === '' || $label === $key) {
-                continue;
-            }
-
-            // No is_scalar() guard: $meta is declared array<string, string> and
-            // every caller honours it, so the guard could never be false and
-            // PHPStan says so at level 8.
-            $text = trim($value);
-
-            if ($text === '') {
-                continue;
-            }
-
-            $rows[$label] = $text;
-        }
-
-        return $rows;
     }
 }

@@ -58,10 +58,12 @@ final class PrivateFileService
      * Sniffed type => the extension the stored copy is given. This map is the
      * only source of stored extensions; anything absent from it becomes `.bin`.
      *
-     * The OOXML formats (docx, xlsx, pptx) are ZIP containers and are sniffed
-     * as such by most builds of libmagic, which is why `application/zip` is on
-     * the list and why the stored extension for them is `zip`. The original
-     * name is kept in the database and is what the participant downloads as.
+     * The OOXML formats (docx, xlsx, pptx) are ZIP containers that libmagic
+     * often reports as plain `application/zip`; sniff() settles every ZIP by
+     * its package structure instead (OfficeOpenXml), so a genuine document is
+     * stored under its own type and extension and any other archive stays
+     * `application/zip` (D-121). The original name is kept in the database
+     * and is what the participant downloads as.
      *
      * @var array<string, string>
      */
@@ -146,6 +148,12 @@ final class PrivateFileService
      * Validate, sniff and store one upload. Returns the row the caller writes
      * to the database - the original name is data, never a filesystem name.
      *
+     * `$acceptedTypes` narrows the platform's own allow-list for one field
+     * (D-121): the SNIFFED type must also be one of them, so a picture renamed
+     * `slides.pdf` is refused by a PDF-only field whatever its name says.
+     * Null accepts whatever the platform accepts, as before.
+     *
+     * @param  list<string>|null  $acceptedTypes
      * @return array{
      *     disk: string,
      *     path: string,
@@ -157,7 +165,7 @@ final class PrivateFileService
      *
      * @throws FileException
      */
-    public function store(UploadedFile $file, string $directory, ?User $actor = null): array
+    public function store(UploadedFile $file, string $directory, ?User $actor = null, ?array $acceptedTypes = null): array
     {
         if (! $file->isValid()) {
             throw FileException::unreadable();
@@ -188,6 +196,10 @@ final class PrivateFileService
         $mime = $this->sniff($source);
 
         $this->guardType($mime);
+
+        if ($acceptedTypes !== null && ! in_array($mime, $acceptedTypes, true)) {
+            throw FileException::mimeNotAllowed();
+        }
 
         $checksum = hash_file('sha256', $source);
 
@@ -353,6 +365,47 @@ final class PrivateFileService
     }
 
     /**
+     * Remove a file that was stored inside a transaction which was then rolled
+     * back. The rollback took the file's FILE_STORED row with it, while the
+     * bytes stayed on disk; so that row is written again first — marked
+     * `rolled_back` — and the trail reads "stored, then deleted" instead of a
+     * deletion of a file it never saw arrive (art. 8).
+     *
+     * @param  array<string, mixed>  $descriptor  what store() returned
+     *
+     * @throws FileException
+     */
+    public function discardRolledBack(array $descriptor, ?User $actor = null): bool
+    {
+        $path = $descriptor['path'] ?? null;
+
+        if (! is_string($path) || $path === '') {
+            return false;
+        }
+
+        $safe = $this->assertSafePath($path);
+        $disk = is_string($descriptor['disk'] ?? null) ? $descriptor['disk'] : $this->disk();
+
+        $this->audit->record(
+            action: AuditLogger::FILE_STORED,
+            entityType: 'file',
+            entityId: null,
+            before: null,
+            after: [
+                'disk' => $disk,
+                'path' => $safe,
+                'mime_type' => $descriptor['mime_type'] ?? null,
+                'size_bytes' => $descriptor['size_bytes'] ?? null,
+                'checksum' => $descriptor['checksum'] ?? null,
+                'rolled_back' => true,
+            ],
+            actorId: $actor === null ? null : (string) $actor->getKey(),
+        );
+
+        return $this->delete($safe, $actor, $disk);
+    }
+
+    /**
      * The sniffed type of a file already on disk - used when re-verifying a
      * stored file before serving it.
      *
@@ -413,7 +466,12 @@ final class PrivateFileService
             throw FileException::sniffUnavailable();
         }
 
-        return strtolower(explode(';', $mime)[0]);
+        $mime = strtolower(explode(';', $mime)[0]);
+
+        // A ZIP-family answer is settled by the archive's structure, not by
+        // its first entries: an archive of anything renamed `deck.pptx` is an
+        // archive, and a genuine deck is a deck however it was zipped (D-121).
+        return OfficeOpenXml::decides($mime) ? OfficeOpenXml::typeOf($absolutePath) : $mime;
     }
 
     /**

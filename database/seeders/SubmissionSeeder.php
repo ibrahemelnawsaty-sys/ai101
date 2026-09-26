@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\SubmissionFieldType;
 use App\Models\Assignment;
 use App\Models\Cohort;
 use App\Models\Enrollment;
@@ -36,6 +37,7 @@ use App\Models\FinalProject;
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
 use App\Models\User;
+use App\Services\FinalProject\SubmissionFields;
 use App\Services\Time\Clock;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -194,7 +196,7 @@ final class SubmissionSeeder extends Seeder
                 'is_late' => false,
                 'version' => 1,
                 'status' => $isGraded ? 'graded' : 'submitted',
-                'github_url' => 'https://github.com/athar-trainee-'.($i + 1).'/ai101-final',
+                'answers' => $this->projectAnswers($project, $i + 1),
             ]);
 
             if (! $isGraded) {
@@ -212,6 +214,32 @@ final class SubmissionSeeder extends Seeder
                 evaluatedAt: $this->clampToNow($submittedAt->addDays(2), $now),
             );
         }
+    }
+
+    /**
+     * A demo hand-in against the project's own fields (D-121): the links
+     * filled in, uploads left empty — no demo file exists on the disk, and a
+     * listed file nobody can download would be a lie on the trainer's screen.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function projectAnswers(FinalProject $project, int $number): array
+    {
+        $answers = [];
+
+        foreach ($project->fields()->get() as $field) {
+            $type = $field->fieldType();
+
+            $value = match ($type) {
+                SubmissionFieldType::Url => 'https://athar-trainee-'.$number.'.example.test',
+                SubmissionFieldType::Github => 'https://github.com/athar-trainee-'.$number.'/ai101-final',
+                default => null,
+            };
+
+            $answers[] = SubmissionFields::answer((string) $field->getKey(), $type, (string) $field->getAttribute('label'), $value);
+        }
+
+        return $answers;
     }
 
     private function recordGrade(

@@ -3,11 +3,12 @@
 
     LOCK CONTRACT (BR-16): when the project is locked the controller passes $project = null
     and $isUnlocked = false. NOTHING about the brief — title, description, criteria,
-    attachments, deadline — reaches this template, so it cannot reach the browser.
+    attachments, deadline, hand-in fields (D-121) — reaches this template, so it cannot
+    reach the browser.
     Viewing source before unlock reveals nothing but the locked placeholder.
     Direct access to the route is answered with 403 by the policy, not by hiding markup.
 
-    @see PRD §9.14 · BR-16
+    @see PRD §9.14 · BR-16, BR-19 · FR-PROJ-10 · D-121
 --}}
 @extends('layouts.app')
 
@@ -126,48 +127,35 @@
         @endif
 
         {{-- Submission --------------------------------------------------------- --}}
+        {{-- D-121: every item below is a field the general supervisor defined,
+             in their order. What was handed in shows under the label it was
+             asked by, each file with its own signed link. --}}
         <x-ui.card class="dc--span u-mt-4" icon="up" :title="__('project.your_submission')">
+            @if ($receipt)
+                {{-- D-122: the receipt of the newest version — its code, its QR
+                     and the next step — with a link to the printable page. --}}
+                @include('partials.hand-in-receipt', ['receipt' => $receipt])
+                <div class="row__acts u-mt-2">
+                    <x-ui.button variant="secondary" size="sm" :href="$receipt->url">{{ __('project.receipt.open') }}</x-ui.button>
+                </div>
+            @endif
+
             @if ($submission)
-                <div class="note">
+                <div class="note u-mt-4">
                     <b>{{ __('assignments.current_submission', ['version' => $submission->version]) }}</b>
                     <span class="u-num">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
                 </div>
-                <dl class="deflist">
-                    <div>
-                        <dt>{{ __('project.live_url') }}</dt>
-                        <dd><a href="{{ $submission->liveUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $submission->liveUrl }}</a></dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('project.github_url') }}</dt>
-                        <dd><a href="{{ $submission->githubUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $submission->githubUrl }}</a></dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('project.presentation_file') }}</dt>
-                        <dd>
-                            @if ($submission->presentationFile)
-                                <span dir="ltr">{{ $submission->presentationFile->name }}</span>
-                                <small class="u-num">{{ $submission->presentationFile->sizeLabel }}</small>
-                            @else
-                                <span class="u-muted">{{ __('app.none') }}</span>
-                            @endif
-                        </dd>
-                    </div>
-                    @if ($submission->logoFile)
-                        <div>
-                            <dt>{{ __('project.logo_file') }}</dt>
-                            <dd>
-                                <span dir="ltr">{{ $submission->logoFile->name }}</span>
-                                <small class="u-num">{{ $submission->logoFile->sizeLabel }}</small>
-                            </dd>
-                        </div>
-                    @endif
-                </dl>
+                @include('partials.hand-in-answers', ['answers' => $submission->answers])
             @endif
 
             @if (! $canSubmit)
                 <x-ui.empty-state icon="lock" variant="muted"
                     :title="__('project.submission_closed_title')"
                     :description="$closedReason" />
+            @elseif ($handIn->isEmpty)
+                <x-ui.empty-state icon="folder" variant="muted"
+                    :title="__('project.fields_empty_title')"
+                    :description="__('project.fields_empty_body')" />
             @else
                 {{-- A plain form, for the same reason as the assignment screen
                      (D-54): this was driven by an Alpine component named
@@ -182,50 +170,81 @@
 
                     <p class="form__note">{{ __('project.submission_intro') }}</p>
 
-                    <x-ui.input name="live_url" type="url" dir="ltr" required
-                        :label="__('project.live_url')"
-                        :hint="__('project.live_url_hint')"
-                        :value="old('live_url', $submission?->liveUrl)"
-                        placeholder="https://" />
+                    @if ($handIn->limitsNote)
+                        <p class="hint"><x-ui.icon name="info" /><span>{{ $handIn->limitsNote }}</span></p>
+                    @endif
 
-                    <x-ui.input name="github_url" type="url" dir="ltr" required
-                        :label="__('project.github_url')"
-                        :hint="__('project.github_url_hint')"
-                        :value="old('github_url', $submission?->githubUrl)"
-                        placeholder="https://github.com/" />
+                    @error('answers')
+                        <p class="hint hint--error" role="alert">{{ $message }}</p>
+                    @enderror
 
-                    <div class="drop">
-                        <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                        <b>{{ __('project.presentation_file') }}</b>
-                        <span>{{ __('project.presentation_file_hint') }}</span>
+                    @foreach ($handIn->fields as $field)
+                        @if ($field->isFile)
+                            <div class="drop u-mt-4">
+                                <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
+                                <b>
+                                    {{ $field->label }}
+                                    @if ($field->isRequired)
+                                        <i class="ui-field__required" aria-hidden="true">*</i>
+                                    @else
+                                        <small>{{ $field->optionalMark }}</small>
+                                    @endif
+                                </b>
+                                @if ($field->description)
+                                    <span>{{ $field->description }}</span>
+                                @endif
+                                <span>{{ $field->formatsLabel }} · {{ $field->limitsLabel }}</span>
 
-                        <input type="file" name="presentation_file" required id="project-presentation">
-                        <label class="sr" for="project-presentation">{{ __('project.presentation_file') }}</label>
+                                <input type="file" name="{{ $field->name }}" id="{{ $field->domId }}"
+                                    accept="{{ $field->accept }}"
+                                    @if ($field->isMultiple) multiple @endif
+                                    @if ($field->isRequired) required @endif
+                                    @error($field->errorKey) aria-invalid="true" @enderror>
+                                <label class="sr" for="{{ $field->domId }}">{{ $field->label }}</label>
 
-                        @error('presentation_file')
-                            <p class="hint hint--error" role="alert">{{ $message }}</p>
-                        @enderror
-                    </div>
+                                @if ($field->tips !== [])
+                                    <ul class="note__list">
+                                        @foreach ($field->tips as $tip)
+                                            <li>{{ $tip }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
 
-                    <div class="drop">
-                        <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
-                        <b>{{ __('project.logo_file') }}</b>
-                        <span>{{ __('project.logo_file_hint') }}</span>
+                                @error($field->errorKey)
+                                    <p class="hint hint--error" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @else
+                            <div class="u-mt-4">
+                                @if ($field->isTextarea)
+                                    <x-ui.textarea :name="$field->name" :id="$field->domId" rows="4"
+                                        :required="$field->isRequired" :maxlength="$field->maxLength"
+                                        :label="$field->label"
+                                        :hint="$field->description"
+                                        :error="$errors->first($field->errorKey)"
+                                        :value="old($field->errorKey, $field->previousValue)" />
+                                @else
+                                    <x-ui.input :name="$field->name" :id="$field->domId" :type="$field->inputType"
+                                        :ltr="$field->isLtr" :required="$field->isRequired" :maxlength="$field->maxLength"
+                                        :label="$field->label"
+                                        :hint="$field->description"
+                                        :placeholder="$field->placeholder"
+                                        :error="$errors->first($field->errorKey)"
+                                        :value="old($field->errorKey, $field->previousValue)" />
+                                @endif
 
-                        <input type="file" name="logo_file" id="project-logo">
-                        <label class="sr" for="project-logo">{{ __('project.logo_file') }}</label>
+                                @if ($field->tips !== [])
+                                    <ul class="note__list">
+                                        @foreach ($field->tips as $tip)
+                                            <li>{{ $tip }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        @endif
+                    @endforeach
 
-                        @error('logo_file')
-                            <p class="hint hint--error" role="alert">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <x-ui.textarea name="description" rows="4"
-                        :label="__('project.description_field')"
-                        :value="old('description', $submission?->description)"
-                        :placeholder="__('project.description_placeholder')" />
-
-                    <div class="row__acts">
+                    <div class="row__acts u-mt-4">
                         <x-ui.button variant="primary" type="submit">{{ __('project.submit_action') }}</x-ui.button>
                     </div>
 

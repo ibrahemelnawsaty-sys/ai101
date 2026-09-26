@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\FinalProject;
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
+use App\Services\FinalProject\SubmissionFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,9 +31,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * The files live in each model's `files` or `attachments` column as the
  * descriptors PrivateFileService::store() wrote; the route names one by its
- * position.
+ * position. A final-project hand-in keeps its files inside its `answers`
+ * (D-121), so its route names the entry's position and then the file's —
+ * read back through SubmissionFields::read(), the same reader the screen that
+ * minted the link used, so the two positions can never disagree.
  *
- * @see PRD §12.5 · BR-22, BR-23 · CONSTITUTION art. 5, art. 24 · D-80
+ * @see PRD §12.5 · BR-22, BR-23 · FR-PROJ-10 · CONSTITUTION art. 5, art. 24 · D-80, D-121
  */
 final class FileDownloadController extends Controller
 {
@@ -48,6 +52,16 @@ final class FileDownloadController extends Controller
         $this->authorize('download', $projectSubmission);
 
         return $this->stream($projectSubmission, 'files', $index);
+    }
+
+    /** D-121 — one file of one field of a final-project hand-in. */
+    public function projectSubmissionAnswer(ProjectSubmission $projectSubmission, int $answer, int $index): StreamedResponse
+    {
+        $this->authorize('download', $projectSubmission);
+
+        $entry = SubmissionFields::read($projectSubmission->getAttribute('answers'))[$answer] ?? null;
+
+        return $this->streamDescriptor($entry === null ? null : ($entry['files'][$index] ?? null));
     }
 
     public function assignment(Assignment $assignment, int $index): StreamedResponse
@@ -67,8 +81,12 @@ final class FileDownloadController extends Controller
     private function stream(Model $owner, string $column, int $index): StreamedResponse
     {
         $files = $owner->getAttribute($column);
-        $descriptor = is_array($files) ? ($files[$index] ?? null) : null;
 
+        return $this->streamDescriptor(is_array($files) ? ($files[$index] ?? null) : null);
+    }
+
+    private function streamDescriptor(mixed $descriptor): StreamedResponse
+    {
         if (! is_array($descriptor)) {
             abort(Response::HTTP_NOT_FOUND);
         }

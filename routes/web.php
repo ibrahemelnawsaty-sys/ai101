@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\CertificateController as AdminCertificateControll
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
+use App\Http\Controllers\Admin\FinalProjectFieldController as AdminFinalProjectFieldController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\FileDownloadController;
+use App\Http\Controllers\FinalProjectReceiptController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
 use App\Http\Controllers\Participant\CardController;
@@ -79,6 +81,7 @@ use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
 use App\Http\Controllers\Trainer\ResourceController as TrainerResourceController;
 use App\Http\Controllers\Trainer\SessionController as TrainerSessionController;
 use App\Http\Controllers\Trainer\SubmissionController as TrainerSubmissionController;
+use App\Services\FinalProject\ReceiptCodes;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -228,6 +231,10 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
         ->whereNumber('index')->name('submission');
     Route::get('/project-submissions/{projectSubmission}/{index}', [FileDownloadController::class, 'projectSubmission'])
         ->whereNumber('index')->name('projectSubmission');
+    // D-121 — a file handed in through one field of the final project's
+    // form: the entry's position in `answers`, then the file's position in it.
+    Route::get('/project-submissions/{projectSubmission}/answers/{answer}/{index}', [FileDownloadController::class, 'projectSubmissionAnswer'])
+        ->whereNumber('answer')->whereNumber('index')->name('projectSubmissionAnswer');
     Route::get('/assignments/{assignment}/{index}', [FileDownloadController::class, 'assignment'])
         ->whereNumber('index')->name('assignment');
     Route::get('/final-projects/{project}/{index}', [FileDownloadController::class, 'finalProject'])
@@ -249,6 +256,13 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         // Switching the active cohort is a preference; the request refuses any
         // cohort the account cannot reach (PRD §4.4).
         Route::post('/cohort', CohortSwitchController::class)->name('cohort.switch');
+
+        // D-122 — a final-project hand-in's receipt, the page its QR opens.
+        // The hand-in's own policy decides who reads it: its owner, the
+        // cohort's trainer, the supervisor; anyone else 403. No public page.
+        Route::get('/final-project/receipt/{code}', FinalProjectReceiptController::class)
+            ->where('code', ReceiptCodes::PATTERN)
+            ->name('finalProject.receipt');
 
         /*
          * Schedule — readable by anyone in the cohort.
@@ -722,6 +736,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
             ->middleware('not.impersonating')
             ->name('finalProject.store');
+
+        /*
+         * D-121 — the hand-in form's fields, one project at a time. The field
+         * is bound through the project in the URL (scopeBindings), so a field
+         * id under another project's address is 404 before any policy runs.
+         */
+        Route::scopeBindings()->group(function (): void {
+            Route::post('/final-project/{project}/fields', [AdminFinalProjectFieldController::class, 'store'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.store');
+            Route::patch('/final-project/{project}/fields/{field}', [AdminFinalProjectFieldController::class, 'update'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.update');
+            Route::patch('/final-project/{project}/fields/{field}/move', [AdminFinalProjectFieldController::class, 'move'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.move');
+            Route::delete('/final-project/{project}/fields/{field}', [AdminFinalProjectFieldController::class, 'destroy'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.destroy');
+        });
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/export', [AuditController::class, 'export'])

@@ -28,7 +28,10 @@ final class FileLink extends ViewModel
     public static function fromStored(array $stored, ?string $downloadUrl = null): self
     {
         $name = $stored['original_name'] ?? $stored['name'] ?? null;
-        $bytes = $stored['size'] ?? $stored['bytes'] ?? null;
+        // `size_bytes` is what PrivateFileService::store() writes; `size` and
+        // `bytes` are older seed shapes. Reading only the latter printed "—"
+        // for every file a participant actually uploaded (D-121).
+        $bytes = $stored['size_bytes'] ?? $stored['size'] ?? $stored['bytes'] ?? null;
 
         return new self([
             'name' => is_string($name) && $name !== '' ? $name : '—',
