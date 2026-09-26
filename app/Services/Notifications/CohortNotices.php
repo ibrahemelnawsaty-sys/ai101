@@ -74,15 +74,51 @@ final class CohortNotices
                 $now,
             );
 
+            $this->tellTrainers($participant, $cohortId, $values, $trainerLink, $now);
+        });
+    }
+
+    /**
+     * The final project was handed in (D-122): the same two notices, with the
+     * participant's saying which receipt code it carries and what comes next —
+     * waiting for the evaluation. The same type, so the same switch on the
+     * preferences screen governs it. The letter with the QR is the listener's
+     * (SendFinalProjectReceipt).
+     */
+    public function projectHandedIn(User $participant, string $cohortId, string $projectTitle, string $receiptCode, string $participantLink, string $trainerLink): void
+    {
+        $this->guard('project_handed_in', function () use ($participant, $cohortId, $projectTitle, $receiptCode, $participantLink, $trainerLink): void {
+            $now = Clock::now();
+            $values = ['project' => $projectTitle, 'code' => $receiptCode];
+
             $this->notifier->notify(
-                $this->audience->trainerIds($cohortId),
-                'submission_new',
-                (string) __('notifications.types.submission_new.title', ['name' => $this->nameOf($participant)]),
-                (string) __('notifications.types.submission_new.body', $values),
-                $trainerLink,
+                [(string) $participant->getKey()],
+                'submission_received',
+                (string) __('project.receipt.notice_title', $values),
+                (string) __('project.receipt.notice_body', $values),
+                $participantLink,
                 $now,
             );
+
+            $this->tellTrainers($participant, $cohortId, ['assignment' => $projectTitle], $trainerLink, $now);
         });
+    }
+
+    /**
+     * The cohort's trainers learn a hand-in is waiting (FR-NOTIF-16).
+     *
+     * @param  array<string, string>  $values
+     */
+    private function tellTrainers(User $participant, string $cohortId, array $values, string $trainerLink, CarbonImmutable $now): void
+    {
+        $this->notifier->notify(
+            $this->audience->trainerIds($cohortId),
+            'submission_new',
+            (string) __('notifications.types.submission_new.title', ['name' => $this->nameOf($participant)]),
+            (string) __('notifications.types.submission_new.body', $values),
+            $trainerLink,
+            $now,
+        );
     }
 
     /** A resource was added to the pack: the cohort, on the platform (FR-NOTIF-20). */

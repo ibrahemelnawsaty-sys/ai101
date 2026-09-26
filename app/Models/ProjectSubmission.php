@@ -25,12 +25,15 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * is the point: the administrator may rename or remove a field tomorrow, and
  * this version must still say what was asked and what came back.
  *
+ * `receipt_code` is the hand-in's receipt (D-122): `FP-XXXX-XXXX`, unique,
+ * one per version — the code its receipt letter, page and QR carry.
+ *
  * `live_url`, `github_url`, `presentation_file`, `logo_file`, `description` and
  * `files` are the earlier, fixed hand-in (D-110 and before). They are kept as
  * they were, never written again; the D-121 migration copied every row of them
  * into `answers`.
  *
- * @see BR-19, BR-21, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4, §9 · D-110, D-121
+ * @see BR-19, BR-21, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4, §9 · D-110, D-121, D-122
  */
 class ProjectSubmission extends Model
 {
@@ -59,6 +62,7 @@ class ProjectSubmission extends Model
         'submitted_at',
         'is_late',
         'version',
+        'receipt_code',
     ];
 
     /**

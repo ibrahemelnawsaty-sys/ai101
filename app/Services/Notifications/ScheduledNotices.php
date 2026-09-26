@@ -8,9 +8,11 @@ use App\Enums\AssignmentStatus;
 use App\Enums\CohortStatus;
 use App\Enums\SessionStatus;
 use App\Events\AssignmentReminderRequested;
+use App\Events\FinalProjectReminderDue;
 use App\Mail\AtharLetter;
 use App\Models\Assignment;
 use App\Models\Cohort;
+use App\Models\FinalProject;
 use App\Models\Profile;
 use App\Models\Session;
 use App\Models\User;
@@ -27,8 +29,9 @@ use Illuminate\Support\Str;
 
 /**
  * The notices the calendar sends on its own: a session tomorrow, a session in
- * an hour, a session starting now, and an assignment deadline two days and six
- * hours away (PRD §9.16.1).
+ * an hour, a session starting now, an assignment deadline two days and six
+ * hours away (PRD §9.16.1), and the final project's deadline three days, two
+ * days and one day away, then three times on its last day (D-122).
  *
  * WHY THIS EXISTS
  * The notification matrix promised these five, the preferences screen offered
@@ -56,7 +59,7 @@ use Illuminate\Support\Str;
  * to send. After the grace the notice is skipped, not sent late. The grace
  * lengths are a temporary assumption awaiting sign-off (D-83).
  *
- * @see PRD §9.10, §9.16.1 · FR-NOTIF-10, FR-NOTIF-11, FR-NOTIF-14 · D-83
+ * @see PRD §9.10, §9.16.1 · FR-NOTIF-10, FR-NOTIF-11, FR-NOTIF-14 · D-83, D-122
  */
 final class ScheduledNotices
 {
@@ -74,6 +77,24 @@ final class ScheduledNotices
     ];
 
     /**
+     * The final project's reminders, to whoever has not handed it in (D-122):
+     * three, two and one day before the deadline, then three on its last day.
+     * The last-day three (12h · 6h · 1h) are a temporary assumption awaiting
+     * sign-off; the last one's grace is fifteen minutes, like the session's
+     * one-hour reminder, so it never arrives in the final minutes.
+     *
+     * @var array<string, array{0: int, 1: int}> kind => [minutes before the deadline, grace in minutes]
+     */
+    public const FINAL_PROJECT_MARKS = [
+        'final_project_due_72h' => [72 * 60, 60],
+        'final_project_due_48h' => [48 * 60, 60],
+        'final_project_due_24h' => [24 * 60, 60],
+        'final_project_due_12h' => [12 * 60, 60],
+        'final_project_due_6h' => [6 * 60, 60],
+        'final_project_due_1h' => [60, 15],
+    ];
+
+    /**
      * A finished cohort is sent nothing. An upcoming one is: its first session
      * may be tomorrow while the status still says upcoming, and its seated
      * trainees are the people the intro reminder is for.
@@ -87,13 +108,14 @@ final class ScheduledNotices
     ) {}
 
     /**
-     * @return array{sessions: int, assignments: int} how many notices this run claimed
+     * @return array{sessions: int, assignments: int, final_projects: int} how many notices this run claimed
      */
     public function run(CarbonImmutable $now): array
     {
         return [
             'sessions' => $this->sessions($now),
             'assignments' => $this->assignments($now),
+            'final_projects' => $this->finalProjects($now),
         ];
     }
 
@@ -268,6 +290,78 @@ final class ScheduledNotices
             cohortId: $cohortId,
             assignmentId: (string) $assignment->getKey(),
             assignmentTitle: $title,
+            dueAtIso: $due->toIso8601ZuluString(),
+            dueAtLabel: Dates::dateTime($due),
+        );
+    }
+
+    // ------------------------------------------------------- final projects
+
+    private function finalProjects(CarbonImmutable $now): int
+    {
+        // The earliest mark is three days out, plus its grace: nothing
+        // further ahead can be due, and nothing past its deadline ever is.
+        $projects = FinalProject::query()
+            ->where('is_unlocked', true)
+            ->whereIn('cohort_id', Cohort::query()->whereIn('status', self::LIVE_COHORTS)->select('id'))
+            ->where('due_at', '>', $now)
+            ->where('due_at', '<=', $now->addHours(73))
+            ->get();
+
+        $claimed = 0;
+
+        foreach ($projects as $project) {
+            $dueAt = $project->getAttribute('due_at');
+
+            if (! $dueAt instanceof \DateTimeInterface) {
+                continue;
+            }
+
+            $due = Clock::toUtc($dueAt);
+
+            foreach (self::FINAL_PROJECT_MARKS as $kind => [$before, $grace]) {
+                if (! self::isDue($due, $before, $grace, $now)) {
+                    continue;
+                }
+
+                $claimed += $this->claimAndSend($kind, (string) $project->getKey(), $due, $now,
+                    fn () => $this->sendFinalProject($project, $due, $now));
+            }
+        }
+
+        return $claimed;
+    }
+
+    /**
+     * The platform notice now, to those who have handed in no version, and
+     * the letter through the queued listener, which checks the audience again
+     * when it runs — the same two halves as an assignment's reminder.
+     */
+    private function sendFinalProject(FinalProject $project, CarbonImmutable $due, CarbonImmutable $now): void
+    {
+        $cohortId = (string) $project->getAttribute('cohort_id');
+        $title = (string) $project->getAttribute('title');
+        $pending = $this->audience->yetToHandInProject($cohortId, (string) $project->getKey());
+
+        if ($pending->isEmpty()) {
+            return;
+        }
+
+        $values = ['project' => $title, 'countdown' => Present::durationLabel($due, $now)];
+
+        $this->notifier->notify(
+            $pending->map(static fn (User $user): string => (string) $user->getKey()),
+            'final_project_due_reminder',
+            (string) __('notifications.types.final_project_due_reminder.title', $values),
+            (string) __('notifications.types.final_project_due_reminder.body', $values),
+            route('finalProject'),
+            $now,
+        );
+
+        FinalProjectReminderDue::dispatch(
+            cohortId: $cohortId,
+            projectId: (string) $project->getKey(),
+            projectTitle: $title,
             dueAtIso: $due->toIso8601ZuluString(),
             dueAtLabel: Dates::dateTime($due),
         );

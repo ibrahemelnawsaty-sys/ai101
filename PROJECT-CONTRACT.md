@@ -96,7 +96,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `evaluations` | `feedback` **إلزامي ≥ 10 أحرف** · قيد `0 ≤ score ≤ max_score` · `revision_reason` |
 | `final_projects` | `is_unlocked` · `unlocked_by` · `unlocked_at` |
 | `final_project_fields` | حقول نموذج التسليم لكل مشروع (`D-121`): `final_project_id` (`cascadeOnDelete`) · `type` · `label` · `description` · `tips` JSON · `is_required` · `accepted_formats` JSON · `max_kilobytes` · `max_files` · `position` · فهرس `(final_project_id, position)` |
-| `project_submissions` | مثل `submissions` · **`answers` JSON** — عنصر لكل حقل بترتيب النموذج، يحمل **نسخة** من عنوان الحقل ونوعه مع القيمة أو الملفات (`SubmissionFields::answer()` كاتبه الوحيد، `D-121`)؛ أعمدة `D-110` القديمة باقية ولا تُكتب |
+| `project_submissions` | مثل `submissions` · **`answers` JSON** — عنصر لكل حقل بترتيب النموذج، يحمل **نسخة** من عنوان الحقل ونوعه مع القيمة أو الملفات (`SubmissionFields::answer()` كاتبه الوحيد، `D-121`)؛ أعمدة `D-110` القديمة باقية ولا تُكتب · **`receipt_code` فريد** `FP-XXXX-XXXX` لكل نسخة (`ReceiptCodes`، `D-122`) |
 | `resources` | `download_count` |
 | `journey_steps` | `index` 1..10 · `unlock_rule` |
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
@@ -292,6 +292,7 @@ final class CertificateEligibility
 | `GET /dashboard/messages/new` | `messages.create` | `auth` · الأدوار نفسها · `not.impersonating` (`D-118`) — القائمة: `ConversationRules::recipients` |
 | `POST /dashboard/messages` | `messages.start` | `auth` · الأدوار نفسها · `not.impersonating` · `throttle:messages` (`D-118`) — `StartConversationRequest` + `ThreadPolicy::start/startInbox` |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
+| `GET /dashboard/final-project/receipt/{code}` | `finalProject.receipt` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` — `ProjectSubmissionPolicy::view` (صاحب التسليم · مدرب دفعته · المشرف العام)، والرمز بنمط `ReceiptCodes::PATTERN` (`D-122`) |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
 | `GET /dashboard/certificate` | `certificate` | `auth` · `role:participant` |
 | `GET /dashboard/profile` | `profile` | `auth` |

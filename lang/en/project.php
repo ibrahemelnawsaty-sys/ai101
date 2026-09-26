@@ -40,7 +40,32 @@ return [
     'submission_closed_title' => 'Submission of the final project is closed',
     'evaluation_title' => 'Your project evaluation',
 
-    'submitted' => 'We received your project. We recorded the time and notified your trainer.',
+    'submitted' => 'We received your project. We recorded the time, notified your trainer and sent the hand-in receipt to your e-mail.',
+
+    'receipt' => [
+        'title' => 'Final project hand-in receipt',
+        'code_label' => 'Receipt code',
+        'code_hint' => 'Keep this code; it is the proof that we received your project.',
+        'qr_label' => 'QR code for hand-in receipt :code',
+        'qr_hint' => 'Scan it to open this receipt after signing in.',
+        'next_title' => 'Next step',
+        'next_pending' => 'Wait for your project\'s evaluation. You get a notification and an e-mail the moment your grade is recorded.',
+        'next_graded' => 'Your project has been evaluated — your grade and your trainer\'s note are in the grades tab.',
+        'open' => 'View the receipt',
+        'open_grading' => 'Open the hand-in in the grading panel',
+        'open_project' => 'Open the final project',
+        'version' => 'Version :version',
+        'late' => 'Handed in after the deadline',
+        'details' => [
+            'project' => 'Project',
+            'participant' => 'Participant',
+            'submitted_at' => 'Handed in at',
+            'version' => 'Version',
+            'items' => 'Items handed in',
+        ],
+        'notice_title' => 'We received your final project — receipt code :code',
+        'notice_body' => 'We recorded the time of your “:project” hand-in and told your trainer. Next step: wait for the evaluation; you get a notification and an e-mail the moment your grade is recorded.',
+    ],
 
     'errors' => [
         'not_available' => 'The final project has not been opened yet. You will be notified the moment it is.',

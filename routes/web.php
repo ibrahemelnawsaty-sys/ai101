@@ -47,6 +47,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\FileDownloadController;
+use App\Http\Controllers\FinalProjectReceiptController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
 use App\Http\Controllers\Participant\CardController;
@@ -80,6 +81,7 @@ use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
 use App\Http\Controllers\Trainer\ResourceController as TrainerResourceController;
 use App\Http\Controllers\Trainer\SessionController as TrainerSessionController;
 use App\Http\Controllers\Trainer\SubmissionController as TrainerSubmissionController;
+use App\Services\FinalProject\ReceiptCodes;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -254,6 +256,13 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         // Switching the active cohort is a preference; the request refuses any
         // cohort the account cannot reach (PRD §4.4).
         Route::post('/cohort', CohortSwitchController::class)->name('cohort.switch');
+
+        // D-122 — a final-project hand-in's receipt, the page its QR opens.
+        // The hand-in's own policy decides who reads it: its owner, the
+        // cohort's trainer, the supervisor; anyone else 403. No public page.
+        Route::get('/final-project/receipt/{code}', FinalProjectReceiptController::class)
+            ->where('code', ReceiptCodes::PATTERN)
+            ->name('finalProject.receipt');
 
         /*
          * Schedule — readable by anyone in the cohort.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use App\Events\FinalProjectHandedIn;
 use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ResolvesActiveCohort;
 use App\Http\Controllers\Controller;
@@ -17,7 +18,9 @@ use App\Presenters\Participant\EvaluationPresenter;
 use App\Presenters\Participant\FinalProjectPresenter;
 use App\Presenters\Participant\HandInForm;
 use App\Presenters\Participant\SubmissionPresenter;
+use App\Presenters\Shared\HandInReceipt;
 use App\Presenters\Support\HandInRules;
+use App\Services\FinalProject\ReceiptCodes;
 use App\Services\FinalProject\SubmissionFields;
 use App\Services\Notifications\CohortNotices;
 use App\Services\Storage\PrivateFileService;
@@ -26,6 +29,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The final project (PRD §9.14).
@@ -48,6 +52,7 @@ final class FinalProjectController extends Controller
     public function __construct(
         private readonly PrivateFileService $files,
         private readonly CohortNotices $notices,
+        private readonly ReceiptCodes $receipts,
     ) {}
 
     use ResolvesActiveCohort;
@@ -70,6 +75,7 @@ final class FinalProjectController extends Controller
                 'isUnlocked' => false,
                 'project' => null,
                 'handIn' => null,
+                'receipt' => null,
                 'submission' => null,
                 'evaluation' => null,
                 'canSubmit' => false,
@@ -102,6 +108,10 @@ final class FinalProjectController extends Controller
             'isUnlocked' => true,
             'project' => FinalProjectPresenter::from($project),
             'handIn' => HandInForm::from($project->fields()->get(), $submission),
+            // D-122 — the receipt of the newest version, when it carries one.
+            'receipt' => $submission instanceof ProjectSubmission && filled($submission->getAttribute('receipt_code'))
+                ? HandInReceipt::from($submission, $project, true)
+                : null,
             'submission' => $submission === null
                 ? null
                 : SubmissionPresenter::fromProject(
@@ -198,13 +208,15 @@ final class FinalProjectController extends Controller
                 $answers[] = SubmissionFields::answer((string) $field->getKey(), $type, $label, null, $stored);
             }
 
-            ProjectSubmission::query()->create([
+            $submission = ProjectSubmission::query()->create([
                 'final_project_id' => $project->getKey(),
                 'user_id' => $user->getKey(),
                 'answers' => $answers,
                 'submitted_at' => $now,
                 'is_late' => $dueAt !== null && $now->greaterThan(Clock::toUtc($dueAt)),
                 'version' => $previous + 1,
+                // D-122 — the code the receipt letter, page and QR carry.
+                'receipt_code' => $this->receipts->unused(),
             ]);
 
             DB::commit();
@@ -235,15 +247,28 @@ final class FinalProjectController extends Controller
             ]);
         }
 
-        // The same two notices an assignment hand-in sends (D-83).
+        // The same two notices an assignment hand-in sends (D-83), the
+        // participant's naming the receipt code and the next step (D-122) —
+        // and the receipt letter with its QR, written by the queue.
         $cohortId = (string) $project->getAttribute('cohort_id');
-        $this->notices->handedIn(
+        $receiptCode = (string) $submission->getAttribute('receipt_code');
+
+        $this->notices->projectHandedIn(
             $user,
             $cohortId,
             (string) $project->getAttribute('title'),
-            route('finalProject'),
+            $receiptCode,
+            route('finalProject.receipt', ['code' => $receiptCode]),
             route('trainer.finalProject', ['cohort' => $cohortId]),
         );
+
+        try {
+            FinalProjectHandedIn::dispatch((string) $submission->getKey());
+        } catch (\Throwable $failure) {
+            // The hand-in is saved; a letter that cannot be queued must not
+            // turn that success into an error page and a second hand-in.
+            Log::error('events.final_project_handed_in_failed', ['exception' => $failure::class]);
+        }
 
         return redirect()
             ->route('finalProject')

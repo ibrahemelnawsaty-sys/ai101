@@ -131,8 +131,17 @@
              in their order. What was handed in shows under the label it was
              asked by, each file with its own signed link. --}}
         <x-ui.card class="dc--span u-mt-4" icon="up" :title="__('project.your_submission')">
+            @if ($receipt)
+                {{-- D-122: the receipt of the newest version — its code, its QR
+                     and the next step — with a link to the printable page. --}}
+                @include('partials.hand-in-receipt', ['receipt' => $receipt])
+                <div class="row__acts u-mt-2">
+                    <x-ui.button variant="secondary" size="sm" :href="$receipt->url">{{ __('project.receipt.open') }}</x-ui.button>
+                </div>
+            @endif
+
             @if ($submission)
-                <div class="note">
+                <div class="note u-mt-4">
                     <b>{{ __('assignments.current_submission', ['version' => $submission->version]) }}</b>
                     <span class="u-num">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
                 </div>

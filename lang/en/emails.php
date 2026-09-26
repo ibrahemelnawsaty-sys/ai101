@@ -239,6 +239,27 @@ return [
         'cta' => 'Open the final project',
     ],
 
+    'final_project_received' => [
+        'subject' => 'We received your final project — receipt code :code',
+        'preheader' => 'Keep the receipt code :code as proof your project arrived.',
+        'heading' => 'We received your final project',
+        'body' => 'Your hand-in for “:project” arrived, we recorded its time, and your trainer was told. This receipt is the proof — keep it.',
+        'code_label' => 'Receipt code',
+        'qr_alt' => 'QR code that opens receipt :code',
+        'qr_hint' => 'Scan it to open the receipt on the platform after signing in.',
+        'items_label' => 'What you handed in',
+        'cta' => 'View the receipt',
+        'next_steps' => 'Next step: wait for your project\'s evaluation. You get a notification and an e-mail the moment your grade is recorded.',
+    ],
+
+    'final_project_due_reminder' => [
+        'subject' => 'Reminder: the final project deadline is near',
+        'preheader' => ':countdown left before submission closes.',
+        'heading' => 'We have not received your final project yet',
+        'body' => ':countdown left before “:project” closes for submission. Hand it in before the deadline so it counts on time.',
+        'cta' => 'Submit the project',
+    ],
+
     'announcement' => [
         'subject' => 'A new announcement in :program',
         'preheader' => ':excerpt',

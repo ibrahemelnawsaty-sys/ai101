@@ -8,6 +8,7 @@ use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Models\Enrollment;
+use App\Models\ProjectSubmission;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -29,7 +30,7 @@ use Illuminate\Support\Collection;
  * the second it reaches people whose enrolment was withdrawn. This is the same
  * scoping rule the screens follow (art. 5), applied to outbound mail.
  *
- * @see BR-23 · CONSTITUTION.md Article 5, Article 20 · D-51, D-117
+ * @see BR-23 · CONSTITUTION.md Article 5, Article 20 · D-51, D-117, D-122
  */
 final class CohortAudience
 {
@@ -117,6 +118,28 @@ final class CohortAudience
     {
         $handedIn = Submission::query()
             ->where('assignment_id', $assignmentId)
+            ->distinct()
+            ->pluck('user_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        return $this->reachable($cohortId, $type)
+            ->reject(static fn (User $user): bool => in_array((string) $user->getKey(), $handedIn, true))
+            ->values();
+    }
+
+    /**
+     * The reachable participants who have handed in NO version of this final
+     * project — the whole audience of its deadline reminders (D-122), resolved
+     * at send time so someone who hands in between the tick and the queue is
+     * not chased for work already in.
+     *
+     * @return Collection<int, User>
+     */
+    public function yetToHandInProject(string $cohortId, string $projectId, ?string $type = null): Collection
+    {
+        $handedIn = ProjectSubmission::query()
+            ->where('final_project_id', $projectId)
             ->distinct()
             ->pluck('user_id')
             ->map(static fn (mixed $id): string => (string) $id)

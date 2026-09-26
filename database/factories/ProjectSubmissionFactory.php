@@ -19,6 +19,7 @@ use App\Enums\SubmissionFieldType;
 use App\Models\FinalProject;
 use App\Models\ProjectSubmission;
 use App\Models\User;
+use App\Services\FinalProject\ReceiptCodes;
 use App\Services\FinalProject\SubmissionFields;
 use App\Services\Time\Clock;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -48,6 +49,7 @@ final class ProjectSubmissionFactory extends Factory
             'is_late' => false,
             'version' => 1,
             'status' => 'submitted',
+            'receipt_code' => ReceiptCodes::generate(),
         ];
     }
 
