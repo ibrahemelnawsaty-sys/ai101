@@ -89,11 +89,13 @@ return [
         'primary_set' => 'This is now the cohort\'s primary coordinator: support tickets reach them first.',
         'needs_primary_note' => 'This cohort has more than one coordinator and no primary one yet. Choose it here: the cohort cannot open for registration or start without one, and its tickets go to the general supervisor until it is chosen.',
         'no_coordinator_note' => 'This cohort has no coordinator yet. Assign one: the cohort cannot open for registration or start without one, and its tickets go to the general supervisor until then.',
-        'needs_primary_coordinator' => 'A cohort cannot start or open for registration before it has a primary coordinator. Assign a coordinator under "Trainers and coordinators" (and choose the primary one if there are several), then change its status.',
+        'needs_primary_coordinator' => 'A cohort cannot start or open for registration before it has a primary coordinator. Press "Assign a trainer" on the cohort\'s row and assign a coordinator in the "Assign a coordinator" card (choosing the primary one if there are several), then change its status.',
         'create_as_upcoming' => 'Create the cohort as "Upcoming" first: it cannot start or open for registration before a primary coordinator is assigned, and that can only happen once it exists.',
         'detach_last_coordinator' => 'This is the cohort\'s last coordinator, and no cohort is left without one. Assign another coordinator first, then remove this one.',
         'detach_primary_first' => 'This is the cohort\'s primary coordinator. Choose another primary coordinator first, then remove this one.',
         'primary_not_coordinator' => 'This account is not a coordinator of this cohort now. Assign it to the cohort first, then make it primary.',
+        'trainer_is_last_coordinator' => 'This account is the cohort\'s last coordinator, and assigning it as a trainer takes it out of the coordination; no cohort is left without one. Assign another coordinator first.',
+        'trainer_is_primary_coordinator' => 'This account is the cohort\'s primary coordinator, and assigning it as a trainer takes it out of the coordination. Choose another primary coordinator first.',
         // D-84, moved here from the account page by D-117.
         'add_participant' => 'Add an existing participant',
         // D-117 — the row button is short so the table stays inside its card.

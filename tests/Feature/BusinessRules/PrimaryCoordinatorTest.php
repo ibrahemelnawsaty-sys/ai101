@@ -252,23 +252,160 @@ it('D-124: لا يُزال آخر منسّق، ولا الأساسي ما دام
         ->and(primaryOf($this->cohort))->toBe($second->id);
 });
 
-it('D-124: شاشة الدفعات تسمّي المنسّق الأساسي وتعرض الاختيار حيث يوجد، وتنبّه حين لا أساسي', function (): void {
-    $first = makeCoordinator($this->cohort);
+it('D-124: شاشة الدفعات تسمّي المنسّق الأساسي بشارته وتعرض الاختيار حيث يوجد، وتنبّه حين لا أساسي', function (): void {
+    makeCoordinator($this->cohort);
     $second = makeCoordinator($this->cohort);
 
-    $this->actingAs($this->supervisor)
+    // The badge itself, not the words: the "make primary" button carries them too.
+    $badge = '/<span class="ui-badge ui-badge--brand[^"]*">\s*'.preg_quote((string) __('admin.cohorts.primary_badge'), '/').'\s*<\/span>/u';
+
+    $before = (string) $this->actingAs($this->supervisor)
         ->get(route('admin.cohorts.index', ['trainers' => $this->cohort->id]))
         ->assertOk()
         ->assertSee(__('admin.cohorts.needs_primary_note'))
-        ->assertSee(route('admin.cohorts.coordinators.primary', $this->cohort), false);
+        ->assertSee(route('admin.cohorts.coordinators.primary', $this->cohort), false)
+        ->getContent();
+
+    expect(preg_match_all($badge, $before))->toBe(0);
 
     $this->cohort->update(['primary_coordinator_id' => $second->id]);
 
-    $this->actingAs($this->supervisor)
+    $after = (string) $this->actingAs($this->supervisor)
         ->get(route('admin.cohorts.index', ['trainers' => $this->cohort->id]))
         ->assertOk()
-        ->assertSee(__('admin.cohorts.primary_badge'))
-        ->assertDontSee(__('admin.cohorts.needs_primary_note'));
+        ->assertDontSee(__('admin.cohorts.needs_primary_note'))
+        ->getContent();
 
-    expect($first->id)->not->toBe($second->id);
+    expect(preg_match_all($badge, $after))->toBe(1);
+});
+
+it('D-124: لا يُختار أساسيًّا إلا منسّق فعّال في هذه الدفعة — لا منسّق دفعة أخرى ولا منسحب ولا متدرب ولا مدرّب ولا معرّف مشوّه', function (): void {
+    makeCoordinator($this->cohort);
+    makeCoordinator($this->cohort);
+
+    $elsewhere = makeCoordinator(makeCohort());
+    $withdrawn = makeCoordinator($this->cohort);
+    withdrawCoordinator($this->cohort, $withdrawn);
+
+    foreach ([$elsewhere->id, $withdrawn->id, makeParticipant($this->cohort)->id, makeTrainer($this->cohort)->id] as $id) {
+        $this->actingAs($this->supervisor)
+            ->put(route('admin.cohorts.coordinators.primary', $this->cohort), ['coordinator_id' => $id])
+            ->assertSessionHasErrors(['coordinator_id' => __('admin.cohorts.primary_not_coordinator')]);
+    }
+
+    $this->actingAs($this->supervisor)
+        ->put(route('admin.cohorts.coordinators.primary', $this->cohort), ['coordinator_id' => 'not-a-uuid'])
+        ->assertSessionHasErrors('coordinator_id');
+
+    expect(primaryOf($this->cohort))->toBeNull()
+        ->and($this->cohort->fresh()->primary_coordinator_id)->toBeNull();
+});
+
+it('D-124: منسّق موقوف أو غُيّر دوره أو حُذف حسابه لا يُعدّ منسّقًا — لا أساسيًّا ولا في العدّ', function (Closure $disable): void {
+    $gone = makeCoordinator($this->cohort);
+    $active = makeCoordinator($this->cohort);
+    $this->cohort->update(['primary_coordinator_id' => $gone->id]);
+
+    $disable($gone);
+
+    // The one who can act is primary on their own; the other is counted by
+    // none of the rules — so removing the one who can act is removing the last.
+    expect(primaryOf($this->cohort))->toBe($active->id)
+        ->and(app(PrimaryCoordinator::class)->coordinatorIds($this->cohort))->toBe([$active->id]);
+
+    $this->actingAs($this->supervisor)
+        ->delete(route('admin.cohorts.coordinators.detach', [$this->cohort, $active]))
+        ->assertSessionHasErrors(['coordinator' => __('admin.cohorts.detach_last_coordinator')]);
+
+    if (! $gone->fresh()?->trashed()) {
+        $this->actingAs($this->supervisor)
+            ->put(route('admin.cohorts.coordinators.primary', $this->cohort), ['coordinator_id' => $gone->id])
+            ->assertSessionHasErrors(['coordinator_id' => __('admin.cohorts.primary_not_coordinator')]);
+    }
+})->with([
+    'موقوف' => [fn (User $user) => $user->forceFill(['status' => 'suspended'])->save()],
+    'غُيّر دوره إلى متدرب' => [fn (User $user) => $user->forceFill(['role' => 'participant'])->save()],
+    'حُذف حسابه' => [fn (User $user) => $user->delete()],
+]);
+
+it('D-124: حين يُسند منسّق جديد وعمود الأساسي يسمّي من غادر، يُكتب الأساسي الحالي — ويُسجَّل في التدقيق', function (): void {
+    $left = makeCoordinator($this->cohort);
+    $stays = makeCoordinator($this->cohort);
+    $this->cohort->update(['primary_coordinator_id' => $left->id]);
+    withdrawCoordinator($this->cohort, $left);
+
+    expect(primaryOf($this->cohort))->toBe($stays->id);
+
+    $newcomer = makeUser('coordinator');
+
+    $this->actingAs($this->supervisor)
+        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $newcomer->email])
+        ->assertSessionHasNoErrors();
+
+    $pin = AuditLog::query()->where('action', 'cohort.primary_coordinator_set')->where('entity_id', $this->cohort->id)->sole();
+
+    expect($this->cohort->fresh()->primary_coordinator_id)->toBe($stays->id)
+        ->and(primaryOf($this->cohort))->toBe($stays->id)
+        ->and($pin->before['primary_coordinator_id'])->toBe($left->id)
+        ->and($pin->after)->toMatchArray(['primary_coordinator_id' => $stays->id, 'reason' => 'kept_on_new_coordinator']);
+});
+
+it('D-124: إزالة المنسّق الأساسي حين يبقى واحد تُفرغ العمود وتُسجَّل في التدقيق', function (): void {
+    $chosen = makeCoordinator($this->cohort);
+    makeCoordinator($this->cohort);
+    $this->cohort->update(['primary_coordinator_id' => $chosen->id]);
+
+    $this->actingAs($this->supervisor)
+        ->delete(route('admin.cohorts.coordinators.detach', [$this->cohort, $chosen]))
+        ->assertSessionHasNoErrors();
+
+    $cleared = AuditLog::query()->where('action', 'cohort.primary_coordinator_set')->where('entity_id', $this->cohort->id)->sole();
+
+    expect($this->cohort->fresh()->primary_coordinator_id)->toBeNull()
+        ->and($cleared->after)->toMatchArray(['primary_coordinator_id' => null, 'reason' => 'coordinator_left']);
+});
+
+it('D-124: إسناد المنسّق مدرّبًا في دفعته يخضع لقاعدة الإزالة نفسها — لا آخر منسّق ولا الأساسي ما دام بعده اختيار', function (): void {
+    // A general supervisor may hold both assignments; the row is one per
+    // person and cohort, so the trainer form rewrites the coordinator's row.
+    $only = makeAdmin();
+    enroll($only, $this->cohort, 'coordinator');
+
+    $this->actingAs($this->supervisor)
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $only->email])
+        ->assertSessionHasErrors(['trainer' => __('admin.cohorts.trainer_is_last_coordinator')]);
+
+    expect(app(PrimaryCoordinator::class)->coordinatorIds($this->cohort))->toBe([$only->id]);
+
+    $second = makeCoordinator($this->cohort);
+    $third = makeAdmin();
+    enroll($third, $this->cohort, 'coordinator');
+    $this->cohort->update(['primary_coordinator_id' => $only->id]);
+
+    $this->actingAs($this->supervisor)
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $only->email])
+        ->assertSessionHasErrors(['trainer' => __('admin.cohorts.trainer_is_primary_coordinator')]);
+
+    // A coordinator who is not primary may become the cohort's trainer.
+    $this->actingAs($this->supervisor)
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $third->email])
+        ->assertSessionHasNoErrors();
+
+    expect(app(PrimaryCoordinator::class)->coordinatorIds($this->cohort))->toEqualCanonicalizing([$only->id, $second->id])
+        ->and(primaryOf($this->cohort))->toBe($only->id);
+});
+
+it('D-124: رفض الحالة يظهر مرة واحدة — مرشّح القائمة لا يحمل اسم حقل الحالة', function (): void {
+    $response = $this->actingAs($this->supervisor)
+        ->from(route('admin.cohorts.index', ['edit' => $this->cohort->id]))
+        ->patch(route('admin.cohorts.update', $this->cohort), cohortPayload($this->cohort, 'open'));
+
+    $response->assertSessionHasErrors(['status' => __('admin.cohorts.needs_primary_coordinator')]);
+
+    $page = (string) $this->actingAs($this->supervisor)
+        ->withSession(['errors' => session('errors')])
+        ->get(route('admin.cohorts.index', ['edit' => $this->cohort->id]))
+        ->getContent();
+
+    expect(substr_count($page, e((string) __('admin.cohorts.needs_primary_coordinator'))))->toBe(1);
 });

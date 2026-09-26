@@ -7,6 +7,8 @@ namespace App\Services\Cohorts;
 use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\User;
@@ -25,7 +27,7 @@ use App\Models\User;
  * nobody here sends its tickets to the general supervisor instead, so none is
  * lost (the safety net D-124 asked for).
  *
- * @see D-124 · D-105 · CONSTITUTION art. 6, art. 7
+ * @see D-124 · D-105 · BR-23 · SCR-9.18 · CONSTITUTION art. 6, art. 7
  */
 final class PrimaryCoordinator
 {
@@ -37,9 +39,27 @@ final class PrimaryCoordinator
      */
     public const REQUIRED_FOR = [CohortStatus::Open, CohortStatus::Running];
 
+    /** departureRefusal(): the cohort would be left with no coordinator. */
+    public const REFUSED_LAST = 'last';
+
+    /** departureRefusal(): the primary coordinator, while a choice remains. */
+    public const REFUSED_PRIMARY = 'primary';
+
+    /**
+     * The account roles that can hold a coordinator's powers — mirrors
+     * RoleResolver::coordinatorCohortIds().
+     *
+     * @var list<string>
+     */
+    private const COORDINATING_ROLES = [UserRole::Coordinator->value, UserRole::Admin->value];
+
     /**
      * The accounts actively coordinating this cohort, in the order they were
-     * seated.
+     * seated: an active enrolment as coordinator, held by an ACTIVE account
+     * whose own role can coordinate — the same gate RoleResolver puts on the
+     * coordinator's powers. A suspended account, or one moved to another role,
+     * keeps its enrolment row but could not act on a ticket routed to it, so it
+     * is nobody's primary coordinator and counts for none of the rules.
      *
      * @return list<string>
      */
@@ -50,6 +70,10 @@ final class PrimaryCoordinator
             ->where('cohort_id', $cohort->getKey())
             ->where('role_in_cohort', EnrollmentRole::Coordinator->value)
             ->where('status', EnrollmentStatus::Active->value)
+            ->whereIn('user_id', User::query()
+                ->where('status', UserStatus::Active->value)
+                ->whereIn('role', self::COORDINATING_ROLES)
+                ->select('id'))
             ->orderBy('enrolled_at')
             ->orderBy('id')
             ->pluck('user_id')
@@ -94,5 +118,35 @@ final class PrimaryCoordinator
     public function isCoordinatorOf(Cohort $cohort, string $userId): bool
     {
         return in_array($userId, $this->coordinatorIds($cohort), true);
+    }
+
+    /**
+     * Why this account may not stop coordinating the cohort now — or null when
+     * it may (D-124). The last coordinator who can act never leaves
+     * (REFUSED_LAST); the primary one leaves only once no choice remains, one
+     * coordinator left and primary on their own (REFUSED_PRIMARY). Asked by
+     * every door a coordinator leaves through: removing them, and assigning
+     * them to the same cohort as a trainer, which rewrites the same enrolment
+     * row. Each door words the refusal for its own form.
+     */
+    public function departureRefusal(Cohort $cohort, string $userId): ?string
+    {
+        $coordinators = $this->coordinatorIds($cohort);
+
+        if (! in_array($userId, $coordinators, true)) {
+            return null;
+        }
+
+        $remaining = count($coordinators) - 1;
+
+        if ($remaining === 0) {
+            return self::REFUSED_LAST;
+        }
+
+        if ($remaining > 1 && $this->idOf($cohort) === $userId) {
+            return self::REFUSED_PRIMARY;
+        }
+
+        return null;
     }
 }

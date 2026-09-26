@@ -14,7 +14,7 @@ use Illuminate\Validation\Validator;
  * reaches first. The general supervisor chooses among the cohort's active
  * coordinators — nobody else can be named, whatever id the form carries.
  *
- * @see D-124 · D-105 · CONSTITUTION Art. 5, Art. 22
+ * @see D-124 · D-105 · BR-23 · SCR-9.18 · CONSTITUTION Art. 5, Art. 22
  */
 final class SetPrimaryCoordinatorRequest extends FormRequest
 {

@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Schema;
  * table cleanup: the column then reads as "not chosen" again.
  *
  * Safe to run again: MySQL commits each schema statement on its own, so a run
- * that stopped part-way leaves the column behind unrecorded, and it is kept.
+ * that stopped part-way may have left the column without its key. Each half is
+ * added only when missing, and down() drops only what is there.
  *
  * @see D-124 · CONSTITUTION Article 29
  */
@@ -25,23 +26,47 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasColumn('cohorts', 'primary_coordinator_id')) {
-            return;
+        if (! Schema::hasColumn('cohorts', 'primary_coordinator_id')) {
+            Schema::table('cohorts', function (Blueprint $table): void {
+                $table->foreignUuid('primary_coordinator_id')
+                    ->nullable()
+                    ->after('min_attendance_rate');
+            });
         }
 
-        Schema::table('cohorts', function (Blueprint $table): void {
-            $table->foreignUuid('primary_coordinator_id')
-                ->nullable()
-                ->after('min_attendance_rate')
-                ->constrained('users')
-                ->nullOnDelete();
-        });
+        if (! $this->hasForeignKey()) {
+            Schema::table('cohorts', function (Blueprint $table): void {
+                $table->foreign('primary_coordinator_id')
+                    ->references('id')
+                    ->on('users')
+                    ->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('cohorts', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('primary_coordinator_id');
-        });
+        if ($this->hasForeignKey()) {
+            Schema::table('cohorts', function (Blueprint $table): void {
+                $table->dropForeign(['primary_coordinator_id']);
+            });
+        }
+
+        if (Schema::hasColumn('cohorts', 'primary_coordinator_id')) {
+            Schema::table('cohorts', function (Blueprint $table): void {
+                $table->dropColumn('primary_coordinator_id');
+            });
+        }
+    }
+
+    private function hasForeignKey(): bool
+    {
+        foreach (Schema::getForeignKeys('cohorts') as $key) {
+            if (($key['columns'] ?? []) === ['primary_coordinator_id']) {
+                return true;
+            }
+        }
+
+        return false;
     }
 };

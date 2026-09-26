@@ -32,6 +32,8 @@ use App\Services\Time\Clock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Cohorts (PRD §4.2, §7.2).
@@ -72,7 +74,8 @@ final class CohortController extends Controller
             $query->where('program_id', $program);
         }
 
-        $status = $request->query('status');
+        // `state`, not `status` — see admin/cohorts.blade.php (D-124).
+        $status = $request->query('state');
 
         if (is_string($status) && CohortStatus::tryFrom($status) !== null) {
             $query->where('status', $status);
@@ -238,23 +241,42 @@ final class CohortController extends Controller
     public function attachTrainer(AssignTrainerRequest $request, Cohort $cohort): RedirectResponse
     {
         $trainer = $request->trainer();
+        $trainerId = (string) $trainer->getKey();
 
-        $enrollment = Enrollment::query()->firstOrNew([
-            'cohort_id' => $cohort->getKey(),
-            'user_id' => $trainer->getKey(),
-        ]);
+        // D-124 — the enrolment row is one per person and cohort: a
+        // coordinator assigned here as a trainer leaves the coordination. The
+        // rule AssignTrainerRequest asked is asked again under the cohort's
+        // lock, so two requests cannot both take the last coordinator away.
+        DB::transaction(function () use ($cohort, $trainerId): void {
+            $locked = $this->lockCohort($cohort);
+            $wasCoordinator = $this->primary->isCoordinatorOf($locked, $trainerId);
+            $refusal = $this->primary->departureRefusal($locked, $trainerId);
 
-        $enrollment->fill([
-            'role_in_cohort' => EnrollmentRole::Trainer->value,
-            'status' => EnrollmentStatus::Active->value,
-            'enrolled_at' => $enrollment->getAttribute('enrolled_at') ?? Clock::now(),
-        ]);
+            if ($refusal !== null) {
+                throw ValidationException::withMessages(['trainer' => AssignTrainerRequest::message($refusal)]);
+            }
 
-        $this->audit->log('cohort.trainer_attached', $cohort, null, [
-            'trainer_id' => (string) $trainer->getKey(),
-        ]);
+            $enrollment = Enrollment::query()->firstOrNew([
+                'cohort_id' => $locked->getKey(),
+                'user_id' => $trainerId,
+            ]);
 
-        $enrollment->save();
+            $enrollment->fill([
+                'role_in_cohort' => EnrollmentRole::Trainer->value,
+                'status' => EnrollmentStatus::Active->value,
+                'enrolled_at' => $enrollment->getAttribute('enrolled_at') ?? Clock::now(),
+            ]);
+
+            $this->audit->log('cohort.trainer_attached', $locked, null, [
+                'trainer_id' => $trainerId,
+            ]);
+
+            $enrollment->save();
+
+            if ($wasCoordinator) {
+                $this->forgetPrimary($locked, $trainerId);
+            }
+        });
 
         // The announcement channel, the group, and a direct line to each
         // participant (PRD §9.13, D-82).
@@ -297,33 +319,39 @@ final class CohortController extends Controller
     public function attachCoordinator(AssignCoordinatorRequest $request, Cohort $cohort): RedirectResponse
     {
         $coordinator = $request->coordinator();
+        $coordinatorId = (string) $coordinator->getKey();
 
-        // D-124 — a single coordinator is primary without being chosen. When a
-        // second one joins, the first stays primary: written down now, or the
-        // cohort would silently lose its primary coordinator (and the route
-        // its tickets take) the moment it gained a coordinator.
-        $current = $this->primary->idOf($cohort);
+        DB::transaction(function () use ($cohort, $coordinatorId): void {
+            $locked = $this->lockCohort($cohort);
 
-        if ($current !== null && $current !== (string) $coordinator->getKey() && $cohort->getAttribute('primary_coordinator_id') === null) {
-            $cohort->update(['primary_coordinator_id' => $current]);
-        }
+            // D-124 — a single coordinator is primary without being chosen.
+            // When another joins, the primary one stays primary: written down
+            // now — whatever the column held, empty or naming someone who has
+            // since left — or the cohort would lose its primary coordinator
+            // (and the route its tickets take) the moment it gained one.
+            $current = $this->primary->idOf($locked);
 
-        $enrollment = Enrollment::query()->firstOrNew([
-            'cohort_id' => $cohort->getKey(),
-            'user_id' => $coordinator->getKey(),
-        ]);
+            if ($current !== null && $current !== $coordinatorId && $locked->getAttribute('primary_coordinator_id') !== $current) {
+                $this->writePrimary($locked, $current, 'kept_on_new_coordinator');
+            }
 
-        $enrollment->fill([
-            'role_in_cohort' => EnrollmentRole::Coordinator->value,
-            'status' => EnrollmentStatus::Active->value,
-            'enrolled_at' => $enrollment->getAttribute('enrolled_at') ?? Clock::now(),
-        ]);
+            $enrollment = Enrollment::query()->firstOrNew([
+                'cohort_id' => $locked->getKey(),
+                'user_id' => $coordinatorId,
+            ]);
 
-        $this->audit->log('cohort.coordinator_attached', $cohort, null, [
-            'coordinator_id' => (string) $coordinator->getKey(),
-        ]);
+            $enrollment->fill([
+                'role_in_cohort' => EnrollmentRole::Coordinator->value,
+                'status' => EnrollmentStatus::Active->value,
+                'enrolled_at' => $enrollment->getAttribute('enrolled_at') ?? Clock::now(),
+            ]);
 
-        $enrollment->save();
+            $this->audit->log('cohort.coordinator_attached', $locked, null, [
+                'coordinator_id' => $coordinatorId,
+            ]);
+
+            $enrollment->save();
+        });
 
         return back()->with('status', __('admin.cohorts.coordinator_attached'));
     }
@@ -333,26 +361,44 @@ final class CohortController extends Controller
      */
     public function detachCoordinator(DetachCoordinatorRequest $request, Cohort $cohort, User $coordinator): RedirectResponse
     {
-        $enrollment = Enrollment::query()
-            ->where('cohort_id', $cohort->getKey())
-            ->where('user_id', $coordinator->getKey())
-            ->where('role_in_cohort', EnrollmentRole::Coordinator->value)
-            ->first();
+        $coordinatorId = (string) $coordinator->getKey();
 
-        if ($enrollment === null) {
+        // D-124 — asked again under the cohort's lock: two removals of the
+        // last two coordinators at the same moment cannot both pass.
+        $detached = DB::transaction(function () use ($cohort, $coordinatorId): bool {
+            $locked = $this->lockCohort($cohort);
+
+            $enrollment = Enrollment::query()
+                ->where('cohort_id', $locked->getKey())
+                ->where('user_id', $coordinatorId)
+                ->where('role_in_cohort', EnrollmentRole::Coordinator->value)
+                ->first();
+
+            if ($enrollment === null) {
+                return false;
+            }
+
+            $refusal = $this->primary->departureRefusal($locked, $coordinatorId);
+
+            if ($refusal !== null) {
+                throw ValidationException::withMessages(['coordinator' => DetachCoordinatorRequest::message($refusal)]);
+            }
+
+            $this->audit->log('cohort.coordinator_detached', $locked, [
+                'status' => $enrollment->getAttribute('status')?->value,
+            ], ['coordinator_id' => $coordinatorId]);
+
+            $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
+
+            // The primary coordinator went only because one coordinator
+            // remains, who is primary on their own now.
+            $this->forgetPrimary($locked, $coordinatorId);
+
+            return true;
+        });
+
+        if (! $detached) {
             return back();
-        }
-
-        $this->audit->log('cohort.coordinator_detached', $cohort, [
-            'status' => $enrollment->getAttribute('status')?->value,
-        ], ['coordinator_id' => (string) $coordinator->getKey()]);
-
-        $enrollment->forceFill(['status' => EnrollmentStatus::Withdrawn->value])->save();
-
-        // D-124 — DetachCoordinatorRequest let the primary coordinator go only
-        // when one coordinator remains, who is then primary on their own.
-        if ($cohort->getAttribute('primary_coordinator_id') === (string) $coordinator->getKey()) {
-            $cohort->update(['primary_coordinator_id' => null]);
         }
 
         return back()->with('status', __('admin.cohorts.coordinator_detached'));
@@ -367,12 +413,53 @@ final class CohortController extends Controller
     {
         $coordinatorId = $request->coordinatorId();
 
-        $this->audit->log('cohort.primary_coordinator_set', $cohort, [
-            'primary_coordinator_id' => $cohort->getAttribute('primary_coordinator_id'),
-        ], ['primary_coordinator_id' => $coordinatorId]);
+        DB::transaction(function () use ($cohort, $coordinatorId): void {
+            $locked = $this->lockCohort($cohort);
 
-        $cohort->update(['primary_coordinator_id' => $coordinatorId]);
+            // Asked again under the lock: a coordinator removed a moment ago
+            // is not made primary by a page that still listed them.
+            if (! $this->primary->isCoordinatorOf($locked, $coordinatorId)) {
+                throw ValidationException::withMessages(['coordinator_id' => (string) __('admin.cohorts.primary_not_coordinator')]);
+            }
+
+            $this->writePrimary($locked, $coordinatorId, 'chosen');
+        });
 
         return back()->with('status', __('admin.cohorts.primary_set'));
+    }
+
+    /** The cohort's row, locked for the rest of the transaction (D-124). */
+    private function lockCohort(Cohort $cohort): Cohort
+    {
+        /** @var Cohort $locked */
+        $locked = Cohort::query()->whereKey($cohort->getKey())->lockForUpdate()->firstOrFail();
+
+        return $locked;
+    }
+
+    /**
+     * Every write of `primary_coordinator_id` goes through here, and each is
+     * in the audit trail before it is saved (art. 8) — chosen by the
+     * supervisor, kept when a second coordinator joined, or cleared when the
+     * one it named left.
+     */
+    private function writePrimary(Cohort $cohort, ?string $coordinatorId, string $reason): void
+    {
+        $this->audit->log('cohort.primary_coordinator_set', $cohort, [
+            'primary_coordinator_id' => $cohort->getAttribute('primary_coordinator_id'),
+        ], [
+            'primary_coordinator_id' => $coordinatorId,
+            'reason' => $reason,
+        ]);
+
+        $cohort->update(['primary_coordinator_id' => $coordinatorId]);
+    }
+
+    /** The column forgets a coordinator who is no longer one here. */
+    private function forgetPrimary(Cohort $cohort, string $coordinatorId): void
+    {
+        if ($cohort->getAttribute('primary_coordinator_id') === $coordinatorId) {
+            $this->writePrimary($cohort, null, 'coordinator_left');
+        }
     }
 }

@@ -47,25 +47,19 @@ final class DetachCoordinatorRequest extends FormRequest
                 return;
             }
 
-            $primary = app(PrimaryCoordinator::class);
-            $leavingId = (string) $leaving->getKey();
-            $coordinators = $primary->coordinatorIds($cohort);
+            $refusal = app(PrimaryCoordinator::class)->departureRefusal($cohort, (string) $leaving->getKey());
 
-            if (! in_array($leavingId, $coordinators, true)) {
-                return;
-            }
-
-            $remaining = count($coordinators) - 1;
-
-            if ($remaining === 0) {
-                $validator->errors()->add('coordinator', (string) __('admin.cohorts.detach_last_coordinator'));
-
-                return;
-            }
-
-            if ($remaining > 1 && $primary->idOf($cohort) === $leavingId) {
-                $validator->errors()->add('coordinator', (string) __('admin.cohorts.detach_primary_first'));
+            if ($refusal !== null) {
+                $validator->errors()->add('coordinator', self::message($refusal));
             }
         });
+    }
+
+    /** The refusal as this form words it (PrimaryCoordinator::departureRefusal). */
+    public static function message(string $refusal): string
+    {
+        return (string) __($refusal === PrimaryCoordinator::REFUSED_LAST
+            ? 'admin.cohorts.detach_last_coordinator'
+            : 'admin.cohorts.detach_primary_first');
     }
 }

@@ -34,8 +34,11 @@
             <form method="GET" action="{{ route('admin.cohorts.index') }}" class="toolbar__filters">
                 <x-ui.select name="program" :label="__('admin.programs.title')"
                     :options="$programOptions" :value="request('program')" />
-                <x-ui.select name="status" :label="__('admin.cohorts.fields.status')"
-                    :options="$statusOptions" :value="request('status')" />
+                {{-- `state`, not `status`: the editor's own status field on
+                     this page carries the D-124 refusal, and a filter of the
+                     same name would print it a second time. --}}
+                <x-ui.select name="state" :label="__('admin.cohorts.fields.status')"
+                    :options="$statusOptions" :value="request('state')" />
                 <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
@@ -235,6 +238,15 @@
                 :title="__('admin.cohorts.assign_trainer')">
 
                 <p><b>{{ $assigning->name }}</b> · {{ $assigning->programName }}</p>
+
+                {{-- D-124 — a coordinator assigned here as a trainer leaves the
+                     coordination, and the same rule as removing them applies. --}}
+                @error('trainer')
+                    <p class="note note--bad" role="alert">
+                        <x-ui.icon name="warn" />
+                        <span>{{ $message }}</span>
+                    </p>
+                @enderror
 
                 @if (count($assigning->trainers) === 0)
                     <x-ui.empty-state icon="user"
