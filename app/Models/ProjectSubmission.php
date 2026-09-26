@@ -18,7 +18,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * assignment submissions: a new version never removes the previous one (BR-19).
  * Its existence completes journey step 7.
  *
- * @see BR-19, BR-21, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4, §9
+ * What was handed in lives in `answers` (D-121): one entry per field of the
+ * project's hand-in form, IN THE ORDER the form showed them, each carrying a
+ * copy of the field's label and type beside the value or the stored files —
+ * the shape SubmissionFields::answer() writes and nothing else writes. The copy
+ * is the point: the administrator may rename or remove a field tomorrow, and
+ * this version must still say what was asked and what came back.
+ *
+ * `live_url`, `github_url`, `presentation_file`, `logo_file`, `description` and
+ * `files` are the earlier, fixed hand-in (D-110 and before). They are kept as
+ * they were, never written again; the D-121 migration copied every row of them
+ * into `answers`.
+ *
+ * @see BR-19, BR-21, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4, §9 · D-110, D-121
  */
 class ProjectSubmission extends Model
 {
@@ -38,6 +50,7 @@ class ProjectSubmission extends Model
         'final_project_id',
         'user_id',
         'files',
+        'answers',
         'live_url',
         'github_url',
         'presentation_file',
@@ -55,6 +68,8 @@ class ProjectSubmission extends Model
     {
         return [
             'files' => 'array',
+            // D-121 — the hand-in itself, one snapshot entry per field.
+            'answers' => 'array',
             // D-110's two named deliverables: single-file descriptors, the
             // same shape PrivateFileService::store() returns for one entry of
             // `files`, never a list of one (they are not a repeatable field).

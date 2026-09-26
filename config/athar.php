@@ -235,10 +235,18 @@ return [
         'import_max_rows' => (int) env('ATHAR_INVITE_IMPORT_MAX_ROWS', 200),
     ],
 
+    /*
+    | `max_files` is also the number of files ONE request may carry — PHP's
+    | `max_file_uploads` drops the rest silently — and `max_request_kilobytes`
+    | is the body one request may carry, the host's `post_max_size`
+    | (deploy/README.md §2.4). The final project's upload fields share both
+    | between them, because a hand-in is one request (D-121).
+    */
     'uploads' => [
         'disk' => env('ATHAR_UPLOAD_DISK', 'private'),
         'max_kilobytes' => 25600,
         'max_files' => 5,
+        'max_request_kilobytes' => 30720,
         'allowed_extensions' => [
             'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
             'txt', 'md', 'csv', 'zip', 'png', 'jpg', 'jpeg', 'webp',

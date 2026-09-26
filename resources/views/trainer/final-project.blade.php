@@ -15,7 +15,10 @@
 
     Four states: error · loading skeleton shaped like the table · empty · normal.
 
-    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23 · D-109, D-110
+    D-121: the hand-in is whatever fields the general supervisor defined; the
+    grading panel lists them as they were asked, with signed file links.
+
+    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23 · FR-PROJ-10 · D-109, D-110, D-121
 --}}
 @extends('layouts.app')
 
@@ -179,55 +182,9 @@
                     <div>
                         <h3 class="abrief__sub">{{ __('trainer.grading.submission') }}</h3>
 
-                        <dl class="deflist">
-                            <div>
-                                <dt>{{ __('project.live_url') }}</dt>
-                                <dd>
-                                    @if ($selected->liveUrl)
-                                        <a href="{{ $selected->liveUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $selected->liveUrl }}</a>
-                                    @else
-                                        <span class="u-muted">{{ __('app.none') }}</span>
-                                    @endif
-                                </dd>
-                            </div>
-                            <div>
-                                <dt>{{ __('project.github_url') }}</dt>
-                                <dd>
-                                    @if ($selected->githubUrl)
-                                        <a href="{{ $selected->githubUrl }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $selected->githubUrl }}</a>
-                                    @else
-                                        <span class="u-muted">{{ __('app.none') }}</span>
-                                    @endif
-                                </dd>
-                            </div>
-                            <div>
-                                <dt>{{ __('project.presentation_file') }}</dt>
-                                <dd>
-                                    @if ($selected->presentationFile)
-                                        <span dir="ltr">{{ $selected->presentationFile->name }}</span>
-                                        <small class="u-num">{{ $selected->presentationFile->sizeLabel }}</small>
-                                    @else
-                                        <span class="u-muted">{{ __('app.none') }}</span>
-                                    @endif
-                                </dd>
-                            </div>
-                            @if ($selected->logoFile)
-                                <div>
-                                    <dt>{{ __('project.logo_file') }}</dt>
-                                    <dd>
-                                        <span dir="ltr">{{ $selected->logoFile->name }}</span>
-                                        <small class="u-num">{{ $selected->logoFile->sizeLabel }}</small>
-                                    </dd>
-                                </div>
-                            @endif
-                        </dl>
-
-                        @if ($selected->note)
-                            <div class="note">
-                                <b>{{ __('trainer.grading.participant_note') }}</b>
-                                <p class="note__body">{{ $selected->note }}</p>
-                            </div>
-                        @endif
+                        {{-- D-121: every item under the label it was asked by, each
+                             file with a signed link valid fifteen minutes. --}}
+                        @include('partials.hand-in-answers', ['answers' => $selected->answers])
 
                         <p class="footnote">
                             {{ __('assignments.current_submission', ['version' => $selected->version]) }} ·

@@ -11,8 +11,10 @@ use App\Models\Cohort;
 use App\Models\FinalProject;
 use App\Models\User;
 use App\Presenters\Admin\FinalProjectSettings;
+use App\Presenters\Admin\SubmissionFieldsPanel;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
+use App\Services\FinalProject\SubmissionFields;
 use App\Services\Mail\CohortAudience;
 use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
@@ -38,7 +40,12 @@ use Illuminate\Support\Facades\Route;
  * fires once, only on the transition from locked to unlocked (D-77), through
  * the same FinalProjectUnlocked event the trainer's screen used to dispatch.
  *
- * @see BR-15, BR-16, BR-23 · PRD §9.14 · D-77, D-109, D-110 · CONSTITUTION Art. 5
+ * D-121 — the same screen shows the project's hand-in fields and opens their
+ * editor (`?field=new|{id}`) or removal prompt (`?remove={id}`); the writes
+ * live in FinalProjectFieldController. A project created here starts with the
+ * default fields (SubmissionFields::DEFAULTS), which the supervisor then shapes.
+ *
+ * @see BR-15, BR-16, BR-23, BR-31 · FR-PROJ-10 · PRD §9.14 · D-77, D-109, D-110, D-121 · CONSTITUTION Art. 5
  */
 final class FinalProjectController extends Controller
 {
@@ -49,6 +56,7 @@ final class FinalProjectController extends Controller
         private readonly AuditLogger $audit,
         private readonly InAppNotifier $notifier,
         private readonly CohortAudience $audience,
+        private readonly SubmissionFields $fields,
     ) {}
 
     public function index(Request $request): View
@@ -68,6 +76,14 @@ final class FinalProjectController extends Controller
                 ->first();
 
         return view('admin.final-project', [
+            'fieldsPanel' => $project instanceof FinalProject
+                ? SubmissionFieldsPanel::from(
+                    $project,
+                    $project->fields()->get(),
+                    self::queryId($request, 'field'),
+                    self::queryId($request, 'remove'),
+                )
+                : null,
             'contextLabel' => $selectedCohort?->getAttribute('name'),
             'cohortOptions' => Options::fromModels(
                 $cohorts,
@@ -92,6 +108,7 @@ final class FinalProjectController extends Controller
         $admin = $request->user();
 
         $project = FinalProject::query()->firstOrNew(['cohort_id' => $cohort->getKey()]);
+        $isNew = ! $project->exists;
         $wasUnlocked = (bool) $project->getAttribute('is_unlocked');
 
         $before = $project->exists
@@ -114,6 +131,21 @@ final class FinalProjectController extends Controller
 
         $project->save();
 
+        // D-121 — a new project starts with the default hand-in fields, so
+        // it is never opened with nothing to hand in. Every later save leaves
+        // the fields to their own card.
+        if ($isNew) {
+            $installed = $this->fields->installDefaults($project);
+
+            $this->audit->log(
+                action: 'final_project.fields_installed',
+                entity: $project,
+                before: null,
+                after: ['fields' => $installed],
+                actor: $admin,
+            );
+        }
+
         // Only the move from locked to unlocked announces (D-77): saving an
         // already-open project again, or one that stays locked, writes no
         // second notice and sends no second letter.
@@ -129,6 +161,17 @@ final class FinalProjectController extends Controller
         return redirect()
             ->route('admin.finalProject.index', ['cohort' => $cohort->getKey()])
             ->with('status', __('admin.final_project.saved'));
+    }
+
+    /**
+     * A uuid-shaped id from the query string, or 'new', or nothing. Anything
+     * else opens nothing rather than reaching a query (art. 7).
+     */
+    private static function queryId(Request $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        return is_string($value) && preg_match('/^(new|[0-9a-f-]{36})$/i', $value) === 1 ? $value : null;
     }
 
     /**

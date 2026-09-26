@@ -37,6 +37,11 @@ return [
             'body' => 'It was left open for a long time. Reload it and send your details again.',
             'action' => 'Reload the page',
         ],
+        '413' => [
+            'title' => 'The files are larger than the server accepts at once',
+            'body' => 'What you uploaded in this request went over the limit, so none of it arrived and nothing was saved. Make the files smaller or compress them, then go back and try again.',
+            'action' => 'Go back and try again',
+        ],
         '429' => [
             'title' => 'Too many requests in a short time',
             'body' => 'Wait a moment and try again. This protects your account and everyone else.',

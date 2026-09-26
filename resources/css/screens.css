@@ -675,6 +675,9 @@ min-block-size: var(--s9);
 .deflist > div:last-child { border-block-end: 0; }
 .deflist dt { color: var(--text-muted); }
 .deflist dd { margin: 0; color: var(--text-strong); font-weight: var(--fw-semi); text-align: end; }
+/* A long answer of a final-project hand-in (D-121): its own full-width line,
+   read from the start edge, the participant's line breaks kept. */
+.deflist .deflist__long { flex-basis: 100%; text-align: start; font-weight: var(--fw-regular); white-space: pre-line; overflow-wrap: anywhere; }
 
 .codebox {
   font-family: var(--font-mono);

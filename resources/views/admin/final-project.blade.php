@@ -10,7 +10,12 @@
     Three states beyond loading/error: no cohort exists yet · a cohort list
     with none picked · a picked cohort's settings, existing or blank.
 
-    @see PRD §9.14 · BR-15, BR-16, BR-23 · D-109, D-110
+    D-121 — under the settings, the hand-in form's fields: the list in order,
+    the server's upload limits, the editor (?field=new|{id}) and the removal
+    prompt (?remove={id}). Every figure and every decision here comes from
+    SubmissionFieldsPanel; every write goes through its own policy.
+
+    @see PRD §9.14 · BR-15, BR-16, BR-23, BR-31 · D-109, D-110, D-121
 --}}
 @extends('layouts.app')
 
@@ -102,6 +107,171 @@
                     </div>
                 </form>
             </x-ui.card>
+
+            {{-- D-121 · the hand-in form's fields --------------------------------- --}}
+            @if ($fieldsPanel === null)
+                <x-ui.card class="dc--span u-mt-4" icon="up" id="submission-fields"
+                    :title="__('admin.final_project.submission_fields.title')">
+                    <p class="form__note">{{ __('admin.final_project.submission_fields.save_project_first') }}</p>
+                </x-ui.card>
+            @else
+                <x-ui.card class="dc--span u-mt-4" icon="up" id="submission-fields"
+                    :title="__('admin.final_project.submission_fields.title')">
+                    <x-slot:action>
+                        <x-ui.button variant="primary" size="sm" icon="spark"
+                            :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => 'new']).'#field-editor'">{{ __('admin.final_project.submission_fields.add') }}</x-ui.button>
+                    </x-slot:action>
+
+                    <p class="form__note">{{ __('admin.final_project.submission_fields.intro') }}</p>
+                    <p class="hint"><x-ui.icon name="info" /><span>{{ $fieldsPanel->limitsNote }}</span></p>
+
+                    @if ($fieldsPanel->heavyWarning)
+                        <div class="note note--warn u-mt-2" role="status">
+                            <x-ui.icon name="warn" />
+                            <p>{{ $fieldsPanel->heavyWarning }}</p>
+                        </div>
+                    @endif
+
+                    @if ($fieldsPanel->isEmpty)
+                        <x-ui.empty-state icon="up" class="u-mt-4"
+                            :title="__('admin.final_project.submission_fields.empty_title')"
+                            :description="__('admin.final_project.submission_fields.empty_body')"
+                            :action-label="__('admin.final_project.submission_fields.add')"
+                            :action-href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => 'new']).'#field-editor'" />
+                    @else
+                        <ol class="reslist u-mt-4" role="list">
+                            @foreach ($fieldsPanel->rows as $row)
+                                <li @class(['row', 'is-selected' => $row->isSelected])>
+                                    <div class="row__m">
+                                        <b><span class="u-num">{{ $row->number }}.</span> {{ $row->label }}</b>
+                                        <span class="u-inline">
+                                            <x-ui.pill variant="info" :icon="$row->typeIcon">{{ $row->typeLabel }}</x-ui.pill>
+                                            <x-ui.pill :variant="$row->requiredVariant">{{ $row->requiredLabel }}</x-ui.pill>
+                                        </span>
+                                        @if ($row->description)
+                                            <span class="note__body">{{ $row->description }}</span>
+                                        @endif
+                                        <span class="note__body">{{ $row->rulesLabel }}</span>
+                                    </div>
+
+                                    <div class="row__e row__acts">
+                                        <form method="POST" action="{{ route('admin.finalProject.fields.move', [$fieldsPanel->projectId, $row->id]) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="direction" value="up">
+                                            <x-ui.button variant="ghost" size="sm" type="submit" icon="chevup"
+                                                :state="$row->canMoveUp ? 'default' : 'disabled'"><span class="ui-sr">{{ $row->moveUpLabel }}</span></x-ui.button>
+                                        </form>
+                                        <form method="POST" action="{{ route('admin.finalProject.fields.move', [$fieldsPanel->projectId, $row->id]) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="direction" value="down">
+                                            <x-ui.button variant="ghost" size="sm" type="submit" icon="chevdown"
+                                                :state="$row->canMoveDown ? 'default' : 'disabled'"><span class="ui-sr">{{ $row->moveDownLabel }}</span></x-ui.button>
+                                        </form>
+                                        <x-ui.button variant="secondary" size="sm"
+                                            :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => $row->id]).'#field-editor'">{{ __('app.edit') }}</x-ui.button>
+                                        <x-ui.button variant="secondary" size="sm"
+                                            :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'remove' => $row->id]).'#field-removal'">{{ __('admin.final_project.submission_fields.remove') }}</x-ui.button>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endif
+                </x-ui.card>
+
+                {{-- Removal prompt ---------------------------------------------------- --}}
+                @if ($fieldsPanel->removal)
+                    <x-ui.card class="dc--span u-mt-4" icon="warn" id="field-removal"
+                        :title="$fieldsPanel->removal['title']">
+                        <div class="note note--warn">
+                            {{ __('admin.final_project.submission_fields.remove_body') }}
+                        </div>
+
+                        <form method="POST"
+                            action="{{ route('admin.finalProject.fields.destroy', [$fieldsPanel->projectId, $fieldsPanel->removal['id']]) }}">
+                            @csrf
+                            @method('DELETE')
+
+                            <div class="row__acts">
+                                <x-ui.button variant="danger" type="submit">{{ __('admin.final_project.submission_fields.remove_action') }}</x-ui.button>
+                                <x-ui.button variant="ghost"
+                                    :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#submission-fields'">{{ __('app.cancel') }}</x-ui.button>
+                            </div>
+                        </form>
+                    </x-ui.card>
+                @endif
+
+                {{-- Field editor ------------------------------------------------------ --}}
+                @if ($fieldsPanel->editor)
+                    <x-ui.card class="dc--span u-mt-4" icon="up" id="field-editor" :title="$fieldsPanel->editor->title">
+                        <form method="POST"
+                            action="{{ $fieldsPanel->editor->exists
+                                ? route('admin.finalProject.fields.update', [$fieldsPanel->projectId, $fieldsPanel->editor->id])
+                                : route('admin.finalProject.fields.store', $fieldsPanel->projectId) }}"
+                            x-data="{ type: @js(old('type', $fieldsPanel->editor->type)) }"
+                            x-on:change="if ($event.target.name === 'type') type = $event.target.value">
+                            @csrf
+                            @if ($fieldsPanel->editor->exists)
+                                @method('PATCH')
+                            @endif
+
+                            <x-ui.radio name="type" variant="cards" required
+                                :legend="__('admin.final_project.submission_fields.form.type')"
+                                :options="$fieldsPanel->typeOptions"
+                                :value="old('type', $fieldsPanel->editor->type)" />
+
+                            <x-ui.input name="label" required maxlength="160"
+                                :label="__('admin.final_project.submission_fields.form.label')"
+                                :hint="__('admin.final_project.submission_fields.form.label_hint')"
+                                :value="old('label', $fieldsPanel->editor->label)" />
+
+                            <x-ui.textarea name="description" rows="2"
+                                :label="__('admin.final_project.submission_fields.form.description')"
+                                :hint="__('admin.final_project.submission_fields.form.description_hint')"
+                                :value="old('description', $fieldsPanel->editor->description)" />
+
+                            <x-ui.textarea name="tips" rows="3"
+                                :label="__('admin.final_project.submission_fields.form.tips')"
+                                :hint="__('admin.final_project.submission_fields.form.tips_hint')"
+                                :value="old('tips', $fieldsPanel->editor->tipsLines)" />
+
+                            <x-ui.checkbox name="is_required" value="1"
+                                :checked="old('is_required', $fieldsPanel->editor->isRequired)"
+                                :label="__('admin.final_project.submission_fields.form.is_required')"
+                                :hint="__('admin.final_project.submission_fields.form.is_required_hint')" />
+
+                            <div x-bind:hidden="type !== @js($fieldsPanel->fileType)"
+                                @if (old('type', $fieldsPanel->editor->type) !== $fieldsPanel->fileType) hidden @endif>
+                                <h3 class="abrief__sub">{{ __('admin.final_project.submission_fields.form.file_legend') }}</h3>
+                                <p class="form__note">{{ __('admin.final_project.submission_fields.form.file_hint') }}</p>
+
+                                <x-ui.checkbox name="formats" variant="cards"
+                                    :legend="__('admin.final_project.submission_fields.form.formats')"
+                                    :options="$fieldsPanel->formatOptions"
+                                    :value="old('formats', $fieldsPanel->editor->formats)" />
+
+                                <div class="f2">
+                                    <x-ui.input name="max_megabytes" type="number" min="1" :max="$fieldsPanel->maxMegabytes"
+                                        :label="__('admin.final_project.submission_fields.form.max_megabytes')"
+                                        :hint="$fieldsPanel->maxMegabytesHint"
+                                        :value="old('max_megabytes', $fieldsPanel->editor->maxMegabytes)" />
+                                    <x-ui.input name="max_files" type="number" min="1" :max="$fieldsPanel->maxFiles"
+                                        :label="__('admin.final_project.submission_fields.form.max_files')"
+                                        :hint="$fieldsPanel->maxFilesHint"
+                                        :value="old('max_files', $fieldsPanel->editor->maxFiles)" />
+                                </div>
+                            </div>
+
+                            <div class="row__acts u-mt-4">
+                                <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.submission_fields.save') }}</x-ui.button>
+                                <x-ui.button variant="ghost"
+                                    :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#submission-fields'">{{ __('app.cancel') }}</x-ui.button>
+                            </div>
+                        </form>
+                    </x-ui.card>
+                @endif
+            @endif
         @endif
     @endif
 @endsection

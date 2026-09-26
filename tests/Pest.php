@@ -33,6 +33,7 @@ use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Evaluation;
 use App\Models\FinalProject;
+use App\Models\FinalProjectField;
 use App\Models\JourneyStep;
 use App\Models\Program;
 use App\Models\ProjectSubmission;
@@ -44,6 +45,7 @@ use App\Models\User;
 use App\Models\Week;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
+use App\Services\FinalProject\SubmissionFields;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Journey\JourneyEvaluator;
 use App\Services\Time\Clock;
@@ -307,14 +309,66 @@ function makeSubmission(Assignment $assignment, User $user, array $attributes = 
     ]);
 }
 
+/**
+ * A final project, with the default hand-in fields installed — exactly what
+ * the supervisor's first save gives a new project (D-121).
+ */
 function makeFinalProject(Cohort $cohort, array $attributes = []): FinalProject
 {
-    return FinalProject::factory()->create($attributes + [
+    $project = FinalProject::factory()->create($attributes + [
         'cohort_id' => $cohort->id,
         'is_unlocked' => false,
         'max_score' => 50,
         'due_at' => riyadhAt('2026-11-05 23:59:00'),
     ]);
+
+    app(SubmissionFields::class)->installDefaults($project);
+
+    return $project;
+}
+
+/**
+ * One of a project's DEFAULT hand-in fields, named by its key in
+ * SubmissionFields::DEFAULTS (live_url, github_url, presentation_file,
+ * logo_file, description). Found by the label installDefaults() gave it, so a
+ * test may reorder the fields; rename one only after fetching it.
+ */
+function defaultField(FinalProject $project, string $key): FinalProjectField
+{
+    if (! in_array($key, array_column(SubmissionFields::DEFAULTS, 'key'), true)) {
+        throw new InvalidArgumentException("No default hand-in field [{$key}].");
+    }
+
+    return FinalProjectField::query()
+        ->where('final_project_id', $project->id)
+        ->where('label', __('project.default_fields.'.$key.'.label'))
+        ->sole();
+}
+
+/**
+ * A complete hand-in for a project's default fields, keyed the way the form
+ * posts it: answers[{field id}] (D-121). An override replaces one item by its
+ * default key; null leaves it out.
+ */
+function handInPayload(FinalProject $project, array $overrides = []): array
+{
+    $values = $overrides + [
+        'live_url' => 'https://example.test/final',
+        'github_url' => 'https://github.com/athar-trainee/ai101-final',
+        'presentation_file' => [fakeUpload('slides.pdf')],
+        'logo_file' => null,
+        'description' => null,
+    ];
+
+    $answers = [];
+
+    foreach ($values as $key => $value) {
+        if ($value !== null) {
+            $answers[(string) defaultField($project, $key)->id] = $value;
+        }
+    }
+
+    return ['answers' => $answers];
 }
 
 function makeProjectSubmission(FinalProject $project, User $user, array $attributes = []): ProjectSubmission
@@ -721,6 +775,22 @@ function fakeUpload(string $name, string $type = 'pdf'): Illuminate\Http\Uploade
             imagepng($image);
             $bytes = (string) ob_get_clean();
             imagedestroy($image);
+
+            return $bytes;
+        })(),
+        // An OOXML deck is a ZIP container: libmagic reports it as
+        // application/zip or as the presentation type, and a PowerPoint field
+        // accepts both (D-121). Built with ZipArchive so the bytes are a real
+        // archive, not a magic number.
+        'pptx' => (static function (): string {
+            $path = (string) tempnam(sys_get_temp_dir(), 'pptx');
+            $zip = new ZipArchive;
+            $zip->open($path, ZipArchive::OVERWRITE);
+            $zip->addFromString('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+            $zip->addFromString('ppt/presentation.xml', '<presentation/>');
+            $zip->close();
+            $bytes = (string) file_get_contents($path);
+            unlink($path);
 
             return $bytes;
         })(),

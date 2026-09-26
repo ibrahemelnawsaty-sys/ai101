@@ -57,6 +57,8 @@ beforeEach(function (): void {
     $this->evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 8.0);
     $this->finalProject = makeFinalProject($this->cohort);
     $this->projectSubmission = makeProjectSubmission($this->finalProject, $this->participant);
+    // D-121 — one of the default hand-in fields makeFinalProject() installed.
+    $this->finalProjectField = $this->finalProject->fields()->firstOrFail();
 
     $start = riyadhAt('2026-10-12 18:00:00');
     $this->session = sessionInCohort($this->cohort, $start, $start->addHours(3));
@@ -217,6 +219,11 @@ function authorizationMatrix(object $test): array
         // D-109, D-110 — the final project's settings and its open switch.
         'admin.finalProject.index' => ['get', [], ['admin']],
         'admin.finalProject.store' => ['post', [], ['admin']],
+        // D-121 — the hand-in form's fields, the supervisor's alone.
+        'admin.finalProject.fields.store' => ['post', [$test->finalProject], ['admin']],
+        'admin.finalProject.fields.update' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
+        'admin.finalProject.fields.move' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
+        'admin.finalProject.fields.destroy' => ['delete', [$test->finalProject, $test->finalProjectField], ['admin']],
         'admin.audit.export' => ['get', [], ['admin']],
 
         'admin.programs.index' => ['get', [], ['admin']],

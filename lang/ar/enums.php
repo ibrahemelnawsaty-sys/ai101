@@ -150,4 +150,30 @@ return [
         'video' => 'فيديو',
     ],
 
+    /*
+     * D-121 — what one field of the final-project hand-in asks for, and the
+     * file formats an upload field may accept.
+     */
+    'submission_field_type' => [
+        'url' => 'رابط',
+        'github' => 'رابط مستودع GitHub',
+        'file' => 'رفع ملف',
+        'text' => 'نص قصير',
+        'textarea' => 'نص طويل',
+    ],
+
+    'submission_file_format' => [
+        'pdf' => 'PDF',
+        'powerpoint' => 'PowerPoint',
+        'word' => 'Word',
+        'excel' => 'Excel',
+        'csv' => 'CSV',
+        'text' => 'نص عادي',
+        'markdown' => 'Markdown',
+        'zip' => 'ZIP',
+        'png' => 'PNG',
+        'jpeg' => 'JPEG',
+        'webp' => 'WebP',
+    ],
+
 ];

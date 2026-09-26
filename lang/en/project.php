@@ -28,17 +28,14 @@ return [
     'criteria_empty_body' => 'Your trainer adds the criteria and their points before the deadline, and they appear here.',
 
     'your_submission' => 'Your project submission',
-    'submission_intro' => 'Three items, and the submission is not complete without all of them, plus an optional idea logo.',
-    'live_url' => 'A working project link',
-    'live_url_hint' => 'The live web page, published and running from any device, with no errors at grading time.',
-    'github_url' => 'Public GitHub repository',
-    'github_url_hint' => 'The full project code pushed to GitHub, with a README explaining the project and how to run it.',
-    'presentation_file' => 'Project presentation',
-    'presentation_file_hint' => 'No more than 10 slides: the problem, the idea, the technology used, how it works, the results, and future development.',
-    'logo_file' => 'Idea logo (optional)',
-    'logo_file_hint' => 'A logo image, if your project has one — entirely optional.',
-    'description_field' => 'Project description',
-    'description_placeholder' => 'Explain the idea, what you built, and how to run it',
+    'submission_intro' => 'Fill in the items below, then submit. Items marked with an asterisk are required, and the submission is not complete without them.',
+    'upload_limits' => '{1} One file at most in a single submission, :size in total.|{2} Two files at most in a single submission, :size in total.|[3,*] :count files at most in a single submission, :size in total.',
+    'field_formats' => 'Accepted formats: :formats',
+    'field_limits' => 'Up to :size per file · :count',
+    'optional_mark' => '(optional)',
+    'fields_empty_title' => 'What to hand in has not been set yet',
+    'fields_empty_body' => 'The programme administration sets what the final project asks for, and it appears here the moment it does. Contact your trainer if this takes long.',
+    'legacy_files_label' => 'Submitted files',
     'submit_action' => 'Submit the project',
     'submission_closed_title' => 'Submission of the final project is closed',
     'evaluation_title' => 'Your project evaluation',
@@ -47,9 +44,51 @@ return [
 
     'errors' => [
         'not_available' => 'The final project has not been opened yet. You will be notified the moment it is.',
-        'live_url_required' => 'A working project link is required.',
-        'github_url_required' => 'A public GitHub repository link is required.',
-        'presentation_required' => 'The presentation is required to complete the submission.',
+        'no_fields' => 'You cannot submit yet: what to hand in has not been set for this project. Contact your trainer.',
+        'field_required' => '“:field” is required to complete the submission.',
+        'field_invalid' => 'What was sent for “:field” could not be read. Enter it again, then submit.',
+        'field_url' => '“:field” must be a full link starting with https:// — copy it from the address bar as it is.',
+        'field_github' => '“:field” must be a repository link starting with https://github.com/ — copy it from the repository page.',
+        'field_too_long' => '“:field” is longer than allowed (:max characters). Shorten it, then submit again.',
+        'field_file_type' => 'A file in “:field” is not in an accepted format. Accepted formats: :formats.',
+        'field_file_size' => 'A file in “:field” is larger than allowed (:size). Make it smaller or compress it, then upload it again.',
+        'field_file_count' => '{1} “:field” accepts one file only. Keep one file, then submit again.|[2,*] “:field” accepts :count files at most. Remove the extra ones, then submit again.',
+    ],
+
+    'default_fields' => [
+        'live_url' => [
+            'label' => 'A working project link',
+            'description' => 'A public link that opens and works without signing in.',
+            'tips' => [
+                'Open it in another browser and try it before you submit.',
+                'You can publish it on one of the free platforms.',
+            ],
+        ],
+        'github_url' => [
+            'label' => 'A public GitHub repository',
+            'description' => 'With the project code and a README file.',
+            'tips' => [
+                'The README explains the problem, the solution and how to run it.',
+                'No API keys and no personal data.',
+            ],
+        ],
+        'presentation_file' => [
+            'label' => 'A presentation',
+            'description' => 'At most 10 slides to present your project at the closing ceremony.',
+            'tips' => [
+                'Put your project link on the last slide.',
+            ],
+        ],
+        'logo_file' => [
+            'label' => 'Idea logo',
+            'description' => 'Your project logo, if it has one — entirely optional.',
+            'tips' => [],
+        ],
+        'description' => [
+            'label' => 'Project description',
+            'description' => 'Explain your idea, what you built and how we run it.',
+            'tips' => [],
+        ],
     ],
 
     'error_title' => 'The final project could not be shown',

@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-12 12:00:00'));
@@ -109,13 +110,16 @@ it('D-83: إشعار لا يُكتب لا يُسقط التسليم — يُحف
 });
 
 it('FR-NOTIF-15: تسليم المشروع الختامي يرسل الإشعارين نفسيهما', function (): void {
-    makeFinalProject($this->cohort, ['title' => 'CANARY-PROJECT', 'is_unlocked' => true, 'unlocked_at' => riyadhAt('2026-10-10 09:00:00')]);
+    Storage::fake('private');
+    $project = makeFinalProject($this->cohort, ['title' => 'CANARY-PROJECT', 'is_unlocked' => true, 'unlocked_at' => riyadhAt('2026-10-10 09:00:00')]);
 
+    // D-121 — a complete hand-in of the default fields. Until then this
+    // posted D-110's field names, which the form no longer had, so the
+    // hand-in bounced on validation and the notices were never reached.
     $this->actingAs($this->participant)
-        ->post(route('finalProject.submit'), [
+        ->post(route('finalProject.submit'), handInPayload($project, [
             'description' => 'A capstone that classifies customer feedback by sentiment.',
-            'github_url' => 'https://github.com/athar-trainee/ai101-final',
-        ])
+        ]))
         ->assertRedirect(route('finalProject'));
 
     expect(bell($this->participant, 'submission_received'))->toBe(1)

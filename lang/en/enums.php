@@ -148,4 +148,30 @@ return [
         'video' => 'Video',
     ],
 
+    /*
+     * D-121 — what one field of the final-project hand-in asks for, and the
+     * file formats an upload field may accept.
+     */
+    'submission_field_type' => [
+        'url' => 'Link',
+        'github' => 'GitHub repository link',
+        'file' => 'File upload',
+        'text' => 'Short text',
+        'textarea' => 'Long text',
+    ],
+
+    'submission_file_format' => [
+        'pdf' => 'PDF',
+        'powerpoint' => 'PowerPoint',
+        'word' => 'Word',
+        'excel' => 'Excel',
+        'csv' => 'CSV',
+        'text' => 'Plain text',
+        'markdown' => 'Markdown',
+        'zip' => 'ZIP',
+        'png' => 'PNG',
+        'jpeg' => 'JPEG',
+        'webp' => 'WebP',
+    ],
+
 ];

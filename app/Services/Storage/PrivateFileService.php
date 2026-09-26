@@ -146,6 +146,12 @@ final class PrivateFileService
      * Validate, sniff and store one upload. Returns the row the caller writes
      * to the database - the original name is data, never a filesystem name.
      *
+     * `$acceptedTypes` narrows the platform's own allow-list for one field
+     * (D-121): the SNIFFED type must also be one of them, so a picture renamed
+     * `slides.pdf` is refused by a PDF-only field whatever its name says.
+     * Null accepts whatever the platform accepts, as before.
+     *
+     * @param  list<string>|null  $acceptedTypes
      * @return array{
      *     disk: string,
      *     path: string,
@@ -157,7 +163,7 @@ final class PrivateFileService
      *
      * @throws FileException
      */
-    public function store(UploadedFile $file, string $directory, ?User $actor = null): array
+    public function store(UploadedFile $file, string $directory, ?User $actor = null, ?array $acceptedTypes = null): array
     {
         if (! $file->isValid()) {
             throw FileException::unreadable();
@@ -188,6 +194,10 @@ final class PrivateFileService
         $mime = $this->sniff($source);
 
         $this->guardType($mime);
+
+        if ($acceptedTypes !== null && ! in_array($mime, $acceptedTypes, true)) {
+            throw FileException::mimeNotAllowed();
+        }
 
         $checksum = hash_file('sha256', $source);
 

@@ -60,6 +60,12 @@ final class ErrorNavigation
             'user' => [['dashboard', 'nav.participant.dashboard'], ['schedule', 'nav.participant.schedule'], ['assignments.index', 'nav.participant.assignments']],
             'guest' => [['home', 'nav.breadcrumb.home'], ['login', 'auth.login.title']],
         ],
+        // D-121 — a hand-in too large for one request: back to the form is
+        // the action; the dashboard is the only other honest suggestion.
+        '413' => [
+            'user' => [['dashboard', 'nav.participant.dashboard']],
+            'guest' => [['home', 'nav.breadcrumb.home']],
+        ],
         '419' => [
             'user' => [['dashboard', 'nav.participant.dashboard'], ['login', 'auth.login.title']],
             'guest' => [['login', 'auth.login.title']],
@@ -94,7 +100,7 @@ final class ErrorNavigation
     private const SYSTEM_ADMIN_CODES = ['403', '404', '405'];
 
     /** Codes whose primary action returns the visitor to the page they came from. */
-    private const BACK_CODES = ['405', '419', '429'];
+    private const BACK_CODES = ['405', '413', '419', '429'];
 
     /** Codes whose action label softens to "back home" for a visitor with no session. */
     private const ROLE_AWARE_LABEL_CODES = ['403', '404'];

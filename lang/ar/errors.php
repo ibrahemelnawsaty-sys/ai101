@@ -43,6 +43,14 @@ return [
             'body' => 'بقيت الصفحة مفتوحة مدة طويلة. أعد تحميلها ثم أرسل البيانات مرة أخرى.',
             'action' => 'أعد تحميل الصفحة',
         ],
+        // D-121 — the body of one request is larger than the server accepts
+        // (post_max_size). PHP drops it whole before the application reads a
+        // byte, so the page can only say what happened and send them back.
+        '413' => [
+            'title' => 'الملفات أكبر مما يستقبله الخادم دفعة واحدة',
+            'body' => 'مجموع ما رفعته في هذا الطلب تجاوز الحد، فلم يصل منه شيء ولم يُحفظ. صغّر الملفات أو اضغطها، ثم ارجع وأعد المحاولة.',
+            'action' => 'ارجع وأعد المحاولة',
+        ],
         '429' => [
             'title' => 'طلبات كثيرة في وقت قصير',
             'body' => 'انتظر قليلًا ثم أعد المحاولة. هذا الإجراء يحمي حسابك وحسابات غيرك.',

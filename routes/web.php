@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\CertificateController as AdminCertificateControll
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
+use App\Http\Controllers\Admin\FinalProjectFieldController as AdminFinalProjectFieldController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -228,6 +229,10 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
         ->whereNumber('index')->name('submission');
     Route::get('/project-submissions/{projectSubmission}/{index}', [FileDownloadController::class, 'projectSubmission'])
         ->whereNumber('index')->name('projectSubmission');
+    // D-121 — a file handed in through one field of the final project's
+    // form: the entry's position in `answers`, then the file's position in it.
+    Route::get('/project-submissions/{projectSubmission}/answers/{answer}/{index}', [FileDownloadController::class, 'projectSubmissionAnswer'])
+        ->whereNumber('answer')->whereNumber('index')->name('projectSubmissionAnswer');
     Route::get('/assignments/{assignment}/{index}', [FileDownloadController::class, 'assignment'])
         ->whereNumber('index')->name('assignment');
     Route::get('/final-projects/{project}/{index}', [FileDownloadController::class, 'finalProject'])
@@ -722,6 +727,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
             ->middleware('not.impersonating')
             ->name('finalProject.store');
+
+        /*
+         * D-121 — the hand-in form's fields, one project at a time. The field
+         * is bound through the project in the URL (scopeBindings), so a field
+         * id under another project's address is 404 before any policy runs.
+         */
+        Route::scopeBindings()->group(function (): void {
+            Route::post('/final-project/{project}/fields', [AdminFinalProjectFieldController::class, 'store'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.store');
+            Route::patch('/final-project/{project}/fields/{field}', [AdminFinalProjectFieldController::class, 'update'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.update');
+            Route::patch('/final-project/{project}/fields/{field}/move', [AdminFinalProjectFieldController::class, 'move'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.move');
+            Route::delete('/final-project/{project}/fields/{field}', [AdminFinalProjectFieldController::class, 'destroy'])
+                ->middleware('not.impersonating')
+                ->name('finalProject.fields.destroy');
+        });
 
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/export', [AuditController::class, 'export'])

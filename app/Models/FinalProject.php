@@ -18,7 +18,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * row entirely for a participant while `is_unlocked` is false, so its brief and
  * requirements can never be serialised to the browser early (BR-15, BR-16).
  *
- * @see BR-11, BR-15, BR-16, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4
+ * What a participant hands in is not fixed here: the administrator defines it
+ * field by field (`fields()`, D-121), and the fields are part of the brief —
+ * they reach a participant only after the unlock, like everything else.
+ *
+ * @see BR-11, BR-15, BR-16, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4 · D-121
  */
 class FinalProject extends Model
 {
@@ -111,6 +115,16 @@ class FinalProject extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(ProjectSubmission::class);
+    }
+
+    /**
+     * The hand-in form's fields, in the order the administrator set (D-121).
+     *
+     * @return HasMany<FinalProjectField, $this>
+     */
+    public function fields(): HasMany
+    {
+        return $this->hasMany(FinalProjectField::class)->ordered();
     }
 
     // ---------------------------------------------------------------- scopes

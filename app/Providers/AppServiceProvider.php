@@ -91,6 +91,7 @@ final class AppServiceProvider extends ServiceProvider
             'enrollment' => Models\Enrollment::class,
             'evaluation' => Models\Evaluation::class,
             'final_project' => Models\FinalProject::class,
+            'final_project_field' => Models\FinalProjectField::class,
             'impersonation_session' => Models\ImpersonationSession::class,
             'journey_step' => Models\JourneyStep::class,
             'landing_setting' => Models\LandingSetting::class,

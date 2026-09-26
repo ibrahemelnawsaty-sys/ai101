@@ -23,6 +23,7 @@ use App\Models\Cohort;
 use App\Models\FinalProject;
 use App\Models\User;
 use App\Models\Week;
+use App\Services\FinalProject\SubmissionFields;
 use Illuminate\Database\Seeder;
 
 final class AssignmentSeeder extends Seeder
@@ -98,7 +99,7 @@ final class AssignmentSeeder extends Seeder
         /** @var array<string, mixed> $row */
         $row = SeedContent::section('final_project');
 
-        FinalProject::factory()->create([
+        $project = FinalProject::factory()->create([
             'cohort_id' => $cohort->getKey(),
             'title' => $row['title'],
             'brief' => $row['brief'],
@@ -110,5 +111,8 @@ final class AssignmentSeeder extends Seeder
             'max_score' => self::PROJECT_TOTAL,
             'attachments' => [],
         ]);
+
+        // D-121 — the hand-in form a project created from the screen starts with.
+        app(SubmissionFields::class)->installDefaults($project);
     }
 }

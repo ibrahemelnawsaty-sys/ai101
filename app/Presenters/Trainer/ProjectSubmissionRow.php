@@ -9,7 +9,7 @@ use App\Models\ProjectSubmission;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Presenters\Concerns\PresentsVariants;
-use App\Presenters\Shared\FileLink;
+use App\Presenters\Shared\HandInAnswer;
 use App\Support\ViewModel;
 
 /**
@@ -20,11 +20,11 @@ use App\Support\ViewModel;
  * ceiling comes from the final project's own `max_score`, which is the number
  * BR-12 refuses to be exceeded and never a figure typed into a template.
  *
- * `downloadUrl` stays null for the same reason as SubmissionRow: no signed
- * download route for a submitted file exists yet, and a stored path is never a
- * URL (art. 24).
+ * What was handed in is `answers` (D-121): every item in the order the form
+ * asked for it, under the label it was asked by, each file with a signed link
+ * valid fifteen minutes — the download route asks the policy again (D-80).
  *
- * @see BR-12, BR-13, BR-23 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 18, art. 24
+ * @see BR-12, BR-13, BR-23 · FR-PROJ-10 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 18, art. 24 · D-121
  */
 final class ProjectSubmissionRow extends ViewModel
 {
@@ -49,13 +49,7 @@ final class ProjectSubmissionRow extends ViewModel
             'email' => self::personEmail($user),
 
             'hasSubmission' => true,
-            'liveUrl' => self::stringOrNull($submission->getAttribute('live_url')),
-            'githubUrl' => self::stringOrNull($submission->getAttribute('github_url')),
-            'presentationFile' => self::singleFile($submission->getAttribute('presentation_file')),
-            'logoFile' => self::singleFile($submission->getAttribute('logo_file')),
-            // `project_submissions` names this column `description`, not
-            // `note` as `submissions` does (PROJECT-CONTRACT §4).
-            'note' => self::stringOrNull($submission->getAttribute('description')),
+            'answers' => HandInAnswer::collection($submission),
             'version' => (int) $submission->getAttribute('version'),
             'submittedAt' => $submission->getAttribute('submitted_at'),
             'isLate' => (bool) $submission->getAttribute('is_late'),
@@ -76,15 +70,5 @@ final class ProjectSubmissionRow extends ViewModel
     private static function stringOrNull(mixed $value): ?string
     {
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
-    }
-
-    /**
-     * D-110's two named deliverables are one descriptor each, never a list —
-     * `downloadUrl` stays null for the same reason as the rest of this
-     * screen: no signed download route for a submitted file exists yet.
-     */
-    private static function singleFile(mixed $stored): ?FileLink
-    {
-        return is_array($stored) && $stored !== [] ? FileLink::fromStored($stored) : null;
     }
 }

@@ -69,6 +69,8 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `ThreadType` | `trainer_dm` · `group` · `announcement` · `direct` (`D-118`: محادثة يبدؤها شخص مع آخر) |
 | `EmailTokenType` | `verify` · `reset` |
 | `ResourceType` | `file` · `link` · `video` |
+| `SubmissionFieldType` | `url` · `github` · `file` · `text` · `textarea` — نوع حقل في نموذج تسليم المشروع الختامي (`D-121`) |
+| `SubmissionFileFormat` | `pdf` · `powerpoint` · `word` · `excel` · `csv` · `text` · `markdown` · `zip` · `png` · `jpeg` · `webp` — صيغ يختارها المشرف لحقل رفع، **كلها من قائمة المنصة** (`uploads.allowed_extensions` وأنواع `PrivateFileService`)؛ قائمة المنصة نفسها لـ`D-17` (`D-121`) |
 
 كل enum: `enum X: string` + دالة `label(): string` تُرجع `__('enums.x.'.$this->value)`.
 
@@ -93,7 +95,8 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `submissions` | فهرس `(assignment_id, user_id)` · `version` يزيد ولا يحذف السابق (BR-19) |
 | `evaluations` | `feedback` **إلزامي ≥ 10 أحرف** · قيد `0 ≤ score ≤ max_score` · `revision_reason` |
 | `final_projects` | `is_unlocked` · `unlocked_by` · `unlocked_at` |
-| `project_submissions` | مثل `submissions` |
+| `final_project_fields` | حقول نموذج التسليم لكل مشروع (`D-121`): `final_project_id` (`cascadeOnDelete`) · `type` · `label` · `description` · `tips` JSON · `is_required` · `accepted_formats` JSON · `max_kilobytes` · `max_files` · `position` · فهرس `(final_project_id, position)` |
+| `project_submissions` | مثل `submissions` · **`answers` JSON** — عنصر لكل حقل بترتيب النموذج، يحمل **نسخة** من عنوان الحقل ونوعه مع القيمة أو الملفات (`SubmissionFields::answer()` كاتبه الوحيد، `D-121`)؛ أعمدة `D-110` القديمة باقية ولا تُكتب |
 | `resources` | `download_count` |
 | `journey_steps` | `index` 1..10 · `unlock_rule` |
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
@@ -300,6 +303,9 @@ final class CertificateEligibility
 | `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings` |
 | `PUT /admin/registrations/intake/{cohort}` | `admin.registrations.intake` | `auth` · `role:admin` · `not.impersonating` (`D-117`) — فتح التسجيل وإغلاقه، `CohortPolicy::manageRegistrations` |
 | `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
+| `POST /admin/final-project/{project}/fields` | `admin.finalProject.fields.store` | `auth` · `role:admin` · `not.impersonating` (`D-121`) — `SaveFinalProjectFieldRequest` + `FinalProjectPolicy::update` |
+| `PATCH /admin/final-project/{project}/fields/{field}` · `…/move` · `DELETE …` | `admin.finalProject.fields.update` · `.move` · `.destroy` | نفسه · ربط الحقل مقيَّد بمشروعه (`scopeBindings`) · `FinalProjectFieldPolicy` (`D-121`) |
+| `GET /files/project-submissions/{projectSubmission}/answers/{answer}/{index}` | `files.projectSubmissionAnswer` | `auth` · `verified` · `signed` — `ProjectSubmissionPolicy::download` عند الوصول (`D-80` · `D-121`) |
 | `POST /admin/cohorts/{cohort}/participants` | `admin.cohorts.participants.attach` | `auth` · `role:admin` · `not.impersonating` (`D-84` · `D-117`) |
 | `DELETE /admin/impersonation` | `admin.impersonation.stop` | `auth` |
 
