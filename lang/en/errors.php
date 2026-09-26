@@ -16,6 +16,11 @@ return [
             'body' => 'Your session has ended. Please sign in again.',
             'action' => 'Sign in',
         ],
+        // D-124 — a signed file link past its time, or altered.
+        'file_link' => [
+            'title' => 'This file link has expired.',
+            'body' => 'File links work for a short time to keep files safe. Go back to the page you opened it from, refresh it, then open the file again.',
+        ],
         '403' => [
             'title' => 'You do not have access to this page.',
             'body' => 'This page belongs to another role, or to something that is not part of your account. Contact us if you think this is a mistake.',

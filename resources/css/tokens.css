@@ -431,6 +431,7 @@
   --status-ok-text:   var(--ok);
   --status-warn-text: var(--warn-300);
   --status-bad-text:  var(--bad-300);
+  --status-brand-text: var(--teal-300);
 
   /* ======================================================================
      15b · BORDER, OUTLINE, RING AND STROKE WIDTHS (PRD §5.6, §5.7)
@@ -530,6 +531,7 @@
   --status-ok-text:   var(--ok-700);
   --status-warn-text: var(--warn-700);
   --status-bad-text:  var(--bad-700);
+  --status-brand-text: var(--teal-800);   /* 6.58 on the teal-a16 wash — teal-700 measured 4.14 (D-124) */
 }
 
 /* A light island inside the dark public shell (PRD §5.3 — 60% neutral). */
@@ -555,6 +557,7 @@
   --status-ok-text:   var(--ok-700);
   --status-warn-text: var(--warn-700);
   --status-bad-text:  var(--bad-700);
+  --status-brand-text: var(--teal-800);   /* 6.58 on the teal-a16 wash — teal-700 measured 4.14 (D-124) */
   background: var(--surface-page);
   color: var(--text-body);
 }

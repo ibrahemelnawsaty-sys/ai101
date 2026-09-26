@@ -1,11 +1,11 @@
 {{--
-    The refusals of one form's files (D-124): the count is keyed on
-    `attachments`, a refused file on `attachments.N` — which no field would
-    print on its own. One line, the first reason, said where the files are.
+    The refusal of one file (D-124), keyed on `attachments.N`, which no field
+    prints on its own. The count, keyed on `attachments`, the uploader
+    prints itself — said once, not twice. One line, the first reason.
 --}}
-@if ($errors->has('attachments') || $errors->has('attachments.*'))
+@if (! $errors->has('attachments') && $errors->has('attachments.*'))
     <p class="note note--bad" role="alert">
         <x-ui.icon name="warn" />
-        <span>{{ $errors->first('attachments') ?: $errors->first('attachments.*') }}</span>
+        <span>{{ $errors->first('attachments.*') }}</span>
     </p>
 @endif

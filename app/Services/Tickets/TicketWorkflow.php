@@ -694,6 +694,23 @@ final class TicketWorkflow
         return true;
     }
 
+    /**
+     * What a ticket's page drew its forms against: the level, the stage, the
+     * holder, and whether the day after «resolved» had run out. A form sent
+     * back under another stamp was drawn before the ticket moved on. Keyed
+     * with the application key, so the participant who carries it learns
+     * nothing of who holds their ticket.
+     */
+    public static function formStamp(SupportTicket $ticket, CarbonImmutable $now): string
+    {
+        return hash_hmac('sha256', implode('|', [
+            $ticket->level->value,
+            $ticket->status->value,
+            (string) $ticket->assignee_id,
+            self::isClosedAt($ticket, $now) ? 'closed' : 'open',
+        ]), (string) config('app.key'));
+    }
+
     // ------------------------------------------------------------ internals
 
     private function lock(SupportTicket $ticket): SupportTicket

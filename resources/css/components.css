@@ -631,7 +631,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .ui-badge--warning, .ui-pill--warning { background: var(--warn-a13); color: var(--status-warn-text); }
 .ui-badge--error,   .ui-pill--error   { background: var(--bad-a10); color: var(--status-bad-text); }
 .ui-badge--info,    .ui-pill--info    { background: var(--violet-a13); color: var(--text-accent); }
-.ui-badge--brand,   .ui-pill--brand   { background: var(--teal-a16); color: var(--text-accent-2); }
+.ui-badge--brand,   .ui-pill--brand   { background: var(--teal-a16); color: var(--status-brand-text); }
 .ui-badge--neutral, .ui-pill--neutral { background: var(--surface-3); color: var(--text-muted); }
 .ui-badge--solid,   .ui-pill--solid   { background: var(--violet-500); color: var(--white); }
 

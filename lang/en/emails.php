@@ -323,7 +323,7 @@ return [
         'subject' => 'Your ticket :number arrived',
         'preheader' => 'Keep the number to follow it up.',
         'heading' => 'We received your ticket',
-        'body' => 'We received your ticket ":subject" as :number; it is now with :level. Replies will reach you on the platform and by e-mail.',
+        'body' => 'We received your ticket ":subject" as :number; it is now with :level. Replies appear on the support page, and you get an e-mail when it moves, is resolved or is closed.',
         'cta' => 'Follow my ticket',
     ],
 

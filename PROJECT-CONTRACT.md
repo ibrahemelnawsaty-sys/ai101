@@ -331,6 +331,11 @@ final class CertificateEligibility
 السطر النصي **30 في الدقيقة** بمفتاح `lines|user:<id>`، والطلب الذي يحمل `attachments` **20 في الساعة** بمفتاح `files|user:<id>` — عدّادان منفصلان للحساب،
 فلا تُحسب ملاحظات المنسّق النصية على حدّ الملفات، ولا يُحسب شيء منها على `throttle:upload` في بقية المنصة.
 
+**النموذج المتأخر عن حال التذكرة** (`ValidatesTicketInput::failedAuthorization`، `D-124`): نماذج صفحة التذكرة ترسل `seen` = `TicketWorkflow::formStamp()`
+(بصمة الدرجة والمرحلة ومن عنده التذكرة وانتهاء مهلتها، مفتاحها مفتاح التطبيق). إن رفضت السياسة الطلب وختمه غير ختم التذكرة الآن وصاحبه يقرؤها:
+سطر `access.denied` بسبب `support.stale_form`، ثم رجوع إلى `support.show` برسالة `support.errors.closed` أو `moved_on` ونصّه محفوظ. وبلا ختم، أو ممن لا يقرؤها: 403 كأي مسار.
+**رابط ملف موقّع منتهٍ أو مُعدَّل** على `files.*`: 403 بصفحة `errors.file-link` («انتهت صلاحية رابط الملف» وما العمل)، ويُكتب `access.denied` بسبب `signature.invalid` مع عنوان IP (`bootstrap/app.php`).
+
 ---
 
 ## 11 · مصفوفة الانتقال من Cloudflare إلى لارافيل

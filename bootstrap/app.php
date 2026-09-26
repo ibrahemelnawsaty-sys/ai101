@@ -157,6 +157,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            // D-124 — a file link past its time, or altered, says so and what
+            // to do: a participant who kept a ticket open while writing meets
+            // it, and the generic page would tell them the file belongs to
+            // another role. Still a 403, and already in the audit trail.
+            if ($exception instanceof InvalidSignatureException && $request->routeIs('files.*')) {
+                return response()->view('errors.file-link', [], 403);
+            }
+
             $status = match (true) {
                 $exception instanceof AuthorizationException => 403,
                 $exception instanceof ModelNotFoundException => 404,

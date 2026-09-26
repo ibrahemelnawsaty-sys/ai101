@@ -90,6 +90,12 @@
             </p>
         @endif
 
+        @if ($ticket->canOpenNew)
+            <div class="u-mt-4">
+                <x-ui.button variant="primary" size="sm" icon="plus" :href="route('support.create')">{{ __('support.new') }}</x-ui.button>
+            </div>
+        @endif
+
         @if ($ticket->followOnly)
             <p class="note note--info u-mt-4" role="note">
                 <x-ui.icon name="eye" />
@@ -115,7 +121,7 @@
                                 <x-ui.pill size="sm" variant="neutral" icon="lock">{{ __('support.show.internal') }}</x-ui.pill>
                                 <span class="sr">{{ __('support.show.internal_hint') }}</span>
                             @endif
-                            <time class="u-num tkt-log__when" datetime="{{ $entry->iso }}">{{ $entry->when }}</time>
+                            <time class="tkt-log__when" datetime="{{ $entry->iso }}">{{ $entry->when }}</time>
                         </p>
 
                         @if ($entry->body !== null)
@@ -135,14 +141,26 @@
                                 @foreach ($entry->files as $file)
                                     <li class="tkt-files__i">
                                         @if ($file->isVideo)
-                                            <video class="tkt-files__media" controls preload="metadata"
-                                                src="{{ $file->url }}" aria-label="{{ $file->videoLabel }}"></video>
+                                            {{-- A clip this browser cannot decode (an iPhone's HEVC .mov,
+                                                 say) would sit as a black box: it says so, and the link
+                                                 below still downloads it. --}}
+                                            <div x-data="{ failed: false }">
+                                                <video class="tkt-files__media" controls playsinline preload="metadata"
+                                                    src="{{ $file->url }}" aria-label="{{ $file->videoLabel }}"
+                                                    x-init="failed = $el.error !== null" x-on:error="failed = true" x-show="! failed"></video>
+                                                <p class="note note--info" role="status" x-show="failed" x-cloak>
+                                                    <x-ui.icon name="info" />
+                                                    <span>{{ __('support.show.video_failed') }}</span>
+                                                </p>
+                                            </div>
                                         @else
-                                            <a href="{{ $file->url }}" target="_blank" rel="noopener">
-                                                <img class="tkt-files__media" src="{{ $file->url }}" alt="{{ $file->name }}" loading="lazy">
+                                            {{-- The picture opens the same link as the name below: one
+                                                 stop for the keyboard, not two. --}}
+                                            <a href="{{ $file->url }}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+                                                <img class="tkt-files__media" src="{{ $file->url }}" alt="" loading="lazy">
                                             </a>
                                         @endif
-                                        <a class="tkt-files__name" href="{{ $file->url }}" target="_blank" rel="noopener">{{ $file->openLabel }}</a>
+                                        <a class="tkt-files__name" href="{{ $file->url }}" target="_blank" rel="noopener">{{ $file->openLabel }}<span class="ui-sr"> ({{ __('support.show.new_tab') }})</span></a>
                                     </li>
                                 @endforeach
                             </ul>
@@ -165,6 +183,7 @@
 
             <form method="POST" action="{{ route('support.reply', $ticket->id) }}" enctype="multipart/form-data" class="form">
                 @csrf
+                <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                 <x-ui.textarea name="body" rows="4" required :maxlength="$bodyMax"
                     :label="__('support.reply.body')"
@@ -194,6 +213,7 @@
             <p>{{ __('support.close.hint') }}</p>
             <form method="POST" action="{{ route('support.close', $ticket->id) }}" class="u-mt-2">
                 @csrf
+                <input type="hidden" name="seen" value="{{ $ticket->seen }}">
                 <x-ui.button variant="secondary" type="submit">{{ __('support.close.submit') }}</x-ui.button>
             </form>
         </x-ui.card>
@@ -204,20 +224,22 @@
         <x-ui.card class="dc--span u-mt-4" icon="cog" :title="__('support.actions.title')">
             <div class="tkt-acts">
                 @if ($ticket->canNote)
-                    <form method="POST" action="{{ route('support.note', $ticket->id) }}" enctype="multipart/form-data" class="form tkt-act">
+                    <form method="POST" action="{{ route('support.note', $ticket->id) }}" enctype="multipart/form-data" class="form tkt-act"
+                        @if ($ticket->canWriteToParticipant) x-data="{ internal: @js((bool) old('internal')) }" @endif>
                         @csrf
+                        <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                         <x-ui.textarea name="body" id="note-body" rows="4" required :maxlength="$bodyMax"
-                            :label="__('support.actions.compose')"
+                            :label="$ticket->canWriteToParticipant ? __('support.actions.compose') : __('support.actions.compose_internal')"
                             :value="old('body')" />
 
                         @if ($ticket->canWriteToParticipant)
-                            <x-ui.checkbox name="internal" value="1"
+                            <x-ui.checkbox name="internal" value="1" x-model="internal"
                                 :label="__('support.actions.internal')"
                                 :description="__('support.actions.message_hint')"
                                 :checked="(bool) old('internal')" />
                         @else
-                            <p class="note note--info" role="note">
+                            <p class="note note--info u-mb-4" role="note">
                                 <x-ui.icon name="lock" />
                                 <span>{{ $ticket->internalOnlyNote }}</span>
                             </p>
@@ -236,7 +258,13 @@
                         @include('participant.support.partials.attachment-errors')
 
                         <div class="form__submit">
-                            <x-ui.button variant="primary" type="submit">{{ __('support.actions.compose_submit') }}</x-ui.button>
+                            @if ($ticket->canWriteToParticipant)
+                                <x-ui.button variant="primary" type="submit">
+                                    <span x-text="internal ? @js(__('support.actions.submit_internal')) : @js(__('support.actions.submit_message'))">{{ old('internal') ? __('support.actions.submit_internal') : __('support.actions.submit_message') }}</span>
+                                </x-ui.button>
+                            @else
+                                <x-ui.button variant="primary" type="submit">{{ __('support.actions.submit_internal') }}</x-ui.button>
+                            @endif
                         </div>
                     </form>
                 @endif
@@ -244,6 +272,7 @@
                 @if ($ticket->canResolve)
                     <form method="POST" action="{{ route('support.resolve', $ticket->id) }}" class="form tkt-act">
                         @csrf
+                        <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                         <x-ui.textarea name="summary" rows="3" :maxlength="$bodyMax"
                             :label="__('support.actions.resolve_body')"
@@ -259,6 +288,7 @@
                 @if ($ticket->canEscalate)
                     <form method="POST" action="{{ route('support.escalate', $ticket->id) }}" class="form tkt-act">
                         @csrf
+                        <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                         <x-ui.textarea name="escalate_note" rows="2" :maxlength="$bodyMax"
                             :label="__('support.actions.escalate_note')"
@@ -274,6 +304,7 @@
                 @if ($ticket->canReturn)
                     <form method="POST" action="{{ route('support.return', $ticket->id) }}" class="form tkt-act">
                         @csrf
+                        <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                         @if ($ticket->returnsToCoordinator && $ticket->coordinatorOptions === [])
                             <p class="note note--warn" role="note">
@@ -295,7 +326,7 @@
                             :value="old('return_note')" />
 
                         <div class="form__submit">
-                            <x-ui.button variant="secondary" type="submit" icon="undo">{{ __('support.actions.return', ['to' => $ticket->returnTo]) }}</x-ui.button>
+                            <x-ui.button variant="secondary" type="submit" icon="undo" directional>{{ __('support.actions.return', ['to' => $ticket->returnTo]) }}</x-ui.button>
                         </div>
                     </form>
                 @endif
@@ -303,6 +334,7 @@
                 @if ($ticket->canAssign && $ticket->assignOptions !== [])
                     <form method="POST" action="{{ route('support.assign', $ticket->id) }}" class="form tkt-act">
                         @csrf
+                        <input type="hidden" name="seen" value="{{ $ticket->seen }}">
 
                         <x-ui.select name="assignee_id" required
                             :label="__('support.actions.assign')"

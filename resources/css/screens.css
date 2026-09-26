@@ -480,6 +480,7 @@ min-block-size: var(--d-8);
 .chat__ci { display: flex; gap: var(--s2); align-items: center; padding: var(--s2); border-radius: var(--r-sm); cursor: pointer; transition: background var(--t-fast); min-block-size: var(--touch); }
 .chat__ci:hover { background: var(--surface-1); }
 .chat__ci.is-on { background: var(--surface-1); box-shadow: var(--sh-sm); }
+.chat__ci .ui-badge--count { flex: none; background: var(--violet-500); color: var(--white); }
 .chat__ci b { display: block; font-size: var(--fs-sm); color: var(--text-strong); }
 .chat__ci span { font-size: var(--fs-xs); color: var(--text-faint); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-inline-size: var(--d-1); }
 .chat__ct { margin-inline-start: auto; }
@@ -1691,11 +1692,17 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   text-decoration: none;
 }
 .tkt-tabs__a[aria-current="page"] { background: var(--surface-1); color: var(--text-strong); box-shadow: var(--sh-sm); }
+.tkt-tabs__a .ui-badge--count { background: var(--violet-500); color: var(--white); }
 
+/* One track as wide as the list: a track sized to its content let a long
+   subject push the stage and the time off a phone's screen. */
+.tkt-list { grid-template-columns: minmax(0, 1fr); }
 .tkt-list__meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin-block-start: var(--s1); }
 .tkt-list__state { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s1); }
 .tkt-list__where,
 .tkt-list__when { font-size: var(--fs-xs); color: var(--text-muted); }
+.tkt-list__when { font-variant-numeric: tabular-nums; }
+@media (max-width: 599px) { .tkt-list__state { align-items: flex-start; } }
 
 .tkt-meta { margin-block-start: var(--s2); }
 
@@ -1720,8 +1727,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   border-radius: var(--r-lg);
   background: var(--surface-1);
 }
-.tkt-log__i--internal .tkt-log__b { border-style: dashed; background: var(--surface-inset); }
+.tkt-log__i--internal .tkt-log__b { border-style: dashed; border-color: var(--border-2); background: var(--surface-inset); }
 .tkt-log__hd {
+  max-inline-size: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1730,7 +1738,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   font-size: var(--fs-sm);
   color: var(--text-strong);
 }
-.tkt-log__when { margin-inline-start: auto; font-size: var(--fs-xs); color: var(--text-muted); }
+.tkt-log__when { margin-inline-start: auto; font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .tkt-log__body {
   margin: var(--s2) 0 0;
   font-size: var(--fs-sm);
@@ -1753,7 +1761,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .tkt-files__media {
   display: block;
   inline-size: 100%;
-  max-block-size: var(--d-4);
+  block-size: var(--d-4);
   object-fit: contain;
   border-radius: var(--r-md);
   background: var(--surface-3);
@@ -1768,4 +1776,5 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 }
 
 .tkt-acts { display: grid; gap: var(--s6); }
+.tkt-act { inline-size: 100%; }
 .tkt-act + .tkt-act { padding-block-start: var(--s6); border-block-start: var(--bw-hairline) solid var(--border-1); }

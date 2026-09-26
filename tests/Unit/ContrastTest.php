@@ -208,3 +208,63 @@ it('D-123: شارات الأدوار الخمس تبلغ 4.5:1 — تظهر عل
     expect($seen)->toBe(5)
         ->and($failures)->toBe([]);
 });
+
+/**
+ * A token's colour as the light shell resolves it: its own value in the
+ * `[data-surface="light"]` block, else in the root, following var() chains;
+ * an rgba wash is laid over white, the card it sits on.
+ */
+function lightShellHex(string $token): string
+{
+    $source = (string) File::get(resource_path('css/tokens.css'));
+    preg_match('/\[data-surface="light"\]\s*\{(.*?)\n\}/s', $source, $light);
+
+    foreach ([$light[1] ?? '', $source] as $scope) {
+        if (preg_match('/--'.preg_quote($token, '/').':\s*([^;]+);/', $scope, $m) !== 1) {
+            continue;
+        }
+
+        $value = trim($m[1]);
+
+        if (preg_match('/^var\(--([a-z0-9-]+)\)$/', $value, $ref) === 1) {
+            return lightShellHex($ref[1]);
+        }
+
+        if (preg_match('/^#[0-9A-Fa-f]{6}$/', $value) === 1) {
+            return strtoupper($value);
+        }
+
+        if (preg_match('/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/', $value, $rgba) === 1) {
+            $alpha = (float) $rgba[4];
+            $over = static fn (int $channel): int => (int) round($channel * $alpha + 255 * (1 - $alpha));
+
+            return sprintf('#%02X%02X%02X', $over((int) $rgba[1]), $over((int) $rgba[2]), $over((int) $rgba[3]));
+        }
+    }
+
+    throw new RuntimeException('unresolved token --'.$token);
+}
+
+it('D-124: مراحل تذكرة الدعم الأربع تبلغ 4.5:1 على بطاقتها — «قيد المعالجة» كانت 4.14', function (): void {
+    $css = (string) File::get(resource_path('css/components.css'));
+    $failures = [];
+
+    foreach (App\Enums\SupportTicketStatus::cases() as $status) {
+        $variant = $status->variant();
+        $rule = '/\.ui-badge--'.$variant.',\s*\.ui-pill--'.$variant.'\s*\{\s*background:\s*var\(--([a-z0-9-]+)\);\s*color:\s*var\(--([a-z0-9-]+)\);\s*\}/';
+
+        if (preg_match($rule, $css, $m) !== 1) {
+            $failures[] = $status->value.' — no pill rule for '.$variant;
+
+            continue;
+        }
+
+        $ratio = contrastRatio(lightShellHex($m[2]), lightShellHex($m[1]));
+
+        if ($ratio < 4.5) {
+            $failures[] = sprintf('%s (%s): %.2f, needs 4.5', $status->value, $variant, $ratio);
+        }
+    }
+
+    expect($failures)->toBe([]);
+});

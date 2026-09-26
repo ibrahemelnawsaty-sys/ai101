@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Requests\Support\Concerns;
 
 use App\Models\SupportTicket;
+use App\Models\User;
 use App\Rules\SniffedFileType;
+use App\Services\Audit\AuditLogger;
 use App\Services\Tickets\TicketAttachments;
+use App\Services\Tickets\TicketWorkflow;
+use App\Services\Time\Clock;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -86,6 +91,40 @@ trait ValidatesTicketInput
         $ticket = $this->route('ticket');
 
         return $ticket;
+    }
+
+    /**
+     * A form the ticket's page offered, sent after the ticket moved on —
+     * closed by its participant or by the clock, sent up a level, handed to
+     * another coordinator — is refused like any other, and the refusal is
+     * written to the audit trail with its IP (art. 8). But its sender is
+     * told what happened, on the ticket's page and with what they wrote
+     * kept (art. 15, art. 17), not shown a page that says the ticket
+     * belongs to another role. The page's forms carry the state they were
+     * drawn in (`seen`); a request without it, or from someone who cannot
+     * read the ticket at all, answers 403 as before (art. 22).
+     */
+    protected function failedAuthorization(): void
+    {
+        $ticket = $this->route('ticket');
+        $user = $this->user();
+        $seen = $this->input('seen');
+        $now = Clock::now();
+
+        if ($ticket instanceof SupportTicket
+            && $user instanceof User
+            && is_string($seen) && $seen !== ''
+            && ! hash_equals(TicketWorkflow::formStamp($ticket, $now), $seen)
+            && $user->can('view', $ticket)) {
+            app(AuditLogger::class)->deniedRequest($this, 'support.stale_form');
+
+            throw new HttpResponseException(redirect()
+                ->route('support.show', $ticket)
+                ->withInput($this->except(['_token', 'seen']))
+                ->withErrors(['message' => __(TicketWorkflow::isClosedAt($ticket, $now) ? 'support.errors.closed' : 'support.errors.moved_on')]));
+        }
+
+        parent::failedAuthorization();
     }
 
     protected function userMay(string $ability): bool

@@ -17,7 +17,9 @@
 @section('subtitle', $isStaff ? __('support.staff_subtitle') : __('support.subtitle'))
 
 @section('content')
-    @if ($isStaff || ($canOpen && $rows !== []))
+    {{-- Opening a ticket does not depend on the list: the button stays when
+         the list could not be fetched. --}}
+    @if ($isStaff || ($canOpen && ($rows !== [] || ($errorState ?? false))))
         <div class="toolbar">
             @if ($isStaff)
                 <nav class="tkt-tabs" aria-label="{{ __('support.tabs.label') }}">
@@ -25,7 +27,10 @@
                         @if ($tab === 'waiting') aria-current="page" @endif>
                         {{ __('support.tabs.waiting') }}
                         @if ($waitingCount > 0)
-                            <x-ui.badge :count="$waitingCount" :aria-label="$waitingLabel" />
+                            <x-ui.badge variant="count" size="sm">
+                                <span class="u-num" aria-hidden="true">{{ $waitingCount }}</span>
+                                <span class="ui-sr">{{ $waitingLabel }}</span>
+                            </x-ui.badge>
                         @endif
                     </a>
                     <a class="tkt-tabs__a" href="{{ route('support.index', ['tab' => 'all']) }}"
@@ -35,7 +40,7 @@
                 </nav>
             @endif
 
-            @if ($canOpen && ! ($errorState ?? false))
+            @if ($canOpen)
                 <div class="toolbar__end">
                     <x-ui.button variant="primary" size="sm" icon="plus" :href="route('support.create')">{{ __('support.new') }}</x-ui.button>
                 </div>
@@ -84,10 +89,10 @@
                                 <span class="u-num" dir="ltr">{{ $row->number }}</span>
                                 <span>{{ $row->category }}</span>
                                 @if ($row->opener !== null)
-                                    <span>{{ $row->opener }}</span>
+                                    <span><span class="ui-sr">{{ __('support.index.opener') }}:</span> {{ $row->opener }}</span>
                                 @endif
                                 @if ($row->cohort !== null)
-                                    <span>{{ $row->cohort }}</span>
+                                    <span><span class="ui-sr">{{ __('support.index.cohort') }}:</span> {{ $row->cohort }}</span>
                                 @endif
                             </span>
                         </div>
@@ -96,7 +101,7 @@
                             @if ($row->where !== null)
                                 <span class="tkt-list__where">{{ $row->where }}</span>
                             @endif
-                            <time class="u-num tkt-list__when" datetime="{{ $row->updatedIso }}">{{ $row->updated }}</time>
+                            <time class="tkt-list__when" datetime="{{ $row->updatedIso }}">{{ $row->updated }}</time>
                         </div>
                     </li>
                 @endforeach

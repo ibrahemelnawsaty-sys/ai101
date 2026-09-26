@@ -128,6 +128,8 @@ it('D-124: الصورة والفيديو يُعرضان داخل الصفحة ب
     $page = (string) $this->actingAs($this->participant)->get(route('support.show', $ticket))->getContent();
 
     expect($page)->toContain('<video')
+        ->and($page)->toContain('playsinline')
+        ->and($page)->toContain(e(__('support.show.video_failed')))
         ->and($page)->toContain('<img class="tkt-files__media"')
         ->and($page)->not->toContain($video->path)
         ->and($page)->not->toContain($image->path);
@@ -167,7 +169,12 @@ it('D-124: ملف على إجراء داخلي لا يفتحه المتدرب �
     // which Clock::fake() does not move, so the link is signed with an
     // instant already behind any clock this runs on.
     $stale = URL::temporarySignedRoute('files.supportAttachment', riyadhAt('2020-01-01 00:00:00'), ['attachment' => $internal->id]);
-    $this->actingAs($this->coordinator)->get($stale)->assertForbidden();
+    // It says the link ran out and what to do — not that the file belongs
+    // to another role.
+    $this->actingAs($this->coordinator)->get($stale)
+        ->assertForbidden()
+        ->assertSee(__('errors.pages.file_link.title'))
+        ->assertDontSee(__('errors.pages.403.title'));
 });
 
 it('D-124: الفيديو صيغة يطلبها حقل التذاكر بالاسم — بقية الرفع في المنصة ترفضه كما كانت', function (): void {
@@ -182,4 +189,28 @@ it('D-124: الفيديو صيغة يطلبها حقل التذاكر بالاس
     // Naming video is not enough for a type the platform forbids outright.
     expect(fn () => $files->store(fakeUpload('logo.svg', 'svg'), 'support/x', $this->participant, ['image/svg+xml']))
         ->toThrow(FileException::class);
+});
+
+it('D-124: رفض عدد الملفات يُقال مرة واحدة على الصفحة، بنصّ يطابق ما بعد إعادة التحميل', function (): void {
+    $page = (string) $this->actingAs($this->participant)
+        ->from(route('support.create'))
+        ->followingRedirects()
+        ->post(route('support.store'), [
+            'subject' => 'لقطة للمشكلة',
+            'category' => 'platform',
+            'body' => 'أرفقت ما يوضح الخطأ.',
+            'attachments' => [fakeUpload('1.png', 'png'), fakeUpload('2.png', 'png'), fakeUpload('3.png', 'png'), fakeUpload('4.png', 'png')],
+        ])
+        ->assertOk()
+        ->getContent();
+
+    $message = e(__('support.errors.files_count', ['count' => trans_choice('support.count.files', 3, ['count' => 3])]));
+
+    expect(substr_count($page, $message))->toBe(1);
+});
+
+it('D-124: الرابط واسم الملف اللاتينيان معزولان في الجملة العربية فلا ينقلب ترتيبهما', function (): void {
+    expect(__('support.create.link_hint'))->toContain("\u{2066}https://\u{2069}")
+        ->and(__('support.errors.link'))->toContain("\u{2066}https://\u{2069}")
+        ->and(__('support.show.open_file', ['name' => '2045.png']))->toContain("\u{2068}2045.png\u{2069}");
 });

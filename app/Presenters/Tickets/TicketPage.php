@@ -82,6 +82,13 @@ final class TicketPage extends ViewModel
                 ? self::personName(self::related($ticket, 'assignee'))
                 : null,
             'isClosed' => $closed,
+            // What every form below was drawn against: sent back after the
+            // ticket moved on, it is answered on this page, not with a 403
+            // (ValidatesTicketInput::failedAuthorization).
+            'seen' => TicketWorkflow::formStamp($ticket, $now),
+            // The copy tells a participant whose ticket closed to open a
+            // new one: the page offers the way to.
+            'canOpenNew' => ! $staffView && $closed && $viewer->can('create', SupportTicket::class),
             'resolvedNote' => $closesAt === null ? null : (string) __(
                 $staffView ? 'support.show.resolved_note_staff' : 'support.show.resolved_note',
                 ['when' => $formatter->dateTime($closesAt)],
