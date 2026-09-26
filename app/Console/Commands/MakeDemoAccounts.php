@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\EmailTokenType;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Events\PasswordChanged;
+use App\Http\Requests\Concerns\ProfileFieldRules;
 use App\Models\Cohort;
+use App\Models\EmailToken;
 use App\Models\Enrollment;
 use App\Models\Profile;
 use App\Models\User;
@@ -16,8 +20,11 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Journey\JourneyEvaluator;
 use App\Services\Permissions\RoleResolver;
 use App\Services\Time\Clock;
+use App\Support\Dates;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 /**
@@ -42,15 +49,22 @@ use Illuminate\Support\Str;
  * These are demonstration accounts with known addresses. Remove them before the
  * cohort opens to real trainees (PRD §12.6).
  *
- * @see PRD §9.2, §4.1 · CONSTITUTION art. 24 · D-117
+ * --reset-passwords (D-120) is the way back to accounts whose printed passwords
+ * were not kept. Nothing else reaches them: a second run leaves an existing
+ * password alone, and a reset link goes to an address with no inbox (D-117).
+ *
+ * @see PRD §9.2, §4.1 · CONSTITUTION art. 24 · BR-29 · D-117, D-120
  */
 final class MakeDemoAccounts extends Command
 {
+    use ProfileFieldRules;
+
     /** @var string */
     protected $signature = 'athar:demo-accounts
         {--force : Required in production, where creating known logins is a deliberate act}
         {--remove : Delete the demo accounts instead of creating them}
-        {--password= : Use one password for all of them; omit to have strong ones generated}
+        {--reset-passwords : Give the demo accounts that already exist one new password; nothing is created}
+        {--password= : One password for all of them. Omit to have strong ones generated, or with --reset-passwords to be asked for it without echo (preferred)}
         {--domain=athar-demo.test : Address domain for the created accounts}';
 
     /** @var string */
@@ -58,14 +72,26 @@ final class MakeDemoAccounts extends Command
 
     public function handle(JourneyEvaluator $journey, RoleResolver $roles, AuditLogger $audit): int
     {
+        $resetting = $this->option('reset-passwords') === true;
+
+        if ($resetting && $this->option('remove') === true) {
+            $this->error('--reset-passwords and --remove cannot be used together. Choose one.');
+
+            return self::FAILURE;
+        }
+
         if (app()->isProduction() && $this->option('force') !== true) {
-            $this->error('This creates accounts with known addresses on a live host.');
+            $this->error($resetting
+                ? 'This sets one known password on the demo accounts of a live host.'
+                : 'This creates accounts with known addresses on a live host.');
             $this->line('Re-run with --force if that is what you intend.');
 
             return self::FAILURE;
         }
 
-        $domain = (string) $this->option('domain');
+        // Lower-cased and trimmed, as athar:change-role treats an address: the
+        // database compares addresses without case, and so must the report.
+        $domain = mb_strtolower(trim((string) $this->option('domain')));
 
         // The addresses are the roster's, so adding a person to the file adds
         // them to --remove too; a hand-kept second list forgot the supervisor.
@@ -73,6 +99,10 @@ final class MakeDemoAccounts extends Command
 
         if ($this->option('remove') === true) {
             return $this->remove($addresses, $roles, $audit);
+        }
+
+        if ($resetting) {
+            return $this->resetPasswords($addresses, $domain, $audit);
         }
 
         $cohort = Cohort::query()->orderByDesc('start_date')->first();
@@ -303,6 +333,258 @@ final class MakeDemoAccounts extends Command
         $this->info('Removed '.$removed.' demo account(s).');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * One new password on the demo accounts that exist (D-120).
+     *
+     * Held to what the reset SCREEN does, step for step, because a console path
+     * that did less would be the weak door the screen's rules exist to close
+     * (art. 5): the screen's password rules and blacklist (PRD §9.2.1); the
+     * lockout and any temporary-password state cleared; the trail written
+     * before the save (art. 8); every session and the remember-me token ended
+     * (BR-29); an unused reset or invitation link spent, as following one
+     * spends it; and the security letter sent (PRD §9.3.3). The password itself
+     * is never printed and never written to the trail.
+     *
+     * Only the roster's addresses, and only those that exist: nothing is
+     * created, a removed account is not brought back with a known password, and
+     * a status other than active is reported and left alone. The roster fixes
+     * only the part before the @, so a wrong --domain can match real people's
+     * accounts: what matched is therefore shown, and confirmed, before anything
+     * is asked for or changed.
+     *
+     * All or nothing: one transaction, so a failure part-way leaves every
+     * account as it was, and the letters go out only once it has committed.
+     *
+     * @param  list<string>  $addresses
+     */
+    private function resetPasswords(array $addresses, string $domain, AuditLogger $audit): int
+    {
+        $users = User::query()->whereIn('email', $addresses)->orderBy('email')->get();
+
+        // Before any prompt: asking for a password that will not be used is a
+        // question the operator should not have to answer.
+        if ($users->isEmpty()) {
+            $this->error('None of the demo addresses exists at @'.$domain.', so no password was changed.');
+            $this->line('Pass the --domain the accounts were created with.');
+
+            return self::FAILURE;
+        }
+
+        $this->table(['role', 'email', 'status', 'created (UTC)'], $users->map(static fn (User $user): array => [
+            $user->role->value,
+            (string) $user->getAttribute('email'),
+            $user->status->value,
+            Dates::isoUtc($user->getAttribute('created_at')),
+        ])->all());
+
+        // Asked even with --force, which only says that a live host is meant —
+        // and answered "no" when nobody is there to answer (--no-interaction).
+        if (! $this->confirm('Set one new password on these '.$users->count().' account(s)?', false)) {
+            $this->warn('Nothing was changed.');
+
+            return self::FAILURE;
+        }
+
+        $password = $this->newPassword();
+
+        if ($password === null) {
+            $this->error('The two passwords do not match. No password was changed.');
+
+            return self::FAILURE;
+        }
+
+        $errors = $this->passwordErrors($password);
+
+        if ($errors !== []) {
+            $this->error('No password was changed. Fix this and run the command again:');
+
+            foreach ($errors as $message) {
+                $this->line('  - '.$message);
+            }
+
+            return self::FAILURE;
+        }
+
+        $at = Clock::now();
+
+        try {
+            /** @var list<array{user: User, ended: int}> $changed */
+            $changed = DB::transaction(function () use ($users, $password, $audit, $at): array {
+                // Read again, locked: an account removed while the operator was
+                // answering is not handed a known password.
+                $current = User::query()
+                    ->whereKey($users->modelKeys())
+                    ->orderBy('email')
+                    ->lockForUpdate()
+                    ->get();
+
+                $changed = [];
+
+                foreach ($current as $user) {
+                    $audit->log('user.password_reset', $user, null, [
+                        'reason' => 'athar:demo-accounts --reset-passwords',
+                        'via' => 'console',
+                    ]);
+
+                    $user->setAttribute('password_hash', $password);   // 'hashed' cast
+                    $user->setAttribute('failed_login_count', 0);
+                    $user->setAttribute('locked_until', null);
+                    $user->setAttribute('must_change_password', false);
+                    $user->setAttribute('temp_password_expires_at', null);
+                    // BR-29 — a remember-me cookie issued under the old password
+                    // must not outlive it.
+                    $user->setAttribute('remember_token', null);
+                    $user->save();
+
+                    $this->spendOpenLinks($user, $at);
+
+                    $changed[] = ['user' => $user, 'ended' => $this->endSessionsOf($user)];
+                }
+
+                return $changed;
+            });
+        } catch (\Throwable $exception) {
+            // The framework's message quotes the failed statement, and with it
+            // the new hash: the log keeps it, the screen does not show it.
+            report($exception);
+
+            $this->error('No password was changed: the database refused the change ('.$exception::class.').');
+            $this->line('The details are in the application log.');
+
+            return self::FAILURE;
+        }
+
+        foreach ($changed as $row) {
+            PasswordChanged::dispatch($row['user'], $at, 'console');
+        }
+
+        $this->newLine();
+        $this->table(['role', 'email', 'status', 'sessions ended'], array_map(static fn (array $row): array => [
+            $row['user']->role->value,
+            (string) $row['user']->getAttribute('email'),
+            $row['user']->status->value,
+            $row['ended'],
+        ], $changed));
+
+        foreach ($changed as $row) {
+            if ($row['user']->status !== UserStatus::Active) {
+                $this->warn((string) $row['user']->getAttribute('email').' is '.$row['user']->status->value
+                    .': the new password works once the account is active again.');
+            }
+        }
+
+        $changedKeys = array_map(static fn (array $row): mixed => $row['user']->getKey(), $changed);
+
+        foreach ($users as $user) {
+            if (! in_array($user->getKey(), $changedKeys, true)) {
+                $this->warn('removed   '.(string) $user->getAttribute('email').' — deleted while this ran, so it was not changed.');
+            }
+        }
+
+        // Compared without case: MySQL's collation matched them that way.
+        $found = $users->map(static fn (User $user): string => mb_strtolower((string) $user->getAttribute('email')))->all();
+
+        foreach ($addresses as $address) {
+            if (! in_array(mb_strtolower($address), $found, true)) {
+                $this->warn('not found '.$address.' — nothing was created for it.');
+            }
+        }
+
+        $this->info('New password set on '.count($changed).' demo account(s).');
+
+        $driver = (string) config('session.driver');
+
+        $this->line($driver === 'database'
+            ? 'Their sessions were ended and their remember-me tokens cleared.'
+            : 'Their remember-me tokens were cleared. Sessions are not kept in the database here (driver: '.$driver.'), so there were none to end.');
+
+        if (count($changed) > 1) {
+            $this->warn('One password now opens all '.count($changed).' accounts above, and their addresses follow one pattern:'
+                .' giving out any one of these logins gives out all of them.');
+        }
+
+        $given = $this->option('password');
+
+        if (app()->isProduction() && is_string($given) && $given !== '') {
+            $this->warn('--password was typed on the command line, so it is now in this shell\'s history.'
+                .' Leave it out next time to be asked for it without echo.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * An unused reset or invitation link would still set a password of its
+     * holder's choosing after this one, and a link mailed to a demo address
+     * comes back inside the bounce, to the shared mailbox. Following a link
+     * spends it; setting the password here spends them the same way.
+     */
+    private function spendOpenLinks(User $user, CarbonImmutable $at): void
+    {
+        EmailToken::query()
+            ->forUser($user)
+            ->whereIn('type', [EmailTokenType::Reset->value, EmailTokenType::Invite->value])
+            ->whereNull('used_at')
+            ->update(['used_at' => $at]);
+    }
+
+    /**
+     * --password when given; otherwise asked for twice without echo, which is
+     * preferred — an option stays in the shell history and the process list.
+     * Null when the two typed answers differ.
+     */
+    private function newPassword(): ?string
+    {
+        $given = $this->option('password');
+
+        if (is_string($given) && $given !== '') {
+            return $given;
+        }
+
+        $first = (string) $this->secret('New password for the demo accounts (not echoed)');
+        $again = (string) $this->secret('Repeat it');
+
+        return $first === $again ? $first : null;
+    }
+
+    /**
+     * The reset screen's rules and blacklist (PRD §9.2.1), from the trait the
+     * screen and athar:make-user use, so the three cannot drift apart.
+     *
+     * @return list<string>
+     */
+    private function passwordErrors(string $password): array
+    {
+        $validator = Validator::make(
+            ['password' => $password],
+            ['password' => ['required', 'string', $this->passwordRules()]],
+        );
+
+        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($password): void {
+            if ($this->isBlacklistedPassword($password)) {
+                $validator->errors()->add('password', 'This password is on the common-password blacklist.');
+            }
+        });
+
+        return $validator->fails() ? array_values($validator->errors()->all()) : [];
+    }
+
+    /**
+     * BR-29 — the sessions opened under the old password end with it. They are
+     * rows in a table on shared hosting, so ending one means deleting it: the
+     * query "log out everywhere" runs on the accounts screen.
+     */
+    private function endSessionsOf(User $user): int
+    {
+        if ((string) config('session.driver') !== 'database') {
+            return 0;
+        }
+
+        return DB::table((string) config('session.table', 'user_sessions'))
+            ->where('user_id', $user->getKey())
+            ->delete();
     }
 
     /**
