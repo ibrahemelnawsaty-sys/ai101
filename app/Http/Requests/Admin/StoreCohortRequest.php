@@ -6,8 +6,10 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CohortStatus;
 use App\Models\Cohort;
+use App\Services\Cohorts\PrimaryCoordinator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Creating a cohort.
@@ -48,6 +50,27 @@ final class StoreCohortRequest extends FormRequest
             'requires_approval' => ['nullable', 'boolean'],
             'status' => ['required', Rule::enum(CohortStatus::class)],
         ];
+    }
+
+    /**
+     * D-124 — a new cohort has no coordinator yet, and a cohort without a
+     * primary coordinator is neither opened for registration nor started.
+     * So it is created "upcoming" (or as a finished archive) and moves on once
+     * its coordinator is assigned.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $status = CohortStatus::tryFrom((string) $this->input('status'));
+
+            if (in_array($status, PrimaryCoordinator::REQUIRED_FOR, true)) {
+                $validator->errors()->add('status', (string) __('admin.cohorts.create_as_upcoming'));
+            }
+        });
     }
 
     /**

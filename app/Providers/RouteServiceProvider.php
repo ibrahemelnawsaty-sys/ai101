@@ -63,6 +63,14 @@ final class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('messages', fn (Request $request): Limit => Limit::perMinute(30)
             ->by($this->actorKey($request)));
 
+        // D-124 — a support ticket's lines: 30 a minute for text, like the
+        // messages; a line carrying files counts against 20 an hour, like the
+        // other uploads. A busy coordinator's notes never hit the upload
+        // ceiling, and the files still do.
+        RateLimiter::for('support', fn (Request $request): Limit => $request->hasFile('attachments')
+            ? Limit::perHour(20)->by('files|'.$this->actorKey($request))
+            : Limit::perMinute(30)->by('lines|'.$this->actorKey($request)));
+
         // 100 public reads per IP per minute - landing page, card and
         // certificate verification.
         RateLimiter::for('public', fn (Request $request): Limit => Limit::perMinute(100)

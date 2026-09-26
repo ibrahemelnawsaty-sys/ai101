@@ -778,6 +778,32 @@ function fakeUpload(string $name, string $type = 'pdf'): Illuminate\Http\Uploade
 
             return $bytes;
         })(),
+        // D-124 — the support ticket's other formats. A JPEG and a WebP from
+        // GD like the PNG above; the three videos as the container headers
+        // libmagic names them by (an ISO-BMFF `ftyp` box, an EBML header).
+        'jpg' => (static function (): string {
+            $image = imagecreatetruecolor(1, 1);
+            ob_start();
+            imagejpeg($image);
+            $bytes = (string) ob_get_clean();
+            imagedestroy($image);
+
+            return $bytes;
+        })(),
+        'webp' => (static function (): string {
+            $image = imagecreatetruecolor(1, 1);
+            ob_start();
+            imagewebp($image);
+            $bytes = (string) ob_get_clean();
+            imagedestroy($image);
+
+            return $bytes;
+        })(),
+        'mp4' => pack('N', 24).'ftypmp42'.pack('N', 0).'mp42isom'.str_repeat("\0", 64),
+        'mov' => pack('N', 20).'ftypqt  '.pack('N', 0).'qt  '.str_repeat("\0", 64),
+        'webm' => (string) pack('H*', '1a45dfa39f4286810142f7810142f2810442f381084282847765626d4287810442858102').str_repeat("\0", 64),
+        // Markup a browser would run: refused whatever it is named.
+        'svg' => '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
         // An OOXML deck: a ZIP whose package declares a presentation and holds
         // it — the structure the platform names a deck by, whatever libmagic
         // makes of the archive's first entries (OfficeOpenXml, D-121).

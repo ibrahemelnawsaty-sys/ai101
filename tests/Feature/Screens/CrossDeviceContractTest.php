@@ -193,9 +193,27 @@ it('D-86: «البطاقة الرقمية» في قائمة الحساب للم�
 });
 
 it('D-86: بلا جافاسكربت تبقى القائمة وتسجيل الخروج في متناول الجوّال', function (): void {
-    $this->actingAs(makeParticipant(makeCohort()))->get(route('dashboard'))
+    $html = (string) $this->actingAs(makeParticipant(makeCohort()))->get(route('dashboard'))
         ->assertOk()
         ->assertSee('<noscript>', false)
-        ->assertSee('class="nojs-logout"', false)
-        ->assertSee('drawer__host', false);
+        ->assertSee('drawer__host', false)
+        ->getContent();
+
+    // Without JavaScript the drawer's copy of the rail is what a phone shows,
+    // so sign-out must be IN that copy. It is the rail's own POST form since
+    // D-108 took the separate `nojs-logout` element away; this assertion
+    // still named the removed element and failed on every run until D-123.
+    $dom = new DOMDocument;
+    $previous = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $hasClass = static fn (string $name): string => 'contains(concat(" ", normalize-space(@class), " "), " '.$name.' ")';
+    $forms = (new DOMXPath($dom))->query(
+        '//*['.$hasClass('drawer__host').']//form['.$hasClass('side__logout').'][@method="POST"][@action="'.route('logout').'"]',
+    );
+
+    expect($forms)->not->toBeFalse()
+        ->and($forms === false ? 0 : $forms->length)->toBe(1);
 });

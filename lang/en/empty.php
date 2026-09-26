@@ -115,4 +115,14 @@ return [
         'action' => 'Set notification preferences',
     ],
 
+    /*
+     * D-124 — Support, for the participant. The support team's empty copy is
+     * in support.php.
+     */
+    'support' => [
+        'title' => 'No support tickets yet',
+        'body' => 'If something is wrong with your account, the platform or the programme, open a ticket: it reaches your cohort\'s coordinator directly, and you follow it here step by step.',
+        'action' => 'Open a ticket',
+    ],
+
 ];

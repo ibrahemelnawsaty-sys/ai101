@@ -16,6 +16,12 @@ final class FileException extends DomainException
         return new self('errors.file.too_large', ['max' => $maxMegabytes], 422);
     }
 
+    /** More files on one line than it may carry (D-124). */
+    public static function tooMany(int $maxFiles): self
+    {
+        return new self('errors.file.too_many', ['max' => $maxFiles], 422);
+    }
+
     public static function emptyFile(): self
     {
         return new self('errors.file.empty', [], 422);

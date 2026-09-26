@@ -63,6 +63,7 @@ use App\Http\Controllers\Participant\NotificationController;
 use App\Http\Controllers\Participant\ProfileController;
 use App\Http\Controllers\Participant\ResourceController;
 use App\Http\Controllers\Participant\ScheduleController;
+use App\Http\Controllers\Participant\SupportTicketController;
 use App\Http\Controllers\Public\CardVerificationController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\CrawlerController;
@@ -239,6 +240,9 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
         ->whereNumber('index')->name('assignment');
     Route::get('/final-projects/{project}/{index}', [FileDownloadController::class, 'finalProject'])
         ->whereNumber('index')->name('finalProject');
+    // D-124 — a picture or a video on a support ticket, shown inside the page.
+    Route::get('/support-attachments/{attachment}', [FileDownloadController::class, 'supportAttachment'])
+        ->whereUuid('attachment')->name('supportAttachment');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function (): void {
@@ -365,6 +369,61 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         Route::post('/messages/{message}/report', [MessageController::class, 'report'])
             ->middleware('not.impersonating')
             ->name('messages.report');
+    });
+
+    /*
+     * Support tickets — D-124. Which tickets each account reads is
+     * SupportTicket::scopeVisibleTo and SupportTicketPolicy::view, the same
+     * rule; every change goes through TicketWorkflow, which asks it again
+     * under the ticket's lock. A trainer reaches none of it, and a preview
+     * neither writes (BR-33) nor, until the owner decides, reads (D-125:
+     * SupportTicketPolicy::viewAny/view answer no).
+     */
+    Route::middleware('role:participant,coordinator,admin,system_admin')->group(function (): void {
+        Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
+        Route::get('/support/new', [SupportTicketController::class, 'create'])
+            ->middleware(['role:participant', 'not.impersonating'])
+            ->name('support.create');
+        Route::post('/support', [SupportTicketController::class, 'store'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:support'])
+            ->name('support.store');
+        Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])
+            ->whereUuid('ticket')
+            ->name('support.show');
+
+        // The person who opened it — whatever their role is now: a trainee
+        // later made a coordinator still answers and closes their own ticket.
+        // SupportTicketPolicy::reply/close admits its opener alone.
+        Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])
+            ->whereUuid('ticket')
+            ->middleware(['not.impersonating', 'throttle:support'])
+            ->name('support.reply');
+        Route::post('/support/{ticket}/close', [SupportTicketController::class, 'close'])
+            ->whereUuid('ticket')
+            ->middleware(['not.impersonating', 'throttle:support'])
+            ->name('support.close');
+
+        // The support team.
+        Route::post('/support/{ticket}/note', [SupportTicketController::class, 'note'])
+            ->whereUuid('ticket')
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
+            ->name('support.note');
+        Route::post('/support/{ticket}/resolve', [SupportTicketController::class, 'resolve'])
+            ->whereUuid('ticket')
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
+            ->name('support.resolve');
+        Route::post('/support/{ticket}/escalate', [SupportTicketController::class, 'escalate'])
+            ->whereUuid('ticket')
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
+            ->name('support.escalate');
+        Route::post('/support/{ticket}/return', [SupportTicketController::class, 'returnDown'])
+            ->whereUuid('ticket')
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
+            ->name('support.return');
+        Route::post('/support/{ticket}/assign', [SupportTicketController::class, 'assign'])
+            ->whereUuid('ticket')
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
+            ->name('support.assign');
     });
 
     /*
@@ -661,6 +720,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::delete('/cohorts/{cohort}/coordinators/{coordinator}', [AdminCohortController::class, 'detachCoordinator'])
             ->middleware('not.impersonating')
             ->name('cohorts.coordinators.detach');
+        // D-124 — choosing the primary coordinator: the one a support ticket
+        // reaches first, chosen by the general supervisor among several.
+        Route::put('/cohorts/{cohort}/primary-coordinator', [AdminCohortController::class, 'setPrimaryCoordinator'])
+            ->middleware('not.impersonating')
+            ->name('cohorts.coordinators.primary');
 
         // Seat an existing participant account in a cohort by its e-mail
         // address (D-84). It lived on the account's own page until D-117 gave

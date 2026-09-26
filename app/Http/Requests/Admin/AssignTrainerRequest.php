@@ -7,8 +7,10 @@ namespace App\Http\Requests\Admin;
 use App\Enums\UserRole;
 use App\Models\Cohort;
 use App\Models\User;
+use App\Services\Cohorts\PrimaryCoordinator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Assigning a trainer to a cohort (PRD §4.2).
@@ -18,7 +20,7 @@ use Illuminate\Validation\Rule;
  * a trainer or an administrator. A participant cannot be promoted sideways by
  * being attached to a cohort (BR-23).
  *
- * @see BR-22, BR-23, BR-33 · PRD §4.2 · CONSTITUTION Art. 22
+ * @see BR-22, BR-23, BR-33 · PRD §4.2 · CONSTITUTION Art. 22 · D-124
  */
 final class AssignTrainerRequest extends FormRequest
 {
@@ -74,6 +76,47 @@ final class AssignTrainerRequest extends FormRequest
     public function messages(): array
     {
         return ['email.exists' => (string) __('admin.cohorts.trainer_not_found')];
+    }
+
+    /**
+     * D-124 — a coordinator of this cohort assigned to it as a trainer leaves
+     * its coordination: the enrolment row is one per person and cohort, and
+     * the assignment rewrites its role. So the same rule as removing them
+     * applies — never the last coordinator, never the primary one while a
+     * choice remains.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            // The rules above proved the account exists; read by the input, not
+            // by validated(), which is not settled while the validator runs.
+            $trainerId = User::query()
+                ->where('email', (string) $this->input('email'))
+                ->whereIn('role', self::assignableRoles())
+                ->value('id');
+
+            if ($trainerId === null) {
+                return;
+            }
+
+            $refusal = app(PrimaryCoordinator::class)->departureRefusal($this->cohort(), (string) $trainerId);
+
+            if ($refusal !== null) {
+                $validator->errors()->add('trainer', self::message($refusal));
+            }
+        });
+    }
+
+    /** The refusal as this form words it (PrimaryCoordinator::departureRefusal). */
+    public static function message(string $refusal): string
+    {
+        return (string) __($refusal === PrimaryCoordinator::REFUSED_LAST
+            ? 'admin.cohorts.trainer_is_last_coordinator'
+            : 'admin.cohorts.trainer_is_primary_coordinator');
     }
 
     public function cohort(): Cohort

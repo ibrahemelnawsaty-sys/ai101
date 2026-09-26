@@ -38,7 +38,7 @@ use Illuminate\Support\Str;
  *  · downloads are served only through a signed link valid for fifteen
  *    minutes, minted after the permission check, never before
  *
- * @see BR-22, BR-27 · PRD §9.11.2, §12.5 · CONSTITUTION art. 22, art. 24
+ * @see BR-22, BR-27 · PRD §9.11.2, §12.5 · CONSTITUTION art. 22, art. 24 · D-121, D-124
  */
 final class PrivateFileService
 {
@@ -86,6 +86,20 @@ final class PrivateFileService
         'image/jpeg' => 'jpg',
         'image/webp' => 'webp',
         'image/gif' => 'gif',
+    ];
+
+    /**
+     * Sniffed type => stored extension, for the types NO field accepts unless
+     * it names them itself through `$acceptedTypes` (D-124): video. The
+     * support ticket's attachments ask for these three; every other upload on
+     * the platform still refuses a video, as it always has.
+     *
+     * @var array<string, string>
+     */
+    private const OPT_IN_TYPES = [
+        'video/mp4' => 'mp4',
+        'video/quicktime' => 'mov',
+        'video/webm' => 'webm',
     ];
 
     /**
@@ -195,7 +209,7 @@ final class PrivateFileService
 
         $mime = $this->sniff($source);
 
-        $this->guardType($mime);
+        $this->guardType($mime, $acceptedTypes);
 
         if ($acceptedTypes !== null && ! in_array($mime, $acceptedTypes, true)) {
             throw FileException::mimeNotAllowed();
@@ -475,15 +489,26 @@ final class PrivateFileService
     }
 
     /**
+     * A type is stored when the platform allows it, or when it is one of the
+     * opt-in types AND the field asked for it by name (D-124).
+     *
+     * @param  list<string>|null  $acceptedTypes
+     *
      * @throws FileException
      */
-    private function guardType(string $mime): void
+    private function guardType(string $mime, ?array $acceptedTypes = null): void
     {
         if (in_array($mime, self::FORBIDDEN_TYPES, true)) {
             throw FileException::executableRejected();
         }
 
-        if (! array_key_exists($mime, self::ALLOWED_TYPES)) {
+        if (array_key_exists($mime, self::ALLOWED_TYPES)) {
+            return;
+        }
+
+        $askedFor = $acceptedTypes !== null && in_array($mime, $acceptedTypes, true);
+
+        if (! $askedFor || ! array_key_exists($mime, self::OPT_IN_TYPES)) {
             throw FileException::mimeNotAllowed();
         }
     }
@@ -507,7 +532,7 @@ final class PrivateFileService
 
     private function extensionFor(string $mime): string
     {
-        return self::ALLOWED_TYPES[$mime] ?? self::NEUTRAL_EXTENSION;
+        return self::ALLOWED_TYPES[$mime] ?? self::OPT_IN_TYPES[$mime] ?? self::NEUTRAL_EXTENSION;
     }
 
     /**

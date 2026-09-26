@@ -56,6 +56,10 @@ class Cohort extends Model
         'pass_score',
         'min_attendance_rate',
         'requires_approval',
+        // D-124 — written by CohortController::writePrimary() alone, audited,
+        // never from a request field. WHO the primary coordinator is, is
+        // PrimaryCoordinator's answer: the column alone is never trusted.
+        'primary_coordinator_id',
     ];
 
     /**

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -140,12 +141,28 @@ return Application::configure(basePath: dirname(__DIR__))
                 app(AuditLogger::class)->deniedRequest($request, 'policy.denied');
             }
 
+            // A signed link altered or past its fifteen minutes: the id in it
+            // was changed, or it was kept too long. A refusal like any other,
+            // recorded with its IP (art. 8) — D-124's review found every
+            // `files.*` route answering 403 here without a trace.
+            if ($exception instanceof InvalidSignatureException) {
+                app(AuditLogger::class)->deniedRequest($request, 'signature.invalid');
+            }
+
             return null;
         });
 
         $exceptions->render(function (Throwable $exception, Request $request) {
             if ($request->expectsJson()) {
                 return null;
+            }
+
+            // D-124 — a file link past its time, or altered, says so and what
+            // to do: a participant who kept a ticket open while writing meets
+            // it, and the generic page would tell them the file belongs to
+            // another role. Still a 403, and already in the audit trail.
+            if ($exception instanceof InvalidSignatureException && $request->routeIs('files.*')) {
+                return response()->view('errors.file-link', [], 403);
             }
 
             $status = match (true) {

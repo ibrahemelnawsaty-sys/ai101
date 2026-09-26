@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 use App\Console\Commands\ReconcileAttendance;
 use App\Console\Commands\SendScheduledNotices;
+use App\Console\Commands\SweepSupportTickets;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -61,5 +62,22 @@ Schedule::command(ReconcileAttendance::class)
 */
 
 Schedule::command(SendScheduledNotices::class)
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
+/*
+|--------------------------------------------------------------------------
+| Support tickets - every minute (D-124)
+|--------------------------------------------------------------------------
+|
+| A resolved ticket closes itself a day later unless the participant answers
+| first; a ticket whose coordinator can no longer act goes back to the primary
+| coordinator, or up to the general supervisor. Every minute so "a day" means
+| a day, not a day and a quarter hour. Each ticket is asked again under its
+| row lock, so an overlapping run changes nothing twice.
+|
+*/
+
+Schedule::command(SweepSupportTickets::class)
     ->everyMinute()
     ->withoutOverlapping(5);

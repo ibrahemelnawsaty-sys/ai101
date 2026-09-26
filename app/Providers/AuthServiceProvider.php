@@ -25,6 +25,7 @@ use App\Models\ProjectSubmission;
 use App\Models\Resource;
 use App\Models\Session;
 use App\Models\Submission;
+use App\Models\SupportTicket;
 use App\Models\Thread;
 use App\Models\User;
 use App\Models\Week;
@@ -50,6 +51,7 @@ use App\Policies\ProjectSubmissionPolicy;
 use App\Policies\ResourcePolicy;
 use App\Policies\SessionPolicy;
 use App\Policies\SubmissionPolicy;
+use App\Policies\SupportTicketPolicy;
 use App\Policies\ThreadPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeekPolicy;
@@ -102,6 +104,8 @@ final class AuthServiceProvider extends ServiceProvider
         LandingContent::class => LandingContentPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Broadcast::class => BroadcastPolicy::class,
+        // D-124 — support tickets.
+        SupportTicket::class => SupportTicketPolicy::class,
     ];
 
     /**

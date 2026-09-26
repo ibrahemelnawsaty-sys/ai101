@@ -57,7 +57,7 @@ trait ResolvesCurrentUser
 
         $this->role = $user instanceof User ? $user->role : null;
         $this->roleLabel = $this->role?->label() ?? '';
-        $this->roleVariant = $this->role?->value ?? 'neutral';
+        $this->roleVariant = $this->role->value ?? 'neutral';
 
         $this->logoutUrl = Route::has('logout') ? route('logout') : null;
     }

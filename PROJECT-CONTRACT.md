@@ -41,6 +41,8 @@ App\Services\Journey\*
 App\Services\Permissions\*
 App\Services\Audit\*
 App\Services\Storage\*
+App\Services\Tickets\*   تذاكر «الدعم الفني» (D-124)
+App\Services\Cohorts\*   المنسّق الأساسي للدفعة (D-124)
 App\Presenters\*         نماذج عرض الشاشات (ViewModel لكل شاشة) — §16
 App\Support\*            أدوات صغيرة بلا حالة
 App\Console\Commands\*   أوامر artisan والبوابات
@@ -71,6 +73,10 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `ResourceType` | `file` · `link` · `video` |
 | `SubmissionFieldType` | `url` · `github` · `file` · `text` · `textarea` — نوع حقل في نموذج تسليم المشروع الختامي (`D-121`) |
 | `SubmissionFileFormat` | `pdf` · `powerpoint` · `word` · `excel` · `csv` · `text` · `markdown` · `zip` · `png` · `jpeg` · `webp` — صيغ يختارها المشرف لحقل رفع، **كلها من قائمة المنصة** (`uploads.allowed_extensions` وأنواع `PrivateFileService`)؛ قائمة المنصة نفسها لـ`D-17` (`D-121`) |
+| `SupportTicketStatus` | `open` · `in_progress` · `resolved` · `closed` — تذكرة «الدعم الفني» (`D-124`) |
+| `SupportTicketLevel` | `coordinator` · `admin` · `system_admin` — عند أي درجة التذكرة الآن (`D-124`) |
+| `SupportTicketCategory` | `account` · `platform` · `program` · `other` — لا يغيّر المسار (`D-124`) |
+| `SupportTicketEntryType` | `opened` · `reply` · `message` · `note` · `escalated` · `returned` · `assigned` · `resolved` · `reopened` · `closed` · `auto_closed` — سطر في خطّها الزمني (`D-124`) |
 
 كل enum: `enum X: string` + دالة `label(): string` تُرجع `__('enums.x.'.$this->value)`.
 
@@ -86,7 +92,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `users` | `email` فريد · `password_hash` لا يُرجَع أبدًا · `failed_login_count` · `locked_until` · حذف ناعم |
 | `profiles` | `user_id` فريد · الأسماء الرباعية عربي وإنجليزي · `phone` **فريد** |
 | `programs` | `slug` فريد · `objectives`/`target_audience`/`certificates` JSON |
-| `cohorts` | `pass_score` افتراضي `60` · `min_attendance_rate` افتراضي `75` · `capacity` · `registration_closes_at` |
+| `cohorts` | `pass_score` افتراضي `60` · `min_attendance_rate` افتراضي `75` · `capacity` · `registration_closes_at` · `primary_coordinator_id` يقبل الفراغ (`nullOnDelete`) — المنسّق الأساسي، يقرؤه `PrimaryCoordinator` وحده (`D-124`) |
 | `enrollments` | **فريد مركّب** `(cohort_id, user_id)` |
 | `weeks` | `index` 1..4 |
 | `sessions` | فهرس `(cohort_id, date)` · قيد `end_time > start_time` · `zoom_url` لا يُكشف قبل النافذة |
@@ -101,6 +107,9 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `journey_steps` | `index` 1..10 · `unlock_rule` |
 | `user_journey_states` | `(user_id, journey_step_id)` فريد |
 | `threads` · `thread_participants` · `messages` | `last_read_at` · `threads.cohort_id` يقبل الفراغ لمحادثة `direct` · `threads.inbox` (`system_admin` = الصندوق المشترك) · `threads.pair_key` فريد — محادثة واحدة لكل زوجين (`D-118`) |
+| `support_tickets` | `number` **فريد** `TK-XXXX-XXXX` · `opener_id` (`restrictOnDelete`) · `cohort_id` يقبل الفراغ (`nullOnDelete`) · `category` · `subject` · `status` · `level` · `assignee_id` المنسّق الذي عنده التذكرة (`nullOnDelete`) · `reached_system_admin_at` · `resolved_at` · `closed_at` · `closed_by` · `last_activity_at` — الكاتب الوحيد `TicketWorkflow` (`D-124`) · التذاكر اليتيمة: `SupportTicket::scopeOrphaned` — سؤال `TicketRouting::holderCanAct` نفسه مطروحًا على قاعدة البيانات، يقرؤه نقل التذاكر (`TicketWorkflow::rehome`) |
+| `support_ticket_entries` | `support_ticket_id` (`cascadeOnDelete`) · `position` ترتيب السطر في خطّها (فريد مع التذكرة) · `actor_id` يقبل الفراغ للنظام (`nullOnDelete`) · `type` · `body` · `is_internal` · `from_level` · `to_level` · `target_id` (`nullOnDelete`) · `link_url` — قيد فريد `(support_ticket_id, position)` (`D-124`) |
+| `support_ticket_attachments` | `support_ticket_entry_id` (`cascadeOnDelete`) · `disk` · `path` · `original_name` · `mime_type` · `size_bytes` · `checksum` · `kind` (`image`/`video`) — تُعرض برابط موقّع لا يُكشف مساره (`D-124`) |
 | `notifications` | فهرس `(user_id, is_read)` |
 | `notification_preferences` | |
 | `certificates` | `serial_number` **فريد** · `verify_code` **فريد** · `revoked_at` |
@@ -291,6 +300,13 @@ final class CertificateEligibility
 | `GET /dashboard/messages` | `messages.index` | `auth` · `role:participant,trainer,coordinator,admin,system_admin` (`D-118`) — ما يظهر: `Thread::scopeVisibleTo` |
 | `GET /dashboard/messages/new` | `messages.create` | `auth` · الأدوار نفسها · `not.impersonating` (`D-118`) — القائمة: `ConversationRules::recipients` |
 | `POST /dashboard/messages` | `messages.start` | `auth` · الأدوار نفسها · `not.impersonating` · `throttle:messages` (`D-118`) — `StartConversationRequest` + `ThreadPolicy::start/startInbox` |
+| `GET /dashboard/support` | `support.index` | `auth` · `verified` · `role:participant,coordinator,admin,system_admin` (`D-124`) — المتدرب تذاكره، والفريق ما يراه: `SupportTicket::scopeVisibleTo` · **أثناء المعاينة 403** (`SupportTicketPolicy::viewAny`، `D-125` مفتوح) |
+| `GET /dashboard/support/new` · `POST /dashboard/support` | `support.create` · `support.store` | `auth` · `verified` · `role:participant` · `not.impersonating` · والحفظ `throttle:support` (`D-124`) — `OpenTicketRequest` + `SupportTicketPolicy::create`: حساب فعّال له التحاق متدرب «فعّال» أو «مكتمل» في دفعة |
+| `GET /dashboard/support/{ticket}` | `support.show` | `auth` · `verified` · `role:participant,coordinator,admin,system_admin` (`D-124`) — `SupportTicketPolicy::view` · **أثناء المعاينة 403** (`D-125` مفتوح) |
+| `POST /dashboard/support/{ticket}/reply` · `…/close` | `support.reply` · `support.close` | `auth` · `verified` · أدوار المجموعة (`role:participant,coordinator,admin,system_admin`) **بلا `role:participant`** · `not.impersonating` · `throttle:support` (`D-124`) — `SupportTicketPolicy::reply/close`: صاحب التذكرة وحده، أيًّا كان دوره الآن |
+| `POST /dashboard/support/{ticket}/note` · `…/resolve` | `support.note` · `support.resolve` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · `throttle:support` (`D-124`) — `SupportTicketPolicy::note/resolve`؛ والكتابة للمتدرب `SupportTicketPolicy::writeToParticipant` للمنسّق الذي عنده التذكرة في درجة المنسّق وحده، وما يُكتب في الدرجتين فوقها يُحفظ داخليًّا (`D-126` مفتوح) |
+| `POST /dashboard/support/{ticket}/escalate` · `…/return` · `…/assign` | `support.escalate` · `support.return` · `support.assign` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · `throttle:support` (`D-124`) — `SupportTicketPolicy::escalate/returnDown/assign` |
+| `GET /files/support-attachments/{attachment}` | `files.supportAttachment` | `auth` · `verified` · `signed` — `SupportTicketPolicy::viewAttachment` عند الوصول؛ يُعرض داخل الصفحة ويدعم التشغيل المتقطّع (`D-124`) |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
 | `GET /dashboard/final-project/receipt/{code}` | `finalProject.receipt` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` — `ProjectSubmissionPolicy::view` (صاحب التسليم · مدرب دفعته · المشرف العام)، والرمز بنمط `ReceiptCodes::PATTERN` (`D-122`) |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
@@ -308,7 +324,17 @@ final class CertificateEligibility
 | `PATCH /admin/final-project/{project}/fields/{field}` · `…/move` · `DELETE …` | `admin.finalProject.fields.update` · `.move` · `.destroy` | نفسه · ربط الحقل مقيَّد بمشروعه (`scopeBindings`) · `FinalProjectFieldPolicy` (`D-121`) |
 | `GET /files/project-submissions/{projectSubmission}/answers/{answer}/{index}` | `files.projectSubmissionAnswer` | `auth` · `verified` · `signed` — `ProjectSubmissionPolicy::download` عند الوصول (`D-80` · `D-121`) |
 | `POST /admin/cohorts/{cohort}/participants` | `admin.cohorts.participants.attach` | `auth` · `role:admin` · `not.impersonating` (`D-84` · `D-117`) |
+| `PUT /admin/cohorts/{cohort}/primary-coordinator` | `admin.cohorts.coordinators.primary` | `auth` · `role:admin` · `not.impersonating` (`D-124`) — `SetPrimaryCoordinatorRequest` + `CohortPolicy::assignCoordinator` |
 | `DELETE /admin/impersonation` | `admin.impersonation.stop` | `auth` |
+
+**حدّ الطلب `throttle:support`** (`RouteServiceProvider`، `D-124`) — على مسارات الكتابة الثمانية في التذاكر (`support.store` · `reply` · `close` · `note` · `resolve` · `escalate` · `return` · `assign`):
+السطر النصي **30 في الدقيقة** بمفتاح `lines|user:<id>`، والطلب الذي يحمل `attachments` **20 في الساعة** بمفتاح `files|user:<id>` — عدّادان منفصلان للحساب،
+فلا تُحسب ملاحظات المنسّق النصية على حدّ الملفات، ولا يُحسب شيء منها على `throttle:upload` في بقية المنصة.
+
+**النموذج المتأخر عن حال التذكرة** (`ValidatesTicketInput::failedAuthorization`، `D-124`): نماذج صفحة التذكرة ترسل `seen` = `TicketWorkflow::formStamp()`
+(بصمة الدرجة والمرحلة ومن عنده التذكرة وانتهاء مهلتها، مفتاحها مفتاح التطبيق). إن رفضت السياسة الطلب وختمه غير ختم التذكرة الآن وصاحبه يقرؤها:
+سطر `access.denied` بسبب `support.stale_form`، ثم رجوع إلى `support.show` برسالة `support.errors.closed` أو `moved_on` ونصّه محفوظ. وبلا ختم، أو ممن لا يقرؤها: 403 كأي مسار.
+**رابط ملف موقّع منتهٍ أو مُعدَّل** على `files.*`: 403 بصفحة `errors.file-link` («انتهت صلاحية رابط الملف» وما العمل)، ويُكتب `access.denied` بسبب `signature.invalid` مع عنوان IP (`bootstrap/app.php`).
 
 ---
 
@@ -355,7 +381,7 @@ resources/views/components/layout/*.blade.php  header, sidebar, footer, imperson
 
 ```
 lang/ar/{app,auth,validation,nav,attendance,assignments,grades,certificates,
-         journey,messages,notifications,admin,errors,emails,enums}.php
+         journey,messages,notifications,admin,errors,emails,enums,support}.php
 lang/en/…   نفس المفاتيح
 ```
 `ar` هي المرجع. **تطابق المفاتيح بين `ar` و`en` في الاتجاهين يمنع الدمج** عبر `tests/Feature/LangKeyParityTest.php` تحت G7؛ وبوابة G5 ما زالت تُنبّه به (D-78). السبب: اللغة الاحتياطية عربية، فمفتاح إنجليزي ناقص يظهر عربيًّا داخل صفحة من اليسار يوم تُفعَّل الإنجليزية — ولا يفشل شيء.

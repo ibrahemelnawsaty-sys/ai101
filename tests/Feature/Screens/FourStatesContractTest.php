@@ -40,6 +40,8 @@ function allScreenNames(): array
         'card',
         'profile',
         'notifications',
+        // D-124 — «Support».
+        'support',
     ];
 }
 

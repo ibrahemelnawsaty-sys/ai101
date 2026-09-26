@@ -16,6 +16,11 @@ return [
             'body' => 'Your session has ended. Please sign in again.',
             'action' => 'Sign in',
         ],
+        // D-124 — a signed file link past its time, or altered.
+        'file_link' => [
+            'title' => 'This file link has expired.',
+            'body' => 'File links work for a short time to keep files safe. Go back to the page you opened it from, refresh it, then open the file again.',
+        ],
         '403' => [
             'title' => 'You do not have access to this page.',
             'body' => 'This page belongs to another role, or to something that is not part of your account. Contact us if you think this is a mistake.',
@@ -108,6 +113,7 @@ return [
 
     'file' => [
         'too_large' => 'The file is larger than the :max megabyte limit. Compress or split it, then upload again.',
+        'too_many' => 'At most :max files can be attached at once. Remove the extra ones, then send again.',
         'empty' => 'This file is empty. Choose a file with content in it and upload again.',
         'unreadable' => 'The file could not be read. Check your connection and upload again.',
         'mime_not_allowed' => 'This file format is not allowed. Upload a document, an image, or an archive.',

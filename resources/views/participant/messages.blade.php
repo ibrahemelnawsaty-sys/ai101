@@ -109,8 +109,10 @@
                             <span>{{ $thread->previewLine }}</span>
                         </div>
                         @if ($thread->unreadCount > 0)
-                            <x-ui.badge :count="$thread->unreadCount"
-                                :aria-label="trans_choice('messages.unread_count', $thread->unreadCount, ['count' => $thread->unreadCount])" />
+                            <x-ui.badge variant="count" size="sm">
+                                <span class="u-num" aria-hidden="true">{{ $thread->unreadCount }}</span>
+                                <span class="ui-sr">{{ trans_choice('messages.unread_count', $thread->unreadCount, ['count' => $thread->unreadCount]) }}</span>
+                            </x-ui.badge>
                         @endif
                     </a>
                 @endforeach

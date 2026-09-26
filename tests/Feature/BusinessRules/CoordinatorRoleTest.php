@@ -100,7 +100,7 @@ it('D-105: المشرف يسند منسّقًا للدفعة عبر بريده،
             ->where('user_id', $newCoordinator->id)
             ->where('role_in_cohort', 'coordinator')
             ->where('status', 'active')
-            ->exists()
+            ->exists(),
     )->toBeTrue();
 
     $this->actingAs($newCoordinator)
@@ -109,6 +109,10 @@ it('D-105: المشرف يسند منسّقًا للدفعة عبر بريده،
 });
 
 it('D-105: إزالة إسناد المنسّق تقطع وصوله فورًا', function (): void {
+    // D-124 — no cohort is left without a coordinator, so a second one is
+    // assigned first; the one removed here is then no longer the last.
+    makeCoordinator($this->cohort);
+
     $this->actingAs($this->admin)
         ->delete(route('admin.cohorts.coordinators.detach', [$this->cohort, $this->coordinator]))
         ->assertSessionHasNoErrors();

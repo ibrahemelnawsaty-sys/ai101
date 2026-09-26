@@ -7,6 +7,7 @@ namespace App\Presenters\Admin;
 use App\Models\Cohort;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
+use App\Services\Cohorts\PrimaryCoordinator;
 use App\Support\ViewModel;
 
 /**
@@ -38,10 +39,19 @@ final class TrainerAssignment extends ViewModel
         }
 
         $coordinatorPeople = [];
+        // D-124 — the primary coordinator, as the one reader of the column
+        // decides it. A choice exists only between two coordinators or more
+        // who can act (an active account in a coordinating role); a suspended
+        // one is listed, never offered.
+        $primary = app(PrimaryCoordinator::class);
+        $primaryId = $primary->idOf($cohort);
+        $eligible = $primary->coordinatorIds($cohort);
+        $coordinatorCount = count($eligible);
 
         foreach (($coordinators ?? []) as $coordinator) {
             if ($coordinator instanceof User) {
-                $coordinatorPeople[] = TrainerOption::from($coordinator);
+                $canChoose = $coordinatorCount > 1 && in_array((string) $coordinator->getKey(), $eligible, true);
+                $coordinatorPeople[] = CoordinatorOption::from($coordinator, $primaryId, $canChoose);
             }
         }
 
@@ -51,6 +61,11 @@ final class TrainerAssignment extends ViewModel
             'programName' => self::text($program, 'name_ar'),
             'trainers' => $people,
             'coordinators' => $coordinatorPeople,
+            // D-124 — without a primary coordinator the cohort can be neither
+            // opened for registration nor started, and its tickets go to the
+            // general supervisor; the panel says so where it can be fixed.
+            'needsPrimary' => $coordinatorCount > 1 && $primaryId === null,
+            'hasNoCoordinator' => $coordinatorCount === 0,
         ]);
     }
 }

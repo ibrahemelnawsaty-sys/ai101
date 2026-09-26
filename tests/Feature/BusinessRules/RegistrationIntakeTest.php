@@ -51,6 +51,10 @@ function intakeIsOpen(object $test): bool
 }
 
 it('D-117: المشرف العام يغلق التسجيل ثم يفتحه، والنموذج يطيعه في الطلب التالي، ويُسجَّل كل تغيير', function (): void {
+    // D-124 — registration opens only with a primary coordinator; the lone
+    // coordinator is primary on their own.
+    makeCoordinator($this->cohort);
+
     expect(intakeIsOpen($this))->toBeTrue()
         ->and($this->cohort->fresh()->load('landingSetting')->acceptsRegistrations())->toBeTrue();
 

@@ -631,7 +631,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .ui-badge--warning, .ui-pill--warning { background: var(--warn-a13); color: var(--status-warn-text); }
 .ui-badge--error,   .ui-pill--error   { background: var(--bad-a10); color: var(--status-bad-text); }
 .ui-badge--info,    .ui-pill--info    { background: var(--violet-a13); color: var(--text-accent); }
-.ui-badge--brand,   .ui-pill--brand   { background: var(--teal-a16); color: var(--text-accent-2); }
+.ui-badge--brand,   .ui-pill--brand   { background: var(--teal-a16); color: var(--status-brand-text); }
 .ui-badge--neutral, .ui-pill--neutral { background: var(--surface-3); color: var(--text-muted); }
 .ui-badge--solid,   .ui-pill--solid   { background: var(--violet-500); color: var(--white); }
 
@@ -639,8 +639,10 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
    opaque rather than an alpha wash like --info/--brand above, so identity
    reads at a glance beside a name. No new colour anywhere in this block: the
    system administrator wears the primary button's pair, white on violet-500,
-   which ContrastTest already holds to 4.5:1. */
-.ui-badge--participant,  .ui-pill--participant  { background: var(--teal-100);   color: var(--teal-700); }
+   which ContrastTest already holds to 4.5:1. The trainee's text is teal-800:
+   teal-700 on teal-100 measured 4.35:1 at 12px — below Article 18 — and
+   D-123 put this badge on the account button of every trainee's screen. */
+.ui-badge--participant,  .ui-pill--participant  { background: var(--teal-100);   color: var(--teal-800); }
 .ui-badge--trainer,      .ui-pill--trainer      { background: var(--violet-100); color: var(--violet-700); }
 .ui-badge--coordinator,  .ui-pill--coordinator  { background: var(--n-150);      color: var(--n-600); }
 .ui-badge--admin,        .ui-pill--admin        { background: var(--ink);        color: var(--white); }

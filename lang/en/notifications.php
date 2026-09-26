@@ -163,6 +163,18 @@ return [
             'title' => 'We received your request',
             'body' => 'Your request is under review now, and we will reply soon.',
         ],
+        // D-124 — support tickets: the first for the participant who opened
+        // one, the second for the support team.
+        'support_ticket' => [
+            'label' => 'Support ticket updates',
+            'title' => 'An update on your ticket :number',
+            'body' => 'Open the ticket to see what happened last.',
+        ],
+        'support_ticket_team' => [
+            'label' => 'Support tickets that reach you',
+            'title' => 'A support ticket is waiting on you: :number',
+            'body' => 'Open the ticket to follow it up.',
+        ],
         'attendance_exception_approved' => [
             'label' => 'Excuse request approved',
             'title' => 'Your request was approved',
