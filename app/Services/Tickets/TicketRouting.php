@@ -38,14 +38,17 @@ final class TicketRouting
 
     /**
      * The level and the coordinator a ticket from this cohort reaches first.
+     * Never the person who opened it: a coordinator who is also a trainee
+     * somewhere does not receive their own ticket — it goes to the general
+     * supervisor instead, like any ticket that has no primary coordinator.
      *
      * @return array{0: SupportTicketLevel, 1: string|null}
      */
-    public function entryFor(?Cohort $cohort): array
+    public function entryFor(?Cohort $cohort, User $opener): array
     {
         $primaryId = $cohort === null ? null : $this->primary->idOf($cohort);
 
-        return $primaryId === null
+        return $primaryId === null || $primaryId === (string) $opener->getKey()
             ? [SupportTicketLevel::Admin, null]
             : [SupportTicketLevel::Coordinator, $primaryId];
     }
@@ -91,14 +94,15 @@ final class TicketRouting
     /** Is this account the primary coordinator of the ticket's cohort now? */
     public function isPrimaryCoordinator(User $user, SupportTicket $ticket): bool
     {
-        $cohort = $this->cohortOf($ticket);
+        $primaryId = $this->primaryIdOf($ticket);
 
-        return $cohort !== null && $this->primary->idOf($cohort) === (string) $user->getKey();
+        return $primaryId !== null && $primaryId === (string) $user->getKey();
     }
 
     /**
      * The coordinators a ticket can be handed or returned to: the cohort's
-     * coordinators who can act (PrimaryCoordinator::coordinatorIds).
+     * coordinators who can act (PrimaryCoordinator::coordinatorIds) — never
+     * the person who opened it.
      *
      * @return list<string>
      */
@@ -106,22 +110,37 @@ final class TicketRouting
     {
         $cohort = $this->cohortOf($ticket);
 
-        return $cohort === null ? [] : $this->primary->coordinatorIds($cohort);
-    }
+        if ($cohort === null) {
+            return [];
+        }
 
-    /** The cohort's primary coordinator now, or null. */
-    public function primaryIdOf(SupportTicket $ticket): ?string
-    {
-        $cohort = $this->cohortOf($ticket);
-
-        return $cohort === null ? null : $this->primary->idOf($cohort);
+        return array_values(array_filter(
+            $this->primary->coordinatorIds($cohort),
+            static fn (string $id): bool => $id !== (string) $ticket->opener_id,
+        ));
     }
 
     /**
-     * Can the coordinator the ticket sits with still act on it? False once
-     * they left the cohort, were suspended or moved to another role — the
-     * ticket then goes back to the primary coordinator, or up to the general
-     * supervisor (TicketWorkflow::rehome).
+     * The cohort's primary coordinator now — or null when it has none, or
+     * when the primary coordinator is the person who opened this ticket.
+     */
+    public function primaryIdOf(SupportTicket $ticket): ?string
+    {
+        $cohort = $this->cohortOf($ticket);
+        $primaryId = $cohort === null ? null : $this->primary->idOf($cohort);
+
+        return $primaryId === (string) $ticket->opener_id ? null : $primaryId;
+    }
+
+    /**
+     * Can the coordinator the ticket sits with still act on it? The policy's
+     * own question (holds), asked of the assignee: an active account, a
+     * coordinator of the ticket's cohort by RoleResolver's rule, and not the
+     * person who opened it. False once they left the cohort, were suspended,
+     * deleted or moved to another role — the ticket then goes back to the
+     * primary coordinator, or up to the general supervisor
+     * (TicketWorkflow::rehome). SupportTicket::scopeOrphaned asks the same of
+     * the database.
      */
     public function holderCanAct(SupportTicket $ticket): bool
     {
@@ -129,8 +148,13 @@ final class TicketRouting
             return true;
         }
 
-        return $ticket->assignee_id !== null
-            && in_array((string) $ticket->assignee_id, $this->coordinatorIds($ticket), true);
+        if ($ticket->assignee_id === null || (string) $ticket->assignee_id === (string) $ticket->opener_id) {
+            return false;
+        }
+
+        $assignee = User::query()->find($ticket->assignee_id);
+
+        return $assignee instanceof User && $this->roles->isCoordinatorOf($assignee, $ticket->cohort_id);
     }
 
     /**
@@ -148,8 +172,10 @@ final class TicketRouting
             SupportTicketLevel::SystemAdmin => UserRole::SystemAdmin,
         };
 
+        // A holder who can no longer act hears nothing: the ticket is on its
+        // way to someone who can (TicketWorkflow::rehome), who hears then.
         if ($role === null) {
-            return $ticket->assignee_id === null ? [] : [(string) $ticket->assignee_id];
+            return $this->holderCanAct($ticket) ? [(string) $ticket->assignee_id] : [];
         }
 
         return array_values(User::query()

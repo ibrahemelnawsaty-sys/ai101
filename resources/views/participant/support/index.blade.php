@@ -43,6 +43,13 @@
         </div>
     @endif
 
+    @if (! $isStaff && ! $canOpen && ! ($errorState ?? false))
+        <p class="note note--info" role="note">
+            <x-ui.icon name="info" />
+            <span>{{ __('support.index.no_cohort', ['email' => $contactEmail]) }}</span>
+        </p>
+    @endif
+
     @if ($errorState ?? false)
         <x-ui.empty-state variant="error" icon="warn"
             :title="__('support.index.error_title')"

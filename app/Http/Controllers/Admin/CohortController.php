@@ -283,7 +283,7 @@ final class CohortController extends Controller
         });
 
         if ($leftCoordination) {
-            $this->workflow->rehome(Clock::now(), $cohort, $request->user());
+            $this->workflow->rehome(Clock::now(), $cohort);
         }
 
         // The announcement channel, the group, and a direct line to each
@@ -411,7 +411,7 @@ final class CohortController extends Controller
 
         // D-124 — their tickets go back to the primary coordinator now, not at
         // the next scheduled pass.
-        $this->workflow->rehome(Clock::now(), $cohort, $request->user());
+        $this->workflow->rehome(Clock::now(), $cohort);
 
         return back()->with('status', __('admin.cohorts.coordinator_detached'));
     }

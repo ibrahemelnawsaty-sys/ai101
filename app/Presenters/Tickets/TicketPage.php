@@ -62,6 +62,7 @@ final class TicketPage extends ViewModel
             : [];
 
         $canAct = $viewer->can('note', $ticket);
+        $canWrite = $viewer->can('writeToParticipant', $ticket);
 
         return new self([
             'id' => (string) $ticket->getKey(),
@@ -98,7 +99,13 @@ final class TicketPage extends ViewModel
 
             // The support team.
             'canNote' => $canAct,
-            'canWriteToParticipant' => $viewer->can('writeToParticipant', $ticket),
+            'canWriteToParticipant' => $canWrite,
+            // Why this line stays with the team: the ticket is not with them,
+            // or it is, at a level that does not write to the participant
+            // (D-126, open).
+            'internalOnlyNote' => $canAct && ! $canWrite ? (string) __(
+                ! $closed && $routing->holds($viewer, $ticket) ? 'support.actions.internal_level' : 'support.actions.internal_only',
+            ) : null,
             'canResolve' => $viewer->can('resolve', $ticket),
             'canEscalate' => $viewer->can('escalate', $ticket),
             'escalateTo' => $ticket->level->above()?->label(),

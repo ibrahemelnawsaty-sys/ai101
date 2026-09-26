@@ -285,7 +285,8 @@ it('D-123: في المعاينة تعرض القائمة الحساب المعا
     // the previewed trainee's — its e-mail and its card — not the previewer's.
     expect($menu?->textContent)->toContain($participant->email)
         ->not->toContain($systemAdmin->email)
-        ->and(accountMenuHrefs($html))->toBe([route('participant.card'), route('dashboard'), route('profile'), route('support.index')]);
+        // D-125 — «Support» is not offered to a preview, which may not read it.
+        ->and(accountMenuHrefs($html))->toBe([route('participant.card'), route('dashboard'), route('profile')]);
 
     foreach (accountMenuHrefs($html) as $href) {
         $this->followingRedirects()->get($href)->assertOk();

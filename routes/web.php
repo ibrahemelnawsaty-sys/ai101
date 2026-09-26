@@ -376,7 +376,8 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
      * SupportTicket::scopeVisibleTo and SupportTicketPolicy::view, the same
      * rule; every change goes through TicketWorkflow, which asks it again
      * under the ticket's lock. A trainer reaches none of it, and a preview
-     * reads without writing (BR-33).
+     * neither writes (BR-33) nor, until the owner decides, reads (D-125:
+     * SupportTicketPolicy::viewAny/view answer no).
      */
     Route::middleware('role:participant,coordinator,admin,system_admin')->group(function (): void {
         Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
@@ -384,42 +385,44 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
             ->middleware(['role:participant', 'not.impersonating'])
             ->name('support.create');
         Route::post('/support', [SupportTicketController::class, 'store'])
-            ->middleware(['role:participant', 'not.impersonating', 'throttle:upload'])
+            ->middleware(['role:participant', 'not.impersonating', 'throttle:support'])
             ->name('support.store');
         Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])
             ->whereUuid('ticket')
             ->name('support.show');
 
-        // The participant who opened it.
+        // The person who opened it — whatever their role is now: a trainee
+        // later made a coordinator still answers and closes their own ticket.
+        // SupportTicketPolicy::reply/close admits its opener alone.
         Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])
             ->whereUuid('ticket')
-            ->middleware(['role:participant', 'not.impersonating', 'throttle:upload'])
+            ->middleware(['not.impersonating', 'throttle:support'])
             ->name('support.reply');
         Route::post('/support/{ticket}/close', [SupportTicketController::class, 'close'])
             ->whereUuid('ticket')
-            ->middleware(['role:participant', 'not.impersonating'])
+            ->middleware(['not.impersonating', 'throttle:support'])
             ->name('support.close');
 
         // The support team.
         Route::post('/support/{ticket}/note', [SupportTicketController::class, 'note'])
             ->whereUuid('ticket')
-            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:upload'])
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
             ->name('support.note');
         Route::post('/support/{ticket}/resolve', [SupportTicketController::class, 'resolve'])
             ->whereUuid('ticket')
-            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:messages'])
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
             ->name('support.resolve');
         Route::post('/support/{ticket}/escalate', [SupportTicketController::class, 'escalate'])
             ->whereUuid('ticket')
-            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:messages'])
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
             ->name('support.escalate');
         Route::post('/support/{ticket}/return', [SupportTicketController::class, 'returnDown'])
             ->whereUuid('ticket')
-            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:messages'])
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
             ->name('support.return');
         Route::post('/support/{ticket}/assign', [SupportTicketController::class, 'assign'])
             ->whereUuid('ticket')
-            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:messages'])
+            ->middleware(['role:coordinator,admin,system_admin', 'not.impersonating', 'throttle:support'])
             ->name('support.assign');
     });
 

@@ -20,6 +20,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -133,7 +134,7 @@ final class TicketWorkflow
         array $files = [],
     ): SupportTicket {
         $now = Clock::now();
-        [$level, $assigneeId] = $this->routing->entryFor($cohort);
+        [$level, $assigneeId] = $this->routing->entryFor($cohort, $opener);
 
         $ticket = new SupportTicket;
         $ticket->setAttribute($ticket->getKeyName(), (string) Str::uuid());
@@ -166,7 +167,7 @@ final class TicketWorkflow
             throw $failure;
         }
 
-        $this->notices->opened($ticket);
+        $this->announce(fn () => $this->notices->opened($ticket));
 
         return $ticket;
     }
@@ -218,13 +219,24 @@ final class TicketWorkflow
 
                 return $locked;
             });
+        } catch (SupportTicketException $refusal) {
+            $this->attachments->discard($stored, $participant);
+            $this->audit->reject(self::AUDIT_REPLIED, $ticket, $refusal, $participant);
+
+            throw $refusal;
         } catch (\Throwable $failure) {
             $this->attachments->discard($stored, $participant);
 
             throw $failure;
         }
 
-        $this->notices->replied($locked, $reopened);
+        if ($this->routing->holderCanAct($locked)) {
+            $this->announce(fn () => $this->notices->replied($locked, $reopened));
+        } else {
+            // The coordinator it sat with can no longer act: it goes to one
+            // who can now, who hears of it then — not at the next minute.
+            $this->rehomeOne($locked, $now);
+        }
 
         return $locked;
     }
@@ -234,7 +246,7 @@ final class TicketWorkflow
     {
         $now = Clock::now();
 
-        $locked = DB::transaction(function () use ($participant, $ticket, $now): SupportTicket {
+        $locked = $this->refusable(self::AUDIT_CLOSED, $ticket, $participant, fn (): SupportTicket => DB::transaction(function () use ($participant, $ticket, $now): SupportTicket {
             $locked = $this->lock($ticket);
             $this->refuseIfClosed($locked, $now);
 
@@ -256,9 +268,9 @@ final class TicketWorkflow
             $this->write($locked, $participant, SupportTicketEntryType::Closed, null, false, $now);
 
             return $locked;
-        });
+        }));
 
-        $this->notices->closed($locked);
+        $this->announce(fn () => $this->notices->closed($locked));
 
         return $locked;
     }
@@ -266,10 +278,15 @@ final class TicketWorkflow
     // ------------------------------------------------------------ the team
 
     /**
-     * A line from the support team. Whoever holds the ticket writes to the
-     * participant or keeps it internal; the general supervisor may add an
-     * internal note to any ticket (D-124). The coordinator's line to the
-     * participant is a `message`, and reaches them on the platform.
+     * A line from the support team. The coordinator holding the ticket writes
+     * to the participant or keeps it internal; at the levels above, a line is
+     * the team's alone until the owner decides otherwise (D-126, open). The
+     * general supervisor may add an internal note to any ticket (D-124) — a
+     * closed one too, where nobody holds it any more and the note changes
+     * nothing else. The coordinator's line to the participant is a
+     * `message`, and reaches them on the platform. An internal line does not
+     * move `last_activity_at`: the participant's list shows that instant, and
+     * would betray the team's internal work by it.
      *
      * @param  list<UploadedFile>  $files
      */
@@ -282,19 +299,22 @@ final class TicketWorkflow
         try {
             [$locked, $entry] = DB::transaction(function () use ($actor, $ticket, $body, $internal, $link, $files, $now, &$stored, &$messaged): array {
                 $locked = $this->lock($ticket);
-                $this->refuseIfClosed($locked, $now);
+                $closed = self::isClosedAt($locked, $now);
+                $holds = ! $closed && $this->routing->holds($actor, $locked);
+                $follows = $this->routing->readsAsStaff($actor, $locked) && $actor->isAdmin();
 
-                $holds = $this->routing->holds($actor, $locked);
+                if ($closed && ! $follows) {
+                    throw SupportTicketException::closed();
+                }
 
-                if (! $holds && ! ($this->routing->readsAsStaff($actor, $locked) && $actor->isAdmin())) {
+                if (! $holds && ! $follows) {
                     throw SupportTicketException::movedOn();
                 }
 
-                // Only the one holding it speaks to the participant.
-                $internal = $internal || ! $holds;
-                $type = $holds && ! $internal && $locked->level === SupportTicketLevel::Coordinator
-                    ? SupportTicketEntryType::Message
-                    : SupportTicketEntryType::Note;
+                // Only the coordinator holding it speaks to the participant; a
+                // line at a level above stays with the team (D-126, open).
+                $internal = $internal || ! $holds || $locked->level !== SupportTicketLevel::Coordinator;
+                $type = $internal ? SupportTicketEntryType::Note : SupportTicketEntryType::Message;
                 $messaged = $type === SupportTicketEntryType::Message;
 
                 $before = $this->snapshot($locked);
@@ -303,7 +323,10 @@ final class TicketWorkflow
                     $locked->setAttribute('status', SupportTicketStatus::InProgress);
                 }
 
-                $locked->setAttribute('last_activity_at', $now);
+                if (! $internal) {
+                    $locked->setAttribute('last_activity_at', $now);
+                }
+
                 $this->stamp($locked, $now);
 
                 $this->audit->log(self::AUDIT_NOTED, $locked, $before, $this->snapshot($locked) + [
@@ -319,6 +342,11 @@ final class TicketWorkflow
 
                 return [$locked, $entry];
             });
+        } catch (SupportTicketException $refusal) {
+            $this->attachments->discard($stored, $actor);
+            $this->audit->reject(self::AUDIT_NOTED, $ticket, $refusal, $actor);
+
+            throw $refusal;
         } catch (\Throwable $failure) {
             $this->attachments->discard($stored, $actor);
 
@@ -326,7 +354,7 @@ final class TicketWorkflow
         }
 
         if ($messaged) {
-            $this->notices->messaged($locked);
+            $this->announce(fn () => $this->notices->messaged($locked));
         }
 
         return $entry;
@@ -337,7 +365,7 @@ final class TicketWorkflow
     {
         $now = Clock::now();
 
-        $locked = DB::transaction(function () use ($actor, $ticket, $body, $now): SupportTicket {
+        $locked = $this->refusable(self::AUDIT_RESOLVED, $ticket, $actor, fn (): SupportTicket => DB::transaction(function () use ($actor, $ticket, $body, $now): SupportTicket {
             $locked = $this->lock($ticket);
             $this->refuseIfClosed($locked, $now);
 
@@ -361,9 +389,9 @@ final class TicketWorkflow
                 fromLevel: SupportTicketLevel::Coordinator);
 
             return $locked;
-        });
+        }));
 
-        $this->notices->resolved($locked);
+        $this->announce(fn () => $this->notices->resolved($locked));
 
         return $locked;
     }
@@ -377,7 +405,7 @@ final class TicketWorkflow
     {
         $now = Clock::now();
 
-        $locked = DB::transaction(function () use ($actor, $ticket, $note, $now): SupportTicket {
+        $locked = $this->refusable(self::AUDIT_ESCALATED, $ticket, $actor, fn (): SupportTicket => DB::transaction(function () use ($actor, $ticket, $note, $now): SupportTicket {
             $locked = $this->lock($ticket);
             $this->refuseIfClosed($locked, $now);
 
@@ -407,9 +435,9 @@ final class TicketWorkflow
             $this->writeHandoverNote($locked, $actor, $note, $now, $from);
 
             return $locked;
-        });
+        }));
 
-        $this->notices->moved($locked);
+        $this->announce(fn () => $this->notices->moved($locked));
 
         return $locked;
     }
@@ -424,7 +452,7 @@ final class TicketWorkflow
     {
         $now = Clock::now();
 
-        $locked = DB::transaction(function () use ($actor, $ticket, $coordinatorId, $note, $now): SupportTicket {
+        $locked = $this->refusable(self::AUDIT_RETURNED, $ticket, $actor, fn (): SupportTicket => DB::transaction(function () use ($actor, $ticket, $coordinatorId, $note, $now): SupportTicket {
             $locked = $this->lock($ticket);
             $this->refuseIfClosed($locked, $now);
 
@@ -456,9 +484,9 @@ final class TicketWorkflow
             $this->writeHandoverNote($locked, $actor, $note, $now, $from);
 
             return $locked;
-        });
+        }));
 
-        $this->notices->moved($locked);
+        $this->announce(fn () => $this->notices->moved($locked));
 
         return $locked;
     }
@@ -472,7 +500,7 @@ final class TicketWorkflow
     {
         $now = Clock::now();
 
-        $locked = DB::transaction(function () use ($actor, $ticket, $coordinatorId, $note, $now): SupportTicket {
+        $locked = $this->refusable(self::AUDIT_ASSIGNED, $ticket, $actor, fn (): SupportTicket => DB::transaction(function () use ($actor, $ticket, $coordinatorId, $note, $now): SupportTicket {
             $locked = $this->lock($ticket);
             $this->refuseIfClosed($locked, $now);
 
@@ -490,9 +518,9 @@ final class TicketWorkflow
 
             $before = $this->snapshot($locked);
 
+            // Internal: the participant is not told, so neither the stage
+            // they read nor the "last update" they see moves.
             $locked->setAttribute('assignee_id', $coordinatorId);
-            $locked->setAttribute('status', SupportTicketStatus::InProgress);
-            $locked->setAttribute('last_activity_at', $now);
             $this->stamp($locked, $now);
 
             $this->audit->log(self::AUDIT_ASSIGNED, $locked, $before, $this->snapshot($locked), $actor);
@@ -502,9 +530,9 @@ final class TicketWorkflow
                 fromLevel: SupportTicketLevel::Coordinator, targetId: $coordinatorId);
 
             return $locked;
-        });
+        }));
 
-        $this->notices->handedOver($locked);
+        $this->announce(fn () => $this->notices->handedOver($locked));
 
         return $locked;
     }
@@ -513,7 +541,9 @@ final class TicketWorkflow
 
     /**
      * Close every resolved ticket whose day ran out (D-124). Each is asked
-     * again under its lock, so a reply that landed a second earlier wins.
+     * again under its lock, so a reply that landed a second earlier wins. The
+     * closing is written at the instant the day ran out — the instant the
+     * page already showed — not whenever the scheduled pass reached it.
      *
      * @return int how many were closed
      */
@@ -536,23 +566,24 @@ final class TicketWorkflow
                 }
 
                 $before = $this->snapshot($locked);
+                $closedAt = self::closesAt($locked) ?? $now;
 
                 $locked->setAttribute('status', SupportTicketStatus::Closed);
-                $locked->setAttribute('closed_at', $now);
+                $locked->setAttribute('closed_at', $closedAt);
                 $locked->setAttribute('closed_by', null);
-                $locked->setAttribute('last_activity_at', $now);
+                $locked->setAttribute('last_activity_at', $closedAt);
                 $this->stamp($locked, $now);
 
                 $this->audit->log(self::AUDIT_AUTO_CLOSED, $locked, $before, $this->snapshot($locked));
                 $locked->save();
 
-                $this->write($locked, null, SupportTicketEntryType::AutoClosed, null, false, $now);
+                $this->write($locked, null, SupportTicketEntryType::AutoClosed, null, false, $closedAt);
 
                 return $locked;
             });
 
             if ($done !== null) {
-                $this->notices->closed($done);
+                $this->announce(fn () => $this->notices->closed($done));
                 $closed++;
             }
         }
@@ -562,84 +593,105 @@ final class TicketWorkflow
 
     /**
      * Tickets whose coordinator can no longer act on them — removed from the
-     * cohort, suspended, moved to another role — go back to the primary
-     * coordinator, or up to the general supervisor when the cohort has none
-     * (the owner's safety net). A resolved ticket waiting on the participant
-     * is only moved sideways: it has nothing to escalate.
+     * cohort, suspended, deleted, moved to another role, or the very person
+     * who opened it — go back to the primary coordinator, or up to the
+     * general supervisor when the cohort has none (the owner's safety net). A
+     * resolved ticket waiting on the participant is only moved sideways: it
+     * has nothing to escalate. A ticket closed by the clock is not touched.
      *
-     * Run for one cohort the moment a coordinator is removed from it, and for
-     * every cohort by the scheduled pass, which catches the other doors.
+     * The orphans are found by the database (SupportTicket::scopeOrphaned), so
+     * a backlog of healthy tickets never hides one; the ones being handled go
+     * first, and each pass takes BATCH more.
+     *
+     * Run for one cohort the moment a coordinator leaves it, and for every
+     * cohort by the scheduled pass, which catches the other doors. Neither
+     * names a person: the move is the platform's, and the timeline says so.
      *
      * @return int how many were moved
      */
-    public function rehome(CarbonImmutable $now, ?Cohort $cohort = null, ?User $actor = null): int
+    public function rehome(CarbonImmutable $now, ?Cohort $cohort = null): int
     {
-        $candidates = SupportTicket::query()
-            ->where('level', SupportTicketLevel::Coordinator->value)
-            ->where('status', '!=', SupportTicketStatus::Closed->value)
-            ->when($cohort !== null, static fn ($query) => $query->where('cohort_id', $cohort?->getKey()))
-            ->orderBy('last_activity_at')
-            ->limit(self::BATCH)
-            ->get();
-
         $moved = 0;
 
-        foreach ($candidates as $ticket) {
-            if ($this->routing->holderCanAct($ticket)) {
-                continue;
+        $passes = [
+            [SupportTicketStatus::Open->value, SupportTicketStatus::InProgress->value],
+            [SupportTicketStatus::Resolved->value],
+        ];
+
+        foreach ($passes as $statuses) {
+            $orphans = SupportTicket::query()
+                ->orphaned()
+                ->whereIn('status', $statuses)
+                ->when($cohort !== null, static fn ($query) => $query->where('cohort_id', $cohort?->getKey()))
+                ->orderBy('last_activity_at')
+                ->orderBy('id')
+                ->limit(self::BATCH)
+                ->get();
+
+            foreach ($orphans as $ticket) {
+                if ($this->rehomeOne($ticket, $now)) {
+                    $moved++;
+                }
             }
-
-            $result = DB::transaction(function () use ($ticket, $now, $actor): ?array {
-                $locked = $this->lock($ticket);
-
-                if ($locked->level !== SupportTicketLevel::Coordinator
-                    || $locked->status === SupportTicketStatus::Closed
-                    || $this->routing->holderCanAct($locked)) {
-                    return null;
-                }
-
-                $primary = $this->routing->primaryIdOf($locked);
-
-                if ($primary === null && ! $locked->status->isBeingHandled()) {
-                    return null;
-                }
-
-                $before = $this->snapshot($locked);
-
-                if ($primary !== null) {
-                    $locked->setAttribute('assignee_id', $primary);
-                } else {
-                    $locked->setAttribute('level', SupportTicketLevel::Admin);
-                }
-
-                $locked->setAttribute('last_activity_at', $now);
-                $this->stamp($locked, $now);
-
-                $this->audit->log(self::AUDIT_REHOMED, $locked, $before, $this->snapshot($locked), $actor);
-                $locked->save();
-
-                if ($primary !== null) {
-                    $this->write($locked, $actor, SupportTicketEntryType::Assigned, null, true, $now, targetId: $primary);
-
-                    return [$locked, 'handed'];
-                }
-
-                $this->write($locked, $actor, SupportTicketEntryType::Escalated, null, false, $now,
-                    fromLevel: SupportTicketLevel::Coordinator, toLevel: SupportTicketLevel::Admin);
-
-                return [$locked, 'moved'];
-            });
-
-            if ($result === null) {
-                continue;
-            }
-
-            [$locked, $kind] = $result;
-            $kind === 'moved' ? $this->notices->moved($locked) : $this->notices->handedOver($locked);
-            $moved++;
         }
 
         return $moved;
+    }
+
+    /** Move one orphaned ticket, asked again under its lock. */
+    private function rehomeOne(SupportTicket $ticket, CarbonImmutable $now): bool
+    {
+        $result = DB::transaction(function () use ($ticket, $now): ?array {
+            $locked = $this->lock($ticket);
+
+            if ($locked->level !== SupportTicketLevel::Coordinator
+                || self::isClosedAt($locked, $now)
+                || $this->routing->holderCanAct($locked)) {
+                return null;
+            }
+
+            $primary = $this->routing->primaryIdOf($locked);
+
+            if ($primary === null && ! $locked->status->isBeingHandled()) {
+                return null;
+            }
+
+            $before = $this->snapshot($locked);
+
+            if ($primary !== null) {
+                $locked->setAttribute('assignee_id', $primary);
+            } else {
+                $locked->setAttribute('level', SupportTicketLevel::Admin);
+                $locked->setAttribute('last_activity_at', $now);
+            }
+
+            $this->stamp($locked, $now);
+
+            $this->audit->log(self::AUDIT_REHOMED, $locked, $before, $this->snapshot($locked));
+            $locked->save();
+
+            if ($primary !== null) {
+                $this->write($locked, null, SupportTicketEntryType::Assigned, null, true, $now,
+                    fromLevel: SupportTicketLevel::Coordinator, targetId: $primary);
+
+                return [$locked, 'handed'];
+            }
+
+            $this->write($locked, null, SupportTicketEntryType::Escalated, null, false, $now,
+                fromLevel: SupportTicketLevel::Coordinator, toLevel: SupportTicketLevel::Admin);
+
+            return [$locked, 'moved'];
+        });
+
+        if ($result === null) {
+            return false;
+        }
+
+        [$locked, $kind] = $result;
+
+        $this->announce(fn () => $kind === 'moved' ? $this->notices->moved($locked) : $this->notices->handedOver($locked));
+
+        return true;
     }
 
     // ------------------------------------------------------------ internals
@@ -679,11 +731,51 @@ final class TicketWorkflow
             ? $chosen
             : ($this->routing->primaryIdOf($ticket) ?? (count($coordinators) === 1 ? $coordinators[0] : null));
 
-        if ($target === null || ! in_array($target, $coordinators, true)) {
+        if ($target === null) {
+            throw SupportTicketException::chooseCoordinator();
+        }
+
+        if (! in_array($target, $coordinators, true)) {
             throw SupportTicketException::notACoordinator();
         }
 
         return $target;
+    }
+
+    /**
+     * Tell people, after the change is committed. A notice that cannot be
+     * written changes nothing about the ticket, and must not turn a saved
+     * change into an error page the person answers by sending it again — nor
+     * stop a scheduled pass half-way through its batch (art. 7).
+     */
+    private function announce(\Closure $notices): void
+    {
+        try {
+            $notices();
+        } catch (\Throwable $failure) {
+            Log::error('support.notice_failed', ['exception' => $failure::class]);
+        }
+    }
+
+    /**
+     * Run one change; a refusal it raises is written to the audit trail —
+     * outside the transaction it rolled back, so the row survives — and
+     * raised again (art. 8, as AttendanceRecorder does).
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $change
+     * @return T
+     */
+    private function refusable(string $action, SupportTicket $ticket, ?User $actor, \Closure $change): mixed
+    {
+        try {
+            return $change();
+        } catch (SupportTicketException $refusal) {
+            $this->audit->reject($action, $ticket, $refusal, $actor);
+
+            throw $refusal;
+        }
     }
 
     /** The note that goes with a move: for the team, never the participant. */

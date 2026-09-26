@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -138,6 +139,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($isPolicyDenial) {
                 app(AuditLogger::class)->deniedRequest($request, 'policy.denied');
+            }
+
+            // A signed link altered or past its fifteen minutes: the id in it
+            // was changed, or it was kept too long. A refusal like any other,
+            // recorded with its IP (art. 8) — D-124's review found every
+            // `files.*` route answering 403 here without a trace.
+            if ($exception instanceof InvalidSignatureException) {
+                app(AuditLogger::class)->deniedRequest($request, 'signature.invalid');
             }
 
             return null;

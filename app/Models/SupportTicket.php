@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\EnrollmentRole;
+use App\Enums\EnrollmentStatus;
 use App\Enums\SupportTicketCategory;
 use App\Enums\SupportTicketLevel;
 use App\Enums\SupportTicketStatus;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Services\Permissions\RoleResolver;
 use Carbon\CarbonImmutable;
 use Database\Factories\SupportTicketFactory;
@@ -16,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * A support ticket — the platform's "technical support" (D-124).
@@ -201,6 +206,40 @@ class SupportTicket extends Model
                 if ($isSystemAdmin) {
                     $held->orWhere('level', SupportTicketLevel::SystemAdmin->value);
                 }
+            });
+    }
+
+    /**
+     * Tickets at the coordinator level, not closed, whose coordinator can no
+     * longer act on them: none assigned, the person who opened it, or no
+     * coordinator enrolment in the ticket's cohort (active or completed) held
+     * by an active, undeleted account in a coordinating role. It is
+     * TicketRouting::holderCanAct asked of the database, so the sweep picks
+     * the orphans themselves — never a page of healthy tickets it then skips.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeOrphaned(Builder $query): Builder
+    {
+        return $query
+            ->where('level', SupportTicketLevel::Coordinator->value)
+            ->where('status', '!=', SupportTicketStatus::Closed->value)
+            ->where(static function (Builder $orphan): void {
+                $orphan->whereNull('assignee_id')
+                    ->orWhereColumn('assignee_id', 'opener_id')
+                    ->orWhereNotExists(static function (QueryBuilder $enrolled): void {
+                        $enrolled->select('enrollments.id')
+                            ->from('enrollments')
+                            ->whereColumn('enrollments.cohort_id', 'support_tickets.cohort_id')
+                            ->whereColumn('enrollments.user_id', 'support_tickets.assignee_id')
+                            ->where('enrollments.role_in_cohort', EnrollmentRole::Coordinator->value)
+                            ->whereIn('enrollments.status', [EnrollmentStatus::Active->value, EnrollmentStatus::Completed->value])
+                            ->whereIn('enrollments.user_id', User::query()
+                                ->where('status', UserStatus::Active->value)
+                                ->whereIn('role', [UserRole::Coordinator->value, UserRole::Admin->value])
+                                ->select('id'));
+                    });
             });
     }
 

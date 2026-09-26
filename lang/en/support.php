@@ -42,6 +42,7 @@ return [
         'all_empty_body' => 'When a participant opens a ticket in a cohort you follow it appears here, and whoever holds it is notified.',
         'error_title' => 'The tickets could not be shown right now',
         'error_body' => 'Something went wrong while loading them, and none were lost. Try again in a moment.',
+        'no_cohort' => 'A support ticket reaches your cohort\'s coordinator, and you are not in a cohort now, so no ticket can be opened. If you need help, write to us at :email.',
     ],
 
     'create' => [
@@ -138,6 +139,7 @@ return [
         'compose_body' => 'Text',
         'internal' => 'Internal — not shown to the participant',
         'internal_only' => 'Your note is internal and the participant does not see it, since the ticket is not with you now.',
+        'internal_level' => 'Your note here is for the support team alone and the participant does not see it: the cohort\'s coordinator writes to them once the ticket returns.',
         'message_hint' => 'Unless you make it internal, it appears in the participant\'s history of the ticket.',
         'compose_submit' => 'Add',
         'resolve' => 'Resolved',

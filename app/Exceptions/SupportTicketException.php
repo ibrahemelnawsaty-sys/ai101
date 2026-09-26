@@ -31,6 +31,12 @@ final class SupportTicketException extends DomainException
         return new self('support.errors.not_a_coordinator', [], 422);
     }
 
+    /** Several coordinators could take it and none is primary: one must be named. */
+    public static function chooseCoordinator(): self
+    {
+        return new self('support.errors.coordinator', [], 422);
+    }
+
     /** Returning to the coordinator level needs a coordinator in the cohort. */
     public static function noCoordinator(): self
     {

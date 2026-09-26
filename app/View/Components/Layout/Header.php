@@ -7,6 +7,7 @@ namespace App\View\Components\Layout;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
+use App\Support\ImpersonationContext;
 use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
@@ -136,8 +137,9 @@ final class Header extends UiComponent
 
         // D-124 — «Support», in the owner's order after the account: for the
         // roles the support routes admit (role:participant,coordinator,admin,
-        // system_admin). A trainer takes no part in tickets.
-        if ($roles->hasAnyRole($user, self::SUPPORT_ROLES)) {
+        // system_admin). A trainer takes no part in tickets, and a preview
+        // reads none of them (D-125, SupportTicketPolicy::viewAny).
+        if (! ImpersonationContext::isActive() && $roles->hasAnyRole($user, self::SUPPORT_ROLES)) {
             $items[] = self::menuItem('support', 'support.index', 'help', __('nav.support'), ['support.*']);
         }
 

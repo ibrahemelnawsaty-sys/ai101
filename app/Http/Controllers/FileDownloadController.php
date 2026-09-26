@@ -119,9 +119,11 @@ final class FileDownloadController extends Controller
             'Content-Type' => (string) $attachment->mime_type,
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' => "default-src 'none'; sandbox",
-            'Cache-Control' => 'private, no-store',
         ]);
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $name, $fallback);
+        // A file response is public by default: this one is nobody's to keep.
+        $response->setPrivate();
+        $response->headers->addCacheControlDirective('no-store');
 
         return $response;
     }

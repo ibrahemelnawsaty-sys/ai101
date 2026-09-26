@@ -13,6 +13,7 @@ use App\Policies\Concerns\InteractsWithScope;
 use App\Services\Tickets\TicketRouting;
 use App\Services\Tickets\TicketWorkflow;
 use App\Services\Time\Clock;
+use App\Support\ImpersonationContext;
 
 /**
  * Support tickets (D-124). An allow-list: what the owner
@@ -41,21 +42,40 @@ final class SupportTicketPolicy
 {
     use InteractsWithScope;
 
+    /**
+     * Nothing during an account preview (D-125, open): a preview shows the
+     * previewed account's screens, and a general supervisor's would hand the
+     * previewing system administrator every ticket and its internal lines —
+     * more than D-124 lets that role read. Until the owner decides, the
+     * support tickets are closed to a preview, reading included (art. 7).
+     */
     public function viewAny(User $user): bool
     {
-        return $this->roles->hasAnyRole($user, ['participant', 'coordinator', 'admin', 'system_admin']);
+        return ! ImpersonationContext::isActive()
+            && $this->roles->hasAnyRole($user, ['participant', 'coordinator', 'admin', 'system_admin']);
     }
 
     public function view(User $user, SupportTicket $ticket): bool
     {
+        if (ImpersonationContext::isActive()) {
+            return false;
+        }
+
         return ($this->roles->isActive($user) && $this->routing()->opened($user, $ticket))
             || $this->routing()->readsAsStaff($user, $ticket);
     }
 
-    /** Only a participant opens a ticket (D-124). */
+    /**
+     * Only a participant opens a ticket (D-124) — one who sits in a cohort,
+     * active or completed. A ticket reaches that cohort's coordinator; an
+     * account with no cohort (withdrawn, rejected, never seated) would open
+     * one nobody could ever resolve, since only the coordinator may.
+     */
     public function create(User $user): bool
     {
-        return $this->writesAllowed() && $this->roles->hasRole($user, 'participant');
+        return $this->writesAllowed()
+            && $this->roles->isActive($user)
+            && $this->roles->participantCohortIds($user) !== [];
     }
 
     public function reply(User $user, SupportTicket $ticket): bool
@@ -71,21 +91,39 @@ final class SupportTicketPolicy
         return $this->reply($user, $ticket);
     }
 
-    /** Whoever holds it; and the general supervisor, internally, on any ticket. */
+    /**
+     * Whoever holds it; and the general supervisor, internally, on any ticket
+     * — a closed one included, where nobody holds it any more (D-124).
+     */
     public function note(User $user, SupportTicket $ticket): bool
     {
-        if (! $this->writesAllowed() || ! $this->stillOpen($ticket)) {
+        if (! $this->writesAllowed()) {
             return false;
         }
 
-        return $this->routing()->holds($user, $ticket)
-            || ($this->admin($user) && $this->routing()->readsAsStaff($user, $ticket));
+        $follows = $this->admin($user) && $this->routing()->readsAsStaff($user, $ticket);
+
+        if (! $this->stillOpen($ticket)) {
+            return $follows;
+        }
+
+        return $this->routing()->holds($user, $ticket) || $follows;
     }
 
-    /** May this account write to the participant (not only internally)? */
+    /**
+     * May this account write to the participant (not only internally)? The
+     * coordinator holding it, and only them (D-126, open): the permissions
+     * table grants "a visible or internal note" to the coordinator alone, the
+     * solution reaches the participant through the coordinator alone, and the
+     * system administrator writes to the general supervisor alone (D-118). A
+     * line from a level above stays with the team until the owner decides.
+     */
     public function writeToParticipant(User $user, SupportTicket $ticket): bool
     {
-        return $this->writesAllowed() && $this->stillOpen($ticket) && $this->routing()->holds($user, $ticket);
+        return $this->writesAllowed()
+            && $this->stillOpen($ticket)
+            && $ticket->level === SupportTicketLevel::Coordinator
+            && $this->routing()->holds($user, $ticket);
     }
 
     /** "Resolved" — the coordinator holding it, and only them. */

@@ -7,9 +7,11 @@ declare(strict_types=1);
  *
  *  · it reaches the cohort's primary coordinator, or the general supervisor
  *    when the cohort has none (the safety net);
- *  · whoever holds it writes to the participant or keeps a note internal;
- *    the general supervisor adds internal notes to any ticket and acts only
- *    once it reaches them; a coordinator it was not given only reads it;
+ *  · the coordinator holding it writes to the participant or keeps a note
+ *    internal; above the coordinator a line stays with the team (D-126,
+ *    open); the general supervisor adds internal notes to any ticket and
+ *    acts only once it reaches them; a coordinator it was not given only
+ *    reads it;
  *  · it climbs one level at a time and comes back the same way, the
  *    participant told of every move, by role and never by name; the
  *    coordinator alone tells them it is resolved;
@@ -18,7 +20,7 @@ declare(strict_types=1);
  *  · a coordinator who can no longer act loses their tickets to the primary
  *    coordinator, or to the general supervisor.
  *
- * @see D-124 · BR-22, BR-23 · CONSTITUTION art. 5, art. 8, art. 22
+ * @see D-124 · D-125 · D-126 · BR-22, BR-23, BR-33, BR-34 · CONSTITUTION art. 5, art. 8, art. 22
  */
 
 use App\Mail\AtharLetter;
@@ -170,6 +172,45 @@ it('D-124: المشرف العام يضيف ملاحظة داخلية على أ�
     foreach (['resolve', 'escalate'] as $action) {
         $this->actingAs($this->supervisor)->post(route('support.'.$action, $ticket))->assertForbidden();
     }
+});
+
+it('D-124, D-126: ما يكتبه المشرف العام ومدير النظام والتذكرة عندهما يبقى داخليًّا ولو طلبا إظهاره — المنسّق وحده يكتب للمتدرب حتى يقرّر المالك', function (): void {
+    $ticket = tkOpen($this, $this->participant);
+    $this->actingAs($this->coordinator)->post(route('support.escalate', $ticket))->assertSessionHasNoErrors();
+
+    // It is the supervisor's now: the form offers no choice, and says why.
+    $page = (string) $this->actingAs($this->supervisor)->get(route('support.show', $ticket))->assertOk()->getContent();
+
+    expect($page)->toContain(e(__('support.actions.internal_level')))
+        ->and($page)->not->toContain(e(__('support.actions.internal')).'<')
+        ->and($this->supervisor->can('writeToParticipant', $ticket->fresh()))->toBeFalse();
+
+    // Asked to be shown to the participant; the server keeps it with the team.
+    $this->actingAs($this->supervisor)
+        ->post(route('support.note', $ticket), ['body' => 'CANARY-ADMIN-LEVEL', 'internal' => '0'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', __('support.flash.noted'));
+
+    $this->actingAs($this->supervisor)->post(route('support.escalate', $ticket))->assertSessionHasNoErrors();
+
+    $this->actingAs($this->sysadmin)
+        ->post(route('support.note', $ticket), ['body' => 'CANARY-SYSADMIN-LEVEL', 'internal' => '0'])
+        ->assertSessionHasNoErrors();
+
+    expect(tkLines($ticket))->toBe([['opened', false], ['escalated', false], ['note', true], ['escalated', false], ['note', true]])
+        ->and($this->sysadmin->can('writeToParticipant', $ticket->fresh()))->toBeFalse()
+        ->and(tkNotices($this->participant))->toBe(['support_ticket', 'support_ticket', 'support_ticket']);
+
+    $this->actingAs($this->participant)
+        ->get(route('support.show', $ticket))
+        ->assertOk()
+        ->assertDontSee('CANARY-ADMIN-LEVEL')
+        ->assertDontSee('CANARY-SYSADMIN-LEVEL');
+
+    $this->actingAs($this->supervisor)
+        ->get(route('support.show', $ticket))
+        ->assertSee('CANARY-ADMIN-LEVEL')
+        ->assertSee('CANARY-SYSADMIN-LEVEL');
 });
 
 it('D-124: منسّق الدفعة الذي لم تصله التذكرة يراها ولا يتصرّف فيها — 403', function (): void {
@@ -388,12 +429,13 @@ it('BR-07, D-124: الإغلاق الآلي بعد 24 ساعة من «تمت ا�
     expect($ticket->entries()->count())->toBe(3);
 });
 
-it('D-124: المتدرب يغلق تذكرته في أي مرحلة، وبعد الإغلاق لا يُضاف إليها شيء من أحد', function (): void {
+it('D-124: المتدرب يغلق تذكرته في أي مرحلة، وبعد الإغلاق لا يكتب فيها أحد — إلا ملاحظة المشرف العام الداخلية', function (): void {
     $ticket = tkOpen($this, $this->participant);
 
     $this->actingAs($this->participant)->post(route('support.close', $ticket))->assertSessionHasNoErrors();
 
     $ticket->refresh();
+    $closedActivity = $ticket->last_activity_at;
     expect($ticket->status->value)->toBe('closed')
         ->and($ticket->closed_by)->toBe($this->participant->id)
         ->and(tkNotices($this->participant))->toBe(['support_ticket', 'support_ticket']);
@@ -401,7 +443,21 @@ it('D-124: المتدرب يغلق تذكرته في أي مرحلة، وبعد 
     $this->actingAs($this->participant)->post(route('support.reply', $ticket), ['body' => 'x'])->assertForbidden();
     $this->actingAs($this->participant)->post(route('support.close', $ticket))->assertForbidden();
     $this->actingAs($this->coordinator)->post(route('support.note', $ticket), ['body' => 'x'])->assertForbidden();
-    $this->actingAs($this->supervisor)->post(route('support.note', $ticket), ['body' => 'x'])->assertForbidden();
+
+    // «ملاحظة داخلية على أي تذكرة»: a closed one too — internal whatever
+    // the form says, the ticket stays closed, and the participant's list
+    // shows no new activity.
+    freezeAt(riyadhAt('2026-10-05 11:00:00'));
+    $this->actingAs($this->supervisor)
+        ->post(route('support.note', $ticket), ['body' => 'CANARY-AFTER-CLOSE', 'internal' => '0'])
+        ->assertSessionHasNoErrors();
+
+    $ticket->refresh();
+    expect($ticket->status->value)->toBe('closed')
+        ->and(collect(tkLines($ticket))->last())->toBe(['note', true])
+        ->and($ticket->last_activity_at?->equalTo($closedActivity))->toBeTrue();
+
+    $this->actingAs($this->participant)->get(route('support.show', $ticket))->assertDontSee('CANARY-AFTER-CLOSE');
 });
 
 it('D-124: منسّق أُزيل من الدفعة تنتقل تذاكره إلى الأساسي فورًا دون إبلاغ المتدرب', function (): void {
@@ -473,14 +529,17 @@ it('D-124: المتدرب يرى تذاكره وحده، والمنسّق تذا
     $this->actingAs($this->supervisor)->get(route('support.index', ['tab' => 'all']))->assertOk()->assertSee($ticket->number);
 });
 
-it('BR-33, BR-34, D-124: معاينة حساب المتدرب تقرأ تذاكره ولا تكتب شيئًا — 403 على كل كتابة', function (): void {
+it('BR-33, BR-34, D-125: المعاينة لا تقرأ تذاكر الدعم ولا تكتب فيها — 403، ولا رابط إليها، حتى يقرّر المالك', function (): void {
     $ticket = tkOpen($this, $this->participant);
     $lines = tkLines($ticket);
 
     $this->actingAs($this->sysadmin)->post(route('admin.users.preview', $this->participant))->assertRedirect();
 
-    $this->get(route('support.index'))->assertOk()->assertSee($ticket->number);
-    $this->get(route('support.show', $ticket))->assertOk()->assertDontSee(__('support.reply.submit'));
+    // D-125 (open): a preview would read more than the system administrator
+    // may; until the owner decides, it reads nothing here.
+    $this->get(route('support.index'))->assertForbidden();
+    $this->get(route('support.show', $ticket))->assertForbidden();
+    $this->get(route('dashboard'))->assertOk()->assertDontSee(route('support.index'), false);
 
     $this->get(route('support.create'))->assertForbidden();
     $this->post(route('support.store'), ['subject' => 'x', 'category' => 'other', 'body' => 'x'])->assertForbidden();

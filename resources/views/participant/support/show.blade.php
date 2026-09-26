@@ -219,7 +219,7 @@
                         @else
                             <p class="note note--info" role="note">
                                 <x-ui.icon name="lock" />
-                                <span>{{ __('support.actions.internal_only') }}</span>
+                                <span>{{ $ticket->internalOnlyNote }}</span>
                             </p>
                         @endif
 

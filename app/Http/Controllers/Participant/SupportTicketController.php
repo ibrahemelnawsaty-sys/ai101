@@ -115,6 +115,9 @@ final class SupportTicketController extends Controller
             'waitingCount' => $waiting,
             'waitingLabel' => trans_choice('support.count.waiting', $waiting, ['count' => $waiting]),
             'canOpen' => $user->can('create', SupportTicket::class),
+            // A trainee with no cohort cannot open one (SupportTicketPolicy::
+            // create); the page says why, and where to write instead.
+            'contactEmail' => (string) config('athar.email'),
             'errorState' => $failed ? true : null,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::of($rows === [], $failed),
