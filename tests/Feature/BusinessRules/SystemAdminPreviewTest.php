@@ -217,3 +217,41 @@ it('BR-35: المعاينة تبقى متاحة لحساب فعّال مفعّل
             ->and($service->canPreview($this->sysadmin, $target))->toBeTrue();
     }
 });
+
+/*
+|--------------------------------------------------------------------------
+| A preview that falls because its previewer fell
+|--------------------------------------------------------------------------
+| The previewer suspended mid-preview cannot be restored, so the session is
+| dropped (fail closed). Dropping it with logout() rotated the remember-me
+| token of the account then signed in — the PREVIEWED account: a write to its
+| row, and its own "remember me" sign-ins ended (BR-34). Found by the
+| independent security review of D-123, whose menu offers that sign-out.
+*/
+
+it('BR-34: الخروج من معاينة سقط أثناءها حساب مدير النظام لا يكتب في الحساب المعايَن — رمز «تذكّرني» باقٍ', function (): void {
+    makeSystemAdmin();
+    $this->participant->forceFill(['remember_token' => 'CANARY-REMEMBER'])->save();
+
+    previewAs($this, $this->participant);
+    $this->sysadmin->forceFill(['status' => 'suspended'])->save();
+
+    $this->post(route('logout'))->assertRedirect(route('login'));
+
+    $this->assertGuest();
+    expect($this->participant->fresh()?->getAttribute('remember_token'))->toBe('CANARY-REMEMBER')
+        ->and(ImpersonationSession::query()->whereNull('ended_at')->count())->toBe(0);
+});
+
+it('BR-34: انتهاء المعاينة من تلقاء نفسها بعد تعليق مدير النظام لا يكتب في الحساب المعايَن', function (): void {
+    makeSystemAdmin();
+    $this->participant->forceFill(['remember_token' => 'CANARY-REMEMBER'])->save();
+
+    previewAs($this, $this->participant);
+    $this->sysadmin->forceFill(['status' => 'suspended'])->save();
+
+    $this->get(route('dashboard'))->assertRedirect(route('login'));
+
+    $this->assertGuest();
+    expect($this->participant->fresh()?->getAttribute('remember_token'))->toBe('CANARY-REMEMBER');
+});

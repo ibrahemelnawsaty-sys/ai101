@@ -13,6 +13,7 @@ use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -136,7 +137,18 @@ final class ImpersonationService
         if ($admin === null || $admin->status !== UserStatus::Active) {
             // The admin account vanished or was suspended mid-preview: refuse to
             // restore anything and drop the session entirely (fail closed).
-            Auth::guard('web')->logout();
+            // logoutCurrentDevice(), not logout(): the account signed in at this
+            // moment is the PREVIEWED one, and SessionGuard::logout() rotates
+            // its remember-me token — a write to its row that also ends its own
+            // "remember me" sign-ins (BR-34). Found by the independent review
+            // of D-123. Only the session guard keeps such a token.
+            $guard = Auth::guard('web');
+
+            if ($guard instanceof SessionGuard) {
+                $guard->logoutCurrentDevice();
+            } else {
+                $guard->logout();
+            }
 
             return null;
         }

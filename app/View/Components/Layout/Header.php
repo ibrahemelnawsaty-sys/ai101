@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\View\Components\Layout;
 
 use App\Enums\UserRole;
+use App\Models\User;
+use App\Services\Permissions\RoleResolver;
 use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -26,6 +29,9 @@ final class Header extends UiComponent
 
     /** Above this the badge reads "99+" rather than a four-digit number. */
     public const BADGE_CAP = 99;
+
+    /** The shells (RoleResolver::shellRole) whose /dashboard is an information dashboard. */
+    private const DASHBOARD_SHELLS = ['participant', 'trainer', 'coordinator', 'admin'];
 
     public string $heading;
 
@@ -85,27 +91,39 @@ final class Header extends UiComponent
 
     /**
      * What the account menu offers, and to whom (D-123). A link is offered only
-     * when its route is registered and this account's role reaches it: a link
-     * the server refuses is a link to a 403 (D-86). The entries whose feature
-     * is not built yet — support tickets (D-124), the tour, English, dark mode —
-     * are absent rather than present and dead (D-54, D-66).
+     * when its route is registered and this account reaches it by the very
+     * check the route makes — RoleResolver, as the rail asks it — never by the
+     * account's own role column: a link the server refuses is a link to a 403
+     * (D-86), and a link it allows but the menu hides is a second source of
+     * truth (art. 6). The entries whose feature is not built yet — support
+     * tickets (D-124), the tour, English, dark mode — are absent rather than
+     * present and dead (D-54, D-66).
      *
      * @return list<array{key: string, url: string, icon: string, label: string, current: bool}>
      */
     private function accountMenu(): array
     {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        $roles = app(RoleResolver::class);
         $items = [];
 
-        // The card belongs to trainees: the route sits behind role:participant.
-        // A preview signs in AS the trainee, so it still shows there.
-        if ($this->role === UserRole::Participant) {
+        // The route sits behind role:participant, which a trainer enrolled as a
+        // trainee holds too (PRD §4.4). A preview signs in AS the previewed
+        // account, so the answer is that account's, as the routes' is.
+        if ($roles->hasRole($user, UserRole::Participant->value)) {
             $items[] = self::menuItem('card', 'participant.card', 'card', __('nav.participant.card'), ['participant.card']);
         }
 
-        // The system administrator has no information dashboard: /dashboard
-        // sends that role to the accounts list (D-117), so the label would lie.
-        // Every other role reaches its own dashboard through the one route.
-        if ($this->role !== null && $this->role !== UserRole::SystemAdmin) {
+        // An allow-list of the shells that have an information dashboard
+        // (art. 22): a role added later is offered nothing until it is named.
+        // The system administrator's /dashboard is the accounts list (D-117),
+        // so the label would lie there.
+        if (in_array($roles->shellRole($user), self::DASHBOARD_SHELLS, true)) {
             $items[] = self::menuItem('dashboard', 'dashboard', 'panel', __('nav.dashboard'), [
                 'dashboard', 'trainer.dashboard', 'coordinator.dashboard', 'admin.dashboard',
             ]);

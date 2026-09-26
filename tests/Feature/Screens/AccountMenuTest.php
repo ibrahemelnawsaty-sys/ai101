@@ -263,3 +263,53 @@ it('D-123: الأنماط — القائمة داخل الشاشة وتتمرّ�
         ->and($app)->toContain('.menu__i--danger, .menu__i--danger svg { color: var(--bad-700); }')
         ->and($app)->toContain('.acct[aria-expanded="true"] .acct__chev { transform: rotate(180deg); }');
 });
+
+it('D-123: في المعاينة تعرض القائمة الحساب المعايَن وروابطه، وكلها تفتح (BR-33)', function (): void {
+    $systemAdmin = makeSystemAdmin();
+    $participant = makeParticipant(makeCohort());
+
+    $this->actingAs($systemAdmin)->post(route('admin.users.preview', $participant))->assertRedirect();
+
+    $html = (string) $this->get(route('dashboard'))->assertOk()->getContent();
+    $menu = accountMenuXpath($html)->query('//*['.accountMenuClass('appbar__menu').']')->item(0);
+
+    // A preview shows the account as its holder sees it (BR-33): the menu is
+    // the previewed trainee's — its e-mail and its card — not the previewer's.
+    expect($menu?->textContent)->toContain($participant->email)
+        ->not->toContain($systemAdmin->email)
+        ->and(accountMenuHrefs($html))->toBe([route('participant.card'), route('dashboard'), route('profile')]);
+
+    foreach (accountMenuHrefs($html) as $href) {
+        $this->followingRedirects()->get($href)->assertOk();
+    }
+});
+
+it('D-123: اسم العرض يُطبع في الزر نصًّا لا شيفرة (المادة 24)', function (): void {
+    $participant = makeParticipant(makeCohort());
+    App\Models\Profile::factory()->create([
+        'user_id' => $participant->id,
+        'first_name_ar' => '<img src=x onerror=alert(1)>',
+        'last_name_ar' => '"\'><svg onload=alert(2)>',
+    ]);
+
+    $html = (string) $this->actingAs($participant->fresh())->get(route('dashboard'))->assertOk()->getContent();
+    $name = accountMenuXpath($html)->query('//button[@aria-controls="account-menu"]//*['.accountMenuClass('acct__name').']')->item(0);
+
+    // The hostile name arrives as text inside the button, and nowhere as markup.
+    expect($name?->textContent)->toContain('<img src=x onerror=alert(1)>')
+        ->and($html)->not->toContain('<img src=x onerror')
+        ->and($html)->not->toContain('<svg onload=alert(2)>');
+});
+
+it('D-123: من التحق متدربًا وهو مدرّب يرى البطاقة في القائمة كما يراها في الشريط ويفتحها المسار', function (): void {
+    $studied = makeCohort();
+    $trainer = makeTrainer(makeCohort());
+    enroll($trainer, $studied, 'participant');
+
+    // The card is offered by the same check its route makes (role:participant
+    // through RoleResolver), not by the account's own role column (art. 6).
+    $html = (string) $this->actingAs($trainer)->followingRedirects()->get(route('dashboard'))->assertOk()->getContent();
+
+    expect(accountMenuHrefs($html))->toContain(route('participant.card'));
+    $this->actingAs($trainer)->get(route('participant.card'))->assertOk();
+});
