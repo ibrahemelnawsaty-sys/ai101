@@ -14,7 +14,11 @@ use Illuminate\Foundation\Events\Dispatchable;
  * it runs (D-51) and builds the link itself. Dispatched only on the move from
  * locked to unlocked — re-saving an open project announces nothing (D-77).
  *
- * @see PRD §9.14, §9.16.1 · D-51, D-77
+ * D-127 — the primary coordinator's publish dispatches it now. When the
+ * project's guide was already published and never announced, the one letter
+ * says both and its button opens the guide (`withGuide`).
+ *
+ * @see PRD §9.14, §9.16.1 · D-51, D-77, D-127
  */
 final class FinalProjectUnlocked
 {
@@ -23,5 +27,6 @@ final class FinalProjectUnlocked
     public function __construct(
         public readonly string $cohortId,
         public readonly string $deadline,
+        public readonly bool $withGuide = false,
     ) {}
 }

@@ -92,6 +92,8 @@ final class AppServiceProvider extends ServiceProvider
             'evaluation' => Models\Evaluation::class,
             'final_project' => Models\FinalProject::class,
             'final_project_field' => Models\FinalProjectField::class,
+            'final_project_guide' => Models\FinalProjectGuide::class,
+            'final_project_guide_version' => Models\FinalProjectGuideVersion::class,
             'impersonation_session' => Models\ImpersonationSession::class,
             'journey_step' => Models\JourneyStep::class,
             'landing_setting' => Models\LandingSetting::class,

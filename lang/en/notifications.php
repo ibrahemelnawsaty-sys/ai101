@@ -111,6 +111,28 @@ return [
             'label' => 'Final project unlocked',
             'title' => 'The final project is open',
             'body' => 'Read the brief and the grading criteria. The deadline is :datetime.',
+            'body_with_guide' => 'The project guide is out too: open it to see what to build, what to hand in and how your project is graded. The deadline is :datetime.',
+        ],
+        // D-127 — the guide's notices.
+        'final_project_guide_published' => [
+            'label' => 'Final project guide published',
+            'title' => 'The final project guide is out',
+            'body' => 'Open the guide to see what to build, what to hand in and how your project is graded.',
+        ],
+        'final_project_guide_published_staff' => [
+            'label' => 'Your cohort\'s project guide published',
+            'title' => 'Your cohort\'s final project guide was published',
+            'body' => 'Read it to be ready for the trainees\' questions.',
+        ],
+        'final_project_available' => [
+            'label' => 'Final project made available',
+            'title' => 'The final project is ready to publish',
+            'body' => 'The general supervisor made the final project of :cohort available. Review it and publish it to the trainees.',
+        ],
+        'final_project_guide_available' => [
+            'label' => 'Project guide made available',
+            'title' => 'The final project guide is ready to publish',
+            'body' => 'The general supervisor made the :language guide of :cohort available. Review it and publish it to the trainees.',
         ],
         'resource_added' => [
             'label' => 'New resource in the pack',

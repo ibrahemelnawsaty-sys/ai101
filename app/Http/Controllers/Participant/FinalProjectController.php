@@ -12,6 +12,7 @@ use App\Http\Requests\Participant\SubmitFinalProjectRequest;
 use App\Models\Evaluation;
 use App\Models\FinalProject;
 use App\Models\FinalProjectField;
+use App\Models\FinalProjectGuide;
 use App\Models\ProjectSubmission;
 use App\Models\User;
 use App\Presenters\Participant\EvaluationPresenter;
@@ -45,7 +46,11 @@ use Illuminate\Support\Facades\Log;
  * is stored as one entry per field (SubmissionFields::answer()), each carrying
  * a copy of the field's label and type beside what came in.
  *
- * @see BR-15, BR-16, BR-19, BR-22 · FR-PROJ-10, FR-PROJ-11 · PRD §9.14 · CONSTITUTION Art. 5 · D-110, D-121
+ * D-127 — the "Guide" button: shown only when FinalProjectGuidePolicy lets this
+ * trainee read the Arabic guide (published, and the project published too).
+ * The link carries no id; the guide route resolves the trainee's own cohort.
+ *
+ * @see BR-15, BR-16, BR-19, BR-22 · FR-PROJ-10, FR-PROJ-11 · PRD §9.14 · CONSTITUTION Art. 5 · D-110, D-121, D-127
  */
 final class FinalProjectController extends Controller
 {
@@ -82,6 +87,7 @@ final class FinalProjectController extends Controller
                 'closedReason' => null,
                 'expectedOpeningLabel' => null,
                 'serverNow' => $now,
+                'guideUrl' => null,
                 'errorState' => null,
             ]);
         }
@@ -129,8 +135,22 @@ final class FinalProjectController extends Controller
                 : (string) __($isPastDue ? 'project.closed_deadline' : 'project.closed_locked'),
             'expectedOpeningLabel' => null,
             'serverNow' => $now,
+            'guideUrl' => $this->guideUrl($user, $project),
             'errorState' => null,
         ]);
+    }
+
+    /** D-127 — the guide button's address, or null when this trainee may not read it yet. */
+    private function guideUrl(User $user, FinalProject $project): ?string
+    {
+        $guide = FinalProjectGuide::query()
+            ->where('final_project_id', $project->getKey())
+            ->where('locale', FinalProjectGuide::PRIMARY_LOCALE)
+            ->first();
+
+        return $guide instanceof FinalProjectGuide && $user->can('view', $guide)
+            ? route('finalProject.guide')
+            : null;
     }
 
     /**

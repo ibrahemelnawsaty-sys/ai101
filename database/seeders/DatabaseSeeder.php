@@ -33,6 +33,8 @@ final class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ScheduleSeeder::class,
             AssignmentSeeder::class,
+            // D-127 — the final project's guide, saved but not available.
+            FinalProjectGuideSeeder::class,
             AttendanceSeeder::class,
             SubmissionSeeder::class,
             EngagementSeeder::class,

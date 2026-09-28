@@ -275,6 +275,25 @@ return [
         'cta' => 'افتح المشروع الختامي',
     ],
 
+    // D-127 — the project opened with its guide already out: one letter, whose
+    // button opens the guide itself.
+    'final_project_unlocked_with_guide' => [
+        'subject' => 'فُتح المشروع الختامي ودليله متاح',
+        'preheader' => 'افتح الدليل: ماذا تبني وماذا تسلّم وكيف يُقيَّم مشروعك.',
+        'heading' => 'المشروع الختامي متاح الآن ومعه دليله',
+        'body' => 'فُتح تبويب المشروع الختامي في لوحتك، ودليله الكامل متاح: ماذا تبني، وماذا تسلّم، وكيف تنشره، وكيف يُقيَّم. الموعد النهائي :datetime.',
+        'cta' => 'افتح الدليل',
+    ],
+
+    // D-127 — the guide went out after the project was already open.
+    'final_project_guide_published' => [
+        'subject' => 'دليل المشروع الختامي متاح الآن',
+        'preheader' => 'كل ما تحتاجه لمشروعك الختامي في صفحة واحدة.',
+        'heading' => 'دليل مشروعك الختامي جاهز',
+        'body' => 'نُشر دليل المشروع الختامي: ماذا تبني، وماذا تسلّم، وكيف تنشره، وكيف يُقيَّم مشروعك. افتحه من الزر أدناه، وتجده أيضًا في صفحة المشروع الختامي.',
+        'cta' => 'افتح الدليل',
+    ],
+
     // D-122 — the receipt of a final-project hand-in, with its code and QR.
     'final_project_received' => [
         'subject' => 'استلمنا مشروعك الختامي — رمز التسليم :code',

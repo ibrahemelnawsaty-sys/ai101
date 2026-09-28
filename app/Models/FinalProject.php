@@ -13,16 +13,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * The closing project of a cohort. It stays locked until a trainer unlocks it, and
- * the lock is enforced here in the data access layer: `scopeVisibleTo` removes the
- * row entirely for a participant while `is_unlocked` is false, so its brief and
+ * The closing project of a cohort. It stays locked until it is published, and the
+ * lock is enforced here in the data access layer: `scopeVisibleTo` removes the row
+ * entirely for a participant while `is_unlocked` is false, so its brief and
  * requirements can never be serialised to the browser early (BR-15, BR-16).
+ *
+ * D-127 — publishing takes two people: the general supervisor makes the project
+ * AVAILABLE (`is_available`), then the cohort's primary coordinator PUBLISHES it
+ * (`is_unlocked`, the one column every lock reads). Withdrawing availability
+ * locks it again at once.
  *
  * What a participant hands in is not fixed here: the administrator defines it
  * field by field (`fields()`, D-121), and the fields are part of the brief —
  * they reach a participant only after the unlock, like everything else.
  *
- * @see BR-11, BR-15, BR-16, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4 · D-121
+ * @see BR-11, BR-15, BR-16, BR-22, BR-23 · PRD §7.6, §9.14 · PROJECT-CONTRACT §4 · D-121, D-127
  */
 class FinalProject extends Model
 {
@@ -46,6 +51,9 @@ class FinalProject extends Model
         'is_unlocked',
         'unlocked_at',
         'unlocked_by',
+        'is_available',
+        'available_at',
+        'available_by',
         'due_at',
         'allow_late',
         'max_score',
@@ -63,6 +71,8 @@ class FinalProject extends Model
             'requirements' => 'array',
             'is_unlocked' => 'boolean',
             'unlocked_at' => 'datetime',
+            'is_available' => 'boolean',
+            'available_at' => 'datetime',
             'due_at' => 'datetime',
             // BR-18's own switch, mirrored from Assignment: off refuses a late
             // hand-in outright, on accepts it marked late (D-110).
@@ -89,6 +99,7 @@ class FinalProject extends Model
      */
     protected $attributes = [
         'is_unlocked' => false,
+        'is_available' => false,
     ];
 
     // --------------------------------------------------------- relationships
@@ -107,6 +118,26 @@ class FinalProject extends Model
     public function unlocker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'unlocked_by');
+    }
+
+    /**
+     * Who made the project available for publishing (D-127).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function availabler(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'available_by');
+    }
+
+    /**
+     * The guide, one row per language (D-127).
+     *
+     * @return HasMany<FinalProjectGuide, $this>
+     */
+    public function guides(): HasMany
+    {
+        return $this->hasMany(FinalProjectGuide::class);
     }
 
     /**

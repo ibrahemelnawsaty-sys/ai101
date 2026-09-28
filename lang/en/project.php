@@ -116,6 +116,20 @@ return [
         ],
     ],
 
+    /*
+     * D-127 — the guide button and the guide page's own two words.
+     */
+    'guide' => [
+        'open' => 'Guide',
+        'open_label' => 'Guide — opens the final project guide in a new tab',
+        'languages' => [
+            'ar' => 'Arabic',
+            'en' => 'English',
+        ],
+        'copied' => 'Copied',
+        'press_to_copy' => 'Press Ctrl+C',
+    ],
+
     'error_title' => 'The final project could not be shown',
     'error_body' => 'Something went wrong while fetching it. Try again shortly — your submission is safe and unaffected.',
 

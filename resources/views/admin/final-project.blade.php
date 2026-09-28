@@ -15,7 +15,13 @@
     prompt (?remove={id}). Every figure and every decision here comes from
     SubmissionFieldsPanel; every write goes through its own policy.
 
-    @see PRD §9.14 · BR-15, BR-16, BR-23, BR-31 · D-109, D-110, D-121
+    D-127 — the last box makes the project AVAILABLE; publishing it is the
+    cohort's primary coordinator's press. Under the settings, the guide card:
+    each language's state, preview and availability, a copy from another
+    cohort, and on ?guide=ar|en the editor with its paged history. Every figure
+    comes from FinalProjectGuidePanel.
+
+    @see PRD §9.14 · BR-15, BR-16, BR-23, BR-31 · D-109, D-110, D-121, D-127
 --}}
 @extends('layouts.app')
 
@@ -52,11 +58,27 @@
             <x-ui.card class="dc--span u-mt-4" icon="spark"
                 :title="$settings->exists ? $settings->title : __('admin.final_project.title')">
 
-                @if ($settings->isUnlocked)
+                @if ($settings->exists)
                     <x-slot:action>
-                        <x-ui.pill variant="success" icon="check">{{ __('trainer.final_project.state_open') }}</x-ui.pill>
+                        @if ($settings->isUnlocked)
+                            <x-ui.pill variant="success" icon="check">{{ __('admin.final_project.states.published') }}</x-ui.pill>
+                        @elseif ($settings->isAvailable)
+                            <x-ui.pill variant="info" icon="clock">{{ __('admin.final_project.states.available') }}</x-ui.pill>
+                        @else
+                            <x-ui.pill variant="neutral" icon="lock">{{ __('admin.final_project.states.not_available') }}</x-ui.pill>
+                        @endif
                     </x-slot:action>
                 @endif
+
+                @unless ($hasPrimaryCoordinator)
+                    <div class="note note--warn" role="status">
+                        <x-ui.icon name="warn" />
+                        <p>
+                            {{ __('admin.final_project.no_primary_coordinator') }}
+                            <a href="{{ route('admin.cohorts.index') }}">{{ __('admin.final_project.no_primary_coordinator_action') }}</a>
+                        </p>
+                    </div>
+                @endunless
 
                 <form method="POST" action="{{ route('admin.finalProject.store') }}">
                     @csrf
@@ -88,10 +110,19 @@
                         :label="__('admin.final_project.fields.allow_late')"
                         :hint="__('admin.final_project.allow_late_hint')" />
 
-                    <x-ui.checkbox name="is_unlocked" value="1"
-                        :checked="old('is_unlocked', $settings->isUnlocked)"
-                        :label="__('admin.final_project.fields.is_unlocked')"
-                        :hint="__('admin.final_project.is_unlocked_hint')" />
+                    <x-ui.checkbox name="is_available" value="1"
+                        :checked="old('is_available', $settings->isAvailable)"
+                        :label="__('admin.final_project.fields.is_available')"
+                        :hint="__('admin.final_project.is_available_hint')" />
+
+                    @if ($settings->isAvailable && $settings->availableByName)
+                        <p class="footnote">
+                            {{ __('admin.final_project.available_note', [
+                                'name' => $settings->availableByName,
+                                'date' => \App\Support\Dates::dateTime($settings->availableAt),
+                            ]) }}
+                        </p>
+                    @endif
 
                     @if ($settings->isUnlocked && $settings->unlockedByName)
                         <p class="footnote">
@@ -107,6 +138,11 @@
                     </div>
                 </form>
             </x-ui.card>
+
+            {{-- D-127 · the guide --------------------------------------------------- --}}
+            @if ($guidePanel !== null)
+                @include('admin.partials.final-project-guide', ['guidePanel' => $guidePanel])
+            @endif
 
             {{-- D-121 · the hand-in form's fields --------------------------------- --}}
             @if ($fieldsPanel === null)

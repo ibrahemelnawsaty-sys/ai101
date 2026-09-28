@@ -315,6 +315,9 @@ function makeSubmission(Assignment $assignment, User $user, array $attributes = 
  */
 function makeFinalProject(Cohort $cohort, array $attributes = []): FinalProject
 {
+    // D-127 — published implies available, unless a test says otherwise.
+    $attributes += ['is_available' => (bool) ($attributes['is_unlocked'] ?? false)];
+
     $project = FinalProject::factory()->create($attributes + [
         'cohort_id' => $cohort->id,
         'is_unlocked' => false,

@@ -104,6 +104,9 @@ final class AssignmentSeeder extends Seeder
             'title' => $row['title'],
             'brief' => $row['brief'],
             'requirements' => $row['requirements'],
+            // D-127 — published implies available: the demo project went through both steps.
+            'is_available' => true,
+            'available_at' => SeedContent::instant(self::PROJECT_UNLOCK_DAY, '18:00:00'),
             'is_unlocked' => true,
             'unlocked_at' => SeedContent::instant(self::PROJECT_UNLOCK_DAY, '19:00:00'),
             'unlocked_by' => $trainer->getKey(),

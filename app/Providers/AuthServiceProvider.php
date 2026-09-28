@@ -16,6 +16,7 @@ use App\Models\Enrollment;
 use App\Models\Evaluation;
 use App\Models\FinalProject;
 use App\Models\FinalProjectField;
+use App\Models\FinalProjectGuide;
 use App\Models\LandingContent;
 use App\Models\LandingSetting;
 use App\Models\Message;
@@ -41,6 +42,7 @@ use App\Policies\DigitalCardPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\EvaluationPolicy;
 use App\Policies\FinalProjectFieldPolicy;
+use App\Policies\FinalProjectGuidePolicy;
 use App\Policies\FinalProjectPolicy;
 use App\Policies\LandingContentPolicy;
 use App\Policies\LandingSettingPolicy;
@@ -92,6 +94,7 @@ final class AuthServiceProvider extends ServiceProvider
         Evaluation::class => EvaluationPolicy::class,
         FinalProject::class => FinalProjectPolicy::class,
         FinalProjectField::class => FinalProjectFieldPolicy::class,
+        FinalProjectGuide::class => FinalProjectGuidePolicy::class,
         ProjectSubmission::class => ProjectSubmissionPolicy::class,
         Resource::class => ResourcePolicy::class,
         Thread::class => ThreadPolicy::class,

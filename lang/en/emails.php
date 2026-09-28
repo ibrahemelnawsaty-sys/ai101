@@ -239,6 +239,25 @@ return [
         'cta' => 'Open the final project',
     ],
 
+    // D-127 — the project opened with its guide already out: one letter, whose
+    // button opens the guide itself.
+    'final_project_unlocked_with_guide' => [
+        'subject' => 'The final project is open, and its guide is out',
+        'preheader' => 'Open the guide: what to build, what to hand in and how it is graded.',
+        'heading' => 'The final project is open, with its guide',
+        'body' => 'The final project tab is open in your dashboard, and its full guide is out: what to build, what to hand in, how to publish it and how it is graded. The deadline is :datetime.',
+        'cta' => 'Open the guide',
+    ],
+
+    // D-127 — the guide went out after the project was already open.
+    'final_project_guide_published' => [
+        'subject' => 'The final project guide is out',
+        'preheader' => 'Everything you need for your final project, on one page.',
+        'heading' => 'Your final project guide is ready',
+        'body' => 'The final project guide was published: what to build, what to hand in, how to publish it and how your project is graded. Open it from the button below; it is also on your final project page.',
+        'cta' => 'Open the guide',
+    ],
+
     'final_project_received' => [
         'subject' => 'We received your final project — receipt code :code',
         'preheader' => 'Keep the receipt code :code as proof your project arrived.',

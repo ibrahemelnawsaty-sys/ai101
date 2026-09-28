@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\FinalProjectFieldController as AdminFinalProjectFieldController;
+use App\Http\Controllers\Admin\FinalProjectGuideController as AdminFinalProjectGuideController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -46,7 +47,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
+use App\Http\Controllers\Coordinator\FinalProjectController as CoordinatorFinalProjectController;
 use App\Http\Controllers\FileDownloadController;
+use App\Http\Controllers\FinalProjectGuideController;
 use App\Http\Controllers\FinalProjectReceiptController;
 use App\Http\Controllers\Participant\AssignmentController;
 use App\Http\Controllers\Participant\AttendanceController;
@@ -82,6 +85,7 @@ use App\Http\Controllers\Trainer\ReportController as TrainerReportController;
 use App\Http\Controllers\Trainer\ResourceController as TrainerResourceController;
 use App\Http\Controllers\Trainer\SessionController as TrainerSessionController;
 use App\Http\Controllers\Trainer\SubmissionController as TrainerSubmissionController;
+use App\Models\FinalProjectGuide;
 use App\Services\FinalProject\ReceiptCodes;
 use Illuminate\Support\Facades\Route;
 
@@ -466,6 +470,11 @@ Route::middleware(['auth', 'verified'])->prefix('dashboard')->group(function ():
         Route::post('/final-project/submit', [FinalProjectController::class, 'submit'])
             ->middleware(['not.impersonating', 'throttle:upload'])
             ->name('finalProject.submit');
+        // D-127 — the guide's own address for a trainee: no id in it, the
+        // active cohort decides whose guide. The button, the notice and the
+        // e-mail all open this.
+        Route::get('/final-project/guide', [FinalProjectGuideController::class, 'participant'])
+            ->name('finalProject.guide');
 
         Route::get('/grades', [GradeController::class, 'index'])->name('grades');
         Route::get('/grades/export', [GradeController::class, 'export'])
@@ -665,7 +674,33 @@ Route::middleware(['auth', 'verified', 'role:admin,coordinator', 'cohort.scope']
     ->name('coordinator.')
     ->group(function (): void {
         Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
+
+        // D-127 — the final project's tab: the general supervisor makes the
+        // project and each guide language available; the cohort's PRIMARY
+        // coordinator publishes them (the policies name them alone).
+        Route::get('/final-project', [CoordinatorFinalProjectController::class, 'index'])->name('finalProject');
+        Route::put('/final-project/{project}/publication', [CoordinatorFinalProjectController::class, 'publication'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.publication');
+        Route::put('/final-project/{project}/guide/{locale}/publication', [CoordinatorFinalProjectController::class, 'guidePublication'])
+            ->whereIn('locale', FinalProjectGuide::LOCALES)
+            ->middleware('not.impersonating')
+            ->name('finalProject.guide.publication');
     });
+
+/*
+|--------------------------------------------------------------------------
+| The final project's guide — the staff link (D-127)
+|--------------------------------------------------------------------------
+| The general supervisor's preview, and the coordinators' and trainers' read.
+| Who may read which language, and when, is FinalProjectGuidePolicy::view on
+| every request; a trainee has their own link, without an id, above.
+*/
+
+Route::middleware(['auth', 'verified', 'role:admin,coordinator,trainer'])->group(function (): void {
+    Route::get('/final-project/{project}/guide', [FinalProjectGuideController::class, 'show'])
+        ->name('finalProjectGuide.show');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -800,6 +835,28 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
             ->middleware('not.impersonating')
             ->name('finalProject.store');
+
+        /*
+         * D-127 — the final project's guide: the page (typed, pasted or
+         * uploaded), its history, a copy from another cohort, and each
+         * language's availability. Publishing is the primary coordinator's
+         * (coordinator.finalProject.*), never here.
+         */
+        Route::post('/final-project/{project}/guide/copy', [AdminFinalProjectGuideController::class, 'copy'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.guide.copy');
+        Route::post('/final-project/{project}/guide/{locale}', [AdminFinalProjectGuideController::class, 'save'])
+            ->whereIn('locale', FinalProjectGuide::LOCALES)
+            ->middleware(['not.impersonating', 'throttle:upload'])
+            ->name('finalProject.guide.save');
+        Route::post('/final-project/{project}/guide/{locale}/restore', [AdminFinalProjectGuideController::class, 'restore'])
+            ->whereIn('locale', FinalProjectGuide::LOCALES)
+            ->middleware('not.impersonating')
+            ->name('finalProject.guide.restore');
+        Route::put('/final-project/{project}/guide/{locale}/availability', [AdminFinalProjectGuideController::class, 'availability'])
+            ->whereIn('locale', FinalProjectGuide::LOCALES)
+            ->middleware('not.impersonating')
+            ->name('finalProject.guide.availability');
 
         /*
          * D-121 — the hand-in form's fields, one project at a time. The field
