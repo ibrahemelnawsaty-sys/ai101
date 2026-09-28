@@ -585,3 +585,41 @@ it('D-129, BR-33: الدليل لا يُفتح أثناء المعاينة — �
         ->assertSee(__('project.guide.preview_title'))
         ->assertDontSee(GUIDE_CANARY.'-ar', escape: false);
 });
+
+it('D-127: زر البريد يوصل المتدرب إلى الدليل مباشرة حتى لو لم يكن مسجّل الدخول — يمرّ بتسجيل الدخول ثم يعود إليه لا إلى اللوحة', function (): void {
+    makeGuide($this->project, 'ar', ['is_available' => true, 'is_published' => true]);
+    $guideUrl = route('finalProject.guide');
+
+    // Not signed in: sent to the login screen, remembering where they were going.
+    $this->get($guideUrl)->assertRedirect(route('login'));
+    expect(session('url.intended'))->toBe($guideUrl);
+
+    // Signing in lands on the guide itself, not on the dashboard.
+    $trainee = withPassword($this->participant, 'Canary-Sign-In-1!');
+
+    $this->post(route('login'), ['email' => $trainee->email, 'password' => 'Canary-Sign-In-1!'])
+        ->assertRedirect($guideUrl);
+});
+
+it('D-127: الرسالتان تُعرضان فعلًا بزرٍّ واحد يفتح الدليل، بالعربية والإنجليزية — لا مفتاح ناقص ولا متغيّر خام', function (): void {
+    $withGuide = new AtharLetter(
+        copyKey: 'emails.final_project_unlocked_with_guide',
+        values: ['datetime' => 'X-DEADLINE'],
+        ctaUrl: route('finalProject.guide'),
+    );
+    $afterwards = new AtharLetter(copyKey: 'emails.final_project_guide_published', ctaUrl: route('finalProject.guide'));
+
+    foreach (['ar', 'en'] as $locale) {
+        app()->setLocale($locale);
+
+        foreach ([$withGuide, $afterwards] as $letter) {
+            $html = $letter->render();
+
+            expect(substr_count($html, 'href="'.route('finalProject.guide').'"'))->toBe(1)
+                ->and($html)->not->toContain('emails.final_project')
+                ->and($html)->not->toContain(':datetime');
+        }
+
+        expect($withGuide->render())->toContain('X-DEADLINE');
+    }
+});
