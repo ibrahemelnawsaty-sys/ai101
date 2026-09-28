@@ -90,42 +90,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Generic verbs and labels — every button is a verb (art. 15)
+    | Generic action labels — a verbal noun or a noun phrase, never a command (art. 15, D-128)
     |--------------------------------------------------------------------------
     */
 
-    'save_changes' => 'احفظ التغييرات',
-    'apply_filters' => 'طبّق التصفية',
-    'clear_filters' => 'أزل التصفية',
-    'retry' => 'أعد المحاولة',
-    'back' => 'ارجع',
+    'save_changes' => 'حفظ التغييرات',
+    'apply_filters' => 'تصفية',
+    'clear_filters' => 'إزالة التصفية',
+    'retry' => 'إعادة المحاولة',
+    'back' => 'رجوع',
     'cancel' => 'تراجع',
-    'edit' => 'عدّل',
-    'open' => 'افتح',
-    'show' => 'اعرض',
+    'edit' => 'تعديل',
+    'open' => 'فتح',
+    'show' => 'عرض',
     'details' => 'التفاصيل',
-    'view_all' => 'اعرض الكل',
+    'view_all' => 'عرض الكل',
     'all' => 'الكل',
     'none' => 'لا شيء',
-    'select' => 'اختر',
-    'copy' => 'انسخ الرابط',
+    'select' => 'تحديد',
+    'copy' => 'نسخ الرابط',
     'copied' => 'نُسخ الرابط',
-    'share' => 'شارك',
-    'download' => 'حمّل',
-    'export_excel' => 'صدّر Excel',
+    'share' => 'مشاركة',
+    'download' => 'تنزيل',
+    'export_excel' => 'تصدير Excel',
     // `actions` is an array: the layouts read app.actions.skip_to_content and
     // app.actions.close, while a table's hidden action column reads
     // app.actions.label. The flat keys app.skip_to_content and app.close are
     // kept below so nothing that already reads them breaks.
     'actions' => [
         'label' => 'الإجراءات',
-        'skip_to_content' => 'تخطَّ إلى المحتوى',
-        'close' => 'أغلق',
+        'skip_to_content' => 'تخطّي إلى المحتوى',
+        'close' => 'إغلاق',
     ],
     'status' => 'الحالة',
     'not_assigned' => 'لم يُسنَد بعد',
     'optional' => 'اختياري',
-    'skip_to_content' => 'تخطَّ إلى المحتوى',
+    'skip_to_content' => 'تخطّي إلى المحتوى',
 
     /*
     |--------------------------------------------------------------------------
@@ -135,8 +135,8 @@ return [
 
     'accessibility' => [
         'menu' => 'القائمة',
-        'open_menu' => 'افتح القائمة',
-        'close_menu' => 'أغلق القائمة',
+        'open_menu' => 'فتح القائمة',
+        'close_menu' => 'إغلاق القائمة',
         'user_menu' => 'قائمة الحساب',
         'notifications_bell' => 'الإشعارات',
         'notifications_bell_unread' => '{1} الإشعارات، فيها إشعار غير مقروء|{2} الإشعارات، فيها إشعاران غير مقروءين|[3,10] الإشعارات، فيها :count إشعارات غير مقروءة|[11,*] الإشعارات، فيها :count إشعارًا غير مقروء',
@@ -145,16 +145,16 @@ return [
         'loading_region' => 'محتوى قيد التحميل',
         'status_region' => 'رسائل الحالة',
     ],
-    'close' => 'أغلق',
-    'delete' => 'احذف',
-    'archive' => 'أرشِف',
-    'view_details' => 'اعرض التفاصيل',
-    'search_placeholder' => 'ابحث…',
+    'close' => 'إغلاق',
+    'delete' => 'حذف',
+    'archive' => 'أرشفة',
+    'view_details' => 'عرض التفاصيل',
+    'search_placeholder' => 'بحث…',
     'no_search_results_title' => 'لا نتائج تطابق بحثك',
     'no_search_results' => 'جرّب كلمة أخرى أو أزل التصفية لعرض كل العناصر.',
 
     'common' => [
-        'search_placeholder' => 'ابحث…',
+        'search_placeholder' => 'بحث…',
     ],
 
     'ratio' => [

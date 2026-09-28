@@ -193,7 +193,6 @@ return [
 
     'users' => [
         /* Creating and inviting an account (D-63). */
-        'create' => 'Send an invitation',
         'create_title' => 'Send an invitation',
         'create_subtitle' => 'Their Arabic name and their address, nothing else. The account is created, seated in its cohort, and an invitation goes out where they complete their details and choose a password.',
         'name_hint' => 'Only the first name is required. Leave the remaining boxes empty for a two- or three-part name - and the person can correct it when they accept the invitation.',
@@ -358,6 +357,9 @@ return [
         'banner' => 'You are previewing the account of :name — read only',
         'ends_in' => 'The preview ends automatically in :countdown',
         'stop' => 'End the preview',
+        'region' => 'Preview mode',
+        'five_minutes_left' => 'Five minutes are left in the preview.',
+        'one_minute_left' => 'One minute is left in the preview.',
         'stopped' => 'The preview ended and you are back in your own account.',
         'expired' => 'The 30-minute preview has ended and you are back in your own account.',
         'read_only_action' => 'This action is disabled in preview mode.',

@@ -47,9 +47,9 @@ return [
 
     'actions' => [
         'preview' => 'اعرض الشهادة',
-        'download_pdf' => 'حمّل الشهادة PDF',
-        'copy_verify_url' => 'انسخ رابط التحقق',
-        'share_linkedin' => 'شاركها على لينكدإن',
+        'download_pdf' => 'تنزيل الشهادة PDF',
+        'copy_verify_url' => 'نسخ رابط التحقق',
+        'share_linkedin' => 'مشاركة على لينكدإن',
     ],
 
     'eligibility' => [
@@ -80,11 +80,11 @@ return [
     'issued_on' => 'تاريخ الإصدار',
     'final_score' => 'الدرجة النهائية',
 
-    'download_pdf' => 'حمّل الشهادة PDF',
+    'download_pdf' => 'تنزيل الشهادة PDF',
     'print_note' => 'اطبع هذه الصفحة، أو احفظها PDF من نافذة الطباعة — واختر الاتجاه الأفقي. الرمز يفتح صفحة التحقّق العامة.',
     'qr_alt' => 'رمز يفتح صفحة التحقّق العامة من هذه الشهادة',
-    'copy_verify_link' => 'انسخ رابط التحقق',
-    'share_linkedin' => 'شاركها على لينكدإن',
+    'copy_verify_link' => 'نسخ رابط التحقق',
+    'share_linkedin' => 'مشاركة على لينكدإن',
     'share_text' => 'أتممت البرنامج التأسيسي في الذكاء الاصطناعي من مركز أثر للتدريب.',
 
     'public_verify_title' => 'رابط تحقق عام',
@@ -164,10 +164,10 @@ return [
 
     'admin' => [
         'title' => 'إصدار الشهادات',
-        'issue_one' => 'أصدر الشهادة',
-        'issue_all_eligible' => 'أصدر لكل المستوفين',
-        'revoke' => 'اسحب الشهادة',
-        'reissue' => 'أعد الإصدار',
+        'issue_one' => 'إصدار الشهادة',
+        'issue_all_eligible' => 'إصدار الشهادات للمستوفين',
+        'revoke' => 'سحب الشهادة',
+        'reissue' => 'إعادة الإصدار',
         'eligible_list' => 'المستوفون للشروط',
         'not_eligible_list' => 'غير المستوفين وأسباب ذلك',
         'reasons_column' => 'ما ينقصه',
@@ -177,7 +177,7 @@ return [
         'select_candidate' => 'حدّد :name للإصدار',
         'revoke_reason' => 'سبب السحب',
         'revoke_reason_hint' => 'يُسجَّل السبب في سجل التدقيق، وتعرض صفحة التحقق أن الشهادة ملغاة.',
-        'override' => 'تجاوز الشروط يدويًا',
+        'override' => 'تجاوز يدوي للشروط',
         'override_reason' => 'سبب التجاوز',
         'override_reason_hint' => 'يُسجَّل السبب في سجل التدقيق، ولا يمكن الإصدار بدونه.',
         'issued_count' => 'أُصدرت :count شهادة.',

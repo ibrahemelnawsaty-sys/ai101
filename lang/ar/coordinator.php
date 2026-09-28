@@ -33,7 +33,7 @@ return [
         'attention_queue_empty_body' => 'لا توجد جلسة قادمة تنقصها رابط أو موقع في الوقت الحالي.',
         'attention_queue_online' => 'جلسة عن بُعد بلا رابط',
         'attention_queue_in_person' => 'جلسة حضورية بلا موقع',
-        'attention_queue_action' => 'أكمل البيانات',
+        'attention_queue_action' => 'إكمال البيانات',
     ],
 
 ];

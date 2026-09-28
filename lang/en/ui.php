@@ -68,6 +68,11 @@ return [
         'close_drawer' => 'Close panel',
     ],
 
+    'confirm' => [
+        'cancel' => 'Go back',
+        'reason' => 'Reason',
+    ],
+
     'tabs' => [
         'label' => 'Tabs',
     ],

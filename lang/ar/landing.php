@@ -17,11 +17,11 @@ return [
      |---------------------------------------------------------------*/
     'meta' => [
         'brand_alt' => 'مركز أثر للتدريب',
-        'skip_to_content' => 'تخطَّ إلى المحتوى',
+        'skip_to_content' => 'تخطّي إلى المحتوى',
         'page_sections' => 'أقسام الصفحة',
         'page_trail' => 'مسار الصفحة',
-        'open_menu' => 'افتح قائمة التنقل',
-        'close_menu' => 'أغلق قائمة التنقل',
+        'open_menu' => 'فتح قائمة التنقل',
+        'close_menu' => 'إغلاق قائمة التنقل',
     ],
 
     'nav' => [
@@ -33,15 +33,15 @@ return [
         'certificates' => 'الشهادات',
         'faq' => 'الأسئلة الشائعة',
         'login' => 'تسجيل الدخول',
-        'register' => 'سجّل الآن',
+        'register' => 'التسجيل',
     ],
 
     'hero' => [
-        'register' => 'سجّل الآن',
+        'register' => 'التسجيل في البرنامج',
         // D-108 — a visitor already signed in sees this instead of a
         // register button on both CTAs of this page (hero and final).
-        'go_to_dashboard' => 'اذهب إلى لوحتي',
-        'try_lab' => 'جرّب تدريب نموذج الآن',
+        'go_to_dashboard' => 'الانتقال إلى لوحتي',
+        'try_lab' => 'تجربة تدريب نموذج',
         'countdown_title' => 'يغلق التسجيل خلال',
         'days' => 'يوم',
         'hours' => 'ساعة',
@@ -55,7 +55,7 @@ return [
         'registration_closed_body' => 'اترك بريدك وسنراسلك أول ما تُفتح الدفعة القادمة، قبل الإعلان العام.',
         'waitlist_email' => 'بريدك الإلكتروني',
         'waitlist_email_placeholder' => 'name@example.com',
-        'waitlist_submit' => 'أشعرني بالدفعة القادمة',
+        'waitlist_submit' => 'إشعاري بالدفعة القادمة',
         'waitlist_done' => 'وصلنا بريدك. سنراسلك أول ما تُفتح الدفعة القادمة.',
     ],
 
@@ -76,10 +76,10 @@ return [
         'epochs' => 'دورات التدريب',
         'note' => 'هذا مصنّف خطّي بسيط يُدرَّب في متصفحك — بلا خادم وبلا مكتبة. جرّب أن تضع الفئتين متداخلتين وشاهد الدقّة تنخفض: هذه أول درس في حدود النماذج.',
         'seed' => 'مثال جاهز',
-        'clear' => 'امسح الكل',
+        'clear' => 'مسح الكل',
         'unavailable' => 'متصفحك لا يدعم هذه اللوحة التفاعلية. لا يؤثر ذلك على تسجيلك ولا على البرنامج نفسه.',
-        'add_a' => 'أضف مثالًا إلى الفئة الأولى',
-        'add_b' => 'أضف مثالًا إلى الفئة الثانية',
+        'add_a' => 'إضافة مثال إلى الفئة الأولى',
+        'add_b' => 'إضافة مثال إلى الفئة الثانية',
     ],
 
     /* ---------------------------------------------------------------
@@ -222,7 +222,7 @@ return [
         // price itself does not belong here either: there is no price column to
         // source it from, and a figure frozen into a translation file is a
         // figure nobody can correct without a deploy (D-60).
-        'register' => 'سجّل الآن',
+        'register' => 'التسجيل في البرنامج',
         'ask' => 'لديّ سؤال أولًا',
         'seats_booked_suffix' => 'مقعدًا محجوزة',
     ],
@@ -233,7 +233,7 @@ return [
         'terms' => 'الشروط والأحكام',
         'privacy' => 'سياسة الخصوصية',
         'rights' => 'مركز أثر للتدريب. جميع الحقوق محفوظة.',
-        'whatsapp' => 'تواصل معنا عبر واتساب',
+        'whatsapp' => 'التواصل عبر واتساب',
         'whatsapp_message' => 'السلام عليكم، لديّ استفسار عن :program.',
     ],
 
@@ -244,10 +244,10 @@ return [
         'loading_label' => 'يجري تحميل محتوى الصفحة',
         'empty_page_title' => 'لم يُنشر أي برنامج بعد',
         'empty_page_body' => 'محتوى البرنامج يُدار من لوحة الإدارة، ولم يُنشر بعد. عُد بعد قليل أو راسلنا وسنخبرك فور فتح التسجيل.',
-        'empty_page_action' => 'راسلنا',
+        'empty_page_action' => 'التواصل معنا',
         'error_title' => 'تعذّر عرض محتوى الصفحة',
         'error_body' => 'حدث خلل مؤقت عند جلب محتوى البرنامج. حدّث الصفحة بعد لحظات، وإن تكرّر الأمر راسلنا وسنساعدك.',
-        'error_action' => 'حدّث الصفحة',
+        'error_action' => 'تحديث الصفحة',
         'empty_goals' => 'لم تُضَف أهداف البرنامج بعد.',
         'empty_audience' => 'لم تُحدَّد الفئات المستهدفة بعد.',
         'empty_weeks' => 'لم يُضَف محتوى الأسابيع بعد.',

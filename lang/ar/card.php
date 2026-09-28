@@ -10,7 +10,7 @@
 
 return [
 
-    'print' => 'اطبع البطاقة أو احفظها PDF',
+    'print' => 'طباعة البطاقة أو حفظها PDF',
     'print_note' => 'اطبع هذه الصفحة أو احفظها بصيغة PDF من نافذة الطباعة. رمز الاستجابة يفتح صفحة التحقق العامة.',
     // The printable sheet's own heading and its expiry row. Both were read
     // by resources/views/participant/card-print.blade.php and neither

@@ -19,9 +19,9 @@ return [
     'filter_type' => 'نوع الجلسة',
     'filter_attendance' => 'حالة الحضور',
 
-    'export_ics' => 'صدّر الجدول لتقويمك',
-    'export_pdf' => 'حمّل الجدول PDF',
-    'add_to_calendar' => 'أضف إلى تقويمي',
+    'export_ics' => 'تصدير الجدول إلى التقويم',
+    'export_pdf' => 'تنزيل الجدول PDF',
+    'add_to_calendar' => 'إضافة إلى التقويم',
 
     'session_count' => '{0} بلا جلسات|{1} جلسة واحدة|{2} جلستان|[3,10] :count جلسات|[11,*] :count جلسة',
     'current_week' => 'الأسبوع الحالي',

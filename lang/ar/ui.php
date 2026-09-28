@@ -36,7 +36,7 @@ return [
 
     'search' => [
         'label' => 'ابحث',
-        'clear' => 'امسح البحث',
+        'clear' => 'مسح البحث',
         'typing_hint' => 'تبدأ النتائج بالظهور بعد توقفك عن الكتابة.',
     ],
 
@@ -65,7 +65,7 @@ return [
         'label' => 'التنقل بين الصفحات',
         'previous' => 'الصفحة السابقة',
         'next' => 'الصفحة التالية',
-        'goto' => 'اذهب إلى الصفحة :page',
+        'goto' => 'الصفحة :page',
         'current' => 'الصفحة الحالية، الصفحة :page',
         'summary' => 'تعرض :from إلى :to من أصل :total',
         'summary_single' => 'تعرض نتيجة واحدة',
@@ -84,7 +84,7 @@ return [
         'hint' => 'الصيغ المقبولة: :types · الحد الأقصى لكل ملف :limit ميجابايت.',
         'hint_types' => 'الصيغ المقبولة: :types.',
         'hint_size' => 'الحد الأقصى لكل ملف :limit ميجابايت.',
-        'remove' => 'أزل هذا الملف',
+        'remove' => 'إزالة الملف',
         'selected_files' => 'الملفات المختارة',
         'too_large' => 'حجم هذا الملف يتجاوز الحد المسموح.',
         'preview' => 'معاينة الملف',
@@ -100,7 +100,7 @@ return [
 
     'toast' => [
         'region' => 'رسائل النظام',
-        'dismiss' => 'أخفِ هذه الرسالة',
+        'dismiss' => 'إخفاء الرسالة',
     ],
 
     /*
@@ -110,8 +110,20 @@ return [
     */
 
     'dialog' => [
-        'close' => 'أغلق النافذة',
-        'close_drawer' => 'أغلق اللوحة',
+        'close' => 'إغلاق النافذة',
+        'close_drawer' => 'إغلاق اللوحة',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmation step (D-127)
+    |--------------------------------------------------------------------------
+    | The buttons of <x-ui.confirm> are named for the action by the caller; only
+    | the way back and the reason field are shared.
+    */
+    'confirm' => [
+        'cancel' => 'تراجع',
+        'reason' => 'السبب',
     ],
 
     /*
