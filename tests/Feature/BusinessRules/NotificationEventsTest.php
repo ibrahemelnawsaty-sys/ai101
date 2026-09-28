@@ -246,13 +246,14 @@ it('D-77: إلغاء جلسة يُعلَن للدفعة بسببه مرة واح
     freezeAt(riyadhAt('2026-10-01 12:00:00'));
     Mail::fake();
     $cohort = makeCohort();
-    $trainer = makeTrainer($cohort);
+    // D-109 — cancelling a session is the coordinator's (or the supervisor's), no longer the trainer's.
+    $coordinator = makeCoordinator($cohort);
     $participant = makeParticipant($cohort);
     $session = sessionInCohort($cohort, riyadhAt('2026-10-05 18:00:00'), riyadhAt('2026-10-05 21:00:00'), ['title' => 'CANARY-SESSION']);
 
     $reason = 'The trainer is travelling for a conference.';
-    $this->actingAs($trainer)->post(route('trainer.sessions.cancel', $session), ['cancel_reason' => $reason]);
-    $this->actingAs($trainer)->post(route('trainer.sessions.cancel', $session), ['cancel_reason' => $reason]);
+    $this->actingAs($coordinator)->post(route('trainer.sessions.cancel', $session), ['cancel_reason' => $reason]);
+    $this->actingAs($coordinator)->post(route('trainer.sessions.cancel', $session), ['cancel_reason' => $reason]);
 
     Mail::assertQueued(AtharLetter::class, fn (AtharLetter $l): bool => $l->copyKey === 'emails.session_cancelled'
         && $l->hasTo($participant->email)

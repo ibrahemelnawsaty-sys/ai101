@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 /**
- * The coordinator role (D-105): responsible for attendance only, on the
- * cohorts they were explicitly assigned to — never session, resource or
- * cohort management, and never a cohort nobody attached them to.
+ * The coordinator role (D-105): responsible for attendance, on the cohorts they
+ * were explicitly assigned to — never resource or cohort management, and never a
+ * cohort nobody attached them to. D-109 later widened it, by the owner's explicit
+ * answer, to the whole session schedule (create, edit, cancel); the trainer
+ * became view-only there.
  *
- * @see D-105 · CONSTITUTION Art. 22
+ * @see D-105, D-109 · CONSTITUTION Art. 22
  */
 
 use App\Enums\SessionDeliveryMode;
@@ -38,19 +40,28 @@ it('D-105: 403 — المنسّق لا يصل دفعة لم يُسنَد إلي�
         ->assertForbidden();
 });
 
-it('D-105: 403 — المنسّق لا ينشئ جلسة رغم وصوله لتحضيرها', function (): void {
+it('D-109 (وسّع D-105): المنسّق ينشئ جلسة في دفعته، والمدرب لا ينشئها', function (): void {
+    $payload = static fn (string $topic): array => [
+        'topic' => $topic,
+        'type' => 'training',
+        'date' => '2026-10-20',
+        'start_time' => '17:00',
+        'end_time' => '19:00',
+        'delivery_mode' => 'online',
+    ];
+
     $this->actingAs($this->coordinator)
-        ->post(route('trainer.sessions.store', ['cohort' => $this->cohort->id]), [
-            'topic' => 'CANARY-COORDINATOR-SESSION',
-            'type' => 'training',
-            'date' => '2026-10-20',
-            'start_time' => '17:00',
-            'end_time' => '19:00',
-            'delivery_mode' => 'online',
-        ])
+        ->post(route('trainer.sessions.store', ['cohort' => $this->cohort->id]), $payload('CANARY-COORDINATOR-SESSION'))
+        ->assertSessionHasNoErrors();
+
+    expect(Session::query()->where('topic', 'CANARY-COORDINATOR-SESSION')->exists())->toBeTrue();
+
+    // The other half of D-109: the trainer reads the schedule and does not write it.
+    $this->actingAs(makeTrainer($this->cohort))
+        ->post(route('trainer.sessions.store', ['cohort' => $this->cohort->id]), $payload('CANARY-TRAINER-SESSION'))
         ->assertForbidden();
 
-    expect(Session::query()->where('topic', 'CANARY-COORDINATOR-SESSION')->exists())->toBeFalse();
+    expect(Session::query()->where('topic', 'CANARY-TRAINER-SESSION')->exists())->toBeFalse();
 });
 
 it('D-105: 403 — المنسّق لا يؤرشف موردًا رغم وصوله للدفعة', function (): void {

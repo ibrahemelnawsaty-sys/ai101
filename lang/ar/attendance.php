@@ -31,6 +31,7 @@ return [
     'check_out_opens_in' => 'يُفتح تسجيل الانصراف بعد',
     'check_in_closed' => 'انتهى وقت تسجيل الحضور',
     'check_out_closed' => 'انتهى وقت تسجيل الانصراف',
+    'check_out_after_check_in' => 'الانصراف بعد تسجيل الحضور',
     'checked_in_at' => 'سجّلت حضورك الساعة :time',
     'checked_out_at' => 'سجّلت انصرافك الساعة :time',
 

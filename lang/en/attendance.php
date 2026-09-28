@@ -22,6 +22,7 @@ return [
     'check_out_opens_in' => 'Check-out opens in',
     'check_in_closed' => 'Check-in has closed',
     'check_out_closed' => 'Check-out has closed',
+    'check_out_after_check_in' => 'Check-out follows check-in',
     'checked_in_at' => 'You checked in at :time',
     'checked_out_at' => 'You checked out at :time',
 

@@ -11,7 +11,6 @@ declare(strict_types=1);
  *
  * @see D-105, D-107 · CONSTITUTION Art. 22, Art. 24
  */
-
 uses()->group('authz');
 
 beforeEach(function (): void {
@@ -65,13 +64,24 @@ it('D-107: 403 — منسّق من دفعة أخرى لا يرفع رابط تس
     expect($this->session->recording_url)->toBeNull();
 });
 
-it('D-107: 403 — المنسّق لا يعدّل أي حقل آخر عبر مسار تعديل الجلسة الكامل', function (): void {
-    $response = $this->actingAs($this->coordinator)->patch(
-        route('trainer.sessions.update', $this->session),
-        ['topic' => 'CANARY', 'type' => 'training', 'date' => '2026-10-10', 'start_time' => '18:00', 'end_time' => '20:00', 'delivery_mode' => 'online'],
-    );
+it('D-109 (وسّع D-107): المنسّق يعدّل الجلسة عبر مسار التعديل الكامل، ومن خارج دفعته لا يعدّلها', function (): void {
+    $payload = ['topic' => 'CANARY', 'type' => 'training', 'date' => '2026-10-10', 'start_time' => '18:00', 'end_time' => '20:00', 'delivery_mode' => 'online'];
 
-    expect($response->status())->toBe(403);
+    // D-107 gave the coordinator the recording link alone; D-109 (the owner's
+    // answer: full authority over creating, editing and cancelling sessions)
+    // gave them the whole session, in their own cohort.
+    $this->actingAs($this->coordinator)
+        ->patch(route('trainer.sessions.update', $this->session), $payload)
+        ->assertSessionHasNoErrors();
+
+    expect($this->session->refresh()->getAttribute('title'))->toBe('CANARY');
+
+    // Never a cohort nobody attached them to (D-105 still stands).
+    $this->actingAs($this->outsiderCoordinator)
+        ->patch(route('trainer.sessions.update', $this->session), ['topic' => 'HIJACK'] + $payload)
+        ->assertForbidden();
+
+    expect($this->session->refresh()->getAttribute('title'))->toBe('CANARY');
 });
 
 it('D-107: رابط تسجيل من نطاق ليس زوم يُرفض ولا يُحفظ', function (): void {

@@ -254,7 +254,9 @@ it('D-75: المدرّب المدعوّ لا يبقى مفتاح الترحيب 
 
     $this->actingAs($trainer)->withSession([$key => true])
         ->get(route('dashboard'))
-        ->assertRedirect(route('trainer.submissions'))
+        // The trainer's own dashboard (PR-5) is where /dashboard sends them; the
+        // welcome key is what this test is about, not which trainer screen is home.
+        ->assertRedirect(route('trainer.dashboard'))
         ->assertSessionMissing($key);
 });
 

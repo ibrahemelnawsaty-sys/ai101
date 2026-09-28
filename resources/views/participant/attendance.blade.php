@@ -96,6 +96,9 @@
                                     {{ __('attendance.check_out_opens_in') }}
                                     <x-ui.countdown :until="$window->checkOutOpensAt" :server-now="$serverNow"
                                         variant="compact" :show-days="false" />
+                                @elseif ($window->checkOutAwaitsCheckIn)
+                                    {{-- D-132 — wording only: no record yet, and check-in is still ahead. --}}
+                                    {{ __('attendance.check_out_after_check_in') }}
                                 @else
                                     {{ __('attendance.check_out_closed') }}
                                 @endif

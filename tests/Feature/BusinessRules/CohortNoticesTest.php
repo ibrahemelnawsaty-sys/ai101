@@ -34,6 +34,8 @@ beforeEach(function (): void {
 
     $this->cohort = makeCohort();
     $this->trainer = makeTrainer($this->cohort);
+    // D-109 — moving a session is the supervisor's and the coordinator's; a trainer only reads it.
+    $this->coordinator = makeCoordinator($this->cohort);
     $this->participant = makeParticipant($this->cohort);
     Profile::factory()->create(['user_id' => $this->participant->id, 'first_name_ar' => 'CANARYTRAINEE']);
     Profile::factory()->create(['user_id' => $this->trainer->id, 'first_name_ar' => 'CANARYCOACH']);
@@ -244,16 +246,18 @@ it('FR-NOTIF-12: نقل موعد جلسة يُبلغ الدفعة بموعدها
         'date' => '2026-10-14',
         'start_time' => '17:00',
         'end_time' => '19:00',
+        // Required since D-105; these payloads predate it and only "passed" because a 403 leaves no errors.
+        'delivery_mode' => 'online',
     ];
 
-    $this->actingAs($this->trainer)
+    $this->actingAs($this->coordinator)
         ->patch(route('trainer.sessions.update', $session), $payload(['topic' => 'CANARY-SESSION']))
         ->assertSessionHasNoErrors();
 
     expect(bell($this->participant, 'session_changed'))->toBe(0)
         ->and(letters('emails.session_changed'))->toBe(0);
 
-    $this->actingAs($this->trainer)
+    $this->actingAs($this->coordinator)
         ->patch(route('trainer.sessions.update', $session), $payload(['date' => '2026-10-15']))
         ->assertSessionHasNoErrors();
 
@@ -269,13 +273,14 @@ it('FR-NOTIF-12: نقل موعد جلسة يُبلغ الدفعة بموعدها
 it('FR-NOTIF-12: تصحيح موعد جلسة مضت لا يُبلغ أحدًا بموعد لا يُحضَر', function (): void {
     $past = sessionInCohort($this->cohort, riyadhAt('2026-10-10 17:00:00'), riyadhAt('2026-10-10 19:00:00'), ['title' => 'CANARY-PAST']);
 
-    $this->actingAs($this->trainer)
+    $this->actingAs($this->coordinator)
         ->patch(route('trainer.sessions.update', $past), [
             'topic' => 'CANARY-PAST',
             'type' => 'training',
             'date' => '2026-10-10',
             'start_time' => '17:30',
             'end_time' => '19:00',
+            'delivery_mode' => 'online',
         ])
         ->assertSessionHasNoErrors();
 

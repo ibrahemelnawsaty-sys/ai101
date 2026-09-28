@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Schema;
 const DELETED_AT_WITHOUT_TRAIT = [
     'assignments', 'attendances', 'certificates', 'cohorts', 'digital_cards', 'enrollments',
     'evaluations', 'final_projects', 'journey_steps', 'profiles', 'programs', 'project_submissions',
-    'resources', 'sessions', 'submissions', 'threads', 'weeks',
+    'sessions', 'submissions', 'threads', 'weeks',
 ];
 
 it('D-79: عمود deleted_at وسمة SoftDeletes يتّفقان — والاختلاف الحالي كلّه مسمًّى', function (): void {

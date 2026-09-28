@@ -26,7 +26,14 @@ use Carbon\CarbonImmutable;
  * PRD §9.9.4 forbids hiding a button without saying why, so `explanation` is
  * always populated with the matching §9.9.8 sentence.
  *
- * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-07 · PRD §9.9.2, §9.9.3, §9.9.4, §9.9.8
+ * `checkOutAwaitsCheckIn` (D-132) is WORDING only. A check-out button with no
+ * record behind it is `closed` because BR-05 allows no check-out without a
+ * check-in — not because its time is over. While the participant can still
+ * check in (BR-01, D-103: S-60m to E, inclusive, or not yet open) the button says
+ * the check-out follows the check-in instead of «check-out time has ended».
+ * Nothing the rules decide reads this field.
+ *
+ * @see BR-01, BR-02, BR-03, BR-04, BR-05, BR-06, BR-07 · PRD §9.9.2, §9.9.3, §9.9.4, §9.9.8 · D-132
  */
 final class AttendanceWindowPresenter extends ViewModel
 {
@@ -44,6 +51,7 @@ final class AttendanceWindowPresenter extends ViewModel
             'canCheckOut' => false,
             'checkInState' => 'closed',
             'checkOutState' => 'closed',
+            'checkOutAwaitsCheckIn' => false,
             'checkInOpensAt' => null,
             'checkOutOpensAt' => null,
             'checkedInAt' => null,
@@ -98,6 +106,7 @@ final class AttendanceWindowPresenter extends ViewModel
             'canCheckOut' => $canCheckOut,
             'checkInState' => $checkInState,
             'checkOutState' => $checkOutState,
+            'checkOutAwaitsCheckIn' => $record === null && in_array($checkInState, ['open', 'wait'], true),
             'checkInOpensAt' => $checkInOpensAt,
             'checkOutOpensAt' => $checkOutOpensAt,
             'checkedInAt' => $checkedInAt,
