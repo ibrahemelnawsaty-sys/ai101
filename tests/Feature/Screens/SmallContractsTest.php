@@ -69,7 +69,8 @@ it('D-78: صفّ مخزَّن بنوع غير معروف لا يُصيَّر، �
 
     $this->actingAs($participant)->get(route('profile'))->assertOk()->assertDontSee('prefs[grade_published]', false);
 
-    expect(NotificationTypes::forRole('trainer'))->toEqualCanonicalizing(['submission_new', 'message_received', 'attendance_incomplete'])
+    // D-127 — and the guide reaching their cohort.
+    expect(NotificationTypes::forRole('trainer'))->toEqualCanonicalizing(['submission_new', 'message_received', 'attendance_incomplete', 'final_project_guide_published_staff'])
         // D-124 — the general supervisor hears of the support tickets that reach them.
         ->and(NotificationTypes::forRole('admin'))->toBe(['message_received', 'support_ticket_team']);
 });

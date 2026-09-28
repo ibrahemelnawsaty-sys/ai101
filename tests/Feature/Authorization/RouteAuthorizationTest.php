@@ -23,6 +23,8 @@ declare(strict_types=1);
  */
 
 use App\Models\Enrollment;
+use App\Models\FinalProjectGuide;
+use App\Models\FinalProjectGuideVersion;
 use App\Models\LandingSetting;
 use App\Models\Program;
 use App\Models\Resource;
@@ -56,7 +58,12 @@ beforeEach(function (): void {
     $this->assignment = makeAssignment($this->cohort, ['max_score' => 10]);
     $this->submission = makeSubmission($this->assignment, $this->participant);
     $this->evaluation = makeEvaluation('assignment', $this->submission->id, $this->participant, 8.0);
-    $this->finalProject = makeFinalProject($this->cohort);
+    // D-127 — available, not yet published: the primary coordinator's
+    // publish rows below must be pressable.
+    $this->finalProject = makeFinalProject($this->cohort, ['is_available' => true]);
+    // D-127 — the Arabic guide, saved and available, not yet published.
+    $this->guide = FinalProjectGuide::factory()->available()->create(['final_project_id' => $this->finalProject->id]);
+    FinalProjectGuideVersion::factory()->create(['final_project_guide_id' => $this->guide->id]);
     $this->projectSubmission = makeProjectSubmission($this->finalProject, $this->participant);
     // D-121 — one of the default hand-in fields makeFinalProject() installed.
     $this->finalProjectField = $this->finalProject->fields()->firstOrFail();
@@ -240,6 +247,16 @@ function authorizationMatrix(object $test): array
         // screen under its own coordinator.* prefix rather than shared with
         // trainer.* (D-109's sessions/attendance stay shared; this does not).
         'coordinator.dashboard' => ['get', $cohort, ['coordinator', 'admin']],
+        // D-127 — the final project tab: every coordinator of the cohort and
+        // the supervisor read it; publishing is the PRIMARY coordinator's
+        // alone (this cohort's only coordinator is its primary one), never
+        // the supervisor's.
+        'coordinator.finalProject' => ['get', $cohort, ['coordinator', 'admin']],
+        'coordinator.finalProject.publication' => ['put', [$test->finalProject, 'published' => '1'], ['coordinator']],
+        'coordinator.finalProject.guide.publication' => ['put', [$test->finalProject, 'ar', 'published' => '1'], ['coordinator']],
+        // D-127 — the guide's staff link: the supervisor always, the primary
+        // coordinator once available; a trainer only once published.
+        'finalProjectGuide.show' => ['get', [$test->finalProject, 'lang' => 'ar'], ['admin', 'coordinator']],
 
         // ---------------------------------------------------------------- admin
         'admin.dashboard' => ['get', [], ['admin']],
@@ -257,6 +274,13 @@ function authorizationMatrix(object $test): array
         'admin.finalProject.fields.update' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
         'admin.finalProject.fields.move' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
         'admin.finalProject.fields.destroy' => ['delete', [$test->finalProject, $test->finalProjectField], ['admin']],
+        // D-127 — the project's availability, the supervisor's own press.
+        'admin.finalProject.availability' => ['put', [$test->finalProject], ['admin']],
+        // D-127 — the guide's page, history, copy and availability.
+        'admin.finalProject.guide.save' => ['post', [$test->finalProject, 'ar'], ['admin']],
+        'admin.finalProject.guide.restore' => ['post', [$test->finalProject, 'ar'], ['admin']],
+        'admin.finalProject.guide.copy' => ['post', [$test->finalProject], ['admin']],
+        'admin.finalProject.guide.availability' => ['put', [$test->finalProject, 'ar'], ['admin']],
         'admin.audit.export' => ['get', [], ['admin']],
 
         'admin.programs.index' => ['get', [], ['admin']],

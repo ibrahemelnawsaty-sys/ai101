@@ -8,7 +8,11 @@
     Viewing source before unlock reveals nothing but the locked placeholder.
     Direct access to the route is answered with 403 by the policy, not by hiding markup.
 
-    @see PRD §9.14 · BR-16, BR-19 · FR-PROJ-10 · D-121
+    D-127 — the "Guide" button sits in the brief card's header, beside the
+    countdown, and opens the guide in a new tab. It exists only when the
+    controller passes $guideUrl — i.e. the policy lets this trainee read it.
+
+    @see PRD §9.14 · BR-16, BR-19 · FR-PROJ-10 · D-121, D-127
 --}}
 @extends('layouts.app')
 
@@ -45,6 +49,11 @@
         {{-- Brief -------------------------------------------------------------- --}}
         <x-ui.card class="dc--span" icon="badge" :title="$project->title">
             <x-slot:action>
+                {{-- D-127 — the guide, in a new tab; only once it is published for this trainee. --}}
+                @if ($guideUrl)
+                    <x-ui.button variant="secondary" size="sm" icon="file" :href="$guideUrl"
+                        target="_blank" rel="noopener" aria-label="{{ __('project.guide.open_label') }}">{{ __('project.guide.open') }}</x-ui.button>
+                @endif
                 <x-ui.countdown :until="$project->dueAt" :server-now="$serverNow"
                     variant="compact" :label="__('project.time_left')" />
             </x-slot:action>

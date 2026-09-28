@@ -48,9 +48,21 @@ final class FinalProjectFactory extends Factory
     public function unlocked(?User $by = null): self
     {
         return $this->state(fn (array $attributes): array => [
+            // D-127 — published implies available.
+            'is_available' => true,
+            'available_at' => Clock::now(),
             'is_unlocked' => true,
             'unlocked_at' => Clock::now(),
             'unlocked_by' => $by?->getKey() ?? User::factory()->admin(),
+        ]);
+    }
+
+    /** D-127 — made available by the general supervisor, not yet published. */
+    public function available(): self
+    {
+        return $this->state(fn (array $attributes): array => [
+            'is_available' => true,
+            'available_at' => Clock::now(),
         ]);
     }
 

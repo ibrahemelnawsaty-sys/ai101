@@ -28,8 +28,16 @@ namespace App\Support;
  */
 final class NotificationTypes
 {
-    /** Types addressed to the trainer, per PRD §9.16.1. */
-    private const TRAINER = ['submission_new', 'attendance_incomplete', 'message_received'];
+    /** Types addressed to the trainer, per PRD §9.16.1 — and the guide's publication (D-127). */
+    private const TRAINER = ['submission_new', 'attendance_incomplete', 'message_received', 'final_project_guide_published_staff'];
+
+    /**
+     * D-127 — the final project's staff notices: what the primary coordinator
+     * is asked to publish, and the guide reaching the cohort's staff. A
+     * trainee never receives them, so their screen never lists them; a
+     * coordinator's screen lists them beside everything it listed before.
+     */
+    private const COORDINATOR = ['final_project_available', 'final_project_guide_available', 'final_project_guide_published_staff'];
 
     /**
      * Types an administrator receives: messages addressed to them, and the
@@ -87,11 +95,14 @@ final class NotificationTypes
     {
         $keys = self::keys();
 
+        $trainee = array_diff($keys, array_diff(self::TRAINER, ['message_received']), self::COORDINATOR);
+
         return array_values(match ($role) {
             'admin' => array_intersect($keys, self::ADMIN),
             'system_admin' => array_intersect($keys, self::SYSTEM_ADMIN),
             'trainer' => array_intersect($keys, self::TRAINER),
-            default => array_diff($keys, array_diff(self::TRAINER, ['message_received'])),
+            'coordinator' => array_intersect($keys, array_merge($trainee, self::COORDINATOR)),
+            default => $trainee,
         });
     }
 }

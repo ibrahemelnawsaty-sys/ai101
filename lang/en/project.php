@@ -116,6 +116,23 @@ return [
         ],
     ],
 
+    /*
+     * D-127 — the guide button and the guide page's own two words.
+     */
+    'guide' => [
+        'open' => 'Guide',
+        'open_label' => 'Guide — opens the final project guide in a new tab',
+        'languages' => [
+            'ar' => 'Arabic',
+            'en' => 'English',
+        ],
+        'copied' => 'Copied',
+        // D-129 — the guide during an account preview.
+        'preview_title' => 'The guide does not open during a preview',
+        'preview_body' => 'The guide page is shown outside the platform\'s frame, where the preview banner cannot be. End the preview from the banner above, then open the guide from your own account.',
+        'press_to_copy' => 'Press Ctrl+C',
+    ],
+
     'error_title' => 'The final project could not be shown',
     'error_body' => 'Something went wrong while fetching it. Try again shortly — your submission is safe and unaffected.',
 

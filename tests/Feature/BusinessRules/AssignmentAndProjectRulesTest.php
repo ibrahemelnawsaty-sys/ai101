@@ -62,7 +62,6 @@ function finalProjectSettingsPayload(Cohort $cohort, array $overrides = []): arr
         'brief' => PROJECT_BRIEF_CANARY,
         'due_at' => '2026-11-05T23:59',
         'max_score' => 100,
-        'is_unlocked' => '1',
     ], $overrides);
 }
 
@@ -109,23 +108,46 @@ it('BR-16: لوحة التحكم كاملة لا تسرب دليل المشرو�
     }
 });
 
-it('D-109: المشرف العام يفعّل التبويب فيصل المحتوى ويُسجَّل التفعيل في سجل التدقيق', function (): void {
+it('D-127, BR-15: المشرف العام يُتيح والمنسّق الأساسي ينشر — المحتوى لا يصل قبل النشر، ويُسجَّل كل خطوة في سجل التدقيق', function (): void {
+    $coordinator = makeCoordinator($this->cohort);
+
     assertAccepted($this->actingAs($this->admin)->post(
         route('admin.finalProject.store'),
         finalProjectSettingsPayload($this->cohort),
     ));
 
+    // D-127 — saving the settings never makes it available: that is its own press.
+    expect($this->project->fresh()->is_available)->toBeFalse();
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.availability', $this->project), ['available' => '1'])
+        ->assertSessionHasNoErrors();
+
+    $fresh = $this->project->fresh();
+
+    expect($fresh->is_available)->toBeTrue()
+        ->and($fresh->available_by)->toBe($this->admin->id)
+        ->and($fresh->is_unlocked)->toBeFalse();
+
+    // Available is not open: nothing of the brief reaches the trainee yet.
+    expect($this->actingAs($this->participant)->get(route('finalProject'))->getContent())
+        ->not->toContain(PROJECT_BRIEF_CANARY);
+
+    $this->actingAs($coordinator)
+        ->put(route('coordinator.finalProject.publication', $this->project), ['published' => '1'])
+        ->assertRedirect();
+
     $fresh = $this->project->fresh();
 
     expect($fresh->is_unlocked)->toBeTrue()
-        ->and($fresh->unlocked_by)->toBe($this->admin->id)
+        ->and($fresh->unlocked_by)->toBe($coordinator->id)
         ->and($fresh->unlocked_at)->not->toBeNull();
 
-    expect(AuditLog::query()
-        ->where('entity_type', 'final_project')
-        ->where('entity_id', $this->project->id)
-        ->where('actor_id', $this->admin->id)
-        ->count())->toBe(1);
+    expect(AuditLog::query()->where('entity_type', 'final_project')->where('entity_id', $this->project->id)
+        ->where('actor_id', $this->admin->id)->pluck('action')->sort()->values()->all())
+        ->toBe(['final_project.made_available', 'final_project.updated'])
+        ->and(AuditLog::query()->where('entity_id', $this->project->id)->where('actor_id', $coordinator->id)->pluck('action')->all())
+        ->toBe(['final_project.published']);
 
     $this->actingAs($this->participant)
         ->get(route('finalProject'))
@@ -143,14 +165,21 @@ it('D-109: لا المتدرب ولا المدرب يستطيعان تفعيل �
     expect($this->project->fresh()->is_unlocked)->toBeFalse();
 });
 
-it('D-109: التفعيل يُشعر كل متدربي الدفعة', function (): void {
+it('D-127: نشر المنسّق الأساسي يُشعر كل متدربي الدفعة، والإتاحة وحدها لا تُشعرهم', function (): void {
+    $coordinator = makeCoordinator($this->cohort);
     $second = makeParticipant($this->cohort);
     Notification::query()->delete();
 
-    $this->actingAs($this->admin)->post(route('admin.finalProject.store'), finalProjectSettingsPayload($this->cohort));
+    $this->actingAs($this->admin)->put(route('admin.finalProject.availability', $this->project), ['available' => '1']);
 
     foreach ([$this->participant, $second] as $trainee) {
-        expect(Notification::query()->where('user_id', $trainee->id)->count())->toBeGreaterThan(0);
+        expect(Notification::query()->where('user_id', $trainee->id)->count())->toBe(0);
+    }
+
+    $this->actingAs($coordinator)->put(route('coordinator.finalProject.publication', $this->project), ['published' => '1']);
+
+    foreach ([$this->participant, $second] as $trainee) {
+        expect(Notification::query()->where('user_id', $trainee->id)->where('type', 'final_project_unlocked')->count())->toBe(1);
     }
 });
 

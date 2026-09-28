@@ -18,7 +18,11 @@
     D-121: the hand-in is whatever fields the general supervisor defined; the
     grading panel lists them as they were asked, with signed file links.
 
-    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23 · FR-PROJ-10 · D-109, D-110, D-121
+    D-127: a "Guide" button beside the state pill once the guide is published
+    for the cohort (FinalProjectGuidePolicy decides; the controller passes the
+    link or null).
+
+    @see PRD §9.14, §9.15 · BR-12, BR-13, BR-15, BR-16, BR-23 · FR-PROJ-10 · D-109, D-110, D-121, D-127
 --}}
 @extends('layouts.app')
 
@@ -40,6 +44,11 @@
         {{-- The brief, and the switch that opens it (BR-15, BR-16) ------------- --}}
         <x-ui.card class="dc--span" icon="badge" :title="$project->title">
             <x-slot:action>
+                {{-- D-127 — the guide, once published for this cohort; read-only. --}}
+                @if ($guideUrl)
+                    <x-ui.button variant="secondary" size="sm" icon="file" :href="$guideUrl"
+                        target="_blank" rel="noopener" aria-label="{{ __('project.guide.open_label') }}">{{ __('project.guide.open') }}</x-ui.button>
+                @endif
                 <x-ui.pill :variant="$project->isUnlocked ? 'success' : 'neutral'"
                     :icon="$project->isUnlocked ? 'check' : 'lock'">
                     {{ $project->isUnlocked ? __('trainer.final_project.state_open') : __('trainer.final_project.state_locked') }}

@@ -29,4 +29,58 @@ return [
         'attention_queue_action' => 'Complete its details',
     ],
 
+    /*
+     * D-127 — the coordinator's final-project tab.
+     */
+    'final_project' => [
+        'title' => 'Final project',
+        'intro' => 'The general supervisor enters the project and its guide and makes them available; the cohort\'s primary coordinator then publishes them to the trainees. Other coordinators and the trainers only read.',
+        'no_cohort_title' => 'No cohort assigned to you yet',
+        'no_cohort_body' => 'Your cohort\'s final project appears here once one is assigned to you.',
+        'no_project_title' => 'This cohort has no final project yet',
+        'no_project_body' => 'The general supervisor enters it from the admin panel; it appears here for you to publish once made available.',
+        'error_title' => 'The final project could not be shown',
+        'error_body' => 'Something went wrong while loading the project. Try again in a moment.',
+        'summary_title' => 'The project',
+        'due' => 'Hand-in deadline: :date',
+        'states' => [
+            'not_available' => 'Not made available yet',
+            'available' => 'Available — waiting for you to publish',
+            'published' => 'Published to the trainees',
+        ],
+        'guide_states' => [
+            'not_available' => 'Not made available yet',
+            'available' => 'Available — waiting for you to publish',
+            'published' => 'Published',
+        ],
+        'published_note' => ':name published it on :date',
+        'hand_ins' => '{0} No hand-ins yet|{1} One hand-in|[2,*] :count hand-ins',
+        'primary_only' => 'Publishing and unpublishing belong to the cohort\'s primary coordinator alone. You can read here.',
+        'no_primary' => 'No primary coordinator has been chosen for this cohort, so nothing can be published until the general supervisor chooses one.',
+        'waiting_available' => 'It cannot be published before the general supervisor makes it available.',
+        'publish' => 'Publish the project to the trainees',
+        'unpublish' => 'Unpublish the project',
+        'confirm_title' => 'Unpublishing the project',
+        'confirm_body' => ':count arrived from the trainees. Unpublishing locks the project for them — they no longer see its page or hand in — and earlier hand-ins are kept for the trainer to grade.',
+        'confirm_action' => 'Yes, unpublish it',
+        'guide_title' => 'Project guide',
+        'guide_intro' => 'Each language is published on its own, and English never before Arabic. A trainee sees it once both the guide and the project are published.',
+        'guide_view' => 'Read the guide',
+        'guide_view_label' => 'Read the guide — opens in a new tab',
+        'guide_publish' => 'Publish the guide',
+        'guide_unpublish' => 'Unpublish the guide',
+        'guide_needs_arabic' => 'Publish the Arabic guide first.',
+        'published' => 'The project was published; the trainees are being sent a notice and an e-mail.',
+        'unpublished' => 'The project was unpublished. Earlier hand-ins are kept.',
+        'guide_published' => 'The guide was published.',
+        'guide_unpublished' => 'The guide was unpublished.',
+        'unchanged' => 'Nothing changed — it already was as you asked; the button may have been pressed twice.',
+        'errors' => [
+            'not_available' => 'The project was not published because the general supervisor has not made it available, or withdrew it. Wait for it, or message them.',
+            'guide_not_available' => 'The guide was not published because the general supervisor has not made it available, or withdrew it. Wait for it, or message them.',
+            'needs_arabic' => 'The English guide is never published before the Arabic one. Publish the Arabic guide first.',
+            'confirm_unpublish' => 'The project has hand-ins, so unpublishing needs confirming: press "Unpublish the project", then confirm.',
+        ],
+    ],
+
 ];

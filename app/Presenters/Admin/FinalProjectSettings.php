@@ -15,7 +15,11 @@ use App\Support\ViewModel;
  * for their form controls — the same round trip every other admin settings
  * screen uses (PresentsFormValues).
  *
- * @see D-109, D-110 · PRD §9.14 · CONSTITUTION art. 11
+ * D-127 — the supervisor's box is "available for publishing" (`isAvailable`);
+ * `isUnlocked` is now read-only here: it says whether the primary coordinator
+ * has published the project, and who.
+ *
+ * @see D-109, D-110, D-127 · PRD §9.14 · CONSTITUTION art. 11
  */
 final class FinalProjectSettings extends ViewModel
 {
@@ -36,6 +40,9 @@ final class FinalProjectSettings extends ViewModel
             'isUnlocked' => false,
             'unlockedAt' => null,
             'unlockedByName' => null,
+            'isAvailable' => false,
+            'availableAt' => null,
+            'availableByName' => null,
         ]);
     }
 
@@ -43,6 +50,8 @@ final class FinalProjectSettings extends ViewModel
     {
         $unlocker = self::related($project, 'unlocker');
         $unlockerProfile = self::related($unlocker, 'profile');
+        $availabler = self::related($project, 'availabler');
+        $availablerProfile = self::related($availabler, 'profile');
 
         return new self([
             'exists' => true,
@@ -59,6 +68,11 @@ final class FinalProjectSettings extends ViewModel
             'unlockedByName' => $unlockerProfile === null
                 ? self::attr($unlocker, 'email')
                 : self::attr($unlockerProfile, 'full_name_ar'),
+            'isAvailable' => (bool) $project->getAttribute('is_available'),
+            'availableAt' => $project->getAttribute('available_at'),
+            'availableByName' => $availablerProfile === null
+                ? self::attr($availabler, 'email')
+                : self::attr($availablerProfile, 'full_name_ar'),
         ]);
     }
 }

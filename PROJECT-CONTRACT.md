@@ -66,6 +66,7 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `AttendanceStatus` | `present` · `late` · `absent` · `excused` · `incomplete` |
 | `AssignmentStatus` | `draft` · `published` |
 | `SubmissionStatus` | `submitted` · `under_review` · `graded` |
+| `PublicationOutcome` | `changed` · `unchanged` · `not_available` · `no_content` · `needs_primary_locale` — ما فعلته ضغطة «إتاحة» أو «نشر» (`D-127`) |
 | `EvaluationEntity` | `assignment` · `final_project` |
 | `JourneyStepStatus` | `locked` · `current` · `completed` |
 | `ThreadType` | `trainer_dm` · `group` · `announcement` · `direct` (`D-118`: محادثة يبدؤها شخص مع آخر) |
@@ -100,7 +101,9 @@ App\Console\Commands\*   أوامر artisan والبوابات
 | `assignments` | `max_score` · `due_at` · `allow_late` · `is_mandatory` |
 | `submissions` | فهرس `(assignment_id, user_id)` · `version` يزيد ولا يحذف السابق (BR-19) |
 | `evaluations` | `feedback` **إلزامي ≥ 10 أحرف** · قيد `0 ≤ score ≤ max_score` · `revision_reason` |
-| `final_projects` | `is_unlocked` · `unlocked_by` · `unlocked_at` |
+| `final_projects` | `is_unlocked` · `unlocked_by` · `unlocked_at` — **النشر للمتدربين**، يكتبه `ProjectPublication` وحده بضغطة المنسّق الأساسي · `is_available` · `available_at` · `available_by` (`nullOnDelete`) — **الإتاحة للنشر** من المشرف العام؛ إلغاؤها يقفل المشروع في الكتابة نفسها (`D-127`) |
+| `final_project_guides` | دليل المشروع، صفّ لكل (مشروع، لغة) **فريد** `(final_project_id, locale)` · `final_project_id` (`cascadeOnDelete`) · `locale` `ar`/`en` · `is_available` · `available_at` · `available_by` · `is_published` · `published_at` · `published_by` (`nullOnDelete`) · `announced_at` (أُشعر المتدربون) · `staff_announced_at` (أُشعر المدربون) — الكاتب الوحيد للحالة `GuidePublication` (`D-127`) |
+| `final_project_guide_versions` | صفحة الدليل، صفّ لكل حفظ لا يُعدَّل ولا يُحذف · `final_project_guide_id` (`cascadeOnDelete`) · `version` **فريد مع الدليل** — الأعلى هو المعروض · `html` longText · `sha256` · `bytes` (≤ 2 ميغابايت) · `source` `editor`/`upload`/`restore`/`copy`/`seed` · `restored_from` · `created_by` (`nullOnDelete`) — الكاتب الوحيد `GuideContent` (`D-127`) |
 | `final_project_fields` | حقول نموذج التسليم لكل مشروع (`D-121`): `final_project_id` (`cascadeOnDelete`) · `type` · `label` · `description` · `tips` JSON · `is_required` · `accepted_formats` JSON · `max_kilobytes` · `max_files` · `position` · فهرس `(final_project_id, position)` |
 | `project_submissions` | مثل `submissions` · **`answers` JSON** — عنصر لكل حقل بترتيب النموذج، يحمل **نسخة** من عنوان الحقل ونوعه مع القيمة أو الملفات (`SubmissionFields::answer()` كاتبه الوحيد، `D-121`)؛ أعمدة `D-110` القديمة باقية ولا تُكتب · **`receipt_code` فريد** `FP-XXXX-XXXX` لكل نسخة (`ReceiptCodes`، `D-122`) |
 | `resources` | `download_count` |
@@ -308,6 +311,11 @@ final class CertificateEligibility
 | `POST /dashboard/support/{ticket}/escalate` · `…/return` · `…/assign` | `support.escalate` · `support.return` · `support.assign` | `auth` · `verified` · `role:coordinator,admin,system_admin` · `not.impersonating` · `throttle:support` (`D-124`) — `SupportTicketPolicy::escalate/returnDown/assign` |
 | `GET /files/support-attachments/{attachment}` | `files.supportAttachment` | `auth` · `verified` · `signed` — `SupportTicketPolicy::viewAttachment` عند الوصول؛ يُعرض داخل الصفحة ويدعم التشغيل المتقطّع (`D-124`) |
 | `GET /dashboard/final-project` | `finalProject` | `auth` · `role:participant` |
+| `GET /dashboard/final-project/guide` | `finalProject.guide` | `auth` · `verified` · `role:participant` (`D-127`) — بلا معرّف: دفعة المتدرب الحالية · `FinalProjectGuidePolicy::view` (الدليل العربي منشور **والمشروع منشور**) · يُخدم بـ`GuideDocument` بسياسة أمان لا يعمل فيها إلا سكربت المنصة |
+| `GET /final-project/{project}/guide` | `finalProjectGuide.show` | `auth` · `verified` · `role:admin,coordinator,trainer` (`D-127`) — `?lang=ar|en` · `FinalProjectGuidePolicy::view`: المشرف العام دائمًا، المنسّق الأساسي منذ الإتاحة، المدرب وبقية المنسّقين بعد النشر |
+| `GET /coordinator/final-project` | `coordinator.finalProject` | `auth` · `verified` · `role:admin,coordinator` · `cohort.scope` (`D-127`) — `FinalProjectPolicy::coordinate` |
+| `PUT /coordinator/final-project/{project}/publication` | `coordinator.finalProject.publication` | نفسه · `not.impersonating` (`D-127`) — `SetFinalProjectPublicationRequest` + `FinalProjectPolicy::publish/unpublish` (المنسّق الأساسي وحده، ولا حساب مشرف عام — `D-128`؛ والإتاحة وسائر الحالة يقرّرها `ProjectPublication` برسالة لا بـ403) · الإيقاف بعد وصول تسليمات يتطلب `confirmed` |
+| `PUT /coordinator/final-project/{project}/guide/{locale}/publication` | `coordinator.finalProject.guide.publication` | نفسه · `locale` ∈ `ar`,`en` (`D-127`) — `SetFinalProjectGuidePublicationRequest` + `FinalProjectGuidePolicy::publish/unpublish` (الإنجليزي لا يُنشر قبل العربي) |
 | `GET /dashboard/final-project/receipt/{code}` | `finalProject.receipt` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` — `ProjectSubmissionPolicy::view` (صاحب التسليم · مدرب دفعته · المشرف العام)، والرمز بنمط `ReceiptCodes::PATTERN` (`D-122`) |
 | `GET /dashboard/grades` | `grades` | `auth` · `role:participant` |
 | `GET /dashboard/certificate` | `certificate` | `auth` · `role:participant` |
@@ -320,6 +328,8 @@ final class CertificateEligibility
 | `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings` |
 | `PUT /admin/registrations/intake/{cohort}` | `admin.registrations.intake` | `auth` · `role:admin` · `not.impersonating` (`D-117`) — فتح التسجيل وإغلاقه، `CohortPolicy::manageRegistrations` |
 | `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
+| `PUT /admin/final-project/{project}/availability` | `admin.finalProject.availability` | `auth` · `role:admin` · `not.impersonating` (`D-127`) — `SetFinalProjectAvailabilityRequest` + `FinalProjectPolicy::update` · إلغاء إتاحة مشروع منشور فيه تسليمات يتطلب `confirmed` · حفظ الإعدادات (`admin.finalProject.store`) لا يمسّ الإتاحة |
+| `POST /admin/final-project/{project}/guide/{locale}` · `…/restore` · `PUT …/availability` · `POST /admin/final-project/{project}/guide/copy` | `admin.finalProject.guide.save` · `.restore` · `.availability` · `.copy` | `auth` · `role:admin` · `not.impersonating` · والحفظ `throttle:upload` (`D-127`) — `SaveFinalProjectGuideRequest` (نص أو ملف `.html` يُفحص نوعه من محتواه، ≤ 2 ميغابايت، UTF-8، يقرؤه محلّل HTML `GuidePageDom`، بلا ما يغادر الصفحة وحده `GuidePageSafety`، بلا أصفر `GuidePageColours`) · `RestoreFinalProjectGuideRequest` · `SetFinalProjectGuideAvailabilityRequest` · `CopyFinalProjectGuideRequest` + `FinalProjectPolicy::update` |
 | `POST /admin/final-project/{project}/fields` | `admin.finalProject.fields.store` | `auth` · `role:admin` · `not.impersonating` (`D-121`) — `SaveFinalProjectFieldRequest` + `FinalProjectPolicy::update` |
 | `PATCH /admin/final-project/{project}/fields/{field}` · `…/move` · `DELETE …` | `admin.finalProject.fields.update` · `.move` · `.destroy` | نفسه · ربط الحقل مقيَّد بمشروعه (`scopeBindings`) · `FinalProjectFieldPolicy` (`D-121`) |
 | `GET /files/project-submissions/{projectSubmission}/answers/{answer}/{index}` | `files.projectSubmissionAnswer` | `auth` · `verified` · `signed` — `ProjectSubmissionPolicy::download` عند الوصول (`D-80` · `D-121`) |

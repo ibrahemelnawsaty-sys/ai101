@@ -15,7 +15,13 @@
     prompt (?remove={id}). Every figure and every decision here comes from
     SubmissionFieldsPanel; every write goes through its own policy.
 
-    @see PRD §9.14 · BR-15, BR-16, BR-23, BR-31 · D-109, D-110, D-121
+    D-127 — the last box makes the project AVAILABLE; publishing it is the
+    cohort's primary coordinator's press. Under the settings, the guide card:
+    each language's state, preview and availability, a copy from another
+    cohort, and on ?guide=ar|en the editor with its paged history. Every figure
+    comes from FinalProjectGuidePanel.
+
+    @see PRD §9.14 · BR-15, BR-16, BR-23, BR-31 · D-109, D-110, D-121, D-127
 --}}
 @extends('layouts.app')
 
@@ -52,11 +58,27 @@
             <x-ui.card class="dc--span u-mt-4" icon="spark"
                 :title="$settings->exists ? $settings->title : __('admin.final_project.title')">
 
-                @if ($settings->isUnlocked)
+                @if ($settings->exists)
                     <x-slot:action>
-                        <x-ui.pill variant="success" icon="check">{{ __('trainer.final_project.state_open') }}</x-ui.pill>
+                        @if ($settings->isUnlocked)
+                            <x-ui.pill variant="success" icon="check">{{ __('admin.final_project.states.published') }}</x-ui.pill>
+                        @elseif ($settings->isAvailable)
+                            <x-ui.pill variant="info" icon="clock">{{ __('admin.final_project.states.available') }}</x-ui.pill>
+                        @else
+                            <x-ui.pill variant="neutral" icon="lock">{{ __('admin.final_project.states.not_available') }}</x-ui.pill>
+                        @endif
                     </x-slot:action>
                 @endif
+
+                @unless ($hasPrimaryCoordinator)
+                    <div class="note note--warn" role="status">
+                        <x-ui.icon name="warn" />
+                        <p>
+                            {{ __('admin.final_project.no_primary_coordinator') }}
+                            <a href="{{ route('admin.cohorts.index') }}">{{ __('admin.final_project.no_primary_coordinator_action') }}</a>
+                        </p>
+                    </div>
+                @endunless
 
                 <form method="POST" action="{{ route('admin.finalProject.store') }}">
                     @csrf
@@ -88,10 +110,26 @@
                         :label="__('admin.final_project.fields.allow_late')"
                         :hint="__('admin.final_project.allow_late_hint')" />
 
-                    <x-ui.checkbox name="is_unlocked" value="1"
-                        :checked="old('is_unlocked', $settings->isUnlocked)"
-                        :label="__('admin.final_project.fields.is_unlocked')"
-                        :hint="__('admin.final_project.is_unlocked_hint')" />
+                    <div class="row__acts">
+                        <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
+                    </div>
+                </form>
+
+                {{-- D-127 · availability: its own press, never part of the save above --}}
+                <h3 class="abrief__sub" id="availability">{{ __('admin.final_project.availability_title') }}</h3>
+                @if (! $settings->exists)
+                    <p class="form__note">{{ __('admin.final_project.availability_save_first') }}</p>
+                @else
+                    <p class="form__note">{{ __('admin.final_project.is_available_hint') }}</p>
+
+                    @if ($settings->isAvailable && $settings->availableByName)
+                        <p class="footnote">
+                            {{ __('admin.final_project.available_note', [
+                                'name' => $settings->availableByName,
+                                'date' => \App\Support\Dates::dateTime($settings->availableAt),
+                            ]) }}
+                        </p>
+                    @endif
 
                     @if ($settings->isUnlocked && $settings->unlockedByName)
                         <p class="footnote">
@@ -102,11 +140,59 @@
                         </p>
                     @endif
 
-                    <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
-                    </div>
-                </form>
+                    @if (! $settings->isAvailable)
+                        <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}" class="row__acts">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="available" value="1">
+                            <x-ui.button variant="primary" type="submit" icon="check">{{ __('admin.final_project.make_available') }}</x-ui.button>
+                        </form>
+                    @elseif ($settings->isUnlocked && $handInCount > 0 && ! $confirmingWithdraw)
+                        <div class="row__acts">
+                            <x-ui.button variant="secondary" icon="lock"
+                                :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'confirm' => 'withdraw']).'#availability'">{{ __('admin.final_project.withdraw') }}</x-ui.button>
+                        </div>
+                    @elseif (! $confirmingWithdraw)
+                        <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}" class="row__acts">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="available" value="0">
+                            <x-ui.button variant="secondary" type="submit" icon="lock">{{ __('admin.final_project.withdraw') }}</x-ui.button>
+                        </form>
+                    @endif
+
+                    @error('confirmed')
+                        <p class="ui-field__error" role="alert">{{ $message }}</p>
+                    @enderror
+                @endif
             </x-ui.card>
+
+            {{-- Confirming a withdrawal that locks a project with hand-ins ------- --}}
+            @if ($confirmingWithdraw)
+                <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('admin.final_project.confirm_withdraw_title')">
+                    <div class="note note--warn" role="alert">
+                        <x-ui.icon name="warn" />
+                        <p>{{ __('admin.final_project.confirm_withdraw_body', ['count' => $handInLabel]) }}</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="available" value="0">
+                        <input type="hidden" name="confirmed" value="1">
+                        <div class="row__acts">
+                            <x-ui.button variant="danger" type="submit">{{ __('admin.final_project.confirm_withdraw_action') }}</x-ui.button>
+                            <x-ui.button variant="ghost"
+                                :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#availability'">{{ __('app.cancel') }}</x-ui.button>
+                        </div>
+                    </form>
+                </x-ui.card>
+            @endif
+
+            {{-- D-127 · the guide --------------------------------------------------- --}}
+            @if ($guidePanel !== null)
+                @include('admin.partials.final-project-guide', ['guidePanel' => $guidePanel])
+            @endif
 
             {{-- D-121 · the hand-in form's fields --------------------------------- --}}
             @if ($fieldsPanel === null)

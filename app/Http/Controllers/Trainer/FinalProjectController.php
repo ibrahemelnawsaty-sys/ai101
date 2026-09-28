@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreProjectEvaluationRequest;
 use App\Models\FinalProject;
+use App\Models\FinalProjectGuide;
 use App\Models\ProjectSubmission;
 use App\Presenters\Trainer\FinalProjectBrief;
 use App\Presenters\Trainer\ProjectSubmissionRow;
@@ -32,7 +33,10 @@ use Illuminate\Support\Collection;
  * The screen is handed presenters, never models: it reads `$project->isUnlocked`
  * and `$row->stateVariant`, and both are decisions taken here (art. 5).
  *
- * @see BR-12, BR-13, BR-15, BR-16, BR-23 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 6
+ * D-127 — a "Guide" button beside the project's state, once the guide is
+ * published for the cohort.
+ *
+ * @see BR-12, BR-13, BR-15, BR-16, BR-23 · PRD §9.14, §9.15 · D-127 · CONSTITUTION art. 5, art. 6
  */
 final class FinalProjectController extends Controller
 {
@@ -53,6 +57,7 @@ final class FinalProjectController extends Controller
                 'project' => FinalProjectBrief::missing(),
                 'submissions' => collect(),
                 'selected' => null,
+                'guideUrl' => null,
                 'errorState' => null,
             ]);
         }
@@ -69,8 +74,27 @@ final class FinalProjectController extends Controller
                 // so only the declared offsetGet() has a type the analyser can read.
                 static fn (ProjectSubmissionRow $row): bool => (string) $row['id'] === $selectedId,
             ),
+            'guideUrl' => $this->guideUrl($request, $project),
             'errorState' => null,
         ]);
+    }
+
+    /**
+     * D-127 — the guide for reading, once FinalProjectGuidePolicy lets this
+     * account read the Arabic page (a trainer: once it is published).
+     */
+    private function guideUrl(Request $request, FinalProject $project): ?string
+    {
+        $user = $request->user();
+
+        $guide = FinalProjectGuide::query()
+            ->where('final_project_id', $project->getKey())
+            ->where('locale', FinalProjectGuide::PRIMARY_LOCALE)
+            ->first();
+
+        return $user !== null && $guide instanceof FinalProjectGuide && $user->can('view', $guide)
+            ? route('finalProjectGuide.show', $project)
+            : null;
     }
 
     /**

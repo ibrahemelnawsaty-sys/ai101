@@ -20,7 +20,12 @@ use Illuminate\Validation\Rule;
  * for this cohort) and every edit after it, mirroring
  * Admin\LandingController's firstOrNew — a cohort has at most one project row.
  *
- * @see D-109, D-110 · PRD §9.14 · BR-15, BR-16 · CONSTITUTION Art. 5, Art. 22
+ * D-127 — the supervisor no longer opens the tab, and this save no longer
+ * touches whether the project is available: that is its own press
+ * (SetFinalProjectAvailabilityRequest), so saving a deadline from a tab opened
+ * before someone else made the project available can never lock it again.
+ *
+ * @see D-109, D-110, D-127 · PRD §9.14 · BR-15, BR-16 · CONSTITUTION Art. 5, Art. 22
  */
 final class StoreFinalProjectRequest extends FormRequest
 {
@@ -53,7 +58,6 @@ final class StoreFinalProjectRequest extends FormRequest
             'due_at' => ['required', 'date'],
             'max_score' => ['required', 'integer', 'min:1', 'max:1000'],
             'allow_late' => ['sometimes', 'boolean'],
-            'is_unlocked' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -79,11 +83,6 @@ final class StoreFinalProjectRequest extends FormRequest
         return $cohort;
     }
 
-    public function unlocks(): bool
-    {
-        return $this->boolean('is_unlocked');
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -105,7 +104,6 @@ final class StoreFinalProjectRequest extends FormRequest
             'due_at' => Clock::fromRiyadh((string) $data['due_at']),
             'max_score' => $data['max_score'],
             'allow_late' => $this->boolean('allow_late'),
-            'is_unlocked' => $this->boolean('is_unlocked'),
         ];
     }
 }

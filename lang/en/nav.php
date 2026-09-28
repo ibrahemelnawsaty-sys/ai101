@@ -95,6 +95,7 @@ return [
         'dashboard' => 'Info dashboard',
         'sessions' => 'Sessions',
         'attendance' => 'Attendance',
+        'final_project' => 'Final project',
     ],
 
     'participant' => [

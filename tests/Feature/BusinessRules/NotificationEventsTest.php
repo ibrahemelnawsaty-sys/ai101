@@ -209,28 +209,22 @@ it('BR-26: إصدار مرفوض لا يُعلن شيئًا', function (): void 
 |--------------------------------------------------------------------------
 */
 
-it('D-77: فتح المشروع الختامي يُعلَن مرة، وإعادة فتحه المفتوح لا تكتب إشعارًا ثانيًا، والإغلاق صامت', function (): void {
+it('D-77, D-127: نشر المشروع الختامي يُعلَن مرة، وإعادة نشر المنشور لا تكتب إشعارًا ثانيًا، والإيقاف صامت', function (): void {
     freezeAt(riyadhAt('2026-11-01 12:00:00'));
     Event::fake([FinalProjectUnlocked::class]);
     $cohort = makeCohort();
-    $admin = makeAdmin();
     $participant = makeParticipant($cohort);
-    makeFinalProject($cohort, ['is_unlocked' => false]);
+    $coordinator = makeCoordinator($cohort);
+    $project = makeFinalProject($cohort, ['is_unlocked' => false, 'is_available' => true]);
 
-    // D-109, D-110: opening the tab is an admin-only settings save now, not a
-    // dedicated trainer toggle — the payload carries every required field.
-    $payload = static fn (bool $unlocked): array => [
-        'cohort_id' => $cohort->id,
-        'title' => 'Final project',
-        'brief' => 'Brief',
-        'due_at' => '2026-12-01T23:59',
-        'max_score' => 100,
-        'is_unlocked' => $unlocked ? '1' : '0',
-    ];
+    // D-127: opening the tab is the primary coordinator's press now, once the
+    // general supervisor made the project available.
+    $press = fn (bool $published) => $this->actingAs($coordinator)
+        ->put(route('coordinator.finalProject.publication', $project), ['published' => $published ? '1' : '0']);
 
-    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(true));
-    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(true));
-    $this->actingAs($admin)->post(route('admin.finalProject.store'), $payload(false));
+    $press(true);
+    $press(true);
+    $press(false);
 
     Event::assertDispatchedTimes(FinalProjectUnlocked::class, 1);
     expect(Notification::query()->where('user_id', $participant->id)->where('type', 'final_project_unlocked')->count())->toBe(1);

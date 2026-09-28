@@ -23,7 +23,10 @@ use Illuminate\Support\Facades\Mail;
  * audience — not the ones who were enrolled when the trainer pressed the
  * button. See App\Services\Mail\CohortAudience.
  *
- * @see BR-11 · PRD §9.13, §9.16.1 · D-51
+ * D-127 — when the guide goes out with the project, the letter says so and its
+ * one button opens the guide itself: the owner asked for exactly that.
+ *
+ * @see BR-11 · PRD §9.13, §9.16.1 · D-51, D-127
  */
 final class SendFinalProjectUnlocked implements ShouldQueue
 {
@@ -40,11 +43,11 @@ final class SendFinalProjectUnlocked implements ShouldQueue
     {
         try {
             Mail::to((string) $user->getAttribute('email'))->send(new AtharLetter(
-                copyKey: 'emails.final_project_unlocked',
+                copyKey: $event->withGuide ? 'emails.final_project_unlocked_with_guide' : 'emails.final_project_unlocked',
                 values: [
                     'datetime' => $event->deadline,
                 ],
-                ctaUrl: route('finalProject'),
+                ctaUrl: $event->withGuide ? route('finalProject.guide') : route('finalProject'),
                 // `project.deadline` does not exist in either locale.
                 // `assignments.deadline` does, and says exactly this (D-62).
                 meta: ['assignments.deadline' => $event->deadline],
