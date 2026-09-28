@@ -14,11 +14,11 @@
 
         <x-ui.confirm
             name="suspend-{{ $user->id }}"
-            :action="route('admin.users.suspend', $user->id)"
-            :title="__('admin.users.suspend_title', ['name' => $user->name])"
-            :description="__('admin.users.suspend_body')"
-            :confirm-label="__('admin.users.suspend')"
-            trigger-label="{{ __('admin.users.suspend') }}" trigger-icon="lock"
+            :action="route('some.route', $user->id)"
+            :title="__('some.title', ['name' => $user->name])"
+            :description="__('some.body')"
+            :confirm-label="__('some.action')"
+            :trigger-label="__('some.action')" trigger-icon="lock"
             reason-name="reason" />
 
     Not a permission boundary: the form is still validated by its FormRequest and

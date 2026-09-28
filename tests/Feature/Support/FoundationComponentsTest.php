@@ -54,7 +54,7 @@ it('D-127: the confirmation dialog names the action, puts Cancel first and the a
         '<x-ui.confirm name="remove-trainer-1" action="/admin/x" method="DELETE"
             title="Remove Sara from the cohort" description="She loses access to its sessions."
             confirm-label="Remove trainer" trigger-label="Remove" trigger-icon="trash"
-            reason-name="reason" :reason-required="true" />'
+            reason-name="reason" :reason-required="true" />',
     ), ENT_QUOTES);
 
     expect($html)->toContain('role="dialog"')
@@ -78,7 +78,7 @@ it('D-127: the confirmation dialog names the action, puts Cancel first and the a
 it('D-127: a confirmation the server renders open leaves through a plain link, so it works without scripting', function (): void {
     $html = html_entity_decode(Blade::render(
         '<x-ui.confirm name="revoke-1" action="/admin/y" title="Revoke the certificate"
-            confirm-label="Revoke" :open="true" close-href="/admin/certificates" />'
+            confirm-label="Revoke" :open="true" close-href="/admin/certificates" />',
     ), ENT_QUOTES);
 
     expect($html)->toContain('href="/admin/certificates"')
