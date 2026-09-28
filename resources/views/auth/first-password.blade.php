@@ -44,7 +44,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('logout') }}" class="authcard__logout">
+            <form data-submit-guard="off" method="POST" action="{{ route('logout') }}" class="authcard__logout">
                 @csrf
                 <x-ui.button variant="primary" type="submit">{{ __('auth.first_password.expired_action') }}</x-ui.button>
             </form>
@@ -97,7 +97,7 @@
             {{-- The exit. Not hidden in a menu: this page is reachable from a
                  mailed link, and somebody who opened the wrong one must be able
                  to get out without closing the browser. --}}
-            <form method="POST" action="{{ route('logout') }}" class="authcard__logout">
+            <form data-submit-guard="off" method="POST" action="{{ route('logout') }}" class="authcard__logout">
                 @csrf
                 <x-ui.button variant="ghost" size="sm" type="submit">
                     {{ __('auth.first_password.sign_out') }}

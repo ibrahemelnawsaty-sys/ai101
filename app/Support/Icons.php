@@ -141,6 +141,12 @@ final class Icons
 
     public const PREVIEW = 'eye';
 
+    public const PRIMARY = 'star';
+
+    public const OVERRIDE = 'key';
+
+    public const REVOKE = 'ban';
+
     /**
      * Every concept id, in declaration order, for the contract test and for a
      * caller that needs to validate a value it did not write.

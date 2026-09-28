@@ -134,7 +134,7 @@
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$row->name"
                                             :href="route('trainer.participants', array_merge(request()->query(), ['view' => $row->id]))">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>
                                 </tr>

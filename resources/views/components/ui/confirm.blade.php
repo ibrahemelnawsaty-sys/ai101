@@ -30,7 +30,8 @@
       name           dialog identifier (unique on the page)
       action         where the form posts
       method         POST | PUT | PATCH | DELETE
-      title          says what is about to happen — required, it is the accessible name
+      title          says what is about to happen — it is the accessible name (falls back to
+                     the confirm label so the dialog is never unnamed)
       description    one line under the title: who is reached, what is irreversible
       confirm-label  the confirming button, named for the action
       cancel-label   default: the shared "go back" string (ui.confirm.cancel)
@@ -41,6 +42,9 @@
       trigger-icon · trigger-variant · trigger-size · trigger-icon-only
       reason-name    when given, asks for a reason (a textarea named so)
       reason-label · reason-hint · reason-required
+      reason-value   what was typed, when a failed validation re-renders this dialog — the
+                     caller passes it with `open` for THAT dialog only; the component
+                     cannot know which of several rows the error belongs to
       open           render already open (a server-rendered confirmation)
       close-href     Cancel becomes this link (clears the query string that opened it)
 
@@ -80,8 +84,10 @@
         @if ($reasonName !== null)
             <x-ui.textarea
                 :name="$reasonName"
+                :id="$formId.'-reason'"
                 :label="$reasonLabel"
                 :hint="$reasonHint"
+                :value="$reasonValue ?? ''"
                 :required="$reasonRequired"
                 :rows="3"
             />

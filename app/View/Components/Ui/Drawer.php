@@ -34,6 +34,7 @@ final class Drawer extends UiComponent
         public ?string $closeHref = null,
     ) {
         $this->open = (bool) $open;
+        $this->closeHref = self::localPath($closeHref);
         $this->dismissible = (bool) $dismissible;
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');
         $this->uid = $name ?? 'drawer-'.Str::random(6);

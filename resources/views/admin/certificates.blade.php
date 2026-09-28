@@ -199,7 +199,7 @@
                                         </ul>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="shield" variant="secondary" size="sm"
+                                        <x-ui.button icon="key" variant="secondary" size="sm"
                                             :href="route('admin.certificates.index', array_merge(request()->query(), ['override' => $person->id]))">{{ __('certificates.admin.override') }}</x-ui.button>
                                     </td>
                                 </tr>
@@ -214,7 +214,7 @@
 
         {{-- Manual override — reason mandatory and audited ------------------------------ --}}
         @if ($overriding)
-            <x-ui.card class="dc--span u-mt-4" icon="shield" :title="__('certificates.admin.override')">
+            <x-ui.card class="dc--span u-mt-4" icon="key" :title="__('certificates.admin.override')">
                 <div class="note note--warn">
                     <b>{{ $overriding->name }}</b>
                     {{ __('certificates.admin.override_reason_hint') }}
@@ -288,7 +288,7 @@
                                         <x-ui.pill :variant="$certificate->statusVariant" :icon="$certificate->statusIcon">{{ $certificate->statusLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$certificate->holderName"
                                             :href="route('certificate.verify', $certificate->verifyCode)">{{ __('app.view_details') }}</x-ui.button>
 
                                         @if ($certificate->isRevoked)
@@ -297,7 +297,7 @@
                                                 <x-ui.button icon="refresh" variant="secondary" size="sm" type="submit">{{ __('certificates.admin.reissue') }}</x-ui.button>
                                             </form>
                                         @else
-                                            <x-ui.button icon="undo" variant="danger" size="sm"
+                                            <x-ui.button icon="ban" variant="danger" size="sm"
                                                 :href="route('admin.certificates.index', array_merge(request()->query(), ['revoke' => $certificate->id]))">{{ __('certificates.admin.revoke') }}</x-ui.button>
                                         @endif
                                     </td>
@@ -330,7 +330,7 @@
                         :value="old('revoke_reason')" />
 
                     <div class="row__acts">
-                        <x-ui.button icon="undo" variant="danger" type="submit">{{ __('certificates.admin.revoke') }}</x-ui.button>
+                        <x-ui.button icon="ban" variant="danger" type="submit">{{ __('certificates.admin.revoke') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.certificates.index', request()->except('revoke'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>

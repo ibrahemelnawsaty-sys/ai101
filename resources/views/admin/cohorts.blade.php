@@ -124,7 +124,7 @@
                                     <td class="u-nowrap">
                                         {{-- One panel at a time (D-117): each link drops the others'
                                              parameters, so two forms never share a screen. --}}
-                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$cohort->name"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['trainers', 'participants']), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button icon="user-plus" variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'participants']), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
@@ -342,7 +342,7 @@
                                             @csrf
                                             @method('PUT')
                                             <input type="hidden" name="coordinator_id" value="{{ $coordinator->id }}">
-                                            <x-ui.button icon="badge" variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
+                                            <x-ui.button icon="star" variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
                                         </form>
                                     @endif
                                     <form method="POST"

@@ -7,7 +7,7 @@
     @see BR-10 · PRD §9.9.7 · D-72
 --}}
 @if ($entry->canEdit)
-    <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :href="$entry->editHref">{{ __('app.edit') }}</x-ui.button>
+    <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$entry->participantName" :href="$entry->editHref">{{ __('app.edit') }}</x-ui.button>
 @else
     <span class="u-muted">{{ __('trainer.attendance.edit_needs_record') }}</span>
 @endif

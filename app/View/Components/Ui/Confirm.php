@@ -69,6 +69,7 @@ final class Confirm extends UiComponent
         public ?string $reasonName = null,
         public ?string $reasonLabel = null,
         public ?string $reasonHint = null,
+        public ?string $reasonValue = null,
         mixed $reasonRequired = false,
         mixed $open = false,
         public ?string $closeHref = null,
@@ -85,6 +86,7 @@ final class Confirm extends UiComponent
         $this->spoof = in_array($verb, self::SPOOFED, true) ? $verb : null;
 
         $this->open = (bool) $open;
+        $this->closeHref = self::localPath($closeHref);
         $this->iconOnlyTrigger = (bool) $triggerIconOnly;
         $this->reasonRequired = (bool) $reasonRequired;
 
@@ -94,6 +96,9 @@ final class Confirm extends UiComponent
         $this->uid = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '-', $name ?? ''), '-');
         $this->uid = $this->uid !== '' ? $this->uid : 'confirm-'.Str::random(6);
         $this->formId = $this->uid.'-form';
+
+        // The title is the dialog's accessible name: never leave it empty.
+        $this->title = $title !== '' ? $title : $confirmLabel;
 
         $this->icon ??= $this->variant === 'danger' ? 'warn' : 'info';
         $this->cancelLabel ??= __('ui.confirm.cancel');

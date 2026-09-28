@@ -37,6 +37,10 @@
       directional  mirror the icons in RTL (arrows, chevrons)
       icon-only    glyph alone; needs `icon` and a name (`label` or slot text)
       label        accessible name + tooltip of an icon-only button
+      context      what the button acts ON ("the cohort's name"): a screen reader
+                   hears "Edit — <context>"; the tooltip stays the bare action.
+                   A list of identical icon-only buttons is otherwise a list of
+                   identical names (WCAG 2.4.6).
 --}}
 @props([
     'variant' => 'primary',
@@ -50,6 +54,7 @@
     'directional' => false,
     'iconOnly' => false,
     'label' => null,
+    'context' => null,
 ])
 
 @php
@@ -63,8 +68,10 @@
 
     // The name an icon-only button carries: an explicit label, else the words
     // the caller put in the slot (which are then NOT drawn beside the glyph).
-    $name = trim((string) ($label ?? strip_tags((string) $slot)));
+    // The slot arrives already escaped; decode before {{ }} escapes it once more.
+    $name = trim(html_entity_decode(strip_tags((string) ($label ?? $slot)), ENT_QUOTES));
     $glyphOnly = (bool) $iconOnly && $icon && $name !== '';
+    $spoken = $glyphOnly && filled($context) ? $name.' — '.trim(strip_tags((string) $context)) : $name;
 
     $iconClass = 'ui-icon'
         . ($size === 'sm' ? ' ui-icon--sm' : '')
@@ -92,7 +99,7 @@
         'is-loading' => $isLoading,
     ]) }}
     @if ($glyphOnly)
-        aria-label="{{ $name }}"
+        aria-label="{{ $spoken }}"
         data-tip="{{ $name }}"
     @endif
 >

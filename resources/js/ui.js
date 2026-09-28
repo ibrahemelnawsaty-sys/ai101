@@ -101,7 +101,8 @@ function uiDialog(options = {}) {
         hide() {
             if (!this.open) return;
             if (this.closeHref) {
-                window.location.assign(this.closeHref);
+                // replace, not assign: closing a panel must not add a Back step that reopens it
+                window.location.replace(this.closeHref);
                 return;
             }
             this.open = false;
@@ -746,6 +747,20 @@ export function registerAtharUi(Alpine) {
 
 document.addEventListener('alpine:init', () => {
     if (window.Alpine) registerAtharUi(window.Alpine);
+});
+
+// A tooltip must be dismissible without moving focus or the pointer (WCAG 1.4.13).
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const owner = (document.activeElement instanceof Element && document.activeElement.closest('[data-tip]'))
+        || document.querySelector('[data-tip]:hover');
+    if (!owner) return;
+
+    owner.setAttribute('data-tip-dismissed', '');
+    const clear = () => owner.removeAttribute('data-tip-dismissed');
+    owner.addEventListener('mouseleave', clear, { once: true });
+    owner.addEventListener('blur', clear, { once: true });
 });
 
 export default registerAtharUi;

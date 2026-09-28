@@ -58,8 +58,10 @@
         {{-- Says something only when the state changes in a way that matters. --}}
         <p class="ui-sr" role="status" aria-live="polite" x-text="announcement"></p>
 
+        {{-- Ending a preview is never held back by the double-submit guard (Article 23). --}}
         <form method="POST"
               action="{{ $stopUrl }}"
+              data-submit-guard="off"
               x-ref="stop">
             @csrf
             @method('DELETE')

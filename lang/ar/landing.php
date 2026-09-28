@@ -55,7 +55,7 @@ return [
         'registration_closed_body' => 'اترك بريدك وسنراسلك أول ما تُفتح الدفعة القادمة، قبل الإعلان العام.',
         'waitlist_email' => 'بريدك الإلكتروني',
         'waitlist_email_placeholder' => 'name@example.com',
-        'waitlist_submit' => 'إشعاري بالدفعة القادمة',
+        'waitlist_submit' => 'إشعار بالدفعة القادمة',
         'waitlist_done' => 'وصلنا بريدك. سنراسلك أول ما تُفتح الدفعة القادمة.',
     ],
 

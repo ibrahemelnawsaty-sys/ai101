@@ -111,7 +111,7 @@
                                     </td>
                                     <td class="u-num u-ltr u-nowrap" dir="ltr">{{ $entry->ipAddress }}</td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$entry->entityLabel.' '.$entry->entityId"
                                             :href="route('admin.audit.index', array_merge(request()->query(), ['entry' => $entry->id]))">{{ __('app.view_details') }}</x-ui.button>
                                     </td>
                                 </tr>

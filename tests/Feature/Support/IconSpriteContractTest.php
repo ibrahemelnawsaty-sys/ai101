@@ -195,3 +195,26 @@ it('D-127: no rail draws two of its items with the same glyph, and none draws Se
         ->and(Icons::DASHBOARD)->not->toBe(Icons::SIDEBAR_COLLAPSE)
         ->and(Icons::ERROR)->not->toBe(Icons::WARNING);
 });
+
+it('D-127: arrows drawn the LTR way sit in a mirror group that flips under dir=rtl, so no call site can forget', function (): void {
+    $symbols = spriteSymbols();
+    $unmirrored = [];
+
+    foreach (['login', 'logout', 'send', 'undo', 'external'] as $concept) {
+        if (! str_contains($symbols['i-'.$concept] ?? '', '<g class="rtl-mirror">')) {
+            $unmirrored[] = $concept;
+        }
+    }
+
+    expect($unmirrored)->toBe([])
+        ->and((string) file_get_contents(resource_path('css/components.css')))
+        ->toContain('[dir="rtl"] .rtl-mirror { transform: matrix(-1, 0, 0, 1, 24, 0); }');
+});
+
+it('D-127: the digital card is drawn as an ID card, and primary, override and revoke each have a glyph of their own', function (): void {
+    expect(Icons::DIGITAL_CARD)->toBe('card')
+        ->and(spriteSymbols()['i-card'])->toContain('<circle cx="9" cy="11" r="2"') // the person on the card: Lucide id-card, not credit-card
+        ->and([Icons::PRIMARY, Icons::OVERRIDE, Icons::REVOKE])->each->not->toBeIn([
+            Icons::CERTIFICATE, Icons::AUDIT, Icons::UNDO,
+        ]);
+});

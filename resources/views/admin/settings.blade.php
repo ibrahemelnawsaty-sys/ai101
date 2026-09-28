@@ -138,7 +138,7 @@
                             <span>{{ $template->subject }}</span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$template->label"
                                 :href="route('admin.settings.template', $template->key)">{{ __('app.edit') }}</x-ui.button>
                         </div>
                     </div>

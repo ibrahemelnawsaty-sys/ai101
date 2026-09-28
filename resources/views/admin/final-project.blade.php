@@ -169,9 +169,9 @@
                                             <x-ui.button variant="ghost" size="sm" type="submit" icon="chevdown"
                                                 :state="$row->canMoveDown ? 'default' : 'disabled'"><span class="ui-sr">{{ $row->moveDownLabel }}</span></x-ui.button>
                                         </form>
-                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$row->label"
                                             :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => $row->id]).'#field-editor'">{{ __('app.edit') }}</x-ui.button>
-                                        <x-ui.button icon="trash" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="trash" :icon-only="true" variant="secondary" size="sm" :context="$row->label"
                                             :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'remove' => $row->id]).'#field-removal'">{{ __('admin.final_project.submission_fields.remove') }}</x-ui.button>
                                     </div>
                                 </li>

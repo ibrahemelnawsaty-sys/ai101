@@ -39,6 +39,7 @@ final class Modal extends UiComponent
         public ?string $closeHref = null,
     ) {
         $this->open = (bool) $open;
+        $this->closeHref = self::localPath($closeHref);
         $this->dismissible = (bool) $dismissible;
         $this->variant = self::oneOf($variant, ['default', 'danger', 'warning', 'success'], 'default');
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');

@@ -471,6 +471,8 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   }
   .side__collapse:hover { background: var(--surface-2); color: var(--text-strong); }
   .side__collapse svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
+  /* Collapsed, the same control opens the rail: it points the other way. */
+  .shell[data-collapsed="true"] .side__collapse svg { transform: scaleX(-1); }
 
   /* The one region that scrolls. It reaches out over the rail's side padding
      and pays it back as its own, for two reasons: the active marker hangs in

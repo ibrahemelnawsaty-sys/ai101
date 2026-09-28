@@ -291,6 +291,7 @@
   --sh-card:  0 40px 100px -40px var(--scrim-6);
   --sh-frame: 0 20px 50px -20px var(--scrim-6);
   --sh-pop:   0 16px 44px -18px var(--scrim-6);
+  --tip-text: var(--dk-1);   /* tooltip text: the bubble is ink on every shell, so its role is fixed (D-127) */
   --sh-id:    0 30px 70px -26px var(--shade-v900-85);
   --sh-av:    0 12px 30px -12px var(--violet-a70);
   --sh-wa:    0 14px 34px -10px var(--teal700-a85);
@@ -441,6 +442,7 @@
   --bw-hairline: 1px;     /* PRD §5.6 border-default — cards, tables, rules */
   --bw-icon:     1.5px;   /* PRD §5.7 — a 1.5px outline: secondary button, checkbox, text-stroke */
   --bw-glyph:    1.75px;  /* D-127 — the one stroke weight of every sprite glyph (Lucide, 24-unit grid) */
+  --bw-glyph-sm: 2.25px;  /* the same ~1.5px on screen at 16px, where 1.75 would draw ~1.2px */
   --bw-glyph-mark: 2.5px; /* the one exception: a tick inside a checkbox or radio, 12px wide */
   --bw-strong:   2px;     /* PRD §5.6 border-focus — focus ring, active tab */
   --bw-marker:   3px;     /* an emphasis rail: active nav item, quote bar */

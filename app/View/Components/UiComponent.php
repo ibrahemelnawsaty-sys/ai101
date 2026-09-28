@@ -35,6 +35,27 @@ abstract class UiComponent extends Component
     }
 
     /**
+     * A destination on this site, or null.
+     *
+     * A panel that "closes" by navigating (`close-href`) must never be pointed
+     * at another origin or at a `javascript:` URL, whoever ends up supplying the
+     * value: only an absolute PATH is accepted (`/admin/cohorts?x=1`), never a
+     * protocol-relative `//host`, a backslash form, or a control character.
+     */
+    protected static function localPath(?string $href): ?string
+    {
+        if ($href === null || $href === '' || $href[0] !== '/') {
+            return null;
+        }
+
+        if (isset($href[1]) && ($href[1] === '/' || $href[1] === '\\')) {
+            return null;
+        }
+
+        return preg_match('/[\x00-\x1F\x7F\\\\]/', $href) === 1 ? null : $href;
+    }
+
+    /**
      * A stable DOM id: derived from the field name when there is one, random
      * when there is not, so two unnamed instances on one page never collide.
      */

@@ -101,7 +101,7 @@
                                     <td><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
                                         @if ($canManage)
-                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$assignment->title"
                                                 :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>
                                         @endif
                                         <x-ui.button variant="secondary" size="sm"

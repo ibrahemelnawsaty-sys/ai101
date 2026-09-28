@@ -59,7 +59,7 @@ return [
         'col_state' => 'الحالة',
         'col_submissions' => 'التسليمات',
         'enrolled_at' => 'تاريخ الالتحاق',
-        'view_profile' => 'عرض الملف',
+        'view_profile' => 'عرض الملف الشخصي',
         'profile_title' => 'ملف :name',
         'section_identity' => 'البيانات الأساسية',
         'section_progress' => 'الحضور والدرجات',

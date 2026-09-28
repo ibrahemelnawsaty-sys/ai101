@@ -151,7 +151,9 @@ it('D-127, المادة 23: the preview bar is a labelled region and announces o
         ->and($bar)->not->toContain('aria-live="assertive"')
         ->and($bar)->not->toContain('<p class="impbar__timer" aria-live')
         ->and($bar)->toContain('role="status" aria-live="polite" x-text="announcement"')
-        ->and($js)->toContain('announced')
+        ->and($js)->toContain('prevLeft')
+        ->and($js)->not->toContain('announced.')
+        ->and($bar)->toContain('data-submit-guard="off"')
         ->and($js)->toContain('config.fiveMinutes')
         ->and($js)->toContain('config.oneMinute');
 
@@ -168,4 +170,163 @@ it('D-127, المادة 23: the preview bar is a labelled region and announces o
     }
 
     expect($missing)->toBe([]);
+});
+
+it('D-127: a button that carries the form__submit class is a flex button, so its glyph never stacks above its label', function (): void {
+    // `.form__submit` is a grid meant for a wrapper; six auth screens put it on
+    // the button itself. Without this rule the glyph became a second grid row.
+    expect((string) File::get(resource_path('css/screens.css')))
+        ->toContain('.ui-btn.form__submit { display: flex; inline-size: 100%; }');
+});
+
+it('D-127: a panel that closes by navigating only ever navigates to a path on this site', function (): void {
+    $render = static fn (string $tag, string $href): string => html_entity_decode(
+        Blade::render($tag, ['href' => $href]),
+        ENT_QUOTES,
+    );
+
+    foreach (['//evil.example/x', '/\\evil.example', 'javascript:alert(1)', 'https://evil.example/', "/ok\nx", ''] as $bad) {
+        foreach ([
+            '<x-ui.modal name="m" title="T" :open="true" :close-href="$href">b</x-ui.modal>',
+            '<x-ui.drawer name="d" title="T" :open="true" :close-href="$href">b</x-ui.drawer>',
+            '<x-ui.confirm name="c" action="/x" title="T" confirm-label="Go" :open="true" :close-href="$href" />',
+        ] as $tag) {
+            $html = $render($tag, $bad);
+
+            expect($html)->not->toContain('evil.example')
+                ->and($html)->not->toContain('javascript:alert')
+                ->and($html)->toContain('role="dialog"');
+        }
+    }
+
+    expect($render('<x-ui.drawer name="d" title="T" :open="true" :close-href="$href">b</x-ui.drawer>', '/trainer/resources?open=3'))
+        ->toContain('href="/trainer/resources?open=3"');
+});
+
+it('D-127: the confirmation dialog is never unnamed, and a reason typed earlier is only shown where the caller says so', function (): void {
+    $html = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="c1" action="/x" confirm-label="Remove trainer" reason-name="reason" />
+         <x-ui.confirm name="c2" action="/x" title="Remove Sara" confirm-label="Remove" reason-name="reason" reason-value="She left" :open="true" />',
+    ), ENT_QUOTES);
+
+    // No title given: the confirm label is the accessible name.
+    expect($html)->toContain('aria-labelledby="c1-title"')
+        ->and($html)->toContain('Remove trainer')
+        // Only the dialog the caller re-renders carries the typed reason.
+        ->and(substr_count($html, 'She left'))->toBe(1);
+});
+
+it('D-127: the submit guard also lets go of a button that lives outside its form, and a busy button stays named', function (): void {
+    $guard = (string) File::get(resource_path('js/submit-guard.js'));
+    $css = (string) File::get(resource_path('css/components.css'));
+
+    // <button form="id"> in the confirmation footer is not a descendant of the form.
+    expect($guard)->toContain("document.querySelectorAll('.ui-btn.is-loading')")
+        ->and($guard)->toContain('button.form !== form')
+        ->and($guard)->not->toContain("form.querySelectorAll('.ui-btn.is-loading')");
+
+    // states.css hides every child of .is-loading; a busy button must not go blank.
+    expect($css)->toContain('.ui-btn.is-loading > * { visibility: visible; }');
+});
+
+it('D-127: ending a preview and logging out are never held back by the double-submit guard', function (): void {
+    $stopForm = (string) File::get(resource_path('views/components/layout/impersonation-bar.blade.php'));
+
+    expect($stopForm)->toContain('data-submit-guard="off"');
+
+    $missing = [];
+
+    foreach ([
+        'components/layout/header',
+        'components/layout/sidebar',
+        'auth/first-password',
+        'auth/verify-email-notice',
+    ] as $view) {
+        preg_match_all('/<form[^>]*logout[^>]*>/', (string) File::get(resource_path("views/{$view}.blade.php")), $forms);
+
+        foreach ($forms[0] as $form) {
+            if (! str_contains($form, 'data-submit-guard="off"')) {
+                $missing[] = "{$view}: {$form}";
+            }
+        }
+    }
+
+    expect($missing)->toBe([]);
+});
+
+it('D-127: an icon-only button in a list says WHICH row it acts on, and never double-escapes its name', function (): void {
+    $html = Blade::render('<x-ui.button icon="pencil" :icon-only="true" label="Edit" context="Cohort A">x</x-ui.button>');
+
+    // Read aloud: "Edit — Cohort A". Seen on hover: just "Edit".
+    expect(html_entity_decode($html, ENT_QUOTES))->toContain('aria-label="Edit — Cohort A"')
+        ->and($html)->toContain('data-tip="Edit"');
+
+    $escaped = Blade::render('<x-ui.button icon="pencil" :icon-only="true">{{ $t }}</x-ui.button>', ['t' => "Q&A's"]);
+
+    expect($escaped)->toContain('aria-label="Q&amp;A&#039;s"')
+        ->and($escaped)->not->toContain('&amp;amp;');
+});
+
+it('D-127: every icon-only button that sits in a list carries its row as context', function (): void {
+    $missing = [];
+
+    foreach (File::allFiles(resource_path('views')) as $file) {
+        $relative = str_replace(resource_path('views').'/', '', $file->getPathname());
+
+        // The components define the prop; the digital card's two buttons act on the page, not on a row.
+        if (str_starts_with($relative, 'components/') || $relative === 'participant/card.blade.php') {
+            continue;
+        }
+
+        foreach (explode('<x-ui.button', (string) File::get($file->getPathname())) as $index => $chunk) {
+            $tag = explode('</x-ui.button>', $chunk)[0];
+
+            if ($index > 0 && str_contains($tag, ':icon-only="true"') && ! str_contains($tag, ':context=')) {
+                $missing[] = $relative.': '.trim(substr($tag, 0, 90));
+            }
+        }
+    }
+
+    expect($missing)->toBe([]);
+});
+
+it('D-127: the tooltip leaves no box behind when hidden, hangs inward inside a scrolling table, and yields to Esc', function (): void {
+    $css = (string) File::get(resource_path('css/components.css'));
+    $js = (string) File::get(resource_path('js/ui.js'));
+
+    preg_match('/\[data-tip\]::after \{(.*?)\n\}/s', $css, $rule);
+
+    // A `visibility:hidden` box still widens a scroll container; `display:none` does not.
+    expect($rule[1] ?? '')->toContain('display: none;')
+        ->and($rule[1] ?? '')->not->toContain('visibility: hidden')
+        ->and($css)->toContain('[data-tip]:hover::after,')
+        ->and($css)->toContain('.tscroll [data-tip]::after { inset-inline-start: auto; inset-inline-end: 0; translate: none; }')
+        ->and($css)->toContain('[data-tip][data-tip-dismissed]::after { display: none; }')
+        ->and($js)->toContain("event.key !== 'Escape'")
+        ->and($js)->toContain('data-tip-dismissed');
+});
+
+it('D-127: a panel the server renders open is visible with scripting off; one that starts closed is cloaked', function (): void {
+    foreach (['modal', 'drawer'] as $component) {
+        $open = Blade::render("<x-ui.{$component} name=\"p\" title=\"T\" :open=\"true\">b</x-ui.{$component}>");
+        $closed = Blade::render("<x-ui.{$component} name=\"p\" title=\"T\">b</x-ui.{$component}>");
+
+        expect($open)->not->toContain('x-cloak')
+            ->and($closed)->toContain('x-cloak');
+    }
+});
+
+it('D-127: the submit guard never times out a multipart upload, and a busy icon-only button trades its glyph for the spinner', function (): void {
+    expect((string) File::get(resource_path('js/submit-guard.js')))->toContain("form.enctype !== 'multipart/form-data'")
+        ->and((string) File::get(resource_path('css/components.css')))->toContain('.ui-btn--icon.is-loading > .ui-icon { display: none; }');
+});
+
+it('D-127: every confirmation dialog gives its reason field an id of its own', function (): void {
+    $html = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="a" action="/x" title="T" confirm-label="Go" reason-name="reason" />
+         <x-ui.confirm name="b" action="/x" title="T" confirm-label="Go" reason-name="reason" />',
+    ), ENT_QUOTES);
+
+    expect($html)->toContain('id="a-form-reason"')
+        ->and($html)->toContain('id="b-form-reason"');
 });

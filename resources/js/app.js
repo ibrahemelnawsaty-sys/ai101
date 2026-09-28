@@ -852,7 +852,7 @@ function impersonation() {
         // What a screen reader is told, and only at two moments (D-127): the
         // sentences arrive from Blade, none is written here (Article 15).
         announcement: '',
-        announced: { five: false, one: false },
+        prevLeft: null,
         expired: false,
         timer: null,
         observer: null,
@@ -888,14 +888,17 @@ function impersonation() {
             const left = Math.max(0, this.endsAtMs - serverNow());
             this.label = pad2(Math.floor(left / 60000)) + ':' + pad2(Math.floor(left / 1000) % 60);
 
-            // Announced once each, never per second: five minutes, then one.
-            if (left > 0 && left <= 60000 && !this.announced.one) {
-                this.announced.one = true;
-                this.announced.five = true;
-                this.announcement = config.oneMinute || '';
-            } else if (left > 60000 && left <= 300000 && !this.announced.five) {
-                this.announced.five = true;
-                this.announcement = config.fiveMinutes || '';
+            // Announced when a threshold is CROSSED while this page is open: never on
+            // load (every navigation re-renders the bar), never per second.
+            const prev = this.prevLeft;
+            this.prevLeft = left;
+
+            if (prev !== null && left > 0) {
+                if (prev > 60000 && left <= 60000) {
+                    this.announcement = config.oneMinute || '';
+                } else if (prev > 300000 && left <= 300000) {
+                    this.announcement = config.fiveMinutes || '';
+                }
             }
 
             if (left > 0) return;

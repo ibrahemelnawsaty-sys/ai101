@@ -41,7 +41,7 @@
                             x-on:click="copy()">
                             <span x-text="copied ? '{{ __('app.copied') }}' : '{{ __('certificates.copy_verify_link') }}'">{{ __('certificates.copy_verify_link') }}</span>
                         </x-ui.button>
-                        <x-ui.button icon="share" :icon-only="true" variant="secondary" size="sm"
+                        <x-ui.button icon="share" variant="secondary" size="sm"
                             :href="$certificate->linkedInShareUrl" target="_blank" rel="noopener">{{ __('certificates.share_linkedin') }}</x-ui.button>
                     </div>
 

@@ -355,7 +355,7 @@
                             <span>{{ $resource->typeLabel }} · {{ \App\Support\Dates::relative($resource->addedAt) }}</span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button icon="chev" variant="secondary" size="sm"
+                            <x-ui.button icon-end="chev" variant="secondary" size="sm"
                                 :href="route('resources.index', ['highlight' => $resource->id])">{{ __('app.open') }}</x-ui.button>
                         </div>
                     </div>

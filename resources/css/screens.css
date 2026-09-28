@@ -145,6 +145,7 @@ inline-size: var(--d-6);
 
 .trend { display: inline-flex; align-items: center; gap: var(--s1); font-size: var(--fs-xs); font-weight: var(--fw-semi); }
 .trend__i { inline-size: var(--s3); block-size: var(--s3); }
+.trend__i use { stroke-width: var(--bw-glyph-mark); }
 .trend__v { font-variant-numeric: tabular-nums; }
 .trend__l { color: var(--text-muted); font-weight: var(--fw-regular); }
 .trend--up   { color: var(--status-ok-text); }
@@ -717,6 +718,10 @@ min-block-size: var(--s9);
 .form__aside { font-size: var(--fs-xs); color: var(--text-muted); }
 .form__note { font-size: var(--fs-xs); color: var(--text-muted); margin-block-start: var(--s2); }
 .form__submit { margin-block-start: var(--s6); display: grid; gap: var(--s3); }
+/* Six auth screens put this class on the button itself, not on a wrapper. A grid
+   button stacked its glyph above its label the moment it had one (D-127), so a
+   button that carries the class is the ordinary flex button, full width. */
+.ui-btn.form__submit { display: flex; inline-size: 100%; }
 
 .fieldset { border: 0; padding: 0; margin: 0 0 var(--s6); }
 .fieldset legend { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text-strong); padding: 0; margin-block-end: var(--s3); }

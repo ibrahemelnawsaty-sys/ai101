@@ -148,7 +148,7 @@
         </p>
 
         @auth
-            <form method="POST" action="{{ route('logout') }}" class="authcard__logout">
+            <form data-submit-guard="off" method="POST" action="{{ route('logout') }}" class="authcard__logout">
                 @csrf
                 <x-ui.button variant="ghost" size="sm" type="submit">
                     {{ __('auth.verify.logout') }}

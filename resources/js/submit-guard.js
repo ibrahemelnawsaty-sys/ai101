@@ -71,7 +71,12 @@ function lock(form, button) {
         }
     }
 
-    form._submitRelease = window.setTimeout(() => release(form), RELEASE_AFTER_MS);
+    // An upload can outlast any fixed wait on a slow phone connection; letting go
+    // early would allow the very second copy this guard exists to stop. Those
+    // forms are freed by the page answering, or by the back/forward cache.
+    if (form.enctype !== 'multipart/form-data') {
+        form._submitRelease = window.setTimeout(() => release(form), RELEASE_AFTER_MS);
+    }
 }
 
 function release(form) {
@@ -79,7 +84,10 @@ function release(form) {
     delete form.dataset.submitting;
     form.removeAttribute('aria-busy');
 
-    form.querySelectorAll('.ui-btn.is-loading').forEach((button) => {
+    // A submit button may sit outside the <form> and point at it with form="id"
+    // (the confirmation dialog's footer does), so ask the document, not the form.
+    document.querySelectorAll('.ui-btn.is-loading').forEach((button) => {
+        if (button.form !== form) return;
         // Only a spinner this guard added is ours to take away; one the button
         // component drew for `state="loading"` belongs to the server's markup.
         const own = button.querySelector('.ui-spinner[data-guard-spinner]');

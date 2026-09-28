@@ -72,7 +72,7 @@
                                 </div>
                                 <div class="res__acts">
                                     @if ($resource->isPreviewable)
-                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$resource->title"
                                             :href="route('resources.preview', $resource->id)">{{ __('resources.preview') }}</x-ui.button>
                                     @endif
                                     <x-ui.button variant="primary" size="sm" icon="download"

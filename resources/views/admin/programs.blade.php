@@ -88,12 +88,12 @@
                                         <x-ui.pill :variant="$program->statusVariant" :icon="$program->statusIcon">{{ $program->statusLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$program->name"
                                             :href="route('admin.programs.index', ['edit' => $program->id])">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', ['program' => $program->id])">{{ __('admin.cohorts.title') }}</x-ui.button>
                                         @unless ($program->isArchived)
-                                            <x-ui.button icon="archive" :icon-only="true" variant="secondary" size="sm"
+                                            <x-ui.button icon="archive" :icon-only="true" variant="secondary" size="sm" :context="$program->name"
                                                 :href="route('admin.programs.index', ['archive' => $program->id])">{{ __('app.archive') }}</x-ui.button>
                                         @endunless
                                     </td>

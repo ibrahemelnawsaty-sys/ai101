@@ -140,7 +140,7 @@
                      a GET would be triggerable from any other site (Article 24). --}}
                 @if ($logoutUrl !== null)
                     <hr class="menu__sep">
-                    <form method="POST" action="{{ $logoutUrl }}" class="menu__form">
+                    <form data-submit-guard="off" method="POST" action="{{ $logoutUrl }}" class="menu__form">
                         @csrf
                         <button type="submit" class="menu__i menu__i--danger">
                             <x-ui.icon name="logout" size="sm" />

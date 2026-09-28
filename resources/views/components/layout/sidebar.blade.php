@@ -177,7 +177,7 @@
              POST: a GET link would be triggerable from any other site (Article
              24, CSRF). --}}
         @if ($logoutUrl !== null)
-            <form method="POST" action="{{ $logoutUrl }}" class="side__logout">
+            <form data-submit-guard="off" method="POST" action="{{ $logoutUrl }}" class="side__logout">
                 @csrf
                 <button type="submit" class="side__b" x-bind:title="$data.collapsed ? @js(__('nav.chrome.logout')) : null">
                     <x-ui.icon name="logout" />

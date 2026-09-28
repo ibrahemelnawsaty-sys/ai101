@@ -111,7 +111,7 @@
                                     <td class="u-num">{{ $resource->downloadCount }}</td>
                                     <td><x-ui.pill :variant="$resource->stateVariant">{{ $resource->stateLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$resource->title"
                                             :href="route('trainer.resources', ['edit' => $resource->id])">{{ __('app.edit') }}</x-ui.button>
                                         {{-- The route is declared DELETE (routes/web.php); the method
                                              spoof must agree or the form 405s. Archiving writes a
@@ -120,7 +120,7 @@
                                             @csrf
                                             @method('DELETE')
                                             <x-ui.button variant="secondary" size="sm" type="submit"
-                                                :icon="$resource->isArchived ? 'undo' : 'archive'" :icon-only="true">
+                                                :icon="$resource->isArchived ? 'undo' : 'archive'" :icon-only="true" :context="$resource->title">
                                                 {{ $resource->isArchived ? __('trainer.resources.restore') : __('trainer.resources.archive') }}
                                             </x-ui.button>
                                         </form>

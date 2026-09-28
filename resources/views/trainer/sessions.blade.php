@@ -109,7 +109,7 @@
                                     </td>
                                     <td class="u-nowrap">
                                         @if ($canManage)
-                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
+                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$session->topic"
                                                 :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
                                         @endif
                                         <x-ui.button variant="secondary" size="sm"

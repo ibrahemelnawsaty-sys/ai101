@@ -49,7 +49,7 @@
     <div
         class="ui-modal ui-modal--{{ $size }} @if ($variant !== 'default') ui-modal--{{ $variant }} @endif"
         x-show="open"
-        x-cloak
+        @unless ($open) x-cloak @endunless
         x-on:keydown="onKeydown($event)"
         {{ $attributes->except('class') }}
     >

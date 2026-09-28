@@ -55,6 +55,20 @@ margin: calc(var(--s1) * -1);
    --bw-glyph in tokens.css changes them all. A component that needs a different
    weight for ONE mark matches that mark's own <use> (see .ui-check__mark). */
 use { stroke-width: var(--bw-glyph); }
+/* Arrows drawn the LTR way sit in a .rtl-mirror group inside the sprite; in an RTL
+   flow they point the other way (login, logout, send, undo, external). The rule
+   matches the ORIGINAL element, so it reaches every <use> of the symbol at once. */
+[dir="rtl"] .rtl-mirror { transform: matrix(-1, 0, 0, 1, 24, 0); }
+/* stroke-width is in the symbol's 24-unit grid, so a 16px glyph draws it at two
+   thirds of its weight; the small sizes get the heavier value so they stay legible. */
+.ui-icon--sm use,
+.ui-badge .ui-icon use,
+.ui-pill .ui-icon use,
+.ui-field__hint .ui-icon use,
+.ui-table__sort .ui-icon use,
+.ui-timeline__dot .ui-icon use,
+.ui-select__caret use,
+.ui-select__option-check use { stroke-width: var(--bw-glyph-sm); }
 
 /* Directional icons mirror in RTL (PRD §5.7 · Article 16). */
 [dir="rtl"] .ui-icon--dir { transform: scaleX(-1); }
@@ -224,6 +238,11 @@ outline-offset: var(--s1);
 
 .ui-btn--block { display: flex; inline-size: 100%; }
 .ui-btn.is-loading { cursor: progress; }
+/* states.css hides every child of an .is-loading element (built for a bare
+   spinner). A button that is busy keeps its label and shows the spinner beside
+   it: dimmed, never blank, and still named for a screen reader. */
+.ui-btn.is-loading > * { visibility: visible; }
+.ui-btn--icon.is-loading > .ui-icon { display: none; }
 
 /* Icon-only button (D-127): the glyph alone in a square target. The words live
    in aria-label and in the tooltip below, so nothing a screen reader or a
@@ -254,18 +273,25 @@ outline-offset: var(--s1);
   line-height: var(--lh-xs);
   white-space: normal;
   text-align: center;
-  color: var(--dk-1);
+  color: var(--tip-text);
   background: var(--ink-800);
   border: var(--bw-hairline) solid var(--ln-03);
   border-radius: var(--r-sm);
   box-shadow: var(--sh-pop);
   pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
+  /* display, not visibility: a hidden box still counts toward a scroll
+     container's overflow, and the last cell of a table is at the page edge. */
+  display: none;
 }
 [dir="ltr"] [data-tip]::after { translate: -50% 0; }
 [data-tip]:hover::after,
-[data-tip]:focus-visible::after { opacity: 1; visibility: visible; }
+[data-tip]:focus-visible::after { display: block; }
+/* Inside a scrolling table the bubble hangs from the button's END edge and grows
+   inward, so the last column never pushes it past the edge of the table. */
+.tscroll [data-tip]::after { inset-inline-start: auto; inset-inline-end: 0; translate: none; }
+/* Esc dismisses it without moving focus or the pointer (WCAG 1.4.13); ui.js sets
+   the attribute and clears it on blur or when the pointer leaves. */
+[data-tip][data-tip-dismissed]::after { display: none; }
 
 /* Icon-only button. */
 .ui-iconbtn {
@@ -1551,7 +1577,7 @@ max-inline-size: var(--d-5);
   font-size: var(--fs-xs);
   font-weight: var(--fw-medium);
   line-height: var(--lh-xs);
-  color: var(--dk-1);
+  color: var(--tip-text);
   background: var(--ink-800);
 border: var(--bw-hairline) solid var(--ln-03);
   border-radius: var(--r-sm);

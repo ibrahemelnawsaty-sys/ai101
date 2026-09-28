@@ -185,7 +185,7 @@
                                         </ul>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$person->name"
                                             :href="route('trainer.participants', ['view' => $person->id])">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>
                                 </tr>
