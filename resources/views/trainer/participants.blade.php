@@ -56,12 +56,12 @@
                         :placeholder="__('trainer.participants.search')" />
                     <x-ui.select name="state" :label="__('trainer.participants.filter_state')"
                         :options="$stateOptions" :value="request('state')" />
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                    <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
                     {{-- D-117 — no export from inside an account preview. --}}
                     @unless ($impersonation ?? null)
-                        <x-ui.button variant="secondary" size="sm"
+                        <x-ui.button icon="download" variant="secondary" size="sm"
                             :href="route('trainer.participants.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                     @endunless
                 </div>
@@ -134,7 +134,7 @@
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('trainer.participants', array_merge(request()->query(), ['view' => $row->id]))">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>
                                 </tr>
@@ -245,7 +245,7 @@
                 <div class="row__acts">
                     <x-ui.button variant="secondary" size="sm"
                         :href="$selected->attendanceHref">{{ __('nav.attendance') }}</x-ui.button>
-                    <x-ui.button variant="ghost" size="sm"
+                    <x-ui.button icon="x" variant="ghost" size="sm"
                         :href="route('trainer.participants', request()->except('view'))">{{ __('app.close') }}</x-ui.button>
                 </div>
 

@@ -39,7 +39,7 @@
 
             <form method="GET" action="{{ route('messages.create') }}" class="toolbar">
                 <x-ui.search-input name="q" :value="$search" :placeholder="__('messages.start.search_label')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('messages.start.search_submit') }}</x-ui.button>
+                <x-ui.button icon="search" variant="secondary" size="sm" type="submit">{{ __('messages.start.search_submit') }}</x-ui.button>
             </form>
 
             @if ($options === [])
@@ -62,7 +62,7 @@
                         :value="old('body')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('messages.start.submit') }}</x-ui.button>
+                        <x-ui.button icon="send" variant="primary" type="submit">{{ __('messages.start.submit') }}</x-ui.button>
                     </div>
                 </form>
 

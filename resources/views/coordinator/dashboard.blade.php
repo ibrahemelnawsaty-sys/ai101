@@ -91,7 +91,7 @@
                             </span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="secondary" size="sm"
+                            <x-ui.button icon="pencil" variant="secondary" size="sm"
                                 :href="route('trainer.sessions', ['edit' => $row->id])">{{ __('coordinator.dashboard.attention_queue_action') }}</x-ui.button>
                         </div>
                     </div>

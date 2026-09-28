@@ -34,14 +34,14 @@
                     @include('participant.partials.certificate-document', ['certificate' => $certificate])
 
                     <div class="idacts">
-                        <x-ui.button variant="primary" size="sm" icon="down"
+                        <x-ui.button variant="primary" size="sm" icon="download"
                             :href="route('certificate.print')">{{ __('certificates.download_pdf') }}</x-ui.button>
                         <x-ui.button variant="secondary" size="sm"
                             x-data="atharCopy({ value: '{{ $certificate->verifyUrl }}' })"
                             x-on:click="copy()">
                             <span x-text="copied ? '{{ __('app.copied') }}' : '{{ __('certificates.copy_verify_link') }}'">{{ __('certificates.copy_verify_link') }}</span>
                         </x-ui.button>
-                        <x-ui.button variant="secondary" size="sm"
+                        <x-ui.button icon="share" :icon-only="true" variant="secondary" size="sm"
                             :href="$certificate->linkedInShareUrl" target="_blank" rel="noopener">{{ __('certificates.share_linkedin') }}</x-ui.button>
                     </div>
 
@@ -113,7 +113,7 @@
                                 <span class="u-num">{{ \App\Support\Dates::longDate($tvtc->issuedAt) }}</span>
                             </div>
                             <div class="row__e">
-                                <x-ui.button variant="primary" size="sm" icon="down"
+                                <x-ui.button variant="primary" size="sm" icon="download"
                                     :href="route('certificate.tvtc')">{{ __('app.download') }}</x-ui.button>
                             </div>
                         </div>

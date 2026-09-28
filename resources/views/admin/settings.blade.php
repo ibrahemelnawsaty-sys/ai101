@@ -82,7 +82,7 @@
                 </p>
 
                 <div class="row__acts">
-                    <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                    <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                 </div>
             </form>
         </x-ui.card>
@@ -118,7 +118,7 @@
                     @endforeach
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                     </div>
                 </form>
             @endif
@@ -138,7 +138,7 @@
                             <span>{{ $template->subject }}</span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="secondary" size="sm"
+                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                 :href="route('admin.settings.template', $template->key)">{{ __('app.edit') }}</x-ui.button>
                         </div>
                     </div>

@@ -31,6 +31,7 @@ final class Drawer extends UiComponent
         public ?string $title = null,
         mixed $open = false,
         mixed $dismissible = true,
+        public ?string $closeHref = null,
     ) {
         $this->open = (bool) $open;
         $this->dismissible = (bool) $dismissible;

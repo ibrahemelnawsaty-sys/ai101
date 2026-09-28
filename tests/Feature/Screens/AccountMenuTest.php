@@ -223,7 +223,7 @@ it('D-123: عنصر الصفحة الحالية وحده يحمل aria-current',
 it('D-123: كل أيقونة في قائمة الحساب مرسومة في رموز لوحة التحكم', function (): void {
     $html = (string) $this->actingAs(makeParticipant(makeCohort()))->get(route('dashboard'))->assertOk()->getContent();
     $uses = accountMenuXpath($html)->query('//*['.accountMenuClass('appbar__menu').']//*[local-name()="use"]');
-    $sprite = File::get(resource_path('views/components/layout/icons.blade.php'));
+    $sprite = File::get(resource_path('views/partials/icon-sprite.blade.php'));
     $missing = [];
     $seen = 0;
 

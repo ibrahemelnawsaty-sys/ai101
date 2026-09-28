@@ -25,6 +25,8 @@
       icon          sprite id shown in the leading badge
       open          render already open (a server-rendered confirmation step)
       dismissible   allow Escape and outside click (default: true)
+      close-href    for a dialog rendered open by the server from a query string:
+                    every way out — the × link, Escape, the backdrop — goes here
 
     Slots
       $slot     body
@@ -37,7 +39,8 @@
         name: @js($name),
         open: @js((bool) $open),
         closeOnBackdrop: @js((bool) $dismissible),
-        closeOnEscape: @js((bool) $dismissible)
+        closeOnEscape: @js((bool) $dismissible),
+        closeHref: @js($closeHref)
     })"
     x-on:ui-dialog-open.window="openFromEvent($event)"
     x-on:ui-dialog-close.window="closeFromEvent($event)"
@@ -76,14 +79,26 @@
                 </div>
 
                 @if ($dismissible)
-                    <button
-                        type="button"
-                        class="ui-iconbtn ui-modal__close"
-                        aria-label="{{ __('ui.dialog.close') }}"
-                        x-on:click="hide()"
-                    >
-                        <svg class="ui-icon ui-icon--sm" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
-                    </button>
+                    @if ($closeHref !== null)
+                        <a
+                            href="{{ $closeHref }}"
+                            class="ui-iconbtn ui-modal__close"
+                            aria-label="{{ __('ui.dialog.close') }}"
+                            data-tip="{{ __('ui.dialog.close') }}"
+                        >
+                            <x-ui.icon name="x" size="sm" />
+                        </a>
+                    @else
+                        <button
+                            type="button"
+                            class="ui-iconbtn ui-modal__close"
+                            aria-label="{{ __('ui.dialog.close') }}"
+                            data-tip="{{ __('ui.dialog.close') }}"
+                            x-on:click="hide()"
+                        >
+                            <x-ui.icon name="x" size="sm" />
+                        </button>
+                    @endif
                 @endif
             </div>
 

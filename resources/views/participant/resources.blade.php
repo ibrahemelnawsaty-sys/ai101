@@ -15,7 +15,7 @@
         <x-ui.search-input name="q" :value="request('q')" :placeholder="__('resources.search_placeholder')" />
         <x-ui.select name="type" :label="__('resources.filter_type')" :options="$typeOptions" :value="request('type')" />
         <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
-        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+        <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
     </form>
 
     @if ($errorState ?? false)
@@ -72,10 +72,10 @@
                                 </div>
                                 <div class="res__acts">
                                     @if ($resource->isPreviewable)
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('resources.preview', $resource->id)">{{ __('resources.preview') }}</x-ui.button>
                                     @endif
-                                    <x-ui.button variant="primary" size="sm" icon="down"
+                                    <x-ui.button variant="primary" size="sm" icon="download"
                                         :href="route('resources.download', $resource->id)">{{ __('resources.download') }}</x-ui.button>
                                 </div>
                             </x-ui.card>

@@ -44,10 +44,17 @@ margin: calc(var(--s1) * -1);
   border: 0;
 }
 
-/* PRD §5.7 — icons come in three sizes only: 16 / 20 / 24. */
-.ui-icon { inline-size: var(--s5); block-size: var(--s5); flex: none; display: block; }
-.ui-icon--sm { inline-size: var(--s4); block-size: var(--s4); }
-.ui-icon--lg { inline-size: var(--s6); block-size: var(--s6); }
+/* PRD §5.7 — icons come in three sizes only: 16 / 20 / 24 (the --icon-* tokens). */
+.ui-icon { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; display: block; }
+.ui-icon--sm { inline-size: var(--icon-sm); block-size: var(--icon-sm); }
+.ui-icon--lg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+
+/* The one stroke weight of every sprite glyph (D-127). No <symbol> carries a
+   stroke-width of its own, so this flows down from the referencing <use> — raw
+   `<svg><use>` call sites and x-ui.icon get the same weight, and one edit of
+   --bw-glyph in tokens.css changes them all. A component that needs a different
+   weight for ONE mark matches that mark's own <use> (see .ui-check__mark). */
+use { stroke-width: var(--bw-glyph); }
 
 /* Directional icons mirror in RTL (PRD §5.7 · Article 16). */
 [dir="rtl"] .ui-icon--dir { transform: scaleX(-1); }
@@ -191,12 +198,20 @@ outline-offset: var(--s1);
 .ui-btn--ghost { background: transparent; color: var(--text-muted); }
 .ui-btn--ghost:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--surface-2); color: var(--text-strong); }
 
-/* Black, not white: white on --bad measures 4.38 and fails 4.5. Black
-   measures 4.80. The hover shade --bad-800 was already darker than the
-   resting one, so the button used to be MORE legible on hover than at
-   rest — the opposite of what a destructive action should do. */
-.ui-btn--danger { background: var(--bad); color: var(--black); }
-.ui-btn--danger:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--bad-800); }
+/* White on --bad-800, not black on --bad (D-127). White on --bad measures 4.38
+   and black on --bad-800 measures 3.43, so the old pair passed at rest and
+   FAILED on hover — the destructive button lost legibility exactly when a
+   finger was about to commit. White on --bad-800 measures 6.13 and the hover
+   shade --bad-700 (6.45) is darker still, so the button gets more legible,
+   not less, on the way to the click (tests/Unit/ContrastTest). */
+.ui-btn--danger { background: var(--bad-800); color: var(--white); }
+.ui-btn--danger:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--bad-700); }
+
+/* The quiet trigger for a destructive row action (remove, archive, suspend):
+   red text and a tint on hover, no fill. The solid fill belongs to the final
+   confirm inside <x-ui.confirm>, so a page of rows is not a page of red. */
+.ui-btn--danger-ghost { background: transparent; color: var(--status-bad-text); }
+.ui-btn--danger-ghost:hover:not([disabled]):not([aria-disabled="true"]) { background: var(--bad-a10); }
 
 .ui-btn[disabled],
 .ui-btn[aria-disabled="true"] {
@@ -209,6 +224,48 @@ outline-offset: var(--s1);
 
 .ui-btn--block { display: flex; inline-size: 100%; }
 .ui-btn.is-loading { cursor: progress; }
+
+/* Icon-only button (D-127): the glyph alone in a square target. The words live
+   in aria-label and in the tooltip below, so nothing a screen reader or a
+   keyboard user needs is lost with the label. */
+.ui-btn--icon { padding-inline: 0; inline-size: var(--touch); }
+.ui-btn--icon.ui-btn--sm { inline-size: var(--s9); }
+.ui-btn--icon.ui-btn--lg { inline-size: var(--s14); }
+@media (pointer: coarse) {
+  .ui-btn--icon.ui-btn--sm { inline-size: var(--touch); }
+}
+
+/* Tooltip for a control that has no visible words: shown on hover and on
+   keyboard focus, never on focus by pointer. Logical placement only, and no
+   motion to switch off. */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: var(--z-float);
+  inset-block-end: calc(100% + var(--s2));
+  inset-inline-start: 50%;
+  translate: 50% 0;
+  inline-size: max-content;
+  max-inline-size: var(--d-5);
+  padding: var(--s2) var(--s3);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-xs);
+  white-space: normal;
+  text-align: center;
+  color: var(--dk-1);
+  background: var(--ink-800);
+  border: var(--bw-hairline) solid var(--ln-03);
+  border-radius: var(--r-sm);
+  box-shadow: var(--sh-pop);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+[dir="ltr"] [data-tip]::after { translate: -50% 0; }
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after { opacity: 1; visibility: visible; }
 
 /* Icon-only button. */
 .ui-iconbtn {
@@ -496,6 +553,7 @@ border: var(--bw-icon) solid var(--border-3);
 }
 .ui-check__input[aria-invalid="true"] + .ui-check__box { border-color: var(--bad); }
 .ui-check__mark { inline-size: var(--s3); block-size: var(--s3); }
+.ui-check__mark use { stroke-width: var(--bw-glyph-mark); }
 .ui-check__dash { inline-size: var(--s3); block-size: var(--s1); background: currentColor; border-radius: var(--r-xs); }
 
 .ui-check__text { min-inline-size: 0; }
@@ -978,6 +1036,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 }
 .ui-drawer__title { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-strong); margin: 0; }
 .ui-drawer__close { margin-inline-start: auto; }
+.ui-confirm__form { display: grid; gap: var(--s4); }
 .ui-drawer__body { flex: 1; overflow-y: auto; padding: var(--s5); }
 .ui-drawer__footer {
   display: flex;

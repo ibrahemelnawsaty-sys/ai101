@@ -63,6 +63,10 @@ function uiDialog(options = {}) {
         name: options.name || null,
         closeOnBackdrop: options.closeOnBackdrop !== false,
         closeOnEscape: options.closeOnEscape !== false,
+        // A panel the SERVER rendered open from a query string (?edit=…) is left by
+        // going back to the URL without it, not by hiding markup that would come
+        // straight back on the next reload (D-127).
+        closeHref: options.closeHref || null,
         returnFocusTo: null,
 
         init() {
@@ -96,6 +100,10 @@ function uiDialog(options = {}) {
 
         hide() {
             if (!this.open) return;
+            if (this.closeHref) {
+                window.location.assign(this.closeHref);
+                return;
+            }
             this.open = false;
             document.documentElement.style.removeProperty('overflow');
             const back = this.returnFocusTo;

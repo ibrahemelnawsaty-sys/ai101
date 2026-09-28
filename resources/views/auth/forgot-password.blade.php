@@ -108,7 +108,7 @@
                     :placeholder="__('auth.shared.email_placeholder')"
                     :error="$errors->first('email')"/>
 
-                <x-ui.button
+                <x-ui.button icon="send"
                     variant="primary"
                     size="lg"
                     type="submit"

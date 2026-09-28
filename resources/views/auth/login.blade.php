@@ -174,7 +174,7 @@
                 <a class="form__aside" href="{{ route('password.request') }}">{{ __('auth.login.forgot') }}</a>
             </div>
 
-            <x-ui.button
+            <x-ui.button icon="login"
                 variant="primary"
                 size="lg"
                 type="submit"

@@ -33,11 +33,11 @@
             <form method="GET" action="{{ route('trainer.sessions') }}" class="toolbar__filters">
                 <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                 <x-ui.select name="status" :label="__('trainer.sessions.filter_status')" :options="$statusOptions" :value="request('status')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             @if ($canManage)
                 <div class="toolbar__end">
-                    <x-ui.button variant="primary" size="sm"
+                    <x-ui.button icon="plus" variant="primary" size="sm"
                         :href="route('trainer.sessions', ['edit' => 'new'])">{{ __('trainer.sessions.create') }}</x-ui.button>
                 </div>
             @endif
@@ -109,13 +109,13 @@
                                     </td>
                                     <td class="u-nowrap">
                                         @if ($canManage)
-                                            <x-ui.button variant="secondary" size="sm"
+                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                                 :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
                                         @endif
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('trainer.attendance', ['session' => $session->id])">{{ __('nav.attendance') }}</x-ui.button>
                                         @if ($canManage && ! $session->isCancelled)
-                                            <x-ui.button variant="danger" size="sm"
+                                            <x-ui.button icon="x" variant="danger" size="sm"
                                                 :href="route('trainer.sessions', ['cancel' => $session->id])">{{ __('trainer.sessions.cancel') }}</x-ui.button>
                                         @endif
                                     </td>
@@ -214,7 +214,7 @@
                     <p class="footnote">{{ __('app.riyadh_time_hint') }}</p>
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost" :href="route('trainer.sessions')">{{ __('app.cancel') }}</x-ui.button>
                     </div>
                 </form>
@@ -247,8 +247,8 @@
                          exists end to end. --}}
 
                     <div class="row__acts">
-                        <x-ui.button variant="danger" type="submit">{{ __('trainer.sessions.confirm_cancel') }}</x-ui.button>
-                        <x-ui.button variant="ghost" :href="route('trainer.sessions')">{{ __('app.back') }}</x-ui.button>
+                        <x-ui.button icon="x" variant="danger" type="submit">{{ __('trainer.sessions.confirm_cancel') }}</x-ui.button>
+                        <x-ui.button icon="chev-end" variant="ghost" :href="route('trainer.sessions')">{{ __('app.back') }}</x-ui.button>
                     </div>
                 </form>
             </x-ui.card>

@@ -31,10 +31,10 @@
                     :placeholder="__('app.search_placeholder')" />
                 <x-ui.select name="status" :label="__('admin.programs.fields.status')"
                     :options="$statusOptions" :value="request('status')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
-                <x-ui.button variant="primary" size="sm"
+                <x-ui.button icon="plus" variant="primary" size="sm"
                     :href="route('admin.programs.index', ['edit' => 'new'])">{{ __('admin.programs.create') }}</x-ui.button>
             </div>
         </div>
@@ -88,12 +88,12 @@
                                         <x-ui.pill :variant="$program->statusVariant" :icon="$program->statusIcon">{{ $program->statusLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('admin.programs.index', ['edit' => $program->id])">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', ['program' => $program->id])">{{ __('admin.cohorts.title') }}</x-ui.button>
                                         @unless ($program->isArchived)
-                                            <x-ui.button variant="secondary" size="sm"
+                                            <x-ui.button icon="archive" :icon-only="true" variant="secondary" size="sm"
                                                 :href="route('admin.programs.index', ['archive' => $program->id])">{{ __('app.archive') }}</x-ui.button>
                                         @endunless
                                     </td>
@@ -160,7 +160,7 @@
                     <p class="footnote">{{ __('admin.programs.content_note') }}</p>
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost" :href="route('admin.programs.index')">{{ __('app.cancel') }}</x-ui.button>
                     </div>
                 </form>
@@ -180,7 +180,7 @@
                     @method('PUT')
 
                     <div class="row__acts">
-                        <x-ui.button variant="danger" type="submit">{{ __('app.archive') }}</x-ui.button>
+                        <x-ui.button icon="archive" variant="danger" type="submit">{{ __('app.archive') }}</x-ui.button>
                         <x-ui.button variant="ghost" :href="route('admin.programs.index')">{{ __('app.cancel') }}</x-ui.button>
                     </div>
                 </form>

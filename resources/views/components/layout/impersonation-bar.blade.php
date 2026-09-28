@@ -18,6 +18,14 @@
     trusted (BR-07). When it reaches zero the form is submitted so the SERVER
     ends the session and says so — the browser does not decide it is over.
 
+    ACCESSIBILITY (D-127). The bar used to be one assertive live region with a
+    ticking timer inside it, so a screen reader was interrupted every second for
+    the whole preview. Now: the bar is a labelled REGION; the sentence that names
+    the account is the only alert, and it never changes; the ticking digits sit
+    in no live region at all (they are read when the reader navigates to them);
+    and a separate polite region says something only twice — at five minutes and
+    at one minute left. The stop button is unchanged, always visible (Art. 23).
+
     Shared by the middleware as `$impersonation`:
       ['target_id' => string, 'admin_id' => string, 'remaining_seconds' => int]
 --}}
@@ -28,22 +36,27 @@
          rather than eyeballed (Article 23). --}}
     <div class="impbar"
          data-impersonation-bar
-         role="alert"
-         aria-live="assertive"
-         x-data="impersonation({ endsAt: @js($endsAt) })">
+         role="region"
+         aria-label="{{ __('admin.impersonation.region') }}"
+         x-data="impersonation({
+             endsAt: @js($endsAt),
+             fiveMinutes: @js(__('admin.impersonation.five_minutes_left')),
+             oneMinute: @js(__('admin.impersonation.one_minute_left'))
+         })">
 
-        <svg aria-hidden="true"><use href="#i-eye"></use></svg>
+        <x-ui.icon name="eye" />
 
-        <p class="impbar__msg">
+        <p class="impbar__msg" role="alert">
             {{ __('admin.impersonation.banner', ['name' => $targetName]) }}
         </p>
 
-        {{-- The remaining time is announced politely so it does not interrupt
-             a screen reader every single second. --}}
-        <p class="impbar__timer" aria-live="polite">
+        <p class="impbar__timer">
             {{ __('admin.impersonation.ends_in', ['countdown' => '']) }}
             <span class="u-num" x-text="label">--:--</span>
         </p>
+
+        {{-- Says something only when the state changes in a way that matters. --}}
+        <p class="ui-sr" role="status" aria-live="polite" x-text="announcement"></p>
 
         <form method="POST"
               action="{{ $stopUrl }}"
@@ -51,7 +64,7 @@
             @csrf
             @method('DELETE')
             <button type="submit" class="impbar__stop">
-                <svg aria-hidden="true"><use href="#i-x"></use></svg>
+                <x-ui.icon name="x" />
                 <span>{{ __('admin.impersonation.stop') }}</span>
             </button>
         </form>

@@ -32,13 +32,13 @@
             :description="__('trainer.final_project.error_body')"
             :action-label="__('app.retry')" :action-href="route('trainer.finalProject')" />
     @elseif ($project->isMissing)
-        <x-ui.empty-state icon="folder"
+        <x-ui.empty-state icon="presentation"
             :title="__('trainer.final_project.missing_title')"
             :description="__('trainer.final_project.missing_body')" />
     @else
 
         {{-- The brief, and the switch that opens it (BR-15, BR-16) ------------- --}}
-        <x-ui.card class="dc--span" icon="badge" :title="$project->title">
+        <x-ui.card class="dc--span" icon="presentation" :title="$project->title">
             <x-slot:action>
                 <x-ui.pill :variant="$project->isUnlocked ? 'success' : 'neutral'"
                     :icon="$project->isUnlocked ? 'check' : 'lock'">
@@ -175,7 +175,7 @@
 
         {{-- Grading panel (BR-12, BR-13) ---------------------------------------- --}}
         @if ($selected)
-            <x-ui.card class="dc--span u-mt-4" icon="badge"
+            <x-ui.card class="dc--span u-mt-4" icon="submissions"
                 :title="__('trainer.grading.title', ['name' => $selected->participantName])">
 
                 <div class="f2">
@@ -224,7 +224,7 @@
                         </p>
 
                         <div class="row__acts">
-                            <x-ui.button variant="primary" size="sm" type="submit">{{ __('trainer.grading.record') }}</x-ui.button>
+                            <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('trainer.grading.record') }}</x-ui.button>
                             <x-ui.button variant="ghost" size="sm"
                                 :href="route('trainer.finalProject')">{{ __('app.cancel') }}</x-ui.button>
                         </div>

@@ -36,12 +36,12 @@
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.select name="state" :label="__('admin.users.table.status')"
                     :options="$stateOptions" :value="request('state')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="download" variant="secondary" size="sm"
                         :href="route('admin.registrations.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                 @endunless
             </div>
@@ -102,7 +102,7 @@
                                     </td>
                                     <td class="u-nowrap">
                                         @if ($request->isPending)
-                                            <x-ui.button variant="primary" size="sm"
+                                            <x-ui.button icon="eye" variant="primary" size="sm"
                                                 :href="route('admin.registrations.index', array_merge(request()->query(), ['review' => $request->id]))">{{ __('app.view_details') }}</x-ui.button>
                                         @else
                                             <span class="u-muted">{{ $request->decidedByLabel }}</span>
@@ -156,7 +156,7 @@
                         @method('PUT')
                         <p>{{ __('admin.registrations.approve_hint') }}</p>
                         <div class="row__acts">
-                            <x-ui.button variant="primary" type="submit"
+                            <x-ui.button icon="check" variant="primary" type="submit"
                                 :disabled="! $reviewing->hasFreeSeat">{{ __('admin.registrations.approve') }}</x-ui.button>
                         </div>
                     </form>
@@ -171,7 +171,7 @@
                             :value="old('reject_reason')" />
 
                         <div class="row__acts">
-                            <x-ui.button variant="danger" type="submit">{{ __('admin.registrations.reject') }}</x-ui.button>
+                            <x-ui.button icon="x" variant="danger" type="submit">{{ __('admin.registrations.reject') }}</x-ui.button>
                             <x-ui.button variant="ghost"
                                 :href="route('admin.registrations.index', request()->except('review'))">{{ __('app.cancel') }}</x-ui.button>
                         </div>

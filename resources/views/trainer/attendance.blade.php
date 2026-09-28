@@ -23,11 +23,11 @@
 
         <form method="GET" action="{{ route('trainer.attendance') }}" class="toolbar">
             <x-ui.select name="session" :label="__('trainer.attendance.pick_session')" :options="$sessionOptions" :value="request('session')" />
-            <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.show') }}</x-ui.button>
+            <x-ui.button icon="eye" variant="secondary" size="sm" type="submit">{{ __('app.show') }}</x-ui.button>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm" icon="down"
+                    <x-ui.button variant="secondary" size="sm" icon="download"
                         :href="route('trainer.attendance.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                 @endunless
             </div>
@@ -66,7 +66,7 @@
                  minutes (CheckinCode), so polling this every minute is enough
                  to catch that rotation without competing with the roster's
                  own much faster poll below. --}}
-            <x-ui.card class="dc--span" icon="video" :title="__('attendance.checkin_code.title')">
+            <x-ui.card class="dc--span" icon="attendance" :title="__('attendance.checkin_code.title')">
                 @if ($impersonation ?? null)
                     {{-- D-117 — the live code checks in whoever holds it, so a preview is
                          never handed one: the server does not mint it and refuses its
@@ -192,7 +192,7 @@
                             <x-ui.input name="edit_reason" minlength="10" required
                                 :label="__('trainer.attendance.reason')"
                                 :hint="__('trainer.attendance.reason_hint', ['min' => 10])" />
-                            <x-ui.button variant="secondary" size="sm" type="submit">{{ __('trainer.attendance.apply_bulk') }}</x-ui.button>
+                            <x-ui.button icon="attendance" variant="secondary" size="sm" type="submit">{{ __('trainer.attendance.apply_bulk') }}</x-ui.button>
                         </div>
                     </form>
                 @endif
@@ -232,11 +232,11 @@
                                         <div class="row__acts" x-data="{ rejecting: false }">
                                             <form method="POST" action="{{ route('trainer.attendance-exceptions.approve', $item->id) }}">
                                                 @csrf
-                                                <x-ui.button variant="primary" size="sm" type="submit">
+                                                <x-ui.button icon="check" variant="primary" size="sm" type="submit">
                                                     {{ __('attendance.exceptions_queue.approve_action') }}
                                                 </x-ui.button>
                                             </form>
-                                            <x-ui.button variant="danger" size="sm" type="button" x-on:click="rejecting = ! rejecting">
+                                            <x-ui.button icon="x" variant="danger" size="sm" type="button" x-on:click="rejecting = ! rejecting">
                                                 {{ __('attendance.exceptions_queue.reject_action') }}
                                             </x-ui.button>
                                             <form method="POST" x-show="rejecting" x-cloak
@@ -246,7 +246,7 @@
                                                     :label="__('attendance.exceptions_queue.reject_reason_label')"
                                                     :placeholder="__('attendance.exceptions_queue.reject_reason_placeholder')"
                                                     :hint="__('attendance.exceptions_queue.reject_reason_hint', ['min' => 10])" />
-                                                <x-ui.button variant="danger" size="sm" type="submit" class="u-mt-2">
+                                                <x-ui.button icon="x" variant="danger" size="sm" type="submit" class="u-mt-2">
                                                     {{ __('attendance.exceptions_queue.reject_action') }}
                                                 </x-ui.button>
                                             </form>
@@ -263,9 +263,9 @@
         {{-- Recorded sessions (D-107) — the one place a recording link is set;
              trainer, admin and coordinator share this screen and this card,
              since no session editor field exists for it anywhere else. --}}
-        <x-ui.card class="dc--span u-mt-4" icon="folder" :title="__('trainer.sessions.recordings_title')" flush>
+        <x-ui.card class="dc--span u-mt-4" icon="recording" :title="__('trainer.sessions.recordings_title')" flush>
             @if ($recordingSessions->isEmpty())
-                <x-ui.empty-state icon="video" size="sm"
+                <x-ui.empty-state icon="recording" size="sm"
                     :title="__('trainer.sessions.recordings_empty_title')"
                     :description="__('trainer.sessions.recordings_empty_body')" />
             @else
@@ -308,7 +308,7 @@
 
         {{-- Recording upload panel, open on ?recording={id} (D-107) ----------- --}}
         @if ($recordingEditing)
-            <x-ui.card class="dc--span u-mt-4" icon="video"
+            <x-ui.card class="dc--span u-mt-4" icon="recording"
                 :title="__('trainer.sessions.recording_edit_title', ['topic' => $recordingEditing->topic])">
 
                 <form method="POST" action="{{ route('trainer.sessions.recording', $recordingEditing->id) }}">
@@ -321,7 +321,7 @@
                         :value="old('recording_url', $recordingEditing->recordingUrl)" />
 
                     <div class="row__acts u-mt-3">
-                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost" size="sm"
                             :href="route('trainer.attendance', request()->except('recording'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>
@@ -364,7 +364,7 @@
                     </p>
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost" size="sm"
                             :href="route('trainer.attendance', request()->except('edit'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>

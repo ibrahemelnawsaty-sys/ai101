@@ -73,7 +73,7 @@
         </x-ui.card>
 
         {{-- Submission ---------------------------------------------------------- --}}
-        <x-ui.card class="dc--span u-mt-4" icon="up" :title="__('assignments.your_submission')">
+        <x-ui.card class="dc--span u-mt-4" icon="upload" :title="__('assignments.your_submission')">
             @if ($submission && $submission->isGraded)
                 <div class="note note--ok">
                     <b>{{ __('grades.trainer_feedback', ['trainer' => $submission->graderName]) }}</b>
@@ -144,7 +144,7 @@
                     @csrf
 
                     <div class="drop">
-                        <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
+                        <div class="drop__ic" aria-hidden="true"><x-ui.icon name="upload" /></div>
                         <b>{{ __('assignments.choose_files') }}</b>
                         <span>
                             {{ __('assignments.accepted_types') }}
@@ -188,7 +188,7 @@
                          unconditionally — so it handed the work in for good while
                          telling the trainee it had been kept private. --}}
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('assignments.submit_action') }}</x-ui.button>
+                        <x-ui.button icon="upload" variant="primary" type="submit">{{ __('assignments.submit_action') }}</x-ui.button>
                     </div>
 
                     <p class="hint" id="submission-files-hint" role="status">

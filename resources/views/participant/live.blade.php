@@ -25,12 +25,12 @@
                 <x-ui.skeleton height="var(--touch-min)" width="var(--d-3)" class="u-mt-4" />
             </x-ui.card>
         @elseif ($featured->isMissing)
-            <x-ui.empty-state icon="video"
+            <x-ui.empty-state icon="live"
                 :title="__('live.empty_title')"
                 :description="__('live.empty_body')"
                 :action-label="__('nav.schedule')" :action-href="route('schedule')" />
         @else
-            <x-ui.card class="dc--span" icon="video" :title="__('live.next_title')">
+            <x-ui.card class="dc--span" icon="live" :title="__('live.next_title')">
                 <x-slot:action>
                     <x-ui.pill :variant="$featured->statusVariant">{{ $featured->statusLabel }}</x-ui.pill>
                 </x-slot:action>
@@ -69,7 +69,7 @@
                          screen to copy. --}}
                     <form method="POST" action="{{ route('live.join', $featured->id) }}" target="_blank">
                         @csrf
-                        <x-ui.button variant="primary"
+                        <x-ui.button icon="live" variant="primary"
                             type="submit"
                             :disabled="! $featured->joinWindowOpen">{{ __('live.join') }}</x-ui.button>
                     </form>
@@ -142,11 +142,11 @@
             </x-ui.card>
 
             {{-- Past recordings ------------------------------------------------ --}}
-            <x-ui.card class="dc--2" icon="folder" :title="__('live.recordings_title')">
+            <x-ui.card class="dc--2" icon="recording" :title="__('live.recordings_title')">
                 <form method="GET" action="{{ route('live') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')" :placeholder="__('live.search_recordings')" />
                     <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                    <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
 
                 @if (is_null($recordings))
@@ -160,7 +160,7 @@
                         </div>
                     @endfor
                 @elseif ($recordings->isEmpty())
-                    <x-ui.empty-state icon="video" size="sm"
+                    <x-ui.empty-state icon="recording" size="sm"
                         :title="__('live.recordings_empty_title')"
                         :description="__('live.recordings_empty_body')" />
                 @else
@@ -174,7 +174,7 @@
                                 </span>
                             </div>
                             <div class="row__e">
-                                <x-ui.button variant="secondary" size="sm"
+                                <x-ui.button icon="recording" variant="secondary" size="sm"
                                     :href="route('live.recording', $recording->id)">{{ __('live.watch') }}</x-ui.button>
                             </div>
                         </div>

@@ -101,9 +101,9 @@
                          uses for the timetable: the browser makes the PDF, so there is
                          no PDF library, no second rendering path to keep in step, and
                          no broken Arabic shaping from a server-side renderer. --}}
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="printer" :icon-only="true" variant="secondary" size="sm"
                         :href="route('participant.card.print')">{{ __('card.print') }}</x-ui.button>
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="share" :icon-only="true" variant="secondary" size="sm"
                         x-data="atharShare({ url: '{{ $card->verifyUrl }}', title: '{{ __('card.share_title') }}' })"
                         x-on:click="share()">{{ __('app.share') }}</x-ui.button>
                 </div>

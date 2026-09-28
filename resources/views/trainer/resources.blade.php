@@ -20,7 +20,7 @@
     @else
 
         {{-- Upload ------------------------------------------------------------ --}}
-        <x-ui.card class="dc--span" icon="up" :title="__('trainer.resources.upload_title')">
+        <x-ui.card class="dc--span" icon="upload" :title="__('trainer.resources.upload_title')">
             {{-- A plain form, for the third time and the same reason (D-54, D-55):
                  atharUploader is called here too and nothing registers it, and
                  x-on:submit.prevent cancelled the native submit before the
@@ -54,7 +54,7 @@
                 <div class="row__acts">
                     {{-- `uploading` belonged to the retired uploader component and
                          threw on every render (D-86). --}}
-                    <x-ui.button variant="primary" type="submit">{{ __('trainer.resources.publish') }}</x-ui.button>
+                    <x-ui.button icon="upload" variant="primary" type="submit">{{ __('trainer.resources.publish') }}</x-ui.button>
                 </div>
             </form>
         </x-ui.card>
@@ -64,7 +64,7 @@
             <x-ui.search-input name="q" :value="request('q')" :placeholder="__('resources.search_placeholder')" />
             <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
             <x-ui.select name="state" :label="__('trainer.resources.filter_state')" :options="$stateOptions" :value="request('state')" />
-            <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+            <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
         </form>
 
         <x-ui.card class="dc--span" flush>
@@ -111,7 +111,7 @@
                                     <td class="u-num">{{ $resource->downloadCount }}</td>
                                     <td><x-ui.pill :variant="$resource->stateVariant">{{ $resource->stateLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('trainer.resources', ['edit' => $resource->id])">{{ __('app.edit') }}</x-ui.button>
                                         {{-- The route is declared DELETE (routes/web.php); the method
                                              spoof must agree or the form 405s. Archiving writes a
@@ -119,7 +119,8 @@
                                         <form method="POST" action="{{ route('trainer.resources.archive', $resource->id) }}" class="u-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <x-ui.button variant="secondary" size="sm" type="submit">
+                                            <x-ui.button variant="secondary" size="sm" type="submit"
+                                                :icon="$resource->isArchived ? 'undo' : 'archive'" :icon-only="true">
                                                 {{ $resource->isArchived ? __('trainer.resources.restore') : __('trainer.resources.archive') }}
                                             </x-ui.button>
                                         </form>

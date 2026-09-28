@@ -39,10 +39,10 @@
                      same name would print it a second time. --}}
                 <x-ui.select name="state" :label="__('admin.cohorts.fields.status')"
                     :options="$statusOptions" :value="request('state')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
-                <x-ui.button variant="primary" size="sm"
+                <x-ui.button icon="plus" variant="primary" size="sm"
                     :href="route('admin.cohorts.index', array_merge(request()->query(), ['edit' => 'new']))">{{ __('admin.cohorts.create') }}</x-ui.button>
             </div>
         </div>
@@ -124,12 +124,12 @@
                                     <td class="u-nowrap">
                                         {{-- One panel at a time (D-117): each link drops the others'
                                              parameters, so two forms never share a screen. --}}
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['trainers', 'participants']), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="user-plus" variant="secondary" size="sm"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'participants']), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
                                         @if ($cohort->canSeat)
-                                            <x-ui.button variant="secondary" size="sm"
+                                            <x-ui.button icon="user-plus" variant="secondary" size="sm"
                                                 :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'trainers']), ['participants' => $cohort->id])) . '#seat'">{{ __('admin.cohorts.add_participant_short') }}</x-ui.button>
                                         @endif
                                     </td>
@@ -199,7 +199,7 @@
                     <p class="footnote">{{ __('certificates.both_required') }}</p>
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('edit'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>
@@ -224,8 +224,8 @@
                         :value="old('participant_email')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
-                        <x-ui.button variant="ghost"
+                        <x-ui.button icon="user-plus" variant="primary" type="submit">{{ __('admin.cohorts.add_participant') }}</x-ui.button>
+                        <x-ui.button icon="x" variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('participants'))">{{ __('app.close') }}</x-ui.button>
                     </div>
                 </form>
@@ -265,7 +265,7 @@
                                         action="{{ route('admin.cohorts.trainers.detach', [$assigning->id, $trainer->id]) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_trainer') }}</x-ui.button>
+                                        <x-ui.button icon="x" variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_trainer') }}</x-ui.button>
                                     </form>
                                 </div>
                             </li>
@@ -282,8 +282,8 @@
                         :value="old('email')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
-                        <x-ui.button variant="ghost"
+                        <x-ui.button icon="user-plus" variant="primary" type="submit">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
+                        <x-ui.button icon="x" variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('trainers'))">{{ __('app.close') }}</x-ui.button>
                     </div>
                 </form>
@@ -342,14 +342,14 @@
                                             @csrf
                                             @method('PUT')
                                             <input type="hidden" name="coordinator_id" value="{{ $coordinator->id }}">
-                                            <x-ui.button variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
+                                            <x-ui.button icon="badge" variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
                                         </form>
                                     @endif
                                     <form method="POST"
                                         action="{{ route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id]) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_coordinator') }}</x-ui.button>
+                                        <x-ui.button icon="x" variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_coordinator') }}</x-ui.button>
                                     </form>
                                 </div>
                             </li>
@@ -366,8 +366,8 @@
                         :value="old('email')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.cohorts.assign_coordinator') }}</x-ui.button>
-                        <x-ui.button variant="ghost"
+                        <x-ui.button icon="user-plus" variant="primary" type="submit">{{ __('admin.cohorts.assign_coordinator') }}</x-ui.button>
+                        <x-ui.button icon="x" variant="ghost"
                             :href="route('admin.cohorts.index', request()->except('trainers'))">{{ __('app.close') }}</x-ui.button>
                     </div>
                 </form>

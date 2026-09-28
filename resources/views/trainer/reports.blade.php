@@ -33,12 +33,12 @@
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.select name="week" :label="__('schedule.filter_week')"
                     :options="$weekOptions" :value="request('week')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="download" variant="secondary" size="sm"
                         :href="route('trainer.reports.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                 @endunless
             </div>
@@ -185,7 +185,7 @@
                                         </ul>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('trainer.participants', ['view' => $person->id])">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>
                                 </tr>

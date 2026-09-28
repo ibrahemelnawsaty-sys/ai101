@@ -84,7 +84,7 @@
                     :label="__('auth.first_password.confirm')" />
 
                 <div class="form__submit">
-                    <x-ui.button variant="primary" type="submit">{{ __('auth.first_password.submit') }}</x-ui.button>
+                    <x-ui.button icon="check" variant="primary" type="submit">{{ __('auth.first_password.submit') }}</x-ui.button>
                 </div>
             </form>
 

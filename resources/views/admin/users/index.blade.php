@@ -57,12 +57,12 @@
                         :options="$roleOptions" :value="request('role')" />
                     <x-ui.select name="status" :label="__('admin.users.table.status')"
                         :options="$statusOptions" :value="request('status')" />
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                    <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="upload" variant="secondary" size="sm"
                         :href="route('admin.users.import')">{{ __('admin.users.import.button') }}</x-ui.button>
-                    <x-ui.button variant="primary" size="sm"
+                    <x-ui.button icon="user-plus" variant="primary" size="sm"
                         :href="route('admin.users.create')">{{ __('admin.users.create') }}</x-ui.button>
                 </div>
             </div>
@@ -130,7 +130,7 @@
                                         @if ($user->awaitingVerification)
                                             <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}" class="u-inline">
                                                 @csrf
-                                                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.resend_verification') }}</x-ui.button>
+                                                <x-ui.button icon="send" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.resend_verification') }}</x-ui.button>
                                             </form>
                                         @elseif ($user->canBePreviewed)
                                             <form method="POST" action="{{ route('admin.users.preview', $user->id) }}" class="u-inline">

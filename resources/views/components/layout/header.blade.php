@@ -24,7 +24,7 @@
             class="icb appbar__burger"
             x-on:click="$dispatch('athar-drawer')"
             aria-label="{{ __('nav.chrome.open_menu') }}">
-        <svg aria-hidden="true"><use href="#i-menu"></use></svg>
+        <x-ui.icon name="menu" />
     </button>
 
     <div class="appbar__t">
@@ -47,7 +47,7 @@
                aria-label="{{ $unreadCount > 0
                    ? trans_choice('app.accessibility.notifications_bell_unread', $unreadCount, ['count' => $unreadLabel])
                    : __('app.accessibility.notifications_bell') }}">
-                <svg aria-hidden="true"><use href="#i-bell"></use></svg>
+                <x-ui.icon name="bell" />
                 @if ($unreadCount > 0)
                     <span class="icb__n">
                         <span class="u-num" aria-hidden="true">{{ $unreadLabel }}</span>
@@ -61,7 +61,7 @@
             <a href="{{ $messagesUrl }}"
                class="icb"
                aria-label="{{ __('app.accessibility.messages_unread') }}">
-                <svg aria-hidden="true"><use href="#i-chat"></use></svg>
+                <x-ui.icon name="chat" />
                 <span class="icb__d" aria-hidden="true"></span>
                 <span class="sr">{{ __('nav.badges.unread_messages') }}</span>
             </a>

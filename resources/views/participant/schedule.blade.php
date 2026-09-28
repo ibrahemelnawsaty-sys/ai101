@@ -31,13 +31,13 @@
                 <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                 <x-ui.select name="type" :label="__('schedule.filter_type')" :options="$typeOptions" :value="request('type')" />
                 <x-ui.select name="attendance" :label="__('schedule.filter_attendance')" :options="$attendanceOptions" :value="request('attendance')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
 
             <div class="toolbar__end">
                 <x-ui.button variant="secondary" size="sm" icon="cal"
                     :href="route('schedule.ics')">{{ __('schedule.export_ics') }}</x-ui.button>
-                <x-ui.button variant="secondary" size="sm" icon="down"
+                <x-ui.button variant="secondary" size="sm" icon="download"
                     :href="route('schedule.pdf')">{{ __('schedule.export_pdf') }}</x-ui.button>
             </div>
         </div>
@@ -202,7 +202,7 @@
                         <h3>{{ $selectedSession->topic }}</h3>
                         <p class="u-num">{{ \App\Support\Dates::longDate($selectedSession->startsAt) }} · {{ \App\Support\Dates::timeRange12($selectedSession->startsAt, $selectedSession->endsAt) }}</p>
                         <p>{{ $selectedSession->description }}</p>
-                        <x-ui.button variant="secondary" size="sm"
+                        <x-ui.button icon="cal" variant="secondary" size="sm"
                             :href="route('schedule.session.ics', $selectedSession->id)">{{ __('schedule.add_to_calendar') }}</x-ui.button>
                         @if ($selectedSession->resources->isNotEmpty())
                             <ul class="cal__res">

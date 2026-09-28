@@ -6,6 +6,7 @@ namespace App\Presenters\Participant;
 
 use App\Models\Notification;
 use App\Presenters\Support\Present;
+use App\Support\Icons;
 use App\Support\ViewModel;
 
 /**
@@ -83,11 +84,11 @@ final class NotificationPresenter extends ViewModel
         return match (true) {
             str_starts_with($event, 'session_') => 'video',
             str_starts_with($event, 'assignment_'), str_starts_with($event, 'submission_') => 'file',
-            str_starts_with($event, 'grade_') => 'badge',
-            str_starts_with($event, 'certificate_') => 'shield',
+            str_starts_with($event, 'grade_') => Icons::GRADES_AND_REPORTS,
+            str_starts_with($event, 'certificate_') => Icons::CERTIFICATE,
             str_starts_with($event, 'message_') => 'chat',
             $event === 'resource_added' => 'folder',
-            $event === 'final_project_unlocked' => 'spark',
+            $event === 'final_project_unlocked' => Icons::FINAL_PROJECT,
             $bucket === 'bad' || $bucket === 'warn' => 'warn',
             default => 'bell',
         };

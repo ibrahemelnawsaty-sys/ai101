@@ -14,13 +14,13 @@
         <form method="GET" action="{{ route('notifications') }}" class="toolbar__filters">
             <x-ui.select name="type" :label="__('notifications.filter_type')" :options="$typeOptions" :value="request('type')" />
             <x-ui.select name="state" :label="__('notifications.filter_state')" :options="$stateOptions" :value="request('state')" />
-            <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+            <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
         </form>
 
         @if (! $isImpersonating && $unreadCount > 0)
             <form method="POST" action="{{ route('notifications.readAll') }}" class="toolbar__end">
                 @csrf
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('notifications.mark_all_read') }}</x-ui.button>
+                <x-ui.button icon="check" variant="secondary" size="sm" type="submit">{{ __('notifications.mark_all_read') }}</x-ui.button>
             </form>
         @endif
     </div>

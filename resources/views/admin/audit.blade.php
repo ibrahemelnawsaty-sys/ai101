@@ -45,12 +45,12 @@
                     :label="__('admin.audit.filters.range')" :value="request('from')" />
                 <x-ui.input name="to" type="date" dir="ltr"
                     :label="__('app.time.to')" :value="request('to')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="download" variant="secondary" size="sm"
                         :href="route('admin.audit.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                 @endunless
             </div>
@@ -111,7 +111,7 @@
                                     </td>
                                     <td class="u-num u-ltr u-nowrap" dir="ltr">{{ $entry->ipAddress }}</td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('admin.audit.index', array_merge(request()->query(), ['entry' => $entry->id]))">{{ __('app.view_details') }}</x-ui.button>
                                     </td>
                                 </tr>
@@ -155,7 +155,7 @@
                 </div>
 
                 <div class="row__acts">
-                    <x-ui.button variant="ghost"
+                    <x-ui.button icon="x" variant="ghost"
                         :href="route('admin.audit.index', request()->except('entry'))">{{ __('app.close') }}</x-ui.button>
                 </div>
 

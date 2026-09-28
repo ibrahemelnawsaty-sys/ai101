@@ -42,7 +42,7 @@ final class EmptyState extends UiComponent
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');
 
         $this->fallbackIcon = $icon ?? match ($this->variant) {
-            'error' => 'i-warn',
+            'error' => 'i-error',
             'success' => 'i-check',
             'locked' => 'i-lock',
             default => 'i-folder',

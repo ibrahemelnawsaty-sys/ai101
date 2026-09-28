@@ -6,6 +6,7 @@ namespace App\View\Components\Layout;
 
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
+use App\Support\Icons;
 use App\Support\ImpersonationContext;
 use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
@@ -161,32 +162,32 @@ final class Sidebar extends UiComponent
             ['items' => [
                 // D-113 — the icon matches all three other roles' own
                 // "Info dashboard" tab now, not the public home page's i-home.
-                ['route' => 'admin.dashboard', 'icon' => 'i-panel', 'label' => __('nav.admin.dashboard')],
+                ['route' => 'admin.dashboard', 'icon' => Icons::DASHBOARD, 'label' => __('nav.admin.dashboard')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
-                ['route' => 'admin.programs.index', 'icon' => 'i-spark', 'label' => __('nav.admin.programs')],
-                ['route' => 'admin.cohorts.index', 'icon' => 'i-cal', 'label' => __('nav.admin.cohorts')],
+                ['route' => 'admin.programs.index', 'icon' => Icons::PROGRAMS, 'label' => __('nav.admin.programs')],
+                ['route' => 'admin.cohorts.index', 'icon' => Icons::COHORTS, 'label' => __('nav.admin.cohorts')],
             ]],
             // D-117 — the accounts, the landing page and the platform
             // settings left this rail for the system administrator's.
             ['label' => __('nav.groups.admin'), 'items' => [
-                ['route' => 'admin.registrations.index', 'icon' => 'i-user', 'label' => __('nav.admin.registrations')],
-                ['route' => 'admin.certificates.index', 'icon' => 'i-badge', 'label' => __('nav.admin.certificates')],
+                ['route' => 'admin.registrations.index', 'icon' => Icons::REGISTRATIONS, 'label' => __('nav.admin.registrations')],
+                ['route' => 'admin.certificates.index', 'icon' => Icons::CERTIFICATE, 'label' => __('nav.admin.certificates')],
                 // Messages and manual reminders to a cohort (D-87).
-                ['route' => 'admin.broadcasts.index', 'icon' => 'i-mail', 'label' => __('nav.admin.broadcasts')],
+                ['route' => 'admin.broadcasts.index', 'icon' => Icons::BROADCASTS, 'label' => __('nav.admin.broadcasts')],
             ]],
             ['label' => __('nav.groups.work'), 'items' => [
                 // D-109, D-110 — the brief, the deadline, the ceiling, the
                 // late policy and opening the tab, entirely separate from the
                 // trainer's own read-and-grade screen.
-                ['route' => 'admin.finalProject.index', 'icon' => 'i-spark', 'label' => __('nav.admin.final_project')],
-                ['route' => 'admin.reports.index', 'icon' => 'i-chart', 'label' => __('nav.admin.reports')],
-                ['route' => 'admin.audit.index', 'icon' => 'i-shield', 'label' => __('nav.admin.audit')],
+                ['route' => 'admin.finalProject.index', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.admin.final_project')],
+                ['route' => 'admin.reports.index', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.admin.reports')],
+                ['route' => 'admin.audit.index', 'icon' => Icons::AUDIT, 'label' => __('nav.admin.audit')],
                 // D-118 — the supervisor writes to anyone, and to the
                 // system administrators' inbox.
-                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
                 // D-124 — every ticket, and the count waiting at this level.
-                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
             ]],
         ];
     }
@@ -204,14 +205,14 @@ final class Sidebar extends UiComponent
     {
         return [
             ['label' => __('nav.groups.system'), 'items' => [
-                ['route' => 'admin.users.index', 'icon' => 'i-users', 'label' => __('nav.admin.users')],
-                ['route' => 'admin.landing.edit', 'icon' => 'i-globe', 'label' => __('nav.admin.landing')],
-                ['route' => 'admin.settings.edit', 'icon' => 'i-lock', 'label' => __('nav.admin.settings')],
+                ['route' => 'admin.users.index', 'icon' => Icons::USERS, 'label' => __('nav.admin.users')],
+                ['route' => 'admin.landing.edit', 'icon' => Icons::LANDING, 'label' => __('nav.admin.landing')],
+                ['route' => 'admin.settings.edit', 'icon' => Icons::SETTINGS, 'label' => __('nav.admin.settings')],
                 // D-118 — "the contact tab": the shared inbox with the
                 // general supervisors, and nothing else.
-                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
                 // D-124 — the tickets that reached the system administrator.
-                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
             ]],
         ];
     }
@@ -229,22 +230,22 @@ final class Sidebar extends UiComponent
                 // The trainer's own information home (PR-5, batch 2) — next
                 // session, grading queues, attendance standing, all in one
                 // read-only screen the trainer never had before.
-                ['route' => 'trainer.dashboard', 'icon' => 'i-panel', 'label' => __('nav.trainer.dashboard')],
-                ['route' => 'trainer.participants', 'icon' => 'i-users', 'label' => __('nav.trainer.participants')],
+                ['route' => 'trainer.dashboard', 'icon' => Icons::DASHBOARD, 'label' => __('nav.trainer.dashboard')],
+                ['route' => 'trainer.participants', 'icon' => Icons::USERS, 'label' => __('nav.trainer.participants')],
             ]],
             ['label' => __('nav.groups.program'), 'items' => [
-                ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.trainer.sessions')],
-                ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.trainer.attendance')],
-                ['route' => 'trainer.resources', 'icon' => 'i-folder', 'label' => __('nav.trainer.resources')],
+                ['route' => 'trainer.sessions', 'icon' => Icons::SCHEDULE, 'label' => __('nav.trainer.sessions')],
+                ['route' => 'trainer.attendance', 'icon' => Icons::ATTENDANCE, 'label' => __('nav.trainer.attendance')],
+                ['route' => 'trainer.resources', 'icon' => Icons::RESOURCES, 'label' => __('nav.trainer.resources')],
             ]],
             ['label' => __('nav.groups.work'), 'items' => [
-                ['route' => 'trainer.assignments', 'icon' => 'i-file', 'label' => __('nav.trainer.assignments')],
-                ['route' => 'trainer.submissions', 'icon' => 'i-check', 'label' => __('nav.trainer.submissions')],
-                ['route' => 'trainer.finalProject', 'icon' => 'i-spark', 'label' => __('nav.trainer.final_project')],
-                ['route' => 'trainer.reports', 'icon' => 'i-chart', 'label' => __('nav.trainer.reports')],
+                ['route' => 'trainer.assignments', 'icon' => Icons::ASSIGNMENTS, 'label' => __('nav.trainer.assignments')],
+                ['route' => 'trainer.submissions', 'icon' => Icons::SUBMISSIONS, 'label' => __('nav.trainer.submissions')],
+                ['route' => 'trainer.finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.trainer.final_project')],
+                ['route' => 'trainer.reports', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.trainer.reports')],
                 // The announcement channel, the cohort group and a direct line
                 // to each participant (PRD §9.13, D-82).
-                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
             ]],
         ];
     }
@@ -265,14 +266,14 @@ final class Sidebar extends UiComponent
                 // The coordinator's own information home (PR-5, batch 2) —
                 // sessions still missing a link or a location, and the
                 // exception-request queue, both theirs to clear.
-                ['route' => 'coordinator.dashboard', 'icon' => 'i-panel', 'label' => __('nav.coordinator.dashboard')],
-                ['route' => 'trainer.sessions', 'icon' => 'i-cal', 'label' => __('nav.coordinator.sessions')],
-                ['route' => 'trainer.attendance', 'icon' => 'i-check', 'label' => __('nav.coordinator.attendance')],
+                ['route' => 'coordinator.dashboard', 'icon' => Icons::DASHBOARD, 'label' => __('nav.coordinator.dashboard')],
+                ['route' => 'trainer.sessions', 'icon' => Icons::SCHEDULE, 'label' => __('nav.coordinator.sessions')],
+                ['route' => 'trainer.attendance', 'icon' => Icons::ATTENDANCE, 'label' => __('nav.coordinator.attendance')],
                 // D-118 — the coordinator writes to the cohort's trainers
                 // and trainees, and to the general supervisor.
-                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
                 // D-124 — the cohort's tickets, and the count waiting on them.
-                ['route' => 'support.index', 'icon' => 'i-help', 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
             ]],
         ];
     }
@@ -292,24 +293,24 @@ final class Sidebar extends UiComponent
                 // same first tab kept its own route (dashboard) and moved to
                 // nav.participant.dashboard's new label right after it,
                 // unchanged otherwise.
-                ['route' => 'home', 'icon' => 'i-home', 'label' => __('nav.participant.home_page')],
-                ['route' => 'dashboard', 'icon' => 'i-panel', 'label' => __('nav.participant.dashboard')],
-                ['route' => 'participant.card', 'icon' => 'i-card', 'label' => __('nav.participant.card')],
-                ['route' => 'participant.journey', 'icon' => 'i-route', 'label' => __('nav.participant.journey')],
+                ['route' => 'home', 'icon' => Icons::HOME, 'label' => __('nav.participant.home_page')],
+                ['route' => 'dashboard', 'icon' => Icons::DASHBOARD, 'label' => __('nav.participant.dashboard')],
+                ['route' => 'participant.card', 'icon' => Icons::DIGITAL_CARD, 'label' => __('nav.participant.card')],
+                ['route' => 'participant.journey', 'icon' => Icons::JOURNEY, 'label' => __('nav.participant.journey')],
             ]],
             ['items' => [
-                ['route' => 'schedule', 'icon' => 'i-cal', 'label' => __('nav.participant.schedule')],
-                ['route' => 'attendance.index', 'icon' => 'i-check', 'label' => __('nav.participant.attendance')],
-                ['route' => 'live', 'icon' => 'i-video', 'label' => __('nav.participant.live')],
+                ['route' => 'schedule', 'icon' => Icons::SCHEDULE, 'label' => __('nav.participant.schedule')],
+                ['route' => 'attendance.index', 'icon' => Icons::ATTENDANCE, 'label' => __('nav.participant.attendance')],
+                ['route' => 'live', 'icon' => Icons::LIVE, 'label' => __('nav.participant.live')],
             ]],
             ['items' => [
-                ['route' => 'assignments.index', 'icon' => 'i-file', 'label' => __('nav.participant.assignments'), 'badge' => 'assignments'],
-                ['route' => 'resources.index', 'icon' => 'i-folder', 'label' => __('nav.participant.resources')],
-                ['route' => 'finalProject', 'icon' => 'i-spark', 'label' => __('nav.participant.final_project')],
-                ['route' => 'grades', 'icon' => 'i-chart', 'label' => __('nav.participant.grades')],
+                ['route' => 'assignments.index', 'icon' => Icons::ASSIGNMENTS, 'label' => __('nav.participant.assignments'), 'badge' => 'assignments'],
+                ['route' => 'resources.index', 'icon' => Icons::RESOURCES, 'label' => __('nav.participant.resources')],
+                ['route' => 'finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.participant.final_project')],
+                ['route' => 'grades', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.participant.grades')],
             ]],
             ['items' => [
-                ['route' => 'messages.index', 'icon' => 'i-chat', 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
             ]],
         ];
     }
@@ -350,6 +351,8 @@ final class Sidebar extends UiComponent
                 $item['href'] = route($name, $item['params'] ?? []);
                 $item['active'] = request()->routeIs($name);
                 $item['locked'] = (bool) ($item['locked'] ?? false);
+                // A locked item wears the padlock, whatever it is — decided here, not in the template.
+                $item['icon'] = $item['locked'] ? Icons::LOCKED : $item['icon'];
                 $item['badgeCount'] = $count;
                 $item['badgeLabel'] = $count > self::BADGE_CAP ? self::BADGE_CAP.'+' : (string) $count;
 

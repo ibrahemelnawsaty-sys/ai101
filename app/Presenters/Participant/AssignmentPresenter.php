@@ -9,6 +9,7 @@ use App\Models\Evaluation;
 use App\Models\Submission;
 use App\Models\Week;
 use App\Presenters\Support\Present;
+use App\Support\Icons;
 use App\Support\SignedFiles;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
@@ -117,7 +118,7 @@ final class AssignmentPresenter extends ViewModel
     {
         return match ($state) {
             'graded' => 'check',
-            'submitted', 'under_review' => 'up',
+            'submitted', 'under_review' => Icons::UPLOAD,
             'late' => 'warn',
             default => 'file',
         };

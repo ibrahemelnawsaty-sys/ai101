@@ -77,11 +77,12 @@
 <div class="toasts" x-data x-cloak role="status" aria-live="polite" aria-atomic="false">
     <template x-for="toast in $store.toast.items" :key="toast.id">
         <div class="toast" :class="'toast--' + toast.tone">
+            <svg class="toast__ic" aria-hidden="true" focusable="false"><use x-bind:href="$store.toast.icon(toast.tone)"></use></svg>
             <p class="toast__body" x-text="toast.message"></p>
             <button type="button" class="toast__x"
                     :aria-label="'{{ __('app.actions.close') }}'"
                     @click="$store.toast.dismiss(toast.id)">
-                <svg aria-hidden="true"><use href="#i-x"/></svg>
+                <x-ui.icon name="x" />
             </button>
         </div>
     </template>

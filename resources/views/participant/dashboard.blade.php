@@ -94,13 +94,13 @@
                 <div class="row__acts">
                     {{-- The join URL is never rendered before the server opens the window (PRD §9.10). --}}
                     @if ($nextSession->joinWindowOpen)
-                        <x-ui.button variant="primary" size="sm"
+                        <x-ui.button icon="live" variant="primary" size="sm"
                             :href="route('live')">{{ __('dashboard.next_session.join') }}</x-ui.button>
                     @else
-                        <x-ui.button variant="primary" size="sm" disabled
+                        <x-ui.button icon="live" variant="primary" size="sm" disabled
                             :title="__('dashboard.next_session.join_locked')">{{ __('dashboard.next_session.join') }}</x-ui.button>
                     @endif
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="cal" variant="secondary" size="sm"
                         :href="route('schedule.session.ics', $nextSession->id)">{{ __('schedule.add_to_calendar') }}</x-ui.button>
                     <p class="hint">
                         <x-ui.icon name="lock" />
@@ -190,7 +190,7 @@
                 <x-ui.skeleton height="var(--s9)" width="45%" />
                 <x-ui.skeleton height="var(--s2)" width="100%" class="u-mt-4" />
             @elseif (! $gradeSummary->hasAnyEvaluation)
-                <x-ui.empty-state icon="badge"
+                <x-ui.empty-state icon="chart"
                     :title="__('grades.total.empty_title')"
                     :description="__('grades.total.empty_body')" />
             @else
@@ -247,7 +247,7 @@
                             </span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="primary" size="sm"
+                            <x-ui.button icon="upload" variant="primary" size="sm"
                                 :href="route('assignments.show', $item->id)">{{ __('assignments.submit_now') }}</x-ui.button>
                         </div>
                     </div>
@@ -256,7 +256,7 @@
         </x-ui.card>
 
         {{-- 7 · Latest grades --------------------------------------------------- --}}
-        <x-ui.card icon="badge" :title="__('grades.latest.title')" class="is-m-order-7">
+        <x-ui.card icon="chart" :title="__('grades.latest.title')" class="is-m-order-7">
             <x-slot:action>
                 <a href="{{ route('grades') }}">{{ __('app.all') }}</a>
             </x-slot:action>
@@ -274,7 +274,7 @@
                     </div>
                 @endfor
             @elseif ($latestGrades->isEmpty())
-                <x-ui.empty-state icon="badge"
+                <x-ui.empty-state icon="chart"
                     :title="__('grades.latest.empty_title')"
                     :description="__('grades.latest.empty_body')" />
             @else
@@ -355,7 +355,7 @@
                             <span>{{ $resource->typeLabel }} · {{ \App\Support\Dates::relative($resource->addedAt) }}</span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="secondary" size="sm"
+                            <x-ui.button icon="chev" variant="secondary" size="sm"
                                 :href="route('resources.index', ['highlight' => $resource->id])">{{ __('app.open') }}</x-ui.button>
                         </div>
                     </div>

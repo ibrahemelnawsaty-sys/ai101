@@ -11,6 +11,7 @@ use App\Models\Session;
 use App\Models\User;
 use App\Presenters\Support\Present;
 use App\Services\Attendance\AttendanceWindow;
+use App\Support\Icons;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
 
@@ -122,11 +123,11 @@ final class SessionPresenter extends ViewModel
     private static function statusIcon(?SessionStatus $status, bool $isLive): string
     {
         if ($isLive) {
-            return 'video';
+            return Icons::LIVE;
         }
 
         return match ($status) {
-            SessionStatus::Cancelled => 'warn',
+            SessionStatus::Cancelled => Icons::ERROR,
             SessionStatus::Completed => 'check',
             default => 'clock',
         };

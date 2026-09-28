@@ -439,7 +439,9 @@
           outline, text-stroke, or the spread of a ring-shaped box-shadow.
      ====================================================================== */
   --bw-hairline: 1px;     /* PRD §5.6 border-default — cards, tables, rules */
-  --bw-icon:     1.5px;   /* PRD §5.7 — the one icon stroke weight */
+  --bw-icon:     1.5px;   /* PRD §5.7 — a 1.5px outline: secondary button, checkbox, text-stroke */
+  --bw-glyph:    1.75px;  /* D-127 — the one stroke weight of every sprite glyph (Lucide, 24-unit grid) */
+  --bw-glyph-mark: 2.5px; /* the one exception: a tick inside a checkbox or radio, 12px wide */
   --bw-strong:   2px;     /* PRD §5.6 border-focus — focus ring, active tab */
   --bw-marker:   3px;     /* an emphasis rail: active nav item, quote bar */
   --ring-pulse:  8px;     /* the outer edge of an attention pulse keyframe */

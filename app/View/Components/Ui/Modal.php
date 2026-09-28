@@ -36,6 +36,7 @@ final class Modal extends UiComponent
         public ?string $icon = null,
         mixed $open = false,
         mixed $dismissible = true,
+        public ?string $closeHref = null,
     ) {
         $this->open = (bool) $open;
         $this->dismissible = (bool) $dismissible;

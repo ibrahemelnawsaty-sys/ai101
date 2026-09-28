@@ -37,11 +37,11 @@
             <form method="GET" action="{{ route('trainer.assignments') }}" class="toolbar__filters">
                 <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                 <x-ui.select name="status" :label="__('trainer.assignments.filter_status')" :options="$statusOptions" :value="request('status')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             @if ($canManage)
                 <div class="toolbar__end">
-                    <x-ui.button variant="primary" size="sm"
+                    <x-ui.button icon="plus" variant="primary" size="sm"
                         :href="route('trainer.assignments', ['edit' => 'new'])">{{ __('trainer.assignments.create') }}</x-ui.button>
                 </div>
             @endif
@@ -101,7 +101,7 @@
                                     <td><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
                                         @if ($canManage)
-                                            <x-ui.button variant="secondary" size="sm"
+                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                                 :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>
                                         @endif
                                         <x-ui.button variant="secondary" size="sm"
@@ -119,7 +119,7 @@
 
         {{-- Editor ---------------------------------------------------------------- --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="badge"
+            <x-ui.card class="dc--span u-mt-4" icon="file"
                 :title="$editing->exists ? __('trainer.assignments.edit_title') : __('trainer.assignments.create')">
 
                 <form method="POST"
@@ -176,9 +176,9 @@
                         :hint="__('trainer.assignments.attachments_hint')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit"
+                        <x-ui.button icon="send" variant="primary" type="submit"
                             name="status" value="published">{{ __('trainer.assignments.publish') }}</x-ui.button>
-                        <x-ui.button variant="secondary" type="submit"
+                        <x-ui.button icon="file" variant="secondary" type="submit"
                             name="status" value="draft">{{ __('trainer.assignments.save_draft') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('trainer.assignments')">{{ __('app.cancel') }}</x-ui.button>

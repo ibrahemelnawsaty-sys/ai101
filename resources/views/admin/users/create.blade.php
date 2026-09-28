@@ -116,7 +116,7 @@
                  which the dashboard layout does not load, so the paragraph
                  would have carried a class that resolves to nothing. --}}
             <div class="form__submit">
-                <x-ui.button variant="primary" type="submit">{{ __('admin.users.invite_submit') }}</x-ui.button>
+                <x-ui.button icon="send" variant="primary" type="submit">{{ __('admin.users.invite_submit') }}</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('admin.users.index')">{{ __('app.cancel') }}</x-ui.button>
             </div>
 

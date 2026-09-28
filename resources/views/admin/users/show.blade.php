@@ -124,7 +124,7 @@
                     :disabled="! $user->canChangeRole" />
 
                 <div class="row__acts">
-                    <x-ui.button variant="primary" size="sm" type="submit"
+                    <x-ui.button icon="check" variant="primary" size="sm" type="submit"
                         :disabled="! $user->canChangeRole">{{ __('app.save_changes') }}</x-ui.button>
                 </div>
             </form>
@@ -142,12 +142,12 @@
 
                 <form method="POST" action="{{ route('admin.users.resetPassword', $user->id) }}">
                     @csrf
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.reset_password') }}</x-ui.button>
+                    <x-ui.button icon="refresh" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.reset_password') }}</x-ui.button>
                 </form>
 
                 <form method="POST" action="{{ route('admin.users.logoutEverywhere', $user->id) }}">
                     @csrf
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.logout_everywhere') }}</x-ui.button>
+                    <x-ui.button icon="logout" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.logout_everywhere') }}</x-ui.button>
                 </form>
             </div>
 

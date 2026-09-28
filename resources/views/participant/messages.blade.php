@@ -83,12 +83,12 @@
                         @csrf
                         <x-ui.input name="body" :label="__('messages.compose_label')" label-hidden
                             :placeholder="__('messages.compose_placeholder')" required />
-                        <x-ui.button variant="ghost" size="sm" type="button" icon="up"
+                        <x-ui.button variant="ghost" size="sm" type="button" icon="attach"
                             :aria-label="__('messages.attach')"
                             x-on:click="$refs.attach.click()" />
                         <input type="file" name="attachments[]" multiple class="sr" x-ref="attach"
                             aria-label="{{ __('messages.attach') }}">
-                        <x-ui.button variant="primary" size="sm" type="submit">{{ __('messages.send') }}</x-ui.button>
+                        <x-ui.button icon="send" variant="primary" size="sm" type="submit">{{ __('messages.send') }}</x-ui.button>
                     </form>
                 @else
                     <p class="chat__readonly" role="status">

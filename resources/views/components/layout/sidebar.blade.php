@@ -62,7 +62,7 @@
 
         @if ($drawer)
             <button type="button" class="side__collapse" x-on:click="hide()">
-                <svg aria-hidden="true"><use href="#i-x"></use></svg>
+                <x-ui.icon name="x" />
                 <span class="sr">{{ __('nav.chrome.close_menu') }}</span>
             </button>
         @else
@@ -73,7 +73,7 @@
                 x-bind:aria-expanded="(! collapsed).toString()"
                 aria-controls="{{ $navId }}"
             >
-                <svg aria-hidden="true"><use href="#i-panel"></use></svg>
+                <x-ui.icon name="sidebar-collapse" />
                 <span class="sr">{{ __('nav.chrome.toggle_sidebar') }}</span>
             </button>
         @endif
@@ -100,9 +100,7 @@
                                 @if ($item['active']) aria-current="page" @endif
                                 @if ($item['locked']) data-locked="true" aria-disabled="true" tabindex="-1" @endif
                             >
-                                <svg aria-hidden="true">
-                                    <use href="#{{ $item['locked'] ? 'i-lock' : $item['icon'] }}"></use>
-                                </svg>
+                                <x-ui.icon :name="$item['icon']" />
                                 <span class="side__label">{{ $item['label'] }}</span>
 
                                 @if ($item['badgeCount'] > 0)
@@ -119,7 +117,7 @@
         @empty
             {{-- Empty state: the rail has nothing to show yet (Article 17). --}}
             <div class="empty">
-                <span class="empty__ic"><svg aria-hidden="true"><use href="#i-compass"></use></svg></span>
+                <span class="empty__ic"><x-ui.icon name="compass" /></span>
                 <b>{{ __('nav.chrome.empty_title') }}</b>
                 <p>{{ __('nav.chrome.empty_body') }}</p>
             </div>
@@ -182,7 +180,7 @@
             <form method="POST" action="{{ $logoutUrl }}" class="side__logout">
                 @csrf
                 <button type="submit" class="side__b" x-bind:title="$data.collapsed ? @js(__('nav.chrome.logout')) : null">
-                    <svg aria-hidden="true"><use href="#i-logout"></use></svg>
+                    <x-ui.icon name="logout" />
                     <span class="side__label">{{ __('nav.chrome.logout') }}</span>
                 </button>
             </form>

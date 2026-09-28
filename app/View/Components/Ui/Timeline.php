@@ -73,7 +73,7 @@ final class Timeline extends UiComponent
 
         $this->statusIcon = [
             'completed' => 'i-check',
-            'current' => 'i-spark',
+            'current' => 'i-route',
             'locked' => 'i-lock',
         ];
     }

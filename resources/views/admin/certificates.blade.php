@@ -33,12 +33,12 @@
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('admin.users.filters.search_placeholder')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="download" variant="secondary" size="sm"
                         :href="route('admin.certificates.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                 @endunless
             </div>
@@ -119,7 +119,7 @@
                                         </td>
                                         <td class="u-num u-nowrap">{{ $candidate->score }} / {{ $candidate->scoreMax }}</td>
                                         <td class="u-nowrap">
-                                            <x-ui.button variant="primary" size="sm" type="submit"
+                                            <x-ui.button icon="badge" variant="primary" size="sm" type="submit"
                                                 name="single" :value="$candidate->id">{{ __('certificates.admin.issue_one') }}</x-ui.button>
                                         </td>
                                     </tr>
@@ -129,7 +129,7 @@
                     </div>
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('certificates.admin.issue_all_eligible') }}</x-ui.button>
+                        <x-ui.button icon="badge" variant="primary" type="submit">{{ __('certificates.admin.issue_all_eligible') }}</x-ui.button>
                         <p class="hint">
                             <x-ui.icon name="badge" />
                             {{ __('certificates.admin.serial_format_hint') }}
@@ -199,7 +199,7 @@
                                         </ul>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="shield" variant="secondary" size="sm"
                                             :href="route('admin.certificates.index', array_merge(request()->query(), ['override' => $person->id]))">{{ __('certificates.admin.override') }}</x-ui.button>
                                     </td>
                                 </tr>
@@ -235,7 +235,7 @@
                         :value="old('override_reason')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="danger" type="submit">{{ __('certificates.admin.issue_one') }}</x-ui.button>
+                        <x-ui.button icon="badge" variant="danger" type="submit">{{ __('certificates.admin.issue_one') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.certificates.index', request()->except('override'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>
@@ -288,16 +288,16 @@
                                         <x-ui.pill :variant="$certificate->statusVariant" :icon="$certificate->statusIcon">{{ $certificate->statusLabel }}</x-ui.pill>
                                     </td>
                                     <td class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('certificate.verify', $certificate->verifyCode)">{{ __('app.view_details') }}</x-ui.button>
 
                                         @if ($certificate->isRevoked)
                                             <form method="POST" action="{{ route('admin.certificates.reissue', $certificate->id) }}">
                                                 @csrf
-                                                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('certificates.admin.reissue') }}</x-ui.button>
+                                                <x-ui.button icon="refresh" variant="secondary" size="sm" type="submit">{{ __('certificates.admin.reissue') }}</x-ui.button>
                                             </form>
                                         @else
-                                            <x-ui.button variant="danger" size="sm"
+                                            <x-ui.button icon="undo" variant="danger" size="sm"
                                                 :href="route('admin.certificates.index', array_merge(request()->query(), ['revoke' => $certificate->id]))">{{ __('certificates.admin.revoke') }}</x-ui.button>
                                         @endif
                                     </td>
@@ -330,7 +330,7 @@
                         :value="old('revoke_reason')" />
 
                     <div class="row__acts">
-                        <x-ui.button variant="danger" type="submit">{{ __('certificates.admin.revoke') }}</x-ui.button>
+                        <x-ui.button icon="undo" variant="danger" type="submit">{{ __('certificates.admin.revoke') }}</x-ui.button>
                         <x-ui.button variant="ghost"
                             :href="route('admin.certificates.index', request()->except('revoke'))">{{ __('app.cancel') }}</x-ui.button>
                     </div>

@@ -21,6 +21,9 @@
       title         panel title — the accessible name
       open          render already open
       dismissible   allow Escape and outside click (default: true)
+      close-href    for a panel rendered open by the server from a query string
+                    (?edit=…): every way out — the × link, Escape, the backdrop —
+                    goes to this URL, so closing works with scripting off too
 
     Slots
       $slot     body
@@ -33,7 +36,8 @@
         name: @js($name),
         open: @js((bool) $open),
         closeOnBackdrop: @js((bool) $dismissible),
-        closeOnEscape: @js((bool) $dismissible)
+        closeOnEscape: @js((bool) $dismissible),
+        closeHref: @js($closeHref)
     })"
     x-on:ui-dialog-open.window="openFromEvent($event)"
     x-on:ui-dialog-close.window="closeFromEvent($event)"
@@ -64,14 +68,26 @@
                 <h2 class="ui-drawer__title" id="{{ $titleId }}">{{ $title }}</h2>
 
                 @if ($dismissible)
-                    <button
-                        type="button"
-                        class="ui-iconbtn ui-drawer__close"
-                        aria-label="{{ __('ui.dialog.close_drawer') }}"
-                        x-on:click="hide()"
-                    >
-                        <svg class="ui-icon ui-icon--sm" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
-                    </button>
+                    @if ($closeHref !== null)
+                        <a
+                            href="{{ $closeHref }}"
+                            class="ui-iconbtn ui-drawer__close"
+                            aria-label="{{ __('ui.dialog.close_drawer') }}"
+                            data-tip="{{ __('ui.dialog.close_drawer') }}"
+                        >
+                            <x-ui.icon name="x" size="sm" />
+                        </a>
+                    @else
+                        <button
+                            type="button"
+                            class="ui-iconbtn ui-drawer__close"
+                            aria-label="{{ __('ui.dialog.close_drawer') }}"
+                            data-tip="{{ __('ui.dialog.close_drawer') }}"
+                            x-on:click="hide()"
+                        >
+                            <x-ui.icon name="x" size="sm" />
+                        </button>
+                    @endif
                 @endif
             </div>
 

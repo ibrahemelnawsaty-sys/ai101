@@ -43,7 +43,7 @@
 
     @else
         {{-- Brief -------------------------------------------------------------- --}}
-        <x-ui.card class="dc--span" icon="badge" :title="$project->title">
+        <x-ui.card class="dc--span" icon="presentation" :title="$project->title">
             <x-slot:action>
                 <x-ui.countdown :until="$project->dueAt" :server-now="$serverNow"
                     variant="compact" :label="__('project.time_left')" />
@@ -62,7 +62,7 @@
 
             <h3 class="abrief__sub">{{ __('project.criteria') }}</h3>
             @if ($project->criteria->isEmpty())
-                <x-ui.empty-state icon="badge" size="sm"
+                <x-ui.empty-state icon="presentation" size="sm"
                     :title="__('project.criteria_empty_title')"
                     :description="__('project.criteria_empty_body')" />
             @else
@@ -130,13 +130,13 @@
         {{-- D-121: every item below is a field the general supervisor defined,
              in their order. What was handed in shows under the label it was
              asked by, each file with its own signed link. --}}
-        <x-ui.card class="dc--span u-mt-4" icon="up" :title="__('project.your_submission')">
+        <x-ui.card class="dc--span u-mt-4" icon="upload" :title="__('project.your_submission')">
             @if ($receipt)
                 {{-- D-122: the receipt of the newest version — its code, its QR
                      and the next step — with a link to the printable page. --}}
                 @include('partials.hand-in-receipt', ['receipt' => $receipt])
                 <div class="row__acts u-mt-2">
-                    <x-ui.button variant="secondary" size="sm" :href="$receipt->url">{{ __('project.receipt.open') }}</x-ui.button>
+                    <x-ui.button icon="file" variant="secondary" size="sm" :href="$receipt->url">{{ __('project.receipt.open') }}</x-ui.button>
                 </div>
             @endif
 
@@ -153,7 +153,7 @@
                     :title="__('project.submission_closed_title')"
                     :description="$closedReason" />
             @elseif ($handIn->isEmpty)
-                <x-ui.empty-state icon="folder" variant="muted"
+                <x-ui.empty-state icon="presentation" variant="muted"
                     :title="__('project.fields_empty_title')"
                     :description="__('project.fields_empty_body')" />
             @else
@@ -181,7 +181,7 @@
                     @foreach ($handIn->fields as $field)
                         @if ($field->isFile)
                             <div class="drop u-mt-4">
-                                <div class="drop__ic" aria-hidden="true"><x-ui.icon name="up" /></div>
+                                <div class="drop__ic" aria-hidden="true"><x-ui.icon name="upload" /></div>
                                 <b>
                                     {{ $field->label }}
                                     @if ($field->isRequired)
@@ -245,7 +245,7 @@
                     @endforeach
 
                     <div class="row__acts u-mt-4">
-                        <x-ui.button variant="primary" type="submit">{{ __('project.submit_action') }}</x-ui.button>
+                        <x-ui.button icon="upload" variant="primary" type="submit">{{ __('project.submit_action') }}</x-ui.button>
                     </div>
 
                     <p class="hint">

@@ -48,7 +48,7 @@
                         <div class="profile__photo">
                             <x-ui.avatar size="lg" :name="$profile->fullNameAr" :src="$profile->photoUrl" />
                             <div>
-                                <x-ui.button variant="secondary" size="sm" type="button"
+                                <x-ui.button icon="upload" variant="secondary" size="sm" type="button"
                                     x-data x-on:click="$refs.photo.click()">{{ __('profile.change_photo') }}</x-ui.button>
                                 <input type="file" name="photo" accept="image/*" class="sr" x-ref="photo"
                                     aria-label="{{ __('profile.change_photo') }}">
@@ -84,7 +84,7 @@
                         </div>
 
                         <div class="row__acts">
-                            <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                            <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                         </div>
                     </form>
                 @else
@@ -117,7 +117,7 @@
                         </div>
 
                         <div class="row__acts">
-                            <x-ui.button variant="primary" type="submit">{{ __('profile.update_password') }}</x-ui.button>
+                            <x-ui.button icon="lock" variant="primary" type="submit">{{ __('profile.update_password') }}</x-ui.button>
                         </div>
                     </form>
                 @else
@@ -155,7 +155,7 @@
                         <form method="POST" action="{{ route('profile.sessions.destroy') }}">
                             @csrf
                             @method('DELETE')
-                            <x-ui.button variant="danger" size="sm" type="submit">{{ __('profile.sign_out_everywhere') }}</x-ui.button>
+                            <x-ui.button icon="logout" variant="danger" size="sm" type="submit">{{ __('profile.sign_out_everywhere') }}</x-ui.button>
                         </form>
                     @endunless
                 @endif
@@ -205,7 +205,7 @@
 
                         @unless ($isImpersonating)
                             <div class="row__acts">
-                                <x-ui.button variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                                <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                             </div>
                         @endunless
                     </form>

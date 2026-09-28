@@ -11,6 +11,7 @@ use App\Models\SupportTicketEntry;
 use App\Presenters\Concerns\PresentsPeople;
 use App\Services\Tickets\TicketWorkflow;
 use App\Services\Time\RiyadhFormatter;
+use App\Support\Icons;
 use App\Support\ViewModel;
 
 /**
@@ -115,7 +116,7 @@ final class TicketEntryLine extends ViewModel
             SupportTicketEntryType::Opened => 'plus',
             SupportTicketEntryType::Reply, SupportTicketEntryType::Message => 'chat',
             SupportTicketEntryType::Note => 'file',
-            SupportTicketEntryType::Escalated => 'up',
+            SupportTicketEntryType::Escalated => Icons::ESCALATE,
             SupportTicketEntryType::Returned, SupportTicketEntryType::Assigned => 'user',
             SupportTicketEntryType::Resolved => 'check',
             SupportTicketEntryType::Reopened => 'route',

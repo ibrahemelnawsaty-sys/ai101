@@ -13,13 +13,13 @@
 @section('subtitle', __('live.recordings_title'))
 
 @section('content')
-    <x-ui.card icon="video" :title="$recording->topic">
+    <x-ui.card icon="recording" :title="$recording->topic">
         <div class="recording-embed">
             <iframe src="{{ $recording->embedUrl }}" allowfullscreen title="{{ $recording->topic }}"></iframe>
         </div>
 
         <div class="u-mt-4">
-            <x-ui.button variant="secondary" size="sm" :href="route('live')">{{ __('app.back') }}</x-ui.button>
+            <x-ui.button icon="chev-end" variant="secondary" size="sm" :href="route('live')">{{ __('app.back') }}</x-ui.button>
         </div>
     </x-ui.card>
 @endsection

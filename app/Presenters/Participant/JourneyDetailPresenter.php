@@ -6,6 +6,7 @@ namespace App\Presenters\Participant;
 
 use App\Enums\AttendanceStatus;
 use App\Presenters\Support\Present;
+use App\Support\Icons;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
 
@@ -35,7 +36,7 @@ final class JourneyDetailPresenter extends ViewModel
             'icon' => match ($status) {
                 AttendanceStatus::Present, AttendanceStatus::Excused => 'check',
                 AttendanceStatus::Late, AttendanceStatus::Incomplete => 'clock',
-                default => 'warn',
+                default => Icons::ERROR,
             },
         ]);
     }

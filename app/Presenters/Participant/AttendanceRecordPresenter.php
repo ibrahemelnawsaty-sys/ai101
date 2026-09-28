@@ -11,6 +11,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceExceptionRequest;
 use App\Models\Session;
 use App\Presenters\Support\Present;
+use App\Support\Icons;
 use App\Support\ViewModel;
 
 /**
@@ -65,7 +66,7 @@ final class AttendanceRecordPresenter extends ViewModel
                 $status === AttendanceStatus::Present => 'check',
                 $status === AttendanceStatus::Excused => 'info',
                 $status === AttendanceStatus::Late, $status === AttendanceStatus::Incomplete => 'clock',
-                default => 'warn',
+                default => Icons::ERROR,
             },
             'note' => Present::text($attendance->getAttribute('edit_reason')),
 

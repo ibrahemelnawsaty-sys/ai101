@@ -70,7 +70,7 @@
                 >
 
                 <span class="ui-uploader__art" aria-hidden="true">
-                    <svg class="ui-icon ui-icon--lg" focusable="false"><use href="#i-up"/></svg>
+                    <svg class="ui-icon ui-icon--lg" focusable="false"><use href="#i-upload"/></svg>
                 </span>
 
                 <label class="ui-uploader__title" for="{{ $fieldId }}">{{ $title }}</label>

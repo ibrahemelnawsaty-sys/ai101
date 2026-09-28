@@ -29,27 +29,27 @@
             :description="__('admin.states.error_body')"
             :action-label="__('app.retry')" :action-href="route('admin.finalProject.index')" />
     @elseif (count($cohortOptions) === 0)
-        <x-ui.empty-state icon="spark"
+        <x-ui.empty-state icon="presentation"
             :title="__('admin.final_project.no_cohort_title')"
             :description="__('admin.final_project.no_cohort_body')"
             :action-label="__('admin.final_project.no_cohort_action')" :action-href="route('admin.cohorts.index')" />
     @else
         <p class="form__note">{{ __('admin.final_project.intro') }}</p>
 
-        <x-ui.card class="dc--span u-mt-4" icon="spark">
+        <x-ui.card class="dc--span u-mt-4" icon="presentation">
             <form method="GET" action="{{ route('admin.finalProject.index') }}" class="toolbar__filters">
                 <x-ui.select name="cohort" required :label="__('admin.final_project.fields.cohort')"
                     :options="$cohortOptions" :value="$selectedCohortId" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
         </x-ui.card>
 
         @if ($settings === null)
-            <x-ui.empty-state icon="spark" class="u-mt-4"
+            <x-ui.empty-state icon="presentation" class="u-mt-4"
                 :title="__('admin.final_project.pick_cohort_title')"
                 :description="__('admin.final_project.pick_cohort_body')" />
         @else
-            <x-ui.card class="dc--span u-mt-4" icon="spark"
+            <x-ui.card class="dc--span u-mt-4" icon="presentation"
                 :title="$settings->exists ? $settings->title : __('admin.final_project.title')">
 
                 @if ($settings->isUnlocked)
@@ -103,22 +103,22 @@
                     @endif
 
                     <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
                     </div>
                 </form>
             </x-ui.card>
 
             {{-- D-121 · the hand-in form's fields --------------------------------- --}}
             @if ($fieldsPanel === null)
-                <x-ui.card class="dc--span u-mt-4" icon="up" id="submission-fields"
+                <x-ui.card class="dc--span u-mt-4" icon="upload" id="submission-fields"
                     :title="__('admin.final_project.submission_fields.title')">
                     <p class="form__note">{{ __('admin.final_project.submission_fields.save_project_first') }}</p>
                 </x-ui.card>
             @else
-                <x-ui.card class="dc--span u-mt-4" icon="up" id="submission-fields"
+                <x-ui.card class="dc--span u-mt-4" icon="upload" id="submission-fields"
                     :title="__('admin.final_project.submission_fields.title')">
                     <x-slot:action>
-                        <x-ui.button variant="primary" size="sm" icon="spark"
+                        <x-ui.button variant="primary" size="sm" icon="plus"
                             :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => 'new']).'#field-editor'">{{ __('admin.final_project.submission_fields.add') }}</x-ui.button>
                     </x-slot:action>
 
@@ -133,7 +133,7 @@
                     @endif
 
                     @if ($fieldsPanel->isEmpty)
-                        <x-ui.empty-state icon="up" class="u-mt-4"
+                        <x-ui.empty-state icon="upload" class="u-mt-4"
                             :title="__('admin.final_project.submission_fields.empty_title')"
                             :description="__('admin.final_project.submission_fields.empty_body')"
                             :action-label="__('admin.final_project.submission_fields.add')"
@@ -169,9 +169,9 @@
                                             <x-ui.button variant="ghost" size="sm" type="submit" icon="chevdown"
                                                 :state="$row->canMoveDown ? 'default' : 'disabled'"><span class="ui-sr">{{ $row->moveDownLabel }}</span></x-ui.button>
                                         </form>
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'field' => $row->id]).'#field-editor'">{{ __('app.edit') }}</x-ui.button>
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button icon="trash" :icon-only="true" variant="secondary" size="sm"
                                             :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'remove' => $row->id]).'#field-removal'">{{ __('admin.final_project.submission_fields.remove') }}</x-ui.button>
                                     </div>
                                 </li>
@@ -194,7 +194,7 @@
                             @method('DELETE')
 
                             <div class="row__acts">
-                                <x-ui.button variant="danger" type="submit">{{ __('admin.final_project.submission_fields.remove_action') }}</x-ui.button>
+                                <x-ui.button icon="trash" variant="danger" type="submit">{{ __('admin.final_project.submission_fields.remove_action') }}</x-ui.button>
                                 <x-ui.button variant="ghost"
                                     :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#submission-fields'">{{ __('app.cancel') }}</x-ui.button>
                             </div>
@@ -204,7 +204,7 @@
 
                 {{-- Field editor ------------------------------------------------------ --}}
                 @if ($fieldsPanel->editor)
-                    <x-ui.card class="dc--span u-mt-4" icon="up" id="field-editor" :title="$fieldsPanel->editor->title">
+                    <x-ui.card class="dc--span u-mt-4" icon="upload" id="field-editor" :title="$fieldsPanel->editor->title">
                         <form method="POST"
                             action="{{ $fieldsPanel->editor->exists
                                 ? route('admin.finalProject.fields.update', [$fieldsPanel->projectId, $fieldsPanel->editor->id])
@@ -264,7 +264,7 @@
                             </div>
 
                             <div class="row__acts u-mt-4">
-                                <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.submission_fields.save') }}</x-ui.button>
+                                <x-ui.button icon="check" variant="primary" type="submit">{{ __('admin.final_project.submission_fields.save') }}</x-ui.button>
                                 <x-ui.button variant="ghost"
                                     :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#submission-fields'">{{ __('app.cancel') }}</x-ui.button>
                             </div>

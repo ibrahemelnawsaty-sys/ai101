@@ -168,7 +168,7 @@
                 <x-slot:action>
                     {{-- D-117 — no export from inside an account preview. --}}
                     @unless ($impersonation ?? null)
-                        <x-ui.button variant="secondary" size="sm" icon="down"
+                        <x-ui.button variant="secondary" size="sm" icon="download"
                             :href="route('attendance.export')">{{ __('attendance.log.export_pdf') }}</x-ui.button>
                     @endunless
                 </x-slot:action>
@@ -176,7 +176,7 @@
                 <form method="GET" action="{{ route('attendance.index') }}" class="toolbar__filters">
                     <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                     <x-ui.select name="status" :label="__('attendance.filter_status')" :options="$statusOptions" :value="request('status')" />
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                    <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
 
                 @if (is_null($records))
@@ -252,10 +252,10 @@
                                                             :placeholder="__('attendance.exception.reason_placeholder')"
                                                             :hint="__('attendance.exception.reason_hint', ['min' => 10])" />
                                                         <div class="row__acts u-mt-2">
-                                                            <x-ui.button variant="primary" size="sm" type="submit">
+                                                            <x-ui.button icon="send" variant="primary" size="sm" type="submit">
                                                                 {{ __('attendance.exception.submit_action') }}
                                                             </x-ui.button>
-                                                            <x-ui.button variant="ghost" size="sm" type="button" x-on:click="open = false">
+                                                            <x-ui.button icon="x" variant="ghost" size="sm" type="button" x-on:click="open = false">
                                                                 {{ __('attendance.exception.cancel_action') }}
                                                             </x-ui.button>
                                                         </div>

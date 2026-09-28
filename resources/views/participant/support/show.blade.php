@@ -214,14 +214,14 @@
             <form method="POST" action="{{ route('support.close', $ticket->id) }}" class="u-mt-2">
                 @csrf
                 <input type="hidden" name="seen" value="{{ $ticket->seen }}">
-                <x-ui.button variant="secondary" type="submit">{{ __('support.close.submit') }}</x-ui.button>
+                <x-ui.button icon="lock" variant="secondary" type="submit">{{ __('support.close.submit') }}</x-ui.button>
             </form>
         </x-ui.card>
     @endif
 
     {{-- The support team -------------------------------------------------------- --}}
     @if ($ticket->canNote || $ticket->canResolve || $ticket->canEscalate || $ticket->canReturn || $ticket->canAssign)
-        <x-ui.card class="dc--span u-mt-4" icon="cog" :title="__('support.actions.title')">
+        <x-ui.card class="dc--span u-mt-4" icon="settings" :title="__('support.actions.title')">
             <div class="tkt-acts">
                 @if ($ticket->canNote)
                     <form method="POST" action="{{ route('support.note', $ticket->id) }}" enctype="multipart/form-data" class="form tkt-act"
@@ -263,7 +263,7 @@
                                     <span x-text="internal ? @js(__('support.actions.submit_internal')) : @js(__('support.actions.submit_message'))">{{ old('internal') ? __('support.actions.submit_internal') : __('support.actions.submit_message') }}</span>
                                 </x-ui.button>
                             @else
-                                <x-ui.button variant="primary" type="submit">{{ __('support.actions.submit_internal') }}</x-ui.button>
+                                <x-ui.button icon="plus" variant="primary" type="submit">{{ __('support.actions.submit_internal') }}</x-ui.button>
                             @endif
                         </div>
                     </form>
@@ -296,7 +296,7 @@
                             :value="old('escalate_note')" />
 
                         <div class="form__submit">
-                            <x-ui.button variant="secondary" type="submit" icon="up">{{ __('support.actions.escalate', ['to' => $ticket->escalateTo]) }}</x-ui.button>
+                            <x-ui.button variant="secondary" type="submit" icon="escalate">{{ __('support.actions.escalate', ['to' => $ticket->escalateTo]) }}</x-ui.button>
                         </div>
                     </form>
                 @endif

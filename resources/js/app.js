@@ -28,6 +28,9 @@ import Alpine from 'alpinejs';
    standard `alpine:init` event, which fires inside Alpine.start() below. */
 import './ui.js';
 
+/* Side-effect import: the one guard against a form being sent twice (D-127). */
+import './submit-guard.js';
+
 /* ==========================================================================
    Environment probes
    ========================================================================== */
@@ -846,6 +849,10 @@ function impersonation() {
     return (config = {}) => ({
         endsAtMs: Date.parse(config.endsAt || ''),
         label: '00:00',
+        // What a screen reader is told, and only at two moments (D-127): the
+        // sentences arrive from Blade, none is written here (Article 15).
+        announcement: '',
+        announced: { five: false, one: false },
         expired: false,
         timer: null,
         observer: null,
@@ -880,6 +887,17 @@ function impersonation() {
         tick() {
             const left = Math.max(0, this.endsAtMs - serverNow());
             this.label = pad2(Math.floor(left / 60000)) + ':' + pad2(Math.floor(left / 1000) % 60);
+
+            // Announced once each, never per second: five minutes, then one.
+            if (left > 0 && left <= 60000 && !this.announced.one) {
+                this.announced.one = true;
+                this.announced.five = true;
+                this.announcement = config.oneMinute || '';
+            } else if (left > 60000 && left <= 300000 && !this.announced.five) {
+                this.announced.five = true;
+                this.announcement = config.fiveMinutes || '';
+            }
+
             if (left > 0) return;
             this.expired = true;
             window.clearInterval(this.timer);
@@ -895,9 +913,16 @@ function impersonation() {
 
 const TOAST_MS = 5000;
 
+/** One glyph per tone, so colour is never the only carrier of meaning (Article 18). */
+const TOAST_ICONS = { ok: '#i-check', info: '#i-info', warn: '#i-warn', bad: '#i-error' };
+
 const toastStore = {
     items: [],
     seq: 0,
+
+    icon(tone) {
+        return TOAST_ICONS[tone] || TOAST_ICONS.info;
+    },
 
     /**
      * @param {string} message already translated in PHP

@@ -64,7 +64,7 @@
         <div class="toolbar u-mt-4">
             {{-- D-117 — no export from inside an account preview. --}}
             @unless ($impersonation ?? null)
-                <x-ui.button variant="secondary" size="sm" icon="down"
+                <x-ui.button variant="secondary" size="sm" icon="download"
                     :href="route('grades.export')">{{ __('grades.export_pdf') }}</x-ui.button>
             @endunless
         </div>
@@ -83,7 +83,7 @@
                 </div>
             @endfor
         @elseif ($items->isEmpty())
-            <x-ui.empty-state icon="badge"
+            <x-ui.empty-state icon="chart"
                 :title="__('grades.items_empty_title')"
                 :description="__('grades.items_empty_body')"
                 :action-label="__('nav.assignments')" :action-href="route('assignments.index')" />

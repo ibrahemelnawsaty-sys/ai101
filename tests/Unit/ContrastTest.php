@@ -79,7 +79,9 @@ it('D-48: كل مزاوجة لون مستعملة تحقّق معيار التب
         // [foreground, background, minimum, where]
         ['dk-8', 'ink', 4.5, 'faint copy on the dark page (copyright line, legal footer links)'],
         ['white', 'violet-500', 4.5, 'primary button'],
-        ['black', 'bad', 4.5, 'destructive button'],
+        ['white', 'bad-800', 4.5, 'destructive button at rest (D-127 — black on bad-800 was 3.43 on hover)'],
+        ['white', 'bad-700', 4.5, 'destructive button on hover'],
+        ['bad-700', 'n-000', 4.5, 'quiet destructive trigger (danger-ghost) on the light shell'],
         ['black', 'warn', 4.5, 'impersonation bar — the one banner that must never be missed'],
         ['black', 'teal-500', 4.5, 'completed journey step — the pairing CLAUDE.md names by hand'],
         ['n-900', 'n-000', 4.5, 'body copy in the light shell'],

@@ -35,12 +35,12 @@
                     :label="__('admin.reports.range')" :value="request('from')" />
                 <x-ui.input name="to" type="date" dir="ltr"
                     :label="__('app.time.to')" :value="request('to')" />
-                <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview. --}}
                 @unless ($impersonation ?? null)
-                    <x-ui.button variant="secondary" size="sm"
+                    <x-ui.button icon="download" variant="secondary" size="sm"
                         :href="route('admin.reports.export', request()->query())">{{ __('admin.reports.export_excel') }}</x-ui.button>
                 @endunless
             </div>

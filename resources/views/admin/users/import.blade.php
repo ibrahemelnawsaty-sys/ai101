@@ -59,11 +59,11 @@
 
         @if (is_null($rows))
             {{-- ── Step 1 · the sheet ─────────────────────────────────────── --}}
-            <x-ui.card icon="down" :title="__('admin.users.import.step_template')">
+            <x-ui.card icon="download" :title="__('admin.users.import.step_template')">
                 <p class="form__note">{{ __('admin.users.import.template_hint') }}</p>
 
                 <div class="tagrow u-mt-4">
-                    <x-ui.button variant="primary"
+                    <x-ui.button icon="download" variant="primary"
                         :href="route('admin.users.import.template')">{{ __('admin.users.import.template_xlsx') }}</x-ui.button>
                     <x-ui.button variant="secondary" size="sm"
                         :href="route('admin.users.import.templateCsv')">{{ __('admin.users.import.template_csv') }}</x-ui.button>
@@ -85,7 +85,7 @@
                   enctype="multipart/form-data" class="u-mt-4">
                 @csrf
 
-                <x-ui.card icon="up" :title="__('admin.users.import.step_upload')">
+                <x-ui.card icon="upload" :title="__('admin.users.import.step_upload')">
                     <div class="grid-fields">
                         <x-ui.select name="cohort_id" required
                             :label="__('admin.users.cohort')" :options="$cohortOptions"
@@ -113,7 +113,7 @@
                     </div>
 
                     <div class="form__submit">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.users.import.preview_submit') }}</x-ui.button>
+                        <x-ui.button icon="eye" variant="primary" type="submit">{{ __('admin.users.import.preview_submit') }}</x-ui.button>
                     </div>
 
                     <p class="form__note">{{ __('admin.users.import.preview_note') }}</p>
@@ -169,7 +169,7 @@
                      other fifty-nine people, and the administrator would have
                      to find it before anybody could start. --}}
                 <div class="form__submit">
-                    <x-ui.button variant="primary" type="submit"
+                    <x-ui.button icon="send" variant="primary" type="submit"
                         :state="$validCount === 0 ? 'disabled' : 'default'">
                         {{ __('admin.users.import.confirm', ['count' => $validCount]) }}
                     </x-ui.button>

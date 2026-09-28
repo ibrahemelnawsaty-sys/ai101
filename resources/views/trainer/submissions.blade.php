@@ -44,7 +44,7 @@
                     <x-ui.search-input name="q" :value="request('q')" :placeholder="__('trainer.submissions.search')" />
                     <x-ui.select name="assignment" :label="__('trainer.submissions.filter_assignment')" :options="$assignmentOptions" :value="request('assignment')" />
                     <x-ui.select name="status" :label="__('trainer.submissions.filter_status')" :options="$statusOptions" :value="request('status')" />
-                    <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
+                    <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
                     {{-- The reminder addresses ONE assignment and goes to everyone who
@@ -59,10 +59,10 @@
                     @endif
                     {{-- D-117 — no export or bulk download from inside an account preview. --}}
                     @unless ($impersonation ?? null)
-                        <x-ui.button variant="secondary" size="sm" icon="down"
+                        <x-ui.button variant="secondary" size="sm" icon="download"
                             :href="$bulkDownloadHref"
                             :disabled="is_null($bulkDownloadHref)">{{ __('trainer.submissions.bulk_download') }}</x-ui.button>
-                        <x-ui.button variant="secondary" size="sm"
+                        <x-ui.button icon="download" variant="secondary" size="sm"
                             :href="route('trainer.submissions.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
                     @endunless
                 </div>
@@ -163,7 +163,7 @@
 
         {{-- Quick grading form -------------------------------------------------- --}}
         @if ($selected)
-            <x-ui.card class="dc--span u-mt-4" icon="badge"
+            <x-ui.card class="dc--span u-mt-4" icon="submissions"
                 :title="__('trainer.grading.title', ['name' => $selected->participantName])">
 
                 @if ($selected->isGraded)
@@ -256,7 +256,7 @@
                         @endif
 
                         <div class="row__acts">
-                            <x-ui.button variant="primary" size="sm" type="submit">{{ __('trainer.grading.record') }}</x-ui.button>
+                            <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('trainer.grading.record') }}</x-ui.button>
                             <x-ui.button variant="secondary" size="sm" type="submit"
                                 name="next" value="1">{{ __('trainer.grading.record_and_next') }}</x-ui.button>
                             <x-ui.button variant="ghost" size="sm"

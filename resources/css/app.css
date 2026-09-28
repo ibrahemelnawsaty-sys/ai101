@@ -1009,12 +1009,13 @@ border-inline-start: var(--bw-marker) solid var(--violet-500);
     line-height: var(--lh-sm);
   }
   .toast svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; margin-block-start: var(--s1); }
+  .toast__ic { color: var(--violet-500); }
   .toast--ok   { border-inline-start-color: var(--ok);   color: var(--n-900); }
-  .toast--ok svg   { color: var(--ok-700); }
+  .toast--ok .toast__ic   { color: var(--ok-700); }
   .toast--warn { border-inline-start-color: var(--warn); }
-  .toast--warn svg { color: var(--warn-700); }
+  .toast--warn .toast__ic { color: var(--warn-700); }
   .toast--bad  { border-inline-start-color: var(--bad); }
-  .toast--bad svg  { color: var(--bad-700); }
+  .toast--bad .toast__ic  { color: var(--bad-700); }
   .toast__body { flex: 1; min-inline-size: 0; }
   .toast__x {
 inline-size: var(--s8);

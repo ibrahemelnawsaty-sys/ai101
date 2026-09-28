@@ -57,7 +57,7 @@
                             :label="__('messages.compose_label')"
                             :hint="__('messages.edit_hint')"
                             :value="$message->body" />
-                        <x-ui.button variant="secondary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <x-ui.button icon="check" variant="secondary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
                     </form>
                 </details>
             @endif

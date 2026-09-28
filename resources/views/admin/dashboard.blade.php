@@ -83,7 +83,7 @@
                             </span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="secondary" size="sm"
+                            <x-ui.button icon="eye" variant="secondary" size="sm"
                                 :href="route('admin.registrations.index', ['review' => $request->id])">{{ __('app.view_details') }}</x-ui.button>
                         </div>
                     </div>
@@ -92,7 +92,7 @@
         </x-ui.card>
 
         {{-- Submissions still without a grade -------------------------------------- --}}
-        <x-ui.card class="dc--2 u-mt-4" icon="badge" :title="__('admin.stats.ungraded_submissions')">
+        <x-ui.card class="dc--2 u-mt-4" icon="submissions" :title="__('admin.stats.ungraded_submissions')">
             @if (is_null($ungraded))
                 @for ($i = 0; $i < 3; $i++)
                     <div class="row row--sk">
@@ -155,7 +155,7 @@
                             </span>
                         </div>
                         <div class="row__e">
-                            <x-ui.button variant="primary" size="sm"
+                            <x-ui.button icon="badge" variant="primary" size="sm"
                                 :href="route('admin.certificates.index', ['candidate' => $candidate->id])">{{ __('certificates.admin.issue_one') }}</x-ui.button>
                         </div>
                     </div>

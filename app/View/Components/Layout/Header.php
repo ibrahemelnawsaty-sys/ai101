@@ -7,6 +7,7 @@ namespace App\View\Components\Layout;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\Permissions\RoleResolver;
+use App\Support\Icons;
 use App\Support\ImpersonationContext;
 use App\View\Components\Layout\Concerns\ResolvesCurrentUser;
 use App\View\Components\UiComponent;
@@ -120,7 +121,7 @@ final class Header extends UiComponent
         // trainee holds too (PRD §4.4). A preview signs in AS the previewed
         // account, so the answer is that account's, as the routes' is.
         if ($roles->hasRole($user, UserRole::Participant->value)) {
-            $items[] = self::menuItem('card', 'participant.card', 'card', __('nav.participant.card'), ['participant.card']);
+            $items[] = self::menuItem('card', 'participant.card', Icons::DIGITAL_CARD, __('nav.participant.card'), ['participant.card']);
         }
 
         // An allow-list of the shells that have an information dashboard
@@ -128,7 +129,7 @@ final class Header extends UiComponent
         // The system administrator's /dashboard is the accounts list (D-117),
         // so the label would lie there.
         if (in_array($roles->shellRole($user), self::DASHBOARD_SHELLS, true)) {
-            $items[] = self::menuItem('dashboard', 'dashboard', 'panel', __('nav.dashboard'), [
+            $items[] = self::menuItem('dashboard', 'dashboard', Icons::DASHBOARD, __('nav.dashboard'), [
                 'dashboard', 'trainer.dashboard', 'coordinator.dashboard', 'admin.dashboard',
             ]);
         }
@@ -140,7 +141,7 @@ final class Header extends UiComponent
         // system_admin). A trainer takes no part in tickets, and a preview
         // reads none of them (D-125, SupportTicketPolicy::viewAny).
         if (! ImpersonationContext::isActive() && $roles->hasAnyRole($user, self::SUPPORT_ROLES)) {
-            $items[] = self::menuItem('support', 'support.index', 'help', __('nav.support'), ['support.*']);
+            $items[] = self::menuItem('support', 'support.index', Icons::SUPPORT, __('nav.support'), ['support.*']);
         }
 
         return array_values(array_filter($items));

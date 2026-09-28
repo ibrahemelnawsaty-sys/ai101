@@ -179,7 +179,7 @@ it('المادة 16: كل أيقونة تذكرها القائمة موجودة 
             foreach ($group['items'] ?? [] as $item) {
                 $icon = $item['icon'] ?? null;
 
-                if (is_string($icon) && ! str_contains($sprite, 'id="'.$icon.'"')) {
+                if (is_string($icon) && ! str_contains($sprite, 'id="'.(str_starts_with($icon, 'i-') ? $icon : 'i-'.$icon).'"')) {
                     $missing[] = $icon;
                 }
             }

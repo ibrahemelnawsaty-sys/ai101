@@ -21,7 +21,7 @@ final class Toast extends UiComponent
     public const ICONS = [
         'success' => 'i-check',
         'warning' => 'i-warn',
-        'error' => 'i-warn',
+        'error' => 'i-error',
         'info' => 'i-info',
     ];
 

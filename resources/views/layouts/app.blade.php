@@ -76,7 +76,7 @@
 
 <a class="skip" href="#main">{{ __('app.actions.skip_to_content') }}</a>
 
-<x-layout.icons />
+@include('partials.icon-sprite')
 
 {{-- Preview mode is the strongest permission on the platform, so its banner is
      the first thing in the document and never scrolls away (Article 23). --}}
@@ -141,12 +141,14 @@
 <div class="toasts" x-data x-cloak role="status" aria-live="polite" aria-atomic="false">
     <template x-for="toast in $store.toast.items" :key="toast.id">
         <div class="toast" :class="'toast--' + toast.tone">
+            {{-- Colour never carries the tone alone (Article 18): each tone has its own glyph. --}}
+            <svg class="toast__ic" aria-hidden="true" focusable="false"><use x-bind:href="$store.toast.icon(toast.tone)"></use></svg>
             <p class="toast__body" x-text="toast.message"></p>
             <button type="button"
                     class="toast__x"
                     :aria-label="'{{ __('app.actions.close') }}'"
                     x-on:click="$store.toast.dismiss(toast.id)">
-                <svg aria-hidden="true"><use href="#i-x"></use></svg>
+                <x-ui.icon name="x" />
             </button>
         </div>
     </template>

@@ -13,6 +13,7 @@ use App\Enums\SessionStatus;
 use App\Enums\SubmissionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Support\Icons;
 
 /**
  * Where a number or a state becomes a colour and an icon.
@@ -85,9 +86,10 @@ trait PresentsVariants
     protected static function rateIcon(string $variant): string
     {
         return match ($variant) {
-            'success' => 'check',
-            'warning', 'error' => 'warn',
-            default => 'chart',
+            'success' => Icons::SUCCESS,
+            'warning' => Icons::WARNING,
+            'error' => Icons::ERROR,
+            default => Icons::GRADES_AND_REPORTS,
         };
     }
 
@@ -129,7 +131,7 @@ trait PresentsVariants
             AttendanceStatus::Present => 'check',
             AttendanceStatus::Late, AttendanceStatus::Incomplete => 'clock',
             AttendanceStatus::Excused => 'shield',
-            AttendanceStatus::Absent => 'warn',
+            AttendanceStatus::Absent => Icons::ERROR,
             default => 'user',
         };
     }
@@ -149,8 +151,8 @@ trait PresentsVariants
     {
         return match ($status) {
             SessionStatus::Completed => 'check',
-            SessionStatus::Live => 'clock',
-            SessionStatus::Cancelled => 'warn',
+            SessionStatus::Live => Icons::LIVE,
+            SessionStatus::Cancelled => Icons::ERROR,
             default => 'cal',
         };
     }
