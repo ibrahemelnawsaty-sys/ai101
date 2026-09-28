@@ -97,6 +97,7 @@ final class AttendanceController extends Controller
                 'editing' => null,
                 'pendingExceptions' => collect(),
                 'checkInCode' => null,
+                'canExport' => false,
                 'recordingSessions' => collect(),
                 'recordingEditing' => null,
                 'errorState' => null,
@@ -142,6 +143,9 @@ final class AttendanceController extends Controller
             'editing' => $this->editing($request, $session, $records, $participants),
             'pendingExceptions' => $this->pendingExceptions($cohort),
             'checkInCode' => $this->checkInCodeFor($session),
+            // D-131 — the screen offers the export to whoever the policy lets take
+            // it: the same question export() asks, so the button and the 403 agree.
+            'canExport' => $request->user()?->can('export', $cohort) ?? false,
             'recordingSessions' => $recordingSessions,
             'recordingEditing' => $this->recordingEditingFrom($request, $recordingSessions),
             'rosterPollSeconds' => max(0, (int) config('athar.attendance.roster_poll_seconds')),

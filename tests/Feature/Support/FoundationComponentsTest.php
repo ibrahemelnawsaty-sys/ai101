@@ -330,3 +330,13 @@ it('D-127: every confirmation dialog gives its reason field an id of its own', f
     expect($html)->toContain('id="a-form-reason"')
         ->and($html)->toContain('id="b-form-reason"');
 });
+
+it('D-127: an icon-only button is a full 44px target on every pointer, not only on touch screens', function (): void {
+    $css = (string) File::get(resource_path('css/components.css'));
+    $tokens = (string) File::get(resource_path('css/tokens.css'));
+
+    expect($tokens)->toContain('--touch-min:')
+        ->and($css)->toContain('.ui-btn--icon.ui-btn--sm { inline-size: var(--touch); min-block-size: var(--touch); }')
+        // The old rule gave a small icon button 36px unless the device was coarse.
+        ->and($css)->not->toContain('.ui-btn--icon.ui-btn--sm { inline-size: var(--s9); }');
+});

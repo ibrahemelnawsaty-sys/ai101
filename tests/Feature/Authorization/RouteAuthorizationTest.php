@@ -22,6 +22,7 @@ declare(strict_types=1);
  * @see CONSTITUTION.md Articles 5, 22, 26 (G9)
  */
 
+use App\Models\AttendanceExceptionRequest;
 use App\Models\Enrollment;
 use App\Models\LandingSetting;
 use App\Models\Program;
@@ -108,6 +109,24 @@ beforeEach(function (): void {
     $handover->update(['primary_coordinator_id' => $this->coordinator->id]);
     $this->tickets['assign'] = $ticket(['cohort_id' => $handover->id]);
 
+    // D-106 — one pending excuse per decision route, each on an absence of its
+    // own person, so a row that decides one never leaves the next a request
+    // that is already decided.
+    $pastStart = riyadhAt('2026-10-10 18:00:00');
+    $pastSession = sessionInCohort($this->cohort, $pastStart, $pastStart->addHours(3));
+    $excuse = function () use ($pastSession): AttendanceExceptionRequest {
+        $person = makeParticipant($this->cohort);
+        $absence = makeAttendance($pastSession, $person, 'absent');
+
+        return AttendanceExceptionRequest::query()->create([
+            'attendance_id' => $absence->id,
+            'user_id' => $person->id,
+            'type' => 'absence',
+            'reason' => 'A written reason long enough to be accepted as one.',
+        ]);
+    };
+    $this->excuses = ['approve' => $excuse(), 'reject' => $excuse()];
+
     $this->actors = [
         'admin' => $this->admin,
         'system_admin' => $this->sysadmin,
@@ -169,17 +188,23 @@ function authorizationMatrix(object $test): array
         // that sends them to the accounts list, the profile, the bell) and is
         // refused every cohort screen: the role reaches no cohort, and the
         // owner named its work as the accounts and the landing page alone.
-        'dashboard' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
-        'schedule' => ['get', [], ['participant', 'trainer', 'admin']],
-        'attendance.index' => ['get', [], ['participant', 'trainer', 'admin']],
-        'live' => ['get', [], ['participant', 'trainer', 'admin']],
-        'assignments.index' => ['get', [], ['participant', 'trainer', 'admin']],
-        'resources.index' => ['get', [], ['participant', 'trainer', 'admin']],
+        //
+        // The coordinator is on that allow-list too: D-117 names
+        // `role:participant,trainer,coordinator,admin` for the shared cohort
+        // screens (schedule, attendance, live, tasks, kit), and its own /dashboard
+        // sends the coordinator to coordinator.dashboard (D-109). These rows said
+        // otherwise since D-105 and D-117 itself listed them as not yet corrected.
+        'dashboard' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
+        'schedule' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin']],
+        'attendance.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin']],
+        'live' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin']],
+        'assignments.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin']],
+        'resources.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin']],
         // D-118 — every role converses; who with is ConversationRules.
         'messages.index' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
         'messages.create' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
-        'profile' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
-        'notifications' => ['get', [], ['participant', 'trainer', 'admin', 'system_admin']],
+        'profile' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
+        'notifications' => ['get', [], ['participant', 'trainer', 'coordinator', 'admin', 'system_admin']],
 
         // -------------------------------------------------------------- trainer
         // PR-5 دفعة 2 — the trainer's own information dashboard.
@@ -191,10 +216,21 @@ function authorizationMatrix(object $test): array
         // Attendance alone also admits a coordinator (D-105): the role exists
         // for exactly this, and nothing else under /trainer/*.
         'trainer.attendance' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
-        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin', 'coordinator']],
+        // D-131 — the file is the trainer's and the supervisor's; the coordinator
+        // takes the roll, they do not take the record out. The owner decided it
+        // on 28 September 2026; the row said otherwise, the policy and now the
+        // screen (no button for the coordinator) always agreed with the decision.
+        'trainer.attendance.export' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.attendance.poll' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
         'trainer.attendance.update' => ['patch', $cohort + ['attendance' => $test->attendance->id], ['trainer', 'admin', 'coordinator']],
         'trainer.attendance.bulk' => ['post', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
+        // D-106 — the self-check-in QR. D-107 — the recording link. D-106 — deciding
+        // an excuse. All three sit in the same `role:trainer,admin,coordinator`
+        // group as the rows above (routes/web.php) and had no row of their own.
+        'trainer.attendance.checkinCode' => ['get', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.sessions.recording' => ['patch', $cohort + ['session' => $test->session->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance-exceptions.approve' => ['post', $cohort + ['exceptionRequest' => $test->excuses['approve']->id], ['trainer', 'admin', 'coordinator']],
+        'trainer.attendance-exceptions.reject' => ['post', $cohort + ['exceptionRequest' => $test->excuses['reject']->id], ['trainer', 'admin', 'coordinator']],
 
         // D-109 — reading the schedule stayed a trainer ability; writing it
         // moved to admin/coordinator only, so a trainer's own edit could

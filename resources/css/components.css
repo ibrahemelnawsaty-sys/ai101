@@ -247,12 +247,12 @@ outline-offset: var(--s1);
 /* Icon-only button (D-127): the glyph alone in a square target. The words live
    in aria-label and in the tooltip below, so nothing a screen reader or a
    keyboard user needs is lost with the label. */
-.ui-btn--icon { padding-inline: 0; inline-size: var(--touch); }
-.ui-btn--icon.ui-btn--sm { inline-size: var(--s9); }
+/* Always a full touch target, on every pointer (D-127): with no words beside it
+   the glyph is all there is to hit, so the compact 36px of a small text button
+   does not apply here. Table rows are tall enough that this costs no density. */
+.ui-btn--icon { padding-inline: 0; inline-size: var(--touch); min-block-size: var(--touch); }
+.ui-btn--icon.ui-btn--sm { inline-size: var(--touch); min-block-size: var(--touch); }
 .ui-btn--icon.ui-btn--lg { inline-size: var(--s14); }
-@media (pointer: coarse) {
-  .ui-btn--icon.ui-btn--sm { inline-size: var(--touch); }
-}
 
 /* Tooltip for a control that has no visible words: shown on hover and on
    keyboard focus, never on focus by pointer. Logical placement only, and no

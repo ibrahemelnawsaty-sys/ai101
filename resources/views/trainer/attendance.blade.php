@@ -25,11 +25,12 @@
             <x-ui.select name="session" :label="__('trainer.attendance.pick_session')" :options="$sessionOptions" :value="request('session')" />
             <x-ui.button icon="eye" variant="secondary" size="sm" type="submit">{{ __('app.show') }}</x-ui.button>
             <div class="toolbar__end">
-                {{-- D-117 — no export from inside an account preview. --}}
-                @unless ($impersonation ?? null)
+                {{-- D-117 — no export from inside an account preview.
+                     D-131 — and none for a role the policy refuses (the coordinator). --}}
+                @if (($canExport ?? false) && ! ($impersonation ?? null))
                     <x-ui.button variant="secondary" size="sm" icon="download"
                         :href="route('trainer.attendance.export', request()->query())">{{ __('app.export_excel') }}</x-ui.button>
-                @endunless
+                @endif
             </div>
         </form>
 

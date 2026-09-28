@@ -5,7 +5,7 @@
     Phase 0 of the UI overhaul (D-127): one family for the whole platform —
     Lucide (https://lucide.dev, ISC licence; portions Feather, MIT). All 24×24,
     all outline, and NO symbol carries its own stroke width: the one weight is
-    `--bw-icon` in tokens.css, applied by the `use` rule in components.css, so
+    `--bw-glyph` in tokens.css, applied by the `use` rule in components.css, so
     changing it changes every icon at once and a component can still override
     it for one mark (a check inside a checkbox).
 
@@ -17,6 +17,20 @@
     in an RTL flow "forward" and "back" — a caller adds nothing. The arrows drawn
     the LTR way (login, logout, send, undo, external) sit in a `.rtl-mirror`
     group that components.css flips under dir=rtl, so they too need no help.
+
+    ADDING OR CHANGING AN ICON — by hand; this file is the source, there is no
+    generator (it was first produced from lucide-static 0.469.0 and is edited
+    directly since D-127):
+      1. Take the drawing from https://lucide.dev (ISC): the shapes only, 24×24.
+      2. Add a symbol element: id "i-" plus the concept, viewBox "0 0 24 24",
+         fill "none", stroke "currentColor", round caps and joins — copy a
+         neighbour and replace its shapes. No stroke-width and no colour: the
+         weight is --bw-glyph, the colour is currentColor.
+      3. An arrow drawn the LTR way goes inside a g element of class rtl-mirror.
+      4. Add the concept to App\Support\Icons (bare id, no "i-").
+      5. Run tests/Feature/Support/IconSpriteContractTest.php: it fails on an
+         undrawn concept, two concepts sharing one drawing, a stroke-width, or
+         an id that is referenced and never drawn.
 
     Brand marks (wordmark, mark, the video-service silhouettes, WhatsApp) are
     filled shapes, not Lucide, and keep their own drawing.
