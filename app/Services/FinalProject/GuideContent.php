@@ -58,7 +58,10 @@ final class GuideContent
 
     /**
      * Store a page as the guide's newest version. Returns the version on show
-     * afterwards — the same one when the page did not change.
+     * afterwards — the same one when the page did not change, which callers
+     * tell apart by its number.
+     *
+     * @param  array<string, string>  $provenance  where a copied page came from, for the trail
      */
     public function save(
         FinalProject $project,
@@ -67,10 +70,11 @@ final class GuideContent
         string $source,
         ?User $actor,
         ?int $restoredFrom = null,
+        array $provenance = [],
     ): FinalProjectGuideVersion {
         $guide = $this->guideFor($project, $locale);
 
-        return DB::transaction(function () use ($guide, $html, $source, $actor, $restoredFrom): FinalProjectGuideVersion {
+        return DB::transaction(function () use ($guide, $html, $source, $actor, $restoredFrom, $provenance): FinalProjectGuideVersion {
             FinalProjectGuide::query()->whereKey($guide->getKey())->lockForUpdate()->first();
 
             $previous = $this->current($guide);
@@ -93,7 +97,7 @@ final class GuideContent
                     'bytes' => strlen($html),
                     'source' => $source,
                     'restored_from' => $restoredFrom,
-                ],
+                ] + $provenance,
                 actor: $actor,
             );
 
@@ -153,7 +157,11 @@ final class GuideContent
                 continue;
             }
 
-            $this->save($target, (string) $guide->locale, (string) $page->html, FinalProjectGuideVersion::SOURCE_COPY, $admin);
+            $this->save($target, (string) $guide->locale, (string) $page->html, FinalProjectGuideVersion::SOURCE_COPY, $admin, null, [
+                'copied_from_project' => (string) $source->getKey(),
+                'copied_from_cohort' => (string) $source->cohort_id,
+                'copied_from_version' => (string) $page->version,
+            ]);
             $copied++;
         }
 

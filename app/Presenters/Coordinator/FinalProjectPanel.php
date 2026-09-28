@@ -44,6 +44,9 @@ final class FinalProjectPanel extends ViewModel
         $byLocale = $guides->keyBy('locale');
         $isAvailable = (bool) $project->is_available;
         $isPublished = (bool) $project->is_unlocked;
+        /** @var FinalProjectGuide|null $arabic */
+        $arabic = $byLocale->get(FinalProjectGuide::PRIMARY_LOCALE);
+        $arabicPublished = (bool) $arabic?->is_published;
 
         $languages = [];
 
@@ -67,9 +70,13 @@ final class FinalProjectPanel extends ViewModel
                 },
                 'canView' => $guide !== null && $hasContent && $viewer->can('view', $guide),
                 'viewUrl' => route('finalProjectGuide.show', ['project' => $project->getKey(), 'lang' => $locale]),
-                // Pressing publish on a published page changes nothing, so the
-                // screen offers the press that would: publish OR take down.
-                'canPublish' => $guide !== null && ! (bool) $guide->is_published && $viewer->can('publish', $guide),
+                // The screen offers the one press that would change something;
+                // the service re-checks every condition under a lock anyway.
+                'canPublish' => $guide !== null
+                    && (bool) $guide->is_available
+                    && ! (bool) $guide->is_published
+                    && ($locale === FinalProjectGuide::PRIMARY_LOCALE || $arabicPublished)
+                    && $viewer->can('publish', $guide),
                 'canUnpublish' => $guide !== null && (bool) $guide->is_published && $viewer->can('unpublish', $guide),
                 'action' => route('coordinator.finalProject.guide.publication', [$project->getKey(), $locale]),
                 'waitsForPrimary' => $isPrimary
@@ -77,7 +84,7 @@ final class FinalProjectPanel extends ViewModel
                     && $guide !== null
                     && (bool) $guide->is_available
                     && ! (bool) $guide->is_published
-                    && ! $viewer->can('publish', $guide),
+                    && ! $arabicPublished,
             ];
         }
 
@@ -106,7 +113,7 @@ final class FinalProjectPanel extends ViewModel
                 : null,
             'isPrimary' => $isPrimary,
             'hasPrimary' => $hasPrimary,
-            'canPublish' => ! $isPublished && $viewer->can('publish', $project),
+            'canPublish' => $isAvailable && ! $isPublished && $viewer->can('publish', $project),
             'canUnpublish' => $isPublished && $viewer->can('unpublish', $project),
             'publicationAction' => route('coordinator.finalProject.publication', $project->getKey()),
             'handInCount' => $handIns,

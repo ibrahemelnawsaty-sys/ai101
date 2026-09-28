@@ -126,13 +126,13 @@ return [
         ],
         'final_project_available' => [
             'label' => 'Final project made available',
-            'title' => 'The final project is ready to publish',
-            'body' => 'The general supervisor made the final project of :cohort available. Review it and publish it to the trainees.',
+            'title' => 'The final project of :cohort is ready to publish',
+            'body' => 'The general supervisor made the final project available. Review it, then publish it to the trainees.',
         ],
         'final_project_guide_available' => [
             'label' => 'Project guide made available',
-            'title' => 'The final project guide is ready to publish',
-            'body' => 'The general supervisor made the :language guide of :cohort available. Review it and publish it to the trainees.',
+            'title' => 'The :language guide of :cohort is ready to publish',
+            'body' => 'The general supervisor made the final project guide available. Review it, then publish it to the trainees.',
         ],
         'resource_added' => [
             'label' => 'New resource in the pack',

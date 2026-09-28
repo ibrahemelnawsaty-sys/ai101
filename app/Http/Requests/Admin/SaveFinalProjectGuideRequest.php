@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\FinalProject;
 use App\Models\FinalProjectGuideVersion;
 use App\Rules\GuidePageColours;
+use App\Rules\GuidePageSafety;
 use App\Rules\SniffedFileType;
 use App\Services\FinalProject\GuideContent;
 use Illuminate\Foundation\Http\FormRequest;
@@ -18,10 +19,12 @@ use Illuminate\Validation\Validator;
  * .html file that replaces it (D-127). The general supervisor only.
  *
  * The page is judged whole, whichever way it came: at most 2 MB, never empty,
- * and not a single yellow or gold colour in its styling (Article 14). An
- * upload's type is read from its bytes, not its name (Article 24). The page is
- * NOT cleaned here: it is stored as written and disarmed when served
- * (GuideDocument), so the history keeps exactly what was saved.
+ * UTF-8, readable by a parser, nothing in it that leaves the page on its own
+ * (GuidePageSafety), and not a single yellow or gold colour in its styling
+ * (GuidePageColours, Article 14). An upload's type is read from its bytes, not
+ * its name (Article 24). The page is NOT cleaned here: it is stored as written
+ * and disarmed when served (GuideDocument), so the history keeps exactly what
+ * was saved — and a page that fails a check is refused, never trimmed.
  *
  * @see D-127 · CONSTITUTION Art. 5, Art. 14, Art. 24
  */
@@ -88,10 +91,25 @@ final class SaveFinalProjectGuideRequest extends FormRequest
                 return;
             }
 
-            $offenders = GuidePageColours::offenders($page);
+            if (! mb_check_encoding($page, 'UTF-8')) {
+                $validator->errors()->add($field, (string) __('admin.final_project.guide.errors.not_utf8'));
 
-            if ($offenders !== []) {
-                $validator->errors()->add($field, (string) __('admin.final_project.guide.errors.yellow', ['colours' => implode((string) __('admin.final_project.guide.errors.list_separator'), $offenders)]));
+                return;
+            }
+
+            $unsafe = GuidePageSafety::offenders($page);
+            $colours = $unsafe === null ? null : GuidePageColours::offenders($page);
+
+            // A page the parser cannot read is refused whole (Article 7).
+            $message = match (true) {
+                $unsafe === null || $colours === null => (string) __('admin.final_project.guide.errors.unreadable'),
+                $unsafe !== [] => GuidePageSafety::message($unsafe),
+                $colours !== [] => GuidePageColours::message($colours),
+                default => null,
+            };
+
+            if ($message !== null) {
+                $validator->errors()->add($field, $message);
             }
         });
     }

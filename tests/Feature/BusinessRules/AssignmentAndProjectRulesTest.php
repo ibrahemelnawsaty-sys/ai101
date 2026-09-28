@@ -62,9 +62,6 @@ function finalProjectSettingsPayload(Cohort $cohort, array $overrides = []): arr
         'brief' => PROJECT_BRIEF_CANARY,
         'due_at' => '2026-11-05T23:59',
         'max_score' => 100,
-        // D-127 — the supervisor's box is availability now; opening the tab
-        // to the trainees is the primary coordinator's press.
-        'is_available' => '1',
     ], $overrides);
 }
 
@@ -119,6 +116,13 @@ it('D-127, BR-15: المشرف العام يُتيح والمنسّق الأسا
         finalProjectSettingsPayload($this->cohort),
     ));
 
+    // D-127 — saving the settings never makes it available: that is its own press.
+    expect($this->project->fresh()->is_available)->toBeFalse();
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.availability', $this->project), ['available' => '1'])
+        ->assertSessionHasNoErrors();
+
     $fresh = $this->project->fresh();
 
     expect($fresh->is_available)->toBeTrue()
@@ -166,7 +170,7 @@ it('D-127: نشر المنسّق الأساسي يُشعر كل متدربي ا�
     $second = makeParticipant($this->cohort);
     Notification::query()->delete();
 
-    $this->actingAs($this->admin)->post(route('admin.finalProject.store'), finalProjectSettingsPayload($this->cohort));
+    $this->actingAs($this->admin)->put(route('admin.finalProject.availability', $this->project), ['available' => '1']);
 
     foreach ([$this->participant, $second] as $trainee) {
         expect(Notification::query()->where('user_id', $trainee->id)->count())->toBe(0);

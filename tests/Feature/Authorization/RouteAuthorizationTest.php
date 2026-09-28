@@ -274,6 +274,8 @@ function authorizationMatrix(object $test): array
         'admin.finalProject.fields.update' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
         'admin.finalProject.fields.move' => ['patch', [$test->finalProject, $test->finalProjectField], ['admin']],
         'admin.finalProject.fields.destroy' => ['delete', [$test->finalProject, $test->finalProjectField], ['admin']],
+        // D-127 — the project's availability, the supervisor's own press.
+        'admin.finalProject.availability' => ['put', [$test->finalProject], ['admin']],
         // D-127 — the guide's page, history, copy and availability.
         'admin.finalProject.guide.save' => ['post', [$test->finalProject, 'ar'], ['admin']],
         'admin.finalProject.guide.restore' => ['post', [$test->finalProject, 'ar'], ['admin']],

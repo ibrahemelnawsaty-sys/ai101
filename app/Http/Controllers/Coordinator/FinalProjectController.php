@@ -108,7 +108,7 @@ final class FinalProjectController extends Controller
             ? $this->projects->publish($project, $coordinator)
             : $this->projects->unpublish($project, $coordinator);
 
-        return $this->back($project, '#publish-project', match ($outcome) {
+        return $this->back($project, '#publish-project', $outcome, match ($outcome) {
             PublicationOutcome::Changed => $publishing
                 ? __('coordinator.final_project.published')
                 : __('coordinator.final_project.unpublished'),
@@ -131,7 +131,7 @@ final class FinalProjectController extends Controller
             ? $this->guides->publish($guide, $coordinator)
             : $this->guides->unpublish($guide, $coordinator);
 
-        return $this->back($project, '#publish-guide', match ($outcome) {
+        return $this->back($project, '#publish-guide', $outcome, match ($outcome) {
             PublicationOutcome::Changed => $publishing
                 ? __('coordinator.final_project.guide_published')
                 : __('coordinator.final_project.guide_unpublished'),
@@ -141,10 +141,21 @@ final class FinalProjectController extends Controller
         });
     }
 
-    private function back(FinalProject $project, string $anchor, mixed $message): RedirectResponse
+    /**
+     * Back to the tab, the message in the tone of what happened: done, nothing
+     * to do (a second click), or refused because the state moved on — never a
+     * 403 for a press this account was entitled to make (Article 15).
+     */
+    private function back(FinalProject $project, string $anchor, PublicationOutcome $outcome, mixed $message): RedirectResponse
     {
+        $tone = match ($outcome) {
+            PublicationOutcome::Changed => 'status',
+            PublicationOutcome::Unchanged => 'warning',
+            default => 'error',
+        };
+
         return redirect()
             ->to(route('coordinator.finalProject', ['cohort' => $project->cohort_id]).$anchor)
-            ->with('status', $message);
+            ->with($tone, $message);
     }
 }

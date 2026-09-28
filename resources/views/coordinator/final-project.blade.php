@@ -138,7 +138,7 @@
                         <div class="row__e row__acts">
                             @if ($language['canView'])
                                 <x-ui.button variant="ghost" size="sm" icon="external" :href="$language['viewUrl']"
-                                    target="_blank" rel="noopener">{{ __('coordinator.final_project.guide_view') }}</x-ui.button>
+                                    target="_blank" rel="noopener" aria-label="{{ __('coordinator.final_project.guide_view_label') }}">{{ __('coordinator.final_project.guide_view') }}</x-ui.button>
                             @endif
 
                             @if ($language['canPublish'])

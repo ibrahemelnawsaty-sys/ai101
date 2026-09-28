@@ -25,9 +25,13 @@ use Illuminate\Support\Str;
  *   base-uri     'none' — nor re-point its relative links.
  *   frame-*      'none' — nor frame, nor be framed.
  *
- * Styles stay inline-able (the page is one document with its own <style>),
- * images may be the page's own, data URIs or any HTTPS address, and fonts are
- * the platform's (resources/css/guide-page.css, inlined into the <head>).
+ * Styles are inline only (the page is one document with its own <style>, and
+ * the platform's typeface rules are inlined into it). Images are data URIs —
+ * nothing on the page can fetch an address of its own choosing, on another
+ * host (a tracking pixel) or on this one (a GET that acts as the trainee).
+ * Fonts come from the platform's /fonts/ folder and nowhere else. What CSP
+ * cannot stop — a <meta http-equiv="refresh"> that leaves the page — is
+ * refused when the page is saved (GuidePageSafety).
  *
  * The owner chose this (D-127: content scripts are refused): the guide is a document, and its
  * only behaviour — copying a code block — is the platform's.
@@ -50,6 +54,8 @@ final class GuideDocument
 
     public function policy(string $nonce): string
     {
+        $fonts = rtrim(asset('fonts'), '/').'/';
+
         return implode('; ', [
             "default-src 'none'",
             "base-uri 'none'",
@@ -58,9 +64,9 @@ final class GuideDocument
             "frame-ancestors 'none'",
             "form-action 'none'",
             "script-src 'nonce-{$nonce}'",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https:",
-            "font-src 'self' data:",
+            "style-src 'unsafe-inline'",
+            'img-src data: '.asset('brand/icons/favicon-mark.svg'),
+            'font-src '.$fonts,
             "connect-src 'none'",
             "media-src 'none'",
             "manifest-src 'none'",
@@ -84,7 +90,11 @@ final class GuideDocument
 
     private function head(string $nonce): string
     {
-        $css = (string) file_get_contents(resource_path('css/guide-page.css'));
+        // Comments stripped: the injected head then carries no apostrophe
+        // before the nonce, so a quote the page leaves open cannot end
+        // inside it and turn the nonce into an attribute of the page's own
+        // markup (security review, D-127).
+        $css = (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(resource_path('css/guide-page.css')));
         $js = (string) file_get_contents(resource_path('js/guide-page.js'));
 
         return '<meta name="robots" content="noindex, nofollow">'

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Rules;
 
 use App\Console\Commands\GateTokens;
+use App\Support\GuidePageDom;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
@@ -14,11 +15,16 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * The page is a whole HTML document the general supervisor uploads, so the G6
  * gate never sees it. This rule runs the gate's own scanner
  * (GateTokens::yellowViolations — the same hue window, the same colour names)
- * over every place a page can set a colour: its <style> blocks, its style=""
- * attributes and the SVG/HTML colour attributes. Words in the text are not
- * colours; a guide may say "gold" in a sentence.
+ * over every place the parsed page sets a colour: its <style> blocks, its
+ * style="" attributes and the SVG/HTML colour attributes, entities and CSS
+ * escapes decoded first. Words in the text are not colours; a guide may say
+ * "gold" in a sentence.
  *
- * @see D-127 · CONSTITUTION Art. 13 (item 5), Art. 14
+ * It fails CLOSED (Article 7): a colour the gate cannot convert (oklch(),
+ * lab(), color() …) is refused rather than trusted, and a page that cannot be
+ * parsed is refused whole.
+ *
+ * @see D-127 · CONSTITUTION Art. 7, Art. 13 (item 5), Art. 14
  */
 final class GuidePageColours implements ValidationRule
 {
@@ -30,19 +36,32 @@ final class GuidePageColours implements ValidationRule
 
         $offenders = self::offenders($value);
 
+        if ($offenders === null) {
+            $fail((string) __('admin.final_project.guide.errors.unreadable'));
+
+            return;
+        }
+
         if ($offenders !== []) {
-            $fail((string) __('admin.final_project.guide.errors.yellow', ['colours' => implode((string) __('admin.final_project.guide.errors.list_separator'), $offenders)]));
+            $fail(self::message($offenders));
         }
     }
 
     /**
-     * The forbidden colours found in the page's styling, as written.
+     * The forbidden or unverifiable colours in the page's styling, as
+     * written — or null when the page cannot be read at all.
      *
-     * @return list<string>
+     * @return list<string>|null
      */
-    public static function offenders(string $html): array
+    public static function offenders(string $html): ?array
     {
-        $styling = implode("\n", self::stylingOf($html));
+        $xpath = GuidePageDom::load($html);
+
+        if ($xpath === null) {
+            return null;
+        }
+
+        $styling = implode("\n", self::stylingOf($xpath));
 
         if ($styling === '') {
             return [];
@@ -51,14 +70,12 @@ final class GuidePageColours implements ValidationRule
         $found = [];
 
         foreach (GateTokens::yellowViolations('guide-page.css', $styling) as $violation) {
-            if ($violation['severity'] !== GateTokens::FAIL) {
-                continue;
-            }
-
-            // "#fff8e8 is hue 43deg …" or 'colour name "gold" belongs …'.
+            // "#fff8e8 is hue 43deg …", 'colour name "gold" belongs …', or
+            // "oklch( cannot be converted here …".
             $found[] = match (true) {
                 preg_match('/^(.+?) is hue /', $violation['detail'], $literal) === 1 => $literal[1],
                 preg_match('/"([^"]+)"/', $violation['detail'], $name) === 1 => $name[1],
+                preg_match('/^(\S+)/', $violation['detail'], $function) === 1 => $function[1],
                 default => $violation['detail'],
             };
         }
@@ -67,27 +84,48 @@ final class GuidePageColours implements ValidationRule
     }
 
     /**
-     * Every piece of the page that can carry a colour.
+     * Every piece of the page that can carry a colour, decoded.
      *
      * @return list<string>
      */
-    private static function stylingOf(string $html): array
+    private static function stylingOf(\DOMXPath $xpath): array
     {
-        $parts = [];
+        $parts = GuidePageDom::values($xpath, '//style');
 
-        if (preg_match_all('#<style\b[^>]*>(.*?)</style\s*>#is', $html, $blocks) > 0) {
-            array_push($parts, ...$blocks[1]);
+        $colourAttributes = GuidePageDom::values(
+            $xpath,
+            '//@*[local-name()="style" or local-name()="fill" or local-name()="stroke" or local-name()="color"'
+            .' or local-name()="bgcolor" or local-name()="stop-color" or local-name()="flood-color" or local-name()="lighting-color"]',
+        );
+
+        foreach ($colourAttributes as $value) {
+            $parts[] = 'x{'.$value.'}';
         }
 
-        $attributes = '(?:style|fill|stroke|color|bgcolor|stop-color|flood-color|lighting-color)';
+        return array_map(self::decodeCssEscapes(...), $parts);
+    }
 
-        if (preg_match_all('#\s'.$attributes.'\s*=\s*("([^"]*)"|\'([^\']*)\')#i', $html, $values, PREG_SET_ORDER) > 0) {
-            foreach ($values as $value) {
-                // Group 2 holds a double-quoted value, group 3 a single-quoted one.
-                $parts[] = 'x{'.($value[3] ?? $value[2] ?? '').'}';
-            }
-        }
+    /** `gol\64` is "gold" to a browser; it is "gold" to this rule too. */
+    private static function decodeCssEscapes(string $css): string
+    {
+        $decoded = preg_replace_callback(
+            '/\\\\([0-9a-fA-F]{1,6})\s?/',
+            static fn (array $match): string => mb_chr((int) hexdec($match[1]), 'UTF-8') ?: '',
+            $css,
+        );
 
-        return $parts;
+        return preg_replace('/\\\\(.)/su', '$1', $decoded ?? $css) ?? $css;
+    }
+
+    /**
+     * The refusal, naming what was found.
+     *
+     * @param  list<string>  $offenders
+     */
+    public static function message(array $offenders): string
+    {
+        return (string) __('admin.final_project.guide.errors.yellow', [
+            'colours' => implode((string) __('admin.final_project.guide.errors.list_separator'), $offenders),
+        ]);
     }
 }

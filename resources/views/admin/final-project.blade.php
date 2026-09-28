@@ -110,10 +110,17 @@
                         :label="__('admin.final_project.fields.allow_late')"
                         :hint="__('admin.final_project.allow_late_hint')" />
 
-                    <x-ui.checkbox name="is_available" value="1"
-                        :checked="old('is_available', $settings->isAvailable)"
-                        :label="__('admin.final_project.fields.is_available')"
-                        :hint="__('admin.final_project.is_available_hint')" />
+                    <div class="row__acts">
+                        <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
+                    </div>
+                </form>
+
+                {{-- D-127 · availability: its own press, never part of the save above --}}
+                <h3 class="abrief__sub" id="availability">{{ __('admin.final_project.availability_title') }}</h3>
+                @if (! $settings->exists)
+                    <p class="form__note">{{ __('admin.final_project.availability_save_first') }}</p>
+                @else
+                    <p class="form__note">{{ __('admin.final_project.is_available_hint') }}</p>
 
                     @if ($settings->isAvailable && $settings->availableByName)
                         <p class="footnote">
@@ -133,11 +140,54 @@
                         </p>
                     @endif
 
-                    <div class="row__acts">
-                        <x-ui.button variant="primary" type="submit">{{ __('admin.final_project.save') }}</x-ui.button>
-                    </div>
-                </form>
+                    @if (! $settings->isAvailable)
+                        <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}" class="row__acts">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="available" value="1">
+                            <x-ui.button variant="primary" type="submit" icon="check">{{ __('admin.final_project.make_available') }}</x-ui.button>
+                        </form>
+                    @elseif ($settings->isUnlocked && $handInCount > 0 && ! $confirmingWithdraw)
+                        <div class="row__acts">
+                            <x-ui.button variant="secondary" icon="lock"
+                                :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId, 'confirm' => 'withdraw']).'#availability'">{{ __('admin.final_project.withdraw') }}</x-ui.button>
+                        </div>
+                    @elseif (! $confirmingWithdraw)
+                        <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}" class="row__acts">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="available" value="0">
+                            <x-ui.button variant="secondary" type="submit" icon="lock">{{ __('admin.final_project.withdraw') }}</x-ui.button>
+                        </form>
+                    @endif
+
+                    @error('confirmed')
+                        <p class="ui-field__error" role="alert">{{ $message }}</p>
+                    @enderror
+                @endif
             </x-ui.card>
+
+            {{-- Confirming a withdrawal that locks a project with hand-ins ------- --}}
+            @if ($confirmingWithdraw)
+                <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('admin.final_project.confirm_withdraw_title')">
+                    <div class="note note--warn" role="alert">
+                        <x-ui.icon name="warn" />
+                        <p>{{ __('admin.final_project.confirm_withdraw_body', ['count' => $handInLabel]) }}</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.finalProject.availability', $settings->id) }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="available" value="0">
+                        <input type="hidden" name="confirmed" value="1">
+                        <div class="row__acts">
+                            <x-ui.button variant="danger" type="submit">{{ __('admin.final_project.confirm_withdraw_action') }}</x-ui.button>
+                            <x-ui.button variant="ghost"
+                                :href="route('admin.finalProject.index', ['cohort' => $selectedCohortId]).'#availability'">{{ __('app.cancel') }}</x-ui.button>
+                        </div>
+                    </form>
+                </x-ui.card>
+            @endif
 
             {{-- D-127 · the guide --------------------------------------------------- --}}
             @if ($guidePanel !== null)

@@ -18,6 +18,16 @@
     var copiedLabel = script ? script.getAttribute('data-copied') || '' : '';
     var pressLabel = script ? script.getAttribute('data-press') || '' : '';
 
+    // A live region is announced only if it exists BEFORE its text changes,
+    // so every copy button becomes one as soon as the page is read.
+    document.addEventListener('DOMContentLoaded', function () {
+        var buttons = document.querySelectorAll('.copy-btn');
+
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].setAttribute('aria-live', 'polite');
+        }
+    });
+
     document.addEventListener('click', function (event) {
         var target = event.target;
         var button = target && target.closest ? target.closest('.copy-btn') : null;
@@ -36,8 +46,6 @@
         if (!button.hasAttribute('data-label')) {
             button.setAttribute('data-label', button.textContent);
         }
-
-        button.setAttribute('aria-live', 'polite');
 
         var label = button.getAttribute('data-label');
 

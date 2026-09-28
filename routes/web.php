@@ -835,6 +835,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])
         Route::post('/final-project', [AdminFinalProjectController::class, 'store'])
             ->middleware('not.impersonating')
             ->name('finalProject.store');
+        // D-127 — making the project available for its primary coordinator
+        // to publish, or withdrawing it: its own press, never the settings save.
+        Route::put('/final-project/{project}/availability', [AdminFinalProjectController::class, 'availability'])
+            ->middleware('not.impersonating')
+            ->name('finalProject.availability');
 
         /*
          * D-127 — the final project's guide: the page (typed, pasted or

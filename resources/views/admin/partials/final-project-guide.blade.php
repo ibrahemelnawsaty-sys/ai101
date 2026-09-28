@@ -34,7 +34,7 @@
                 <div class="row__e row__acts">
                     @if ($language['previewUrl'])
                         <x-ui.button variant="ghost" size="sm" icon="external" :href="$language['previewUrl']"
-                            target="_blank" rel="noopener">{{ __('admin.final_project.guide.preview') }}</x-ui.button>
+                            target="_blank" rel="noopener" aria-label="{{ __('admin.final_project.guide.preview_label') }}">{{ __('admin.final_project.guide.preview') }}</x-ui.button>
                     @endif
                     <x-ui.button variant="secondary" size="sm" icon="file" :href="$language['editUrl']">{{ __('admin.final_project.guide.edit') }}</x-ui.button>
 

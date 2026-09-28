@@ -127,6 +127,9 @@ return [
             'en' => 'English',
         ],
         'copied' => 'Copied',
+        // D-129 — the guide during an account preview.
+        'preview_title' => 'The guide does not open during a preview',
+        'preview_body' => 'The guide page is shown outside the platform\'s frame, where the preview banner cannot be. End the preview from the banner above, then open the guide from your own account.',
         'press_to_copy' => 'Press Ctrl+C',
     ],
 

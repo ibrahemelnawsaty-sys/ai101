@@ -215,7 +215,8 @@ it('D-127: المنسّق الأساسي لا ينشر الدليل قبل إت�
     $press = fn () => $this->actingAs($this->coordinator)
         ->put(route('coordinator.finalProject.guide.publication', [$this->project, 'ar']), ['published' => '1']);
 
-    $press()->assertForbidden();
+    $press()->assertSessionHas('error', __('coordinator.final_project.errors.guide_not_available'));
+    expect(FinalProjectGuide::query()->sole()->is_published)->toBeFalse();
 
     FinalProjectGuide::query()->update(['is_available' => true]);
 
@@ -225,13 +226,15 @@ it('D-127: المنسّق الأساسي لا ينشر الدليل قبل إت�
         ->and(AuditLog::query()->where('action', 'final_project_guide.published')->where('actor_id', $this->coordinator->id)->count())->toBe(1);
 })->group('authz');
 
-it('D-127: الدليل الإنجليزي لا يُنشر قبل العربي — 403', function (): void {
+it('D-127: الدليل الإنجليزي لا يُنشر قبل العربي — يُرفض برسالة تشرح السبب', function (): void {
     makeGuide($this->project, 'ar', ['is_available' => true]);
     makeGuide($this->project, 'en', ['is_available' => true]);
 
     $this->actingAs($this->coordinator)
         ->put(route('coordinator.finalProject.guide.publication', [$this->project, 'en']), ['published' => '1'])
-        ->assertForbidden();
+        ->assertSessionHas('error', __('coordinator.final_project.errors.needs_arabic'));
+
+    expect(FinalProjectGuide::query()->where('locale', 'en')->sole()->is_published)->toBeFalse();
 
     FinalProjectGuide::query()->where('locale', 'ar')->update(['is_published' => true]);
 
@@ -459,4 +462,126 @@ it('D-127: محرر الدليل يعرض الصفحة كما حُفظت — م�
         ->toContain('R&amp;D &quot;quoted&quot;')
         ->not->toContain('&amp;lt;')
         ->not->toContain('&amp;amp;');
+});
+
+/*
+|--------------------------------------------------------------------------
+| What the independent reviews found (D-127, second round)
+|--------------------------------------------------------------------------
+*/
+
+it('D-127, المادة 24: يُرفض دليل فيه ما ينقل المتدرب أو يرسل طلبًا دون ضغطة — meta refresh وbase وmeta referrer وpreconnect', function (): void {
+    foreach ([
+        '<meta http-equiv="refresh" content="0;url=https://evil.example/login">',
+        '<meta HTTP-EQUIV=Refresh content="0;url=https://evil.example/">',
+        '<base href="https://evil.example/">',
+        '<meta name="referrer" content="unsafe-url">',
+        '<link rel="preconnect" href="https://tracker.example">',
+    ] as $offender) {
+        $this->actingAs($this->admin)
+            ->post(route('admin.finalProject.guide.save', [$this->project, 'ar']), ['html' => guidePage('X', $offender)])
+            ->assertSessionHasErrors('html');
+    }
+
+    // The harmless Content-Type declaration a saved page carries is fine.
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.guide.save', [$this->project, 'ar']), ['html' => guidePage('X', '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">')])
+        ->assertSessionHasNoErrors();
+
+    expect(FinalProjectGuideVersion::query()->count())->toBe(1);
+});
+
+it('D-127, المادة 7: فحص الألوان لا يُلتفّ عليه — سمة بلا علامات تنصيص، ورمز HTML، وهروب CSS، وoklch، ووسم style مفتوح', function (): void {
+    foreach ([
+        '<p style=color:gold>x</p>',
+        '<p style="color:&#103;old">x</p>',
+        '<style>.a{color:gol\64}</style>',
+        '<style>.a{color:oklch(0.9 0.19 95)}</style>',
+        '<style>.a{color:#fff8e8}'.str_repeat('x', 1_500_000),
+    ] as $offender) {
+        $this->actingAs($this->admin)
+            ->post(route('admin.finalProject.guide.save', [$this->project, 'ar']), ['html' => guidePage('X', $offender)])
+            ->assertSessionHasErrors('html');
+    }
+
+    expect(FinalProjectGuideVersion::query()->count())->toBe(0);
+});
+
+it('D-127: يُرفض ملف ليس بترميز UTF-8 برسالة تشرح الحل', function (): void {
+    $latin1 = UploadedFile::fake()->createWithContent('guide.html', mb_convert_encoding(guidePage('Caf'."\u{00E9}"), 'ISO-8859-1', 'UTF-8'));
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.guide.save', [$this->project, 'ar']), ['file' => $latin1])
+        ->assertSessionHasErrors(['file' => __('admin.final_project.guide.errors.not_utf8')]);
+});
+
+it('D-127, المادة 24: صفحة الدليل لا تجلب صورة ولا خطًّا ولا نمطًا من عنوان تختاره — الصور data: وحدها والخطوط من /fonts/ وحدها', function (): void {
+    makeGuide($this->project, 'ar', ['is_available' => true, 'is_published' => true]);
+
+    $policy = (string) $this->actingAs($this->participant)->get(route('finalProject.guide'))->headers->get('Content-Security-Policy');
+
+    expect($policy)->toContain("style-src 'unsafe-inline';")
+        ->and($policy)->toContain('img-src data: '.asset('brand/icons/favicon-mark.svg').';')
+        ->and($policy)->toContain('font-src '.asset('fonts').'/;')
+        ->and($policy)->not->toContain('https:;')
+        ->and($policy)->not->toContain("'self'");
+});
+
+it('D-127: إيقاف نشر العربي أو إلغاء إتاحته يوقف الإنجليزي معه — لا شاشة تقول «منشور» عن صفحة لا يراها أحد', function (): void {
+    $arabic = makeGuide($this->project, 'ar', ['is_available' => true, 'is_published' => true]);
+    makeGuide($this->project, 'en', ['is_available' => true, 'is_published' => true]);
+
+    $this->actingAs($this->coordinator)
+        ->put(route('coordinator.finalProject.guide.publication', [$this->project, 'ar']), ['published' => '0'])
+        ->assertSessionHas('status');
+
+    expect(FinalProjectGuide::query()->where('locale', 'en')->sole()->is_published)->toBeFalse();
+
+    $arabic->update(['is_published' => true]);
+    FinalProjectGuide::query()->where('locale', 'en')->update(['is_published' => true]);
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.guide.availability', [$this->project, 'ar']), ['available' => '0']);
+
+    expect(FinalProjectGuide::query()->where('locale', 'en')->sole()->is_published)->toBeFalse()
+        ->and(AuditLog::query()->where('action', 'final_project_guide.unpublished')->count())->toBe(3);
+});
+
+it('D-127: حفظ المحتوى المعروض نفسه أو استرجاع النسخة المعروضة يقول إن شيئًا لم يتغيّر', function (): void {
+    makeGuide($this->project, 'ar', [], guidePage('SAME'));
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.guide.save', [$this->project, 'ar']), ['html' => guidePage('SAME')])
+        ->assertSessionHas('warning', __('admin.final_project.guide.unchanged_page'));
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.guide.restore', [$this->project, 'ar']), ['version' => 1])
+        ->assertSessionHas('warning', __('admin.final_project.guide.unchanged_page'));
+
+    expect(FinalProjectGuideVersion::query()->count())->toBe(1);
+});
+
+it('D-127, المادة 8: سجل نسخ الدليل من دفعة أخرى يسمّي مصدره', function (): void {
+    $older = makeFinalProject(makeCohort());
+    makeGuide($older, 'ar', [], guidePage('FROM-OLDER'));
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.finalProject.guide.copy', $this->project), ['source_cohort_id' => $older->cohort_id]);
+
+    $entry = AuditLog::query()->where('action', 'final_project_guide.saved')->where('actor_id', $this->admin->id)->sole();
+
+    expect($entry->after['copied_from_project'])->toBe($older->id)
+        ->and($entry->after['copied_from_cohort'])->toBe($older->cohort_id);
+});
+
+it('D-129, BR-33: الدليل لا يُفتح أثناء المعاينة — تُعرض صفحة داخل إطار المنصة وشريطها بدلًا منه', function (): void {
+    makeGuide($this->project, 'ar', ['is_available' => true, 'is_published' => true]);
+    $sysadmin = makeSystemAdmin();
+
+    $this->actingAs($sysadmin)->post(route('admin.users.preview', $this->participant))->assertRedirect();
+
+    $this->get(route('finalProject.guide'))
+        ->assertOk()
+        ->assertSee(__('project.guide.preview_title'))
+        ->assertDontSee(GUIDE_CANARY.'-ar', escape: false);
 });

@@ -19,9 +19,15 @@ use App\Services\Cohorts\PrimaryCoordinator;
  * the sidebar is not the control — this is.
  *
  * D-127 — publishing takes two people. The general supervisor makes the project
- * available (`update`, the settings save); only then may the cohort's PRIMARY
- * coordinator publish it (`publish`) or take it down again (`unpublish`). A
- * cohort with no primary coordinator cannot publish at all.
+ * available (`update`); only then may the cohort's PRIMARY coordinator publish
+ * it (`publish`) or take it down again (`unpublish`). A cohort with no primary
+ * coordinator cannot publish at all, and neither can a general-supervisor
+ * account seated as the primary coordinator (D-128, open — the safe reading).
+ *
+ * These abilities say WHO may press. Whether the press can still do anything
+ * — available yet? published already? — is ProjectPublication's call, under a
+ * row lock, with a message that says what happened: a double click or a stale
+ * tab is not an access violation and must not be logged as one.
  *
  * @see BR-15, BR-16, BR-22, BR-23 · PRD §9.14 · D-124, D-127 · CONSTITUTION Art. 22
  */
@@ -61,20 +67,16 @@ final class FinalProjectPolicy
         return $this->admin($user) || $this->coordinatorOf($user, (string) $project->cohort_id);
     }
 
-    /** D-127 — opening the project to the trainees: available first, then the primary coordinator. */
+    /** D-127 — opening the project to the trainees: the primary coordinator. */
     public function publish(User $user, FinalProject $project): bool
     {
-        return $this->writesAllowed()
-            && (bool) $project->is_available
-            && $this->isPrimaryCoordinator($user, $project);
+        return $this->writesAllowed() && $this->isPrimaryCoordinator($user, $project);
     }
 
     /** D-127 — taking a published project down again: the primary coordinator. */
     public function unpublish(User $user, FinalProject $project): bool
     {
-        return $this->writesAllowed()
-            && (bool) $project->is_unlocked
-            && $this->isPrimaryCoordinator($user, $project);
+        return $this->writesAllowed() && $this->isPrimaryCoordinator($user, $project);
     }
 
     public function submit(User $user, FinalProject $project): bool
@@ -92,7 +94,9 @@ final class FinalProjectPolicy
     /**
      * The cohort's primary coordinator (D-124), still an active account and
      * still coordinating the cohort — PrimaryCoordinator answers nobody for a
-     * cohort without one, so such a cohort cannot publish (D-127).
+     * cohort without one, so such a cohort cannot publish (D-127). Never a
+     * general-supervisor account, even one seated as the primary coordinator:
+     * the supervisor makes available, somebody else publishes (D-128).
      */
     private function isPrimaryCoordinator(User $user, FinalProject $project): bool
     {
@@ -100,6 +104,7 @@ final class FinalProjectPolicy
 
         return $cohort instanceof Cohort
             && $this->roles->isActive($user)
+            && ! $this->roles->isAdmin($user)
             && app(PrimaryCoordinator::class)->idOf($cohort) === (string) $user->getKey();
     }
 }

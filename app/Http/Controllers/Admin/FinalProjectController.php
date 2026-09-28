@@ -6,11 +6,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\PublicationOutcome;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SetFinalProjectAvailabilityRequest;
 use App\Http\Requests\Admin\StoreFinalProjectRequest;
 use App\Models\Cohort;
 use App\Models\FinalProject;
 use App\Models\FinalProjectGuide;
 use App\Models\FinalProjectGuideVersion;
+use App\Models\ProjectSubmission;
 use App\Models\User;
 use App\Presenters\Admin\FinalProjectGuidePanel;
 use App\Presenters\Admin\FinalProjectSettings;
@@ -36,12 +38,14 @@ use Illuminate\Http\Request;
  * separate from the trainer's screen — so the two roles can never maintain
  * the same settings for the same cohort.
  *
- * D-127 — the supervisor no longer opens the tab: the box is "available for
- * publishing", and opening it to the trainees is the cohort's primary
- * coordinator's press (Coordinator\FinalProjectController). Taking the box off
- * locks the project at once. The move-to-open notice (D-77) went with the
- * press. The same screen carries the guide card (`?guide=ar|en` opens its
- * editor); the guide's writes live in FinalProjectGuideController.
+ * D-127 — the supervisor no longer opens the tab: they make the project
+ * AVAILABLE (`availability()`, its own press, never part of the settings
+ * save), and opening it to the trainees is the cohort's primary coordinator's
+ * press (Coordinator\FinalProjectController). Withdrawing locks the project at
+ * once, and after hand-ins asks for a confirmation (`?confirm=withdraw`). The
+ * move-to-open notice (D-77) went with the press. The same screen carries the
+ * guide card (`?guide=ar|en` opens its editor); the guide's writes live in
+ * FinalProjectGuideController.
  *
  * D-121 — the same screen shows the project's hand-in fields and opens their
  * editor (`?field=new|{id}`) or removal prompt (`?remove={id}`); the writes
@@ -80,8 +84,18 @@ final class FinalProjectController extends Controller
 
         $hasPrimaryCoordinator = $selectedCohort instanceof Cohort && $this->primary->has($selectedCohort);
 
+        $handIns = $project instanceof FinalProject
+            ? ProjectSubmission::query()->where('final_project_id', $project->getKey())->distinct()->count('user_id')
+            : 0;
+
         return view('admin.final-project', [
             'hasPrimaryCoordinator' => $hasPrimaryCoordinator,
+            'handInCount' => $handIns,
+            'handInLabel' => trans_choice('coordinator.final_project.hand_ins', $handIns, ['count' => $handIns]),
+            'confirmingWithdraw' => $project instanceof FinalProject
+                && (bool) $project->is_unlocked
+                && $handIns > 0
+                && $request->query('confirm') === 'withdraw',
             'guidePanel' => $project instanceof FinalProject
                 ? $this->guidePanel($request, $project, $hasPrimaryCoordinator, $cohorts)
                 : null,
@@ -152,19 +166,38 @@ final class FinalProjectController extends Controller
             $this->fields->installDefaults($project);
         }
 
-        // D-127 — the box is availability: its own step, with its own trail
-        // entry, and taking it off locks a published project at once.
-        $availability = $this->publication->setAvailability($project, $request->makesAvailable(), $admin);
-
-        $message = match (true) {
-            $availability !== PublicationOutcome::Changed => __('admin.final_project.saved'),
-            $request->makesAvailable() => __('admin.final_project.saved_available'),
-            default => __('admin.final_project.saved_withdrawn'),
-        };
-
         return redirect()
             ->route('admin.finalProject.index', ['cohort' => $cohort->getKey()])
-            ->with('status', $message);
+            ->with('status', __('admin.final_project.saved'));
+    }
+
+    /**
+     * D-127 — make the project available for its primary coordinator to
+     * publish, or withdraw it (which locks a published project at once). The
+     * message says exactly what happened: who was told, and whether the
+     * trainees lost the project.
+     */
+    public function availability(SetFinalProjectAvailabilityRequest $request, FinalProject $project): RedirectResponse
+    {
+        /** @var User $admin */
+        $admin = $request->user();
+
+        $wasPublished = (bool) $project->is_unlocked;
+        $outcome = $this->publication->setAvailability($project, $request->available(), $admin);
+
+        /** @var Cohort $cohort */
+        $cohort = Cohort::query()->findOrFail((string) $project->cohort_id);
+
+        $redirect = redirect()->to(route('admin.finalProject.index', ['cohort' => $cohort->getKey()]).'#availability');
+
+        return match (true) {
+            $outcome !== PublicationOutcome::Changed => $redirect->with('warning', __('admin.final_project.availability_unchanged')),
+            ! $request->available() => $redirect->with('status', $wasPublished
+                ? __('admin.final_project.withdrawn_locked')
+                : __('admin.final_project.withdrawn')),
+            $this->primary->has($cohort) => $redirect->with('status', __('admin.final_project.made_available')),
+            default => $redirect->with('warning', __('admin.final_project.made_available_no_primary')),
+        };
     }
 
     /**

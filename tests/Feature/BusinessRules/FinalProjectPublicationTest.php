@@ -38,14 +38,10 @@ function pressProjectPublication(object $test, object $actor, bool $published, a
 }
 
 it('D-127: إتاحة المشرف العام لا تفتح المشروع للمتدربين، وتُشعر المنسّق الأساسي وحده وتُسجَّل', function (): void {
-    $this->actingAs($this->admin)->post(route('admin.finalProject.store'), [
-        'cohort_id' => $this->cohort->id,
-        'title' => 'Final project',
-        'brief' => 'Brief',
-        'due_at' => '2026-09-30T23:59',
-        'max_score' => 50,
-        'is_available' => '1',
-    ])->assertSessionHasNoErrors()->assertRedirect();
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.availability', $this->project), ['available' => '1'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', __('admin.final_project.made_available'));
 
     $fresh = $this->project->fresh();
 
@@ -58,11 +54,32 @@ it('D-127: إتاحة المشرف العام لا تفتح المشروع لل�
     $this->actingAs($this->participant)->post(route('finalProject.submit'), handInPayload($this->project))->assertForbidden();
 });
 
-it('D-127, BR-15: المنسّق الأساسي لا ينشر قبل الإتاحة — 403 ولا يتغيّر شيء', function (): void {
-    pressProjectPublication($this, $this->coordinator, true)->assertForbidden();
+it('D-127, BR-15: المنسّق الأساسي لا ينشر قبل الإتاحة — يُرفض برسالة تشرح السبب ولا يتغيّر شيء', function (): void {
+    pressProjectPublication($this, $this->coordinator, true)
+        ->assertSessionHas('error', __('coordinator.final_project.errors.not_available'));
+
+    expect($this->project->fresh()->is_unlocked)->toBeFalse()
+        ->and(AuditLog::query()->where('action', 'like', 'access.denied%')->count())->toBe(0);
+});
+
+it('D-127: الضغط المزدوج على «أوقف النشر» لا يُظهر 403 ولا يُسجَّل رفضًا — يقول إن شيئًا لم يتغيّر', function (): void {
+    $this->project->update(['is_available' => true, 'is_unlocked' => true]);
+
+    pressProjectPublication($this, $this->coordinator, false)->assertSessionHas('status');
+    pressProjectPublication($this, $this->coordinator, false)->assertSessionHas('warning', __('coordinator.final_project.unchanged'));
+
+    expect(AuditLog::query()->where('action', 'like', 'access.denied%')->count())->toBe(0);
+});
+
+it('D-128: حساب المشرف العام لا ينشر ولو أُجلس منسّقًا أساسيًا للدفعة — 403 حتى يقرّر المالك', function (): void {
+    $this->project->update(['is_available' => true]);
+    enroll($this->admin, $this->cohort, 'coordinator');
+    $this->cohort->update(['primary_coordinator_id' => $this->admin->id]);
+
+    pressProjectPublication($this, $this->admin, true)->assertForbidden();
 
     expect($this->project->fresh()->is_unlocked)->toBeFalse();
-});
+})->group('authz');
 
 it('D-127: المنسّق الأساسي ينشر بعد الإتاحة فيُفتح المشروع ويُعلَن للمتدربين مرة واحدة', function (): void {
     Event::fake([FinalProjectUnlocked::class]);
@@ -111,9 +128,8 @@ it('D-127, D-124: دفعة بلا منسّق أساسي لا يُنشر مشرو
         ->assertSee(__('admin.final_project.no_primary_coordinator'));
 })->group('authz');
 
-it('D-127: إلغاء الإتاحة يقفل المشروع المنشور فورًا، والتسليمات السابقة محفوظة', function (): void {
+it('D-127: حفظ إعدادات المشروع لا يمسّ إتاحته — حفظ من تبويب قديم لا يقفل مشروعًا منشورًا', function (): void {
     $this->project->update(['is_available' => true, 'is_unlocked' => true]);
-    makeProjectSubmission($this->project, $this->participant);
 
     $this->actingAs($this->admin)->post(route('admin.finalProject.store'), [
         'cohort_id' => $this->cohort->id,
@@ -123,6 +139,24 @@ it('D-127: إلغاء الإتاحة يقفل المشروع المنشور فو
         'max_score' => 50,
     ])->assertSessionHasNoErrors();
 
+    expect($this->project->fresh()->is_available)->toBeTrue()
+        ->and($this->project->fresh()->is_unlocked)->toBeTrue();
+});
+
+it('D-127: إلغاء الإتاحة يقفل المشروع المنشور فورًا بعد تأكيد صريح حين وصلت تسليمات، والتسليمات محفوظة', function (): void {
+    $this->project->update(['is_available' => true, 'is_unlocked' => true]);
+    makeProjectSubmission($this->project, $this->participant);
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.availability', $this->project), ['available' => '0'])
+        ->assertSessionHasErrors('confirmed');
+
+    expect($this->project->fresh()->is_unlocked)->toBeTrue();
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.finalProject.availability', $this->project), ['available' => '0', 'confirmed' => '1'])
+        ->assertSessionHas('status', __('admin.final_project.withdrawn_locked'));
+
     $fresh = $this->project->fresh();
 
     expect($fresh->is_available)->toBeFalse()
@@ -131,7 +165,9 @@ it('D-127: إلغاء الإتاحة يقفل المشروع المنشور فو
         ->and(AuditLog::query()->where('action', 'final_project.availability_withdrawn')->count())->toBe(1);
 
     // The coordinator cannot re-open it until it is made available again.
-    pressProjectPublication($this, $this->coordinator, true)->assertForbidden();
+    pressProjectPublication($this, $this->coordinator, true)
+        ->assertSessionHas('error', __('coordinator.final_project.errors.not_available'));
+    expect($this->project->fresh()->is_unlocked)->toBeFalse();
 });
 
 it('D-127: إيقاف النشر بعد وصول تسليمات يطلب تأكيدًا صريحًا، ولا يمسّ التسليمات', function (): void {
@@ -190,4 +226,30 @@ it('D-127: تبويب المنسّق يعرض «أوقف النشر» لا «ا�
         ->assertSee(__('coordinator.final_project.unpublish'))
         ->assertDontSee(__('coordinator.final_project.guide_publish'))
         ->assertSee(__('coordinator.final_project.guide_unpublish'));
+});
+
+it('D-127: شاشة تفضيلات المتدرب لا تعرض إشعارات الفريق، والمنسّق يرى إشعارات النشر ويقدر يكتمها', function (): void {
+    $staff = ['final_project_available', 'final_project_guide_available', 'final_project_guide_published_staff'];
+
+    expect(array_intersect(App\Support\NotificationTypes::forRole('participant'), $staff))->toBe([])
+        ->and(App\Support\NotificationTypes::forRole('participant'))->toContain('final_project_guide_published')
+        ->and(App\Support\NotificationTypes::forRole('coordinator'))->toContain(...$staff)
+        ->and(App\Support\NotificationTypes::forRole('trainer'))->toContain('final_project_guide_published_staff');
+
+    // No preference description prints a raw placeholder.
+    foreach ($staff as $type) {
+        expect((string) __('notifications.types.'.$type.'.body'))->not->toContain(':');
+    }
+});
+
+it('D-127, المادة 17: تبويب المنسّق لدفعة بلا مشروع يعرض حالة فارغة خاصة به تدلّ على لوحته', function (): void {
+    $cohort = makeCohort();
+    $coordinator = makeCoordinator($cohort);
+
+    $this->actingAs($coordinator)
+        ->get(route('coordinator.finalProject', ['cohort' => $cohort->id]))
+        ->assertOk()
+        ->assertSee(__('coordinator.final_project.no_project_title'))
+        ->assertSee(__('coordinator.final_project.no_project_body'))
+        ->assertSee(route('coordinator.dashboard'));
 });

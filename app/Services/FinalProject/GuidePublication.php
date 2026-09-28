@@ -19,16 +19,19 @@ use Illuminate\Support\Facades\DB;
  *
  *   · a language with no page saved cannot be made available;
  *   · withdrawing availability takes the language down in the same write;
- *   · English is never published before Arabic;
+ *   · English is never published before Arabic, and taking Arabic down —
+ *     unpublished or withdrawn — takes English down with it, so no screen
+ *     ever says "published" of a page nobody can see;
  *   · the first time the Arabic page is published, the cohort's trainers are
  *     told — and the trainees too, if the project itself is already open.
  *     If it is not, they are told when it opens (ProjectPublication::publish),
  *     in the same notice. Neither is ever told twice (`staff_announced_at`,
  *     `announced_at`).
  *
- * Every change re-reads the row under a lock and writes the trail before the
- * row (art. 8). The policy decided who may press; this decides what the press
- * may still do.
+ * Every change re-reads the rows under a lock — the project first, then the
+ * guide, the order ProjectPublication uses too — and writes the trail before
+ * the row (art. 8). The policy decided who may press; this decides what the
+ * press may still do.
  *
  * @see D-127 · BR-15, BR-16 · CONSTITUTION Art. 7, Art. 8
  */
@@ -74,6 +77,10 @@ final class GuidePublication
 
             $locked->save();
 
+            if (! $available) {
+                $this->takeEnglishDown($locked, $admin);
+            }
+
             return PublicationOutcome::Changed;
         });
 
@@ -92,6 +99,11 @@ final class GuidePublication
         $tellTrainees = false;
 
         $outcome = DB::transaction(function () use ($guide, $coordinator, &$tellTrainers, &$tellTrainees): PublicationOutcome {
+            // The project first: whether the trainees are told now depends on
+            // it being open, and it must not close between the read and the
+            // announcement.
+            /** @var FinalProject $project */
+            $project = FinalProject::query()->whereKey((string) $guide->final_project_id)->lockForUpdate()->firstOrFail();
             $locked = $this->lock($guide);
 
             if ((bool) $locked->is_published) {
@@ -101,8 +113,6 @@ final class GuidePublication
             if (! (bool) $locked->is_available) {
                 return PublicationOutcome::NotAvailable;
             }
-
-            $project = $this->project($locked);
 
             if (! $locked->isPrimaryLocale() && ! $this->primaryPublished($project)) {
                 return PublicationOutcome::NeedsPrimaryLocale;
@@ -186,12 +196,50 @@ final class GuidePublication
 
             $locked->save();
 
+            $this->takeEnglishDown($locked, $coordinator);
+
             return PublicationOutcome::Changed;
         });
 
         $guide->refresh();
 
         return $outcome;
+    }
+
+    /**
+     * Arabic went down, so English goes down with it (D-127: Arabic is the
+     * condition) — its own trail entry, the same actor.
+     */
+    private function takeEnglishDown(FinalProjectGuide $arabic, User $actor): void
+    {
+        if (! $arabic->isPrimaryLocale()) {
+            return;
+        }
+
+        $english = FinalProjectGuide::query()
+            ->where('final_project_id', $arabic->final_project_id)
+            ->where('locale', '!=', FinalProjectGuide::PRIMARY_LOCALE)
+            ->where('is_published', true)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($english as $page) {
+            $before = $this->state($page);
+
+            $page->setAttribute('is_published', false);
+            $page->setAttribute('published_at', null);
+            $page->setAttribute('published_by', null);
+
+            $this->audit->log(
+                action: 'final_project_guide.unpublished',
+                entity: $page,
+                before: $before,
+                after: $this->state($page) + ['with_primary_locale' => true],
+                actor: $actor,
+            );
+
+            $page->save();
+        }
     }
 
     private function primaryPublished(FinalProject $project): bool

@@ -11,6 +11,7 @@ use App\Models\FinalProjectGuideVersion;
 use App\Models\User;
 use App\Services\FinalProject\GuideContent;
 use App\Services\FinalProject\GuideDocument;
+use App\Support\ImpersonationContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -29,6 +30,10 @@ use Illuminate\Http\Response;
  * (bootstrap/app.php logs every policy denial with the caller's IP). A guide
  * that does not exist is asked about as an empty, unpublished one, so the
  * trainee gets the same 403 either way and learns nothing from the difference.
+ *
+ * PREVIEW — during an account preview the page is not served: it lives
+ * outside the platform's shell, where the preview banner Article 23 requires
+ * cannot be. A page in the shell says so instead (D-129, open).
  *
  * LANGUAGE — the English page is shown only to someone whose interface is in
  * English AND only when that page may be shown to them; otherwise the Arabic
@@ -70,6 +75,12 @@ final class FinalProjectGuideController extends Controller
         $guide = $this->pick($user, $project, $explicit);
 
         $this->authorize('view', $guide);
+
+        if (ImpersonationContext::isActive()) {
+            return response()->view('final-project.guide-in-preview', [
+                'backUrl' => $user->isParticipant() ? route('finalProject') : route('dashboard'),
+            ]);
+        }
 
         $page = $guide->exists ? $this->content->current($guide) : null;
 

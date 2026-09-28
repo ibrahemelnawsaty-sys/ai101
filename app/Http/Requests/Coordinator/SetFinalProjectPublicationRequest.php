@@ -11,12 +11,13 @@ use Illuminate\Validation\Validator;
 
 /**
  * Publishing the final project to the trainees, or taking it down (D-127) —
- * the cohort's primary coordinator, and only once the general supervisor made
- * it available (FinalProjectPolicy::publish / unpublish).
+ * the cohort's primary coordinator (FinalProjectPolicy::publish / unpublish).
+ * Whether the press can still act — made available? already published? — is
+ * ProjectPublication's answer under a row lock, with its own message.
  *
- * Taking it down after hand-ins arrived asks for an explicit confirmation
- * (`confirmed`): the screen shows how many hand-ins exist, and the server
- * refuses the press without it. The hand-ins themselves are never touched.
+ * Taking a PUBLISHED project down after hand-ins arrived asks for an explicit
+ * confirmation (`confirmed`): the screen shows how many hand-ins exist, and
+ * the server refuses the press without it. The hand-ins are never touched.
  *
  * @see D-127 · BR-15, BR-16, BR-19 · CONSTITUTION Art. 5
  */
@@ -52,7 +53,10 @@ final class SetFinalProjectPublicationRequest extends FormRequest
                 return;
             }
 
-            if (! $this->boolean('confirmed') && $this->handInCount() > 0) {
+            /** @var FinalProject $project */
+            $project = $this->route('project');
+
+            if ((bool) $project->is_unlocked && ! $this->boolean('confirmed') && $this->handInCount() > 0) {
                 $validator->errors()->add('confirmed', (string) __('coordinator.final_project.errors.confirm_unpublish'));
             }
         });

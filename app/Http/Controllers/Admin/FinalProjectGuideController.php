@@ -10,9 +10,11 @@ use App\Http\Requests\Admin\CopyFinalProjectGuideRequest;
 use App\Http\Requests\Admin\RestoreFinalProjectGuideRequest;
 use App\Http\Requests\Admin\SaveFinalProjectGuideRequest;
 use App\Http\Requests\Admin\SetFinalProjectGuideAvailabilityRequest;
+use App\Models\Cohort;
 use App\Models\FinalProject;
 use App\Models\FinalProjectGuide;
 use App\Models\User;
+use App\Services\Cohorts\PrimaryCoordinator;
 use App\Services\FinalProject\GuideContent;
 use App\Services\FinalProject\GuidePublication;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +37,7 @@ final class FinalProjectGuideController extends Controller
     public function __construct(
         private readonly GuideContent $content,
         private readonly GuidePublication $publication,
+        private readonly PrimaryCoordinator $primary,
     ) {}
 
     public function save(SaveFinalProjectGuideRequest $request, FinalProject $project, string $locale): RedirectResponse
@@ -42,9 +45,13 @@ final class FinalProjectGuideController extends Controller
         /** @var User $admin */
         $admin = $request->user();
 
-        $this->content->save($project, $locale, $request->page(), $request->source(), $admin);
+        $before = $this->currentNumber($project, $locale);
+        $after = $this->content->save($project, $locale, $request->page(), $request->source(), $admin)->version;
 
-        return $this->back($project, $locale)->with('status', __('admin.final_project.guide.saved'));
+        // Saving the very page on show writes nothing, and says so.
+        return $before === $after
+            ? $this->back($project, $locale)->with('warning', __('admin.final_project.guide.unchanged_page'))
+            : $this->back($project, $locale)->with('status', __('admin.final_project.guide.saved'));
     }
 
     public function restore(RestoreFinalProjectGuideRequest $request, FinalProject $project, string $locale): RedirectResponse
@@ -57,6 +64,8 @@ final class FinalProjectGuideController extends Controller
             ->where('locale', $locale)
             ->first();
 
+        $before = $this->currentNumber($project, $locale);
+
         $restored = $guide instanceof FinalProjectGuide
             ? $this->content->restore($guide, $request->version(), $admin)
             : null;
@@ -65,7 +74,10 @@ final class FinalProjectGuideController extends Controller
             return $this->back($project, $locale)->withErrors(['version' => __('admin.final_project.guide.errors.no_version')]);
         }
 
-        return $this->back($project, $locale)->with('status', __('admin.final_project.guide.restored', ['number' => $request->version()]));
+        // The version asked for is already the page on show: nothing new.
+        return $restored->version === $before
+            ? $this->back($project, $locale)->with('warning', __('admin.final_project.guide.unchanged_page'))
+            : $this->back($project, $locale)->with('status', __('admin.final_project.guide.restored', ['number' => $request->version()]));
     }
 
     public function copy(CopyFinalProjectGuideRequest $request, FinalProject $project): RedirectResponse
@@ -93,19 +105,33 @@ final class FinalProjectGuideController extends Controller
         $guide = $this->content->guideFor($project, $locale);
         $outcome = $this->publication->setAvailability($guide, $request->available(), $admin);
 
-        $message = match ($outcome) {
-            PublicationOutcome::Changed => $request->available()
-                ? __('admin.final_project.guide.made_available')
-                : __('admin.final_project.guide.withdrawn'),
-            PublicationOutcome::NoContent => null,
-            default => __('admin.final_project.guide.unchanged'),
-        };
-
         $redirect = redirect()->to(route('admin.finalProject.index', ['cohort' => $project->cohort_id]).'#guide');
 
-        return $message === null
-            ? $redirect->withErrors(['available' => __('admin.final_project.guide.errors.no_content')])
-            : $redirect->with('status', $message);
+        return match (true) {
+            $outcome === PublicationOutcome::NoContent => $redirect->withErrors(['available' => __('admin.final_project.guide.errors.no_content')]),
+            $outcome !== PublicationOutcome::Changed => $redirect->with('warning', __('admin.final_project.guide.unchanged')),
+            ! $request->available() => $redirect->with('status', __('admin.final_project.guide.withdrawn')),
+            $this->primary->has($this->cohortOf($project)) => $redirect->with('status', __('admin.final_project.guide.made_available')),
+            default => $redirect->with('warning', __('admin.final_project.guide.made_available_no_primary')),
+        };
+    }
+
+    private function currentNumber(FinalProject $project, string $locale): ?int
+    {
+        $guide = FinalProjectGuide::query()
+            ->where('final_project_id', $project->getKey())
+            ->where('locale', $locale)
+            ->first();
+
+        return $guide instanceof FinalProjectGuide ? $this->content->current($guide)?->version : null;
+    }
+
+    private function cohortOf(FinalProject $project): Cohort
+    {
+        /** @var Cohort $cohort */
+        $cohort = Cohort::query()->findOrFail((string) $project->cohort_id);
+
+        return $cohort;
     }
 
     private function back(FinalProject $project, string $locale): RedirectResponse
