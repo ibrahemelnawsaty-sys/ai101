@@ -312,3 +312,20 @@ it('BR-22: الحرف غير الواصل ZWNJ في اسم ملف فارسي و�
 
     expect((string) Message::query()->sole()->attachments[0]['original_name'])->toBe("می\u{200C}خواهم.pdf");
 });
+
+it('FR-MSG-06: الخدمة نفسها ترفض أكثر من الحدّ ولا تكتب شيئًا — لا يكفي أن يردّها الطلب قبلها', function (): void {
+    // The FormRequest refuses a fourth file first; the service is the last line
+    // (art. 5) for any other caller — a job, a later screen — and must stand alone.
+    $uploads = [fakeUpload('a.pdf', 'pdf'), fakeUpload('b.pdf', 'pdf'), fakeUpload('c.pdf', 'pdf'), fakeUpload('d.pdf', 'pdf')];
+
+    $thrown = null;
+
+    try {
+        app(App\Services\Messages\MessageAttachments::class)->store($uploads, $this->thread, $this->me);
+    } catch (App\Exceptions\FileException $exception) {
+        $thrown = $exception;
+    }
+
+    expect($thrown)->not->toBeNull()
+        ->and(Storage::disk('private')->allFiles())->toBe([]);
+});

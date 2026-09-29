@@ -433,3 +433,94 @@ it('FR-GRADE-15: روابط صفوف المشروع الختامي و«إلغا�
 
     $panel->assertSee('href="'.e(route('trainer.finalProject', ['cohort' => $this->cohort->id])).'"', escape: false);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Gaps the independent review found by mutation (Art. 27)
+|--------------------------------------------------------------------------
+*/
+
+it('BR-19: التالي في المشروع الختامي لا يقدّم نسخة سُلّمت بعدها نسخة أحدث من المتدرب نفسه', function (): void {
+    projectCase($this);
+
+    // `a` handed in again: the 08:00 version is superseded, the 12:00 one is the work.
+    $v2 = makeProjectSubmission($this->project, $this->a, [
+        'version' => 2,
+        'submitted_at' => riyadhAt('2026-11-01 12:00:00'),
+    ]);
+
+    $this->actingAs($this->trainer)->post(
+        route('trainer.finalProject.grade', $this->pc),
+        ['score' => 40, 'feedback' => $this->feedback, 'next' => 1],
+    )->assertRedirect(route('trainer.finalProject', [
+        'cohort' => $this->cohort->id,
+        // Oldest of what is left to mark: b (09:00), NOT a's superseded v1 (08:00).
+        'grade' => $this->pb->id,
+    ]));
+
+    expect($v2->id)->not->toBe($this->pb->id);
+});
+
+it('BR-23: التالي في المشروع الختامي لا يعبر إلى مشروع دفعة أخرى ولو كان أقدم تسليمًا', function (): void {
+    projectCase($this);
+    makeEvaluation('final_project', $this->pa->id, $this->a, 40);
+    makeEvaluation('final_project', $this->pb->id, $this->b, 40);
+
+    $foreign = makeCohort();
+    $foreignProject = makeFinalProject($foreign, ['is_unlocked' => true]);
+    makeProjectSubmission($foreignProject, makeParticipant($foreign), [
+        'submitted_at' => riyadhAt('2026-10-01 08:00:00'),
+    ]);
+
+    $location = $this->actingAs($this->trainer)->post(
+        route('trainer.finalProject.grade', $this->pc),
+        ['score' => 40, 'feedback' => $this->feedback, 'next' => 1],
+    )->headers->get('Location');
+
+    expect($location)->not->toContain('grade=');
+});
+
+it('FR-ASGN-29: تسليمان في اللحظة نفسها يُقدَّم أصغرهما معرّفًا — ترتيب ثابت لا يتبدّل', function (): void {
+    boardCase($this);
+    makeEvaluation('assignment', $this->sa->id, $this->a, 9);
+    makeEvaluation('assignment', $this->sb->id, $this->b, 9);
+
+    $at = riyadhAt('2026-10-19 09:00:00');
+    // Inserted in the OPPOSITE order of their ids: whatever the database's own
+    // scan order is, the answer must be the smaller id.
+    $late = makeSubmission($this->assignment, makeParticipant($this->cohort), [
+        'id' => '00000000-0000-7000-8000-000000000002', 'submitted_at' => $at,
+    ]);
+    $early = makeSubmission($this->assignment, makeParticipant($this->cohort), [
+        'id' => '00000000-0000-7000-8000-000000000001', 'submitted_at' => $at,
+    ]);
+
+    $this->actingAs($this->trainer)->post(
+        route('trainer.submissions.grade', $this->sc),
+        gradeBody($this, ['next' => 1]),
+    )->assertRedirect(route('trainer.submissions', [
+        'cohort' => $this->cohort->id,
+        'assignment' => $this->assignment->id,
+        'submission' => $early->id,
+    ]));
+
+    expect($late->id)->not->toBe($early->id);
+});
+
+it('FR-ASGN-29: نموذج التقييم نفسه يحمل الحالة والبحث في عنوانه — ليس رابط «إلغاء» وحده', function (): void {
+    boardCase($this);
+
+    $html = (string) $this->actingAs($this->trainer)
+        ->get(route('trainer.submissions', [
+            'cohort' => $this->cohort->id,
+            'assignment' => $this->assignment->id,
+            'status' => 'submitted',
+            'q' => 'abc',
+            'submission' => $this->sc->id,
+        ]))
+        ->assertOk()->getContent();
+
+    preg_match('/<form[^>]*action="([^"]*\/grade[^"]*)"/', $html, $action);
+
+    expect($action[1] ?? '')->toContain('status=submitted')->toContain('q=abc');
+});

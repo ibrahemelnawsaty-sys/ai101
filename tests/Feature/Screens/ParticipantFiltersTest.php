@@ -508,3 +508,20 @@ it('FR-SCHED-13: يوم في التقويم أفرغته التصفية لا ي�
         ->assertSee(__('schedule.no_sessions_that_day'))
         ->assertDontSee(__('schedule.day_no_match'));
 });
+
+it('FR-SCHED-13: مرشّح «غائب» لا يطابق جلسة لا سجلّ لي فيها — الغياب سجلّ لا غيابُ سجلّ', function (): void {
+    [$training, $project, $intro] = timetableCase($this);
+
+    // `intro` has no attendance row of MINE (only another participant's). Having
+    // no row is not the status «absent»: the filter matches recorded rows only.
+    $page = $this->actingAs($this->me)->get(route('schedule', ['attendance' => 'absent']))->assertOk();
+
+    expect(timetableIds($page))->toBe([]);
+
+    // And a recorded absence does match.
+    makeAttendance(App\Models\Session::query()->findOrFail($intro), $this->me, 'absent');
+
+    $recorded = $this->actingAs($this->me)->get(route('schedule', ['attendance' => 'absent']))->assertOk();
+
+    expect(timetableIds($recorded))->toBe([(string) $intro]);
+});

@@ -317,3 +317,45 @@ it('FR-CERT-02: تصدير الشهادات يحمل الدفعة والبحث �
     // A cohort the picker never offered is ignored, like everywhere else.
     expect($export($this, ['cohort' => 'nope']))->toContain($zedCert->serial_number)->toContain($omarCert->serial_number);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Gaps the independent review found by mutation (Art. 27)
+|--------------------------------------------------------------------------
+*/
+
+it('FR-CERT-02: بحث الشهادات يحصر قائمة «المستوفين» أيضًا — لا الصادرة وغير المستوفين وحدهما', function (): void {
+    peopleCase($this);
+    // A cohort that asks for nothing: everyone enrolled qualifies, so the
+    // «eligible» list has two people to narrow.
+    $this->cohort->update(['pass_score' => 0, 'min_attendance_rate' => 0]);
+    $admin = makeAdmin();
+
+    $all = $this->actingAs($admin)
+        ->get(route('admin.certificates.index', ['cohort' => $this->cohort->id]))->assertOk();
+    $ids = static fn ($page): array => collect($page->viewData('eligible'))->pluck('id')->sort()->values()->all();
+
+    expect($ids($all))->toBe(collect([$this->omar->id, $this->sara->id])->sort()->values()->all());
+
+    $found = $this->actingAs($admin)
+        ->get(route('admin.certificates.index', ['cohort' => $this->cohort->id, 'q' => 'Omar']))->assertOk();
+
+    expect($ids($found))->toBe([$this->omar->id])
+        // The counter above the list follows the same search.
+        ->and($found->viewData('counts')['eligible'] ?? null)->toBe(1);
+});
+
+it('FR-ADMIN-12: منحنى التسجيل يتبع الدفعة المختارة كالجدول والملخّص', function (): void {
+    $other = makeCohort(['name' => 'Cohort B']);
+    makeParticipant($this->cohort);
+    makeParticipant($this->cohort);
+    makeParticipant($other);
+    $admin = makeAdmin();
+
+    $total = static fn ($page): int => (int) collect($page->viewData('registrationsOverTime'))->sum(static fn ($point) => $point['value']);
+
+    $all = $this->actingAs($admin)->get(route('admin.reports.index'))->assertOk();
+    $one = $this->actingAs($admin)->get(route('admin.reports.index', ['cohort' => $this->cohort->id]))->assertOk();
+
+    expect($total($all))->toBe(3)->and($total($one))->toBe(2);
+});
