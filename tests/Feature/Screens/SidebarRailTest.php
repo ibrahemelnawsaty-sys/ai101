@@ -99,13 +99,14 @@ it('D-30: المدير يرى وجهات الإدارة لا قائمة المت
         ->and($hrefs)->not->toContain(route('participant.journey'));
 });
 
-it('D-117, D-124: مدير النظام يرى المستخدمين وصفحة الهبوط وإعدادات المنصة والتواصل وتذاكر الدعم وحدها', function (): void {
+it('D-117, D-124, D-133: مدير النظام يرى المستخدمين والأدوار وصفحة الهبوط وإعدادات المنصة والتواصل والدعم الفني وحدها', function (): void {
     $hrefs = railHrefsFor(makeSystemAdmin());
 
-    // Exactly the five, in this order — and never the participant rail the
-    // role would have fallen through to without a shell of its own. The
-    // fourth is D-118's contact tab, the fifth D-124's support tickets.
-    expect($hrefs)->toBe([route('admin.users.index'), route('admin.landing.edit'), route('admin.settings.edit'), route('messages.index'), route('support.index')]);
+    // Exactly the six, in this order — and never the participant rail the
+    // role would have fallen through to without a shell of its own. The second
+    // is D-133's roles page (the owner's answer: the system administrator alone),
+    // the fifth D-118's contact tab, the sixth D-124's technical support.
+    expect($hrefs)->toBe([route('admin.users.index'), route('admin.roles.index'), route('admin.landing.edit'), route('admin.settings.edit'), route('messages.index'), route('support.index')]);
 });
 
 it('D-30: المدرّب يرى وجهات المدرّب', function (): void {

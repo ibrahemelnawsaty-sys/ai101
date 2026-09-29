@@ -17,11 +17,13 @@ use Illuminate\Support\Facades\Route;
 /**
  * Sidebar rail view model — pinned to the RIGHT edge of the screen.
  *
- * Grouping follows PRD §9.5.1 exactly for the participant:
- *   overview   (dashboard, digital card, my journey)
- *   programme  (schedule, attendance, live sessions)
- *   work       (assignments, resources, final project, grades)
- *   contact    (messages)
+ * Grouping follows PRD §9.5.1 for the participant, re-ordered by importance
+ * and headed (D-127, the owner's answers of 28 September 2026):
+ *   overview            (dashboard, my journey, digital card)
+ *   programme           (live sessions, schedule, attendance)
+ *   work                (assignments, final project, grades, certificate)
+ *   contact & materials (internal messaging, the training kit)
+ *   — and the public home page last, under no heading.
  *
  * NOTE ON AUTHORISATION
  * The visible menu is a reflection of permission, never its source. Every route
@@ -168,26 +170,29 @@ final class Sidebar extends UiComponent
                 ['route' => 'admin.programs.index', 'icon' => Icons::PROGRAMS, 'label' => __('nav.admin.programs')],
                 ['route' => 'admin.cohorts.index', 'icon' => Icons::COHORTS, 'label' => __('nav.admin.cohorts')],
             ]],
-            // D-117 — the accounts, the landing page and the platform
-            // settings left this rail for the system administrator's.
-            ['label' => __('nav.groups.admin'), 'items' => [
+            // D-127 — what is done INSIDE a cohort: who joins, who is certified,
+            // the final project, and writing to its trainees. The audit log and
+            // the messages used to sit under "Work and grades", which is not theirs.
+            ['label' => __('nav.groups.cohort_admin'), 'items' => [
                 ['route' => 'admin.registrations.index', 'icon' => Icons::REGISTRATIONS, 'label' => __('nav.admin.registrations')],
                 ['route' => 'admin.certificates.index', 'icon' => Icons::CERTIFICATE, 'label' => __('nav.admin.certificates')],
-                // Messages and manual reminders to a cohort (D-87).
-                ['route' => 'admin.broadcasts.index', 'icon' => Icons::BROADCASTS, 'label' => __('nav.admin.broadcasts')],
-            ]],
-            ['label' => __('nav.groups.work'), 'items' => [
                 // D-109, D-110 — the brief, the deadline, the ceiling, the
                 // late policy and opening the tab, entirely separate from the
                 // trainer's own read-and-grade screen.
-                ['route' => 'admin.finalProject.index', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.admin.final_project')],
+                ['route' => 'admin.finalProject.index', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.admin.final_project'), 'also' => ['finalProject.receipt']],
+                // Messages and manual reminders to a cohort (D-87).
+                ['route' => 'admin.broadcasts.index', 'icon' => Icons::BROADCASTS, 'label' => __('nav.admin.broadcasts')],
+            ]],
+            ['label' => __('nav.groups.monitoring'), 'items' => [
                 ['route' => 'admin.reports.index', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.admin.reports')],
                 ['route' => 'admin.audit.index', 'icon' => Icons::AUDIT, 'label' => __('nav.admin.audit')],
+            ]],
+            ['label' => __('nav.groups.communication'), 'items' => [
                 // D-118 — the supervisor writes to anyone, and to the
                 // system administrators' inbox.
-                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.messages'), 'badge' => 'messages', 'also' => ['messages.create']],
                 // D-124 — every ticket, and the count waiting at this level.
-                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true, 'also' => ['support.create', 'support.show']],
             ]],
         ];
     }
@@ -205,14 +210,17 @@ final class Sidebar extends UiComponent
     {
         return [
             ['label' => __('nav.groups.system'), 'items' => [
-                ['route' => 'admin.users.index', 'icon' => Icons::USERS, 'label' => __('nav.admin.users')],
+                ['route' => 'admin.users.index', 'icon' => Icons::USERS, 'label' => __('nav.admin.users'), 'also' => ['admin.users.create', 'admin.users.import', 'admin.users.show']],
+                // D-133 — the page that explains the five roles: the system
+                // administrator's alone, since the role changes are theirs (D-117).
+                ['route' => 'admin.roles.index', 'icon' => Icons::ROLES, 'label' => __('nav.admin.roles')],
                 ['route' => 'admin.landing.edit', 'icon' => Icons::LANDING, 'label' => __('nav.admin.landing')],
                 ['route' => 'admin.settings.edit', 'icon' => Icons::SETTINGS, 'label' => __('nav.admin.settings')],
                 // D-118 — "the contact tab": the shared inbox with the
                 // general supervisors, and nothing else.
-                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.contact'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.admin.contact'), 'badge' => 'messages', 'also' => ['messages.create']],
                 // D-124 — the tickets that reached the system administrator.
-                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true, 'also' => ['support.create', 'support.show']],
             ]],
         ];
     }
@@ -241,11 +249,11 @@ final class Sidebar extends UiComponent
             ['label' => __('nav.groups.work'), 'items' => [
                 ['route' => 'trainer.assignments', 'icon' => Icons::ASSIGNMENTS, 'label' => __('nav.trainer.assignments')],
                 ['route' => 'trainer.submissions', 'icon' => Icons::SUBMISSIONS, 'label' => __('nav.trainer.submissions')],
-                ['route' => 'trainer.finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.trainer.final_project')],
+                ['route' => 'trainer.finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.trainer.final_project'), 'also' => ['finalProject.receipt']],
                 ['route' => 'trainer.reports', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.trainer.reports')],
                 // The announcement channel, the cohort group and a direct line
                 // to each participant (PRD §9.13, D-82).
-                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages', 'also' => ['messages.create']],
             ]],
         ];
     }
@@ -271,9 +279,9 @@ final class Sidebar extends UiComponent
                 ['route' => 'trainer.attendance', 'icon' => Icons::ATTENDANCE, 'label' => __('nav.coordinator.attendance')],
                 // D-118 — the coordinator writes to the cohort's trainers
                 // and trainees, and to the general supervisor.
-                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages', 'also' => ['messages.create']],
                 // D-124 — the cohort's tickets, and the count waiting on them.
-                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true],
+                ['route' => 'support.index', 'icon' => Icons::SUPPORT, 'label' => __('nav.support_tickets'), 'badge' => 'support', 'hideInPreview' => true, 'also' => ['support.create', 'support.show']],
             ]],
         ];
     }
@@ -286,31 +294,35 @@ final class Sidebar extends UiComponent
     private function participantGroups(): array
     {
         return [
-            ['items' => [
-                // D-108 — nav.participant.home_page now leaves the dashboard
-                // shell for the public landing page (route: home) exactly as
-                // requested; the stats screen that used to sit behind this
-                // same first tab kept its own route (dashboard) and moved to
-                // nav.participant.dashboard's new label right after it,
-                // unchanged otherwise.
-                ['route' => 'home', 'icon' => Icons::HOME, 'label' => __('nav.participant.home_page')],
+            ['label' => __('nav.groups.overview'), 'items' => [
                 ['route' => 'dashboard', 'icon' => Icons::DASHBOARD, 'label' => __('nav.participant.dashboard')],
-                ['route' => 'participant.card', 'icon' => Icons::DIGITAL_CARD, 'label' => __('nav.participant.card')],
                 ['route' => 'participant.journey', 'icon' => Icons::JOURNEY, 'label' => __('nav.participant.journey')],
+                ['route' => 'participant.card', 'icon' => Icons::DIGITAL_CARD, 'label' => __('nav.participant.card')],
             ]],
-            ['items' => [
+            // D-127 — by what a trainee reaches for first: the live session,
+            // then when the next one is, then how they stand.
+            ['label' => __('nav.groups.program'), 'items' => [
+                ['route' => 'live', 'icon' => Icons::LIVE, 'label' => __('nav.participant.live'), 'also' => ['live.recording']],
                 ['route' => 'schedule', 'icon' => Icons::SCHEDULE, 'label' => __('nav.participant.schedule')],
                 ['route' => 'attendance.index', 'icon' => Icons::ATTENDANCE, 'label' => __('nav.participant.attendance')],
-                ['route' => 'live', 'icon' => Icons::LIVE, 'label' => __('nav.participant.live')],
             ]],
-            ['items' => [
-                ['route' => 'assignments.index', 'icon' => Icons::ASSIGNMENTS, 'label' => __('nav.participant.assignments'), 'badge' => 'assignments'],
-                ['route' => 'resources.index', 'icon' => Icons::RESOURCES, 'label' => __('nav.participant.resources')],
-                ['route' => 'finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.participant.final_project')],
+            ['label' => __('nav.groups.work'), 'items' => [
+                ['route' => 'assignments.index', 'icon' => Icons::ASSIGNMENTS, 'label' => __('nav.participant.assignments'), 'badge' => 'assignments', 'also' => ['assignments.show']],
+                ['route' => 'finalProject', 'icon' => Icons::FINAL_PROJECT, 'label' => __('nav.participant.final_project'), 'also' => ['finalProject.receipt']],
                 ['route' => 'grades', 'icon' => Icons::GRADES_AND_REPORTS, 'label' => __('nav.participant.grades')],
+                // D-127 — the certificate was reachable only from the account's own
+                // links; it is where all the work leads, so it has its own place.
+                // Issuing it is untouched (D-26, D-31, D-130).
+                ['route' => 'certificate', 'icon' => Icons::CERTIFICATE, 'label' => __('nav.participant.certificate')],
             ]],
+            ['label' => __('nav.groups.contact_materials'), 'items' => [
+                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages', 'also' => ['messages.create']],
+                ['route' => 'resources.index', 'icon' => Icons::RESOURCES, 'label' => __('nav.participant.resources')],
+            ]],
+            // D-108 moved this out of the dashboard shell to the public landing
+            // page; D-127 (the owner's answer) moves it to the foot, under no heading.
             ['items' => [
-                ['route' => 'messages.index', 'icon' => Icons::MESSAGES, 'label' => __('nav.participant.messages'), 'badge' => 'messages'],
+                ['route' => 'home', 'icon' => Icons::HOME, 'label' => __('nav.participant.home_page')],
             ]],
         ];
     }
@@ -349,7 +361,10 @@ final class Sidebar extends UiComponent
                 $count = is_string($badgeKey) ? (int) ($this->badges[$badgeKey] ?? 0) : 0;
 
                 $item['href'] = route($name, $item['params'] ?? []);
-                $item['active'] = request()->routeIs($name);
+                // D-127 — lit for its own page AND for every page that lives under
+                // it (`also`): a rail that goes dark on the detail of the thing it
+                // lists tells the person they are nowhere.
+                $item['active'] = request()->routeIs($name, ...array_values(array_filter((array) ($item['also'] ?? []), 'is_string')));
                 $item['locked'] = (bool) ($item['locked'] ?? false);
                 // A locked item wears the padlock, whatever it is — decided here, not in the template.
                 $item['icon'] = $item['locked'] ? Icons::LOCKED : $item['icon'];

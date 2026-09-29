@@ -355,6 +355,8 @@ function authorizationMatrix(object $test): array
         'admin.certificates.override' => ['post', [$test->participant], ['admin']],
 
         // D-117 — the landing page is the system administrator's alone.
+        // D-133 — the page that explains the five roles: the system administrator's alone.
+        'admin.roles.index' => ['get', [], ['system_admin']],
         'admin.landing.edit' => ['get', [], ['system_admin']],
         'admin.landing.update' => ['put', [], ['system_admin']],
         'admin.landing.preview' => ['post', [], ['system_admin']],

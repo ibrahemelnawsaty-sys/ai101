@@ -1783,3 +1783,20 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .tkt-acts { display: grid; gap: var(--s6); }
 .tkt-act { inline-size: 100%; }
 .tkt-act + .tkt-act { padding-block-start: var(--s6); border-block-start: var(--bw-hairline) solid var(--border-1); }
+
+/* ==========================================================================
+   Roles and permissions (D-133)
+   ========================================================================== */
+
+.rolegrid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(var(--d-6), 1fr)); }
+.role__scope { margin-block-start: var(--s3); font-size: var(--fs-xs); color: var(--text-muted); }
+.role__scope b { color: var(--text-strong); }
+.atable .atable__group th { background: var(--surface-2); color: var(--text-strong); font-size: var(--fs-sm); }
+.atable__cap { font-weight: var(--fw-regular); color: var(--text-strong); }
+.atable__cell { text-align: center; color: var(--text-muted); }
+.atable__cell .ui-icon { margin-inline: auto; color: var(--status-ok-text); }
+
+/* The summary inside the role-change confirmation (D-133). */
+.rolechange { display: grid; gap: var(--s3); }
+.rolechange dt { font-size: var(--fs-xs); color: var(--text-muted); }
+.rolechange dd { margin: 0; color: var(--text-strong); }

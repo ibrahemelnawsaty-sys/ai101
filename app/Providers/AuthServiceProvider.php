@@ -118,6 +118,7 @@ final class AuthServiceProvider extends ServiceProvider
     private array $abilities = [
         'console.view' => [ConsolePolicy::class, 'view'],
         'console.settings' => [ConsolePolicy::class, 'settings'],
+        'console.roles' => [ConsolePolicy::class, 'roles'],
     ];
 
     public function boot(): void

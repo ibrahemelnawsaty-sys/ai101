@@ -72,6 +72,8 @@ final class Icons
 
     public const LANDING = 'globe';
 
+    public const ROLES = 'roles';
+
     public const SETTINGS = 'settings';
 
     // ---- chrome ----------------------------------------------------------

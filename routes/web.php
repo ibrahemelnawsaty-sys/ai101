@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\LandingController as AdminLandingController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\UserImportController as AdminUserImportController;
@@ -841,6 +842,10 @@ Route::middleware(['auth', 'verified', 'role:system_admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function (): void {
+        // D-133 — the page that explains the five roles. Read-only; the system
+        // administrator's alone, since the role changes are theirs (D-117).
+        Route::get('/roles', [AdminRoleController::class, 'index'])->name('roles.index');
+
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
 

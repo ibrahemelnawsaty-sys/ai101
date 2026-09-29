@@ -19,6 +19,7 @@ use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Profile;
 use App\Models\User;
+use App\Presenters\Admin\RolesOverview;
 use App\Presenters\Admin\UserCounts;
 use App\Presenters\Admin\UserProfile;
 use App\Presenters\Admin\UserRow;
@@ -147,6 +148,9 @@ final class UserController extends Controller
             'contextLabel' => null,
             'user' => UserProfile::from($user, $viewer, $enrollments),
             'roleOptions' => Options::fromEnum(UserRole::class),
+            // D-133 — what the confirmation before a role change tells the person:
+            // the new role's name and what it can do, from the same words as the roles page.
+            'roleMeanings' => collect(RolesOverview::build()->roles)->keyBy('key')->all(),
             'statusOptions' => Options::fromEnum(UserStatus::class),
             'errorState' => null,
         ]);

@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
  * because the router, the session store or the database is the thing that
  * failed, so it resolves no model and assumes no route (CONSTITUTION art. 7).
  * The suggestion lists never differ by anything except "is anyone signed in"
- * and, since D-117, the signed-in account's own role — so no page can leak
+ * and, since D-117 (all five roles since D-127), the signed-in account's own role — so no page can leak
  * whether a record exists (BR-22, BR-23, art. 22).
  *
  * @see PRD §8, §11.1, §12.4 · BR-07, BR-22, BR-23, BR-30 · D-117
@@ -82,22 +82,50 @@ final class ErrorNavigation
     ];
 
     /**
-     * The system administrator's suggestions on a refused, missing or
-     * wrong-method page (D-117). The role reaches no cohort, so the trainee's
-     * schedule and messages would only lead to a second refusal.
+     * Each staff role's own suggestions on a refused, missing or wrong-method
+     * page, keyed by the account's role. The trainee's list above stays the
+     * trainee's: offering a supervisor "your assignments" on a mistyped address
+     * was wrong for every role but one (D-127).
      *
-     * @var list<array{0: string, 1: string}>
+     * The system administrator's list (D-117) is the reason this table exists:
+     * the role reaches no cohort, so the trainee's schedule and messages would only
+     * lead to a second refusal. The others follow the same reasoning — the way
+     * back is the role's own home, its two most-used screens, and its messages.
+     *
+     * @var array<string, list<array{0: string, 1: string}>>
      */
-    private const SYSTEM_ADMIN_SUGGESTIONS = [
-        ['admin.users.index', 'nav.admin.users'],
-        ['admin.landing.edit', 'nav.admin.landing'],
-        ['admin.settings.edit', 'nav.admin.settings'],
-        ['messages.index', 'nav.admin.contact'],
-        ['profile', 'nav.participant.profile'],
+    private const ROLE_SUGGESTIONS = [
+        'system_admin' => [
+            ['admin.users.index', 'nav.admin.users'],
+            ['admin.landing.edit', 'nav.admin.landing'],
+            ['admin.settings.edit', 'nav.admin.settings'],
+            ['messages.index', 'nav.admin.contact'],
+            ['profile', 'nav.participant.profile'],
+        ],
+        'admin' => [
+            ['admin.dashboard', 'nav.admin.dashboard'],
+            ['admin.cohorts.index', 'nav.admin.cohorts'],
+            ['messages.index', 'nav.admin.messages'],
+            ['profile', 'nav.participant.profile'],
+        ],
+        'trainer' => [
+            ['trainer.dashboard', 'nav.trainer.dashboard'],
+            ['trainer.attendance', 'nav.trainer.attendance'],
+            ['trainer.submissions', 'nav.trainer.submissions'],
+            ['messages.index', 'nav.participant.messages'],
+            ['profile', 'nav.participant.profile'],
+        ],
+        'coordinator' => [
+            ['coordinator.dashboard', 'nav.coordinator.dashboard'],
+            ['trainer.sessions', 'nav.coordinator.sessions'],
+            ['trainer.attendance', 'nav.coordinator.attendance'],
+            ['messages.index', 'nav.participant.messages'],
+            ['profile', 'nav.participant.profile'],
+        ],
     ];
 
-    /** Codes whose suggestions are the system administrator's own list. */
-    private const SYSTEM_ADMIN_CODES = ['403', '404', '405'];
+    /** Codes whose suggestions are the signed-in role's own list. */
+    private const ROLE_CODES = ['403', '404', '405'];
 
     /** Codes whose primary action returns the visitor to the page they came from. */
     private const BACK_CODES = ['405', '413', '419', '429'];
@@ -110,12 +138,21 @@ final class ErrorNavigation
         return Auth::hasUser();
     }
 
-    /** The signed-in account's own role, already loaded — nothing is queried. */
-    private static function isSystemAdmin(): bool
+    /**
+     * The signed-in account's own role, already loaded — nothing is queried — or
+     * null when nobody is signed in or the role is the trainee's (whose list is
+     * the table's default). Read from `users.role`, not resolved through the
+     * cohorts: an error page may be rendering because the database failed.
+     */
+    private static function staffRole(): ?string
     {
         $user = Auth::hasUser() ? Auth::user() : null;
 
-        return $user instanceof User && $user->role === UserRole::SystemAdmin;
+        if (! $user instanceof User || $user->role === UserRole::Participant) {
+            return null;
+        }
+
+        return $user->role->value;
     }
 
     /**
@@ -202,8 +239,10 @@ final class ErrorNavigation
         $table = self::SUGGESTIONS[(int) $code] ?? ['user' => [], 'guest' => []];
         $candidates = self::hasSession() ? $table['user'] : $table['guest'];
 
-        if (in_array($code, self::SYSTEM_ADMIN_CODES, true) && self::isSystemAdmin()) {
-            $candidates = self::SYSTEM_ADMIN_SUGGESTIONS;
+        $role = in_array($code, self::ROLE_CODES, true) ? self::staffRole() : null;
+
+        if ($role !== null && isset(self::ROLE_SUGGESTIONS[$role])) {
+            $candidates = self::ROLE_SUGGESTIONS[$role];
         }
 
         $links = [];

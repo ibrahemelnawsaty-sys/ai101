@@ -165,7 +165,7 @@ return [
     ],
 
     'attendance' => [
-        'title' => 'Attendance in your cohort',
+        'title' => 'Attendance tracking',
         'pick_session' => 'Choose a session',
         'live_now' => 'Live now',
         'checked_in_of_total' => 'checked in, out of all participants',
@@ -234,7 +234,7 @@ return [
     ],
 
     'submissions' => [
-        'title' => 'Submissions board',
+        'title' => 'Submissions and grading',
         'search' => 'Search by participant name…',
         'filter_assignment' => 'Assignment',
         'filter_status' => 'Submission state',

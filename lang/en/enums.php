@@ -16,7 +16,7 @@ return [
         'system_admin' => 'System administrator',
         'trainer' => 'Trainer',
         'coordinator' => 'Coordinator',
-        'participant' => 'Participant',
+        'participant' => 'Trainee',
     ],
 
     'user_status' => [
@@ -52,7 +52,7 @@ return [
     ],
 
     'enrollment_role' => [
-        'participant' => 'Participant',
+        'participant' => 'Trainee',
         'trainer' => 'Trainer',
         'coordinator' => 'Coordinator',
     ],

@@ -198,7 +198,7 @@ return [
     */
 
     'attendance' => [
-        'title' => 'حضور دفعتك',
+        'title' => 'رصد الحضور',
         'pick_session' => 'اختر الجلسة',
         'live_now' => 'جارية الآن',
         'checked_in_of_total' => 'سجّلوا حضورهم من إجمالي المتدربين',
@@ -279,7 +279,7 @@ return [
     */
 
     'submissions' => [
-        'title' => 'لوحة التسليمات',
+        'title' => 'التسليمات والتصحيح',
         'search' => 'ابحث باسم المتدرب…',
         'filter_assignment' => 'المهمة',
         'filter_status' => 'حالة التسليم',

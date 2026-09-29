@@ -32,6 +32,10 @@ return [
         'program' => 'Programme',
         'work' => 'Work and grades',
         'communication' => 'Communication',
+        // D-127 — the participant rail's contact-and-kit group; the supervisor's cohort and follow-up groups.
+        'contact_materials' => 'Contact and materials',
+        'cohort_admin' => 'Cohort administration',
+        'monitoring' => 'Follow-up',
         'trainer' => 'Trainer tools',
         'coordinator' => 'Coordinator tools',
         'admin' => 'Platform administration',
@@ -55,7 +59,7 @@ return [
     'profile' => 'My account',
     // D-124 — Support in the account menu, and the support team's tab in the rail.
     'support' => 'Support',
-    'support_tickets' => 'Support tickets',
+    'support_tickets' => 'Technical support',
 
     'admin' => [
         // D-113 — unified with the other three roles' first tab, all now
@@ -73,8 +77,10 @@ return [
         'audit' => 'Audit log',
         'settings' => 'Platform settings',
         // D-118 — the system administrator's tab: the shared inbox with the general supervisors.
-        'contact' => 'Contact',
-        'messages' => 'Messages',
+        'contact' => 'Internal messaging',
+        'messages' => 'Internal messaging',
+        // D-133 — the page that explains the roles, for the system administrator alone.
+        'roles' => 'Roles and permissions',
     ],
 
     'trainer' => [
@@ -94,7 +100,7 @@ return [
     'coordinator' => [
         'dashboard' => 'Info dashboard',
         'sessions' => 'Sessions',
-        'attendance' => 'Attendance',
+        'attendance' => 'Attendance tracking',
     ],
 
     'participant' => [

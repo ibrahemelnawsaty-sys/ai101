@@ -30,6 +30,9 @@ use Illuminate\Support\Str;
  *  · `open` with a `close-href`, for a confirmation the server renders already
  *    open from a query string — Cancel is then a plain link that clears it, so
  *    the step still works with scripting off.
+ *  · `target-form`, for a form that already lives on the page and was filled
+ *    in there (D-133): the dialog draws no form of its own, shows what its slot
+ *    says, and its confirming button submits THAT form.
  *
  * @see D-127 · PRD §5.8, §5.9 · CONSTITUTION Articles 5, 13, 15, 17, 18
  */
@@ -49,6 +52,9 @@ final class Confirm extends UiComponent
     public bool $iconOnlyTrigger;
 
     public bool $reasonRequired;
+
+    /** The id of the form the confirming button submits: this dialog's own, or one elsewhere on the page. */
+    public string $submitsForm;
 
     public function __construct(
         public ?string $name = null,
@@ -73,6 +79,7 @@ final class Confirm extends UiComponent
         mixed $reasonRequired = false,
         mixed $open = false,
         public ?string $closeHref = null,
+        public ?string $targetForm = null,
     ) {
         $this->variant = self::oneOf($variant, ['danger', 'primary'], 'danger');
         $this->triggerVariant = self::oneOf(
@@ -96,6 +103,12 @@ final class Confirm extends UiComponent
         $this->uid = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '-', $name ?? ''), '-');
         $this->uid = $this->uid !== '' ? $this->uid : 'confirm-'.Str::random(6);
         $this->formId = $this->uid.'-form';
+
+        // D-133 — a dialog may confirm a form that already lives on the page (the
+        // role-change form, whose fields the person has filled). Reduced to id characters.
+        $external = $targetForm !== null ? trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '-', $targetForm), '-') : '';
+        $this->targetForm = $external !== '' ? $external : null;
+        $this->submitsForm = $this->targetForm ?? $this->formId;
 
         // The title is the dialog's accessible name: never leave it empty.
         $this->title = $title !== '' ? $title : $confirmLabel;

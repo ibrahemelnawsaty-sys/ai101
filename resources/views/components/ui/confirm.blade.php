@@ -47,6 +47,8 @@
                      cannot know which of several rows the error belongs to
       open           render already open (a server-rendered confirmation)
       close-href     Cancel becomes this link (clears the query string that opened it)
+      target-form    id of a form elsewhere on the page to confirm instead of drawing one
+                     (D-133): the slot is then the summary, and reason-* are ignored
 
     Slot: extra body — the consequences list, or hidden fields.
 --}}
@@ -73,26 +75,32 @@
     :open="$open"
     :close-href="$closeHref"
 >
-    <form method="POST" action="{{ $action }}" id="{{ $formId }}" class="ui-confirm__form">
-        @csrf
-        @if ($spoof)
-            @method($spoof)
-        @endif
+    @if ($targetForm !== null)
+        {{-- The form being confirmed is elsewhere on the page: nothing is posted from
+             here, and no reason field is drawn (the page's own form already has one). --}}
+        <div class="ui-confirm__form">{{ $slot }}</div>
+    @else
+        <form method="POST" action="{{ $action }}" id="{{ $formId }}" class="ui-confirm__form">
+            @csrf
+            @if ($spoof)
+                @method($spoof)
+            @endif
 
-        {{ $slot }}
+            {{ $slot }}
 
-        @if ($reasonName !== null)
-            <x-ui.textarea
-                :name="$reasonName"
-                :id="$formId.'-reason'"
-                :label="$reasonLabel"
-                :hint="$reasonHint"
-                :value="$reasonValue ?? ''"
-                :required="$reasonRequired"
-                :rows="3"
-            />
-        @endif
-    </form>
+            @if ($reasonName !== null)
+                <x-ui.textarea
+                    :name="$reasonName"
+                    :id="$formId.'-reason'"
+                    :label="$reasonLabel"
+                    :hint="$reasonHint"
+                    :value="$reasonValue ?? ''"
+                    :required="$reasonRequired"
+                    :rows="3"
+                />
+            @endif
+        </form>
+    @endif
 
     <x-slot:footer>
         {{-- Cancel first, the action last: in RTL the action then sits at the
@@ -103,6 +111,6 @@
             <x-ui.button variant="ghost" type="button" x-on:click="$dispatch('ui-dialog-close', '{{ $uid }}')">{{ $cancelLabel }}</x-ui.button>
         @endif
 
-        <x-ui.button :variant="$variant" type="submit" form="{{ $formId }}" :icon="$confirmIcon">{{ $confirmLabel }}</x-ui.button>
+        <x-ui.button :variant="$variant" type="submit" form="{{ $submitsForm }}" :icon="$confirmIcon">{{ $confirmLabel }}</x-ui.button>
     </x-slot:footer>
 </x-ui.modal>

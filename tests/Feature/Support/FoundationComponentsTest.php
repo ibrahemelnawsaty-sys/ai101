@@ -340,3 +340,24 @@ it('D-127: an icon-only button is a full 44px target on every pointer, not only 
         // The old rule gave a small icon button 36px unless the device was coarse.
         ->and($css)->not->toContain('.ui-btn--icon.ui-btn--sm { inline-size: var(--s9); }');
 });
+
+it('D-133: a confirmation can confirm a form that already lives on the page, drawing none of its own', function (): void {
+    $html = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="change-role" title="T" confirm-label="Go" variant="primary" target-form="role-change-form"><p>The summary</p></x-ui.confirm>',
+    ), ENT_QUOTES);
+
+    expect($html)->toContain('form="role-change-form"')
+        ->and($html)->toContain('<p>The summary</p>')
+        ->and($html)->not->toContain('<form')
+        ->and($html)->not->toContain('_token'); // nothing is posted from the dialog itself
+});
+
+it('D-133: the id of the form a confirmation targets can carry nothing but id characters', function (): void {
+    $html = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="c" title="T" confirm-label="Go" :target-form="$form"><p>x</p></x-ui.confirm>',
+        ['form' => 'a"><script>alert(1)</script>'],
+    ), ENT_QUOTES);
+
+    expect($html)->not->toContain('<script>alert')
+        ->and($html)->toContain('form="a-script-alert-1-script"');
+});

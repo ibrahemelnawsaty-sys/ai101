@@ -81,9 +81,13 @@
 
     <nav id="{{ $navId }}" class="side__nav">
         @forelse ($resolvedGroups as $group)
-            <div class="side__g">
+            {{-- D-127 — a heading is a name a screen reader can find the group by:
+                 the group is bound to its own heading. The id carries the rail's
+                 own spelling, since the rail is drawn twice (page and drawer). --}}
+            <div class="side__g"
+                @isset($group['label']) role="group" aria-labelledby="{{ $navId }}-g{{ $loop->index }}" @endisset>
                 @isset($group['label'])
-                    <p class="side__t">{{ $group['label'] }}</p>
+                    <p class="side__t" id="{{ $navId }}-g{{ $loop->index }}">{{ $group['label'] }}</p>
                 @endisset
 
                 <ul>

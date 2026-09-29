@@ -18,7 +18,7 @@ return [
         'system_admin' => 'مدير نظام',
         'trainer' => 'مدرب',
         'coordinator' => 'منسّق',
-        'participant' => 'مشارك',
+        'participant' => 'متدرب',
     ],
 
     'user_status' => [
@@ -54,7 +54,7 @@ return [
     ],
 
     'enrollment_role' => [
-        'participant' => 'مشارك',
+        'participant' => 'متدرب',
         'trainer' => 'مدرب',
         'coordinator' => 'منسّق',
     ],
