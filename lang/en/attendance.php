@@ -141,6 +141,8 @@ return [
         'footnote' => 'All times are Riyadh time. Incomplete attendance means a check-in with no check-out, and your trainer is notified automatically.',
         'empty_title' => 'Your attendance log has not started yet',
         'empty_body' => 'Every session you check in to will appear here, with your check-in and check-out times and your status.',
+        'no_match_title' => 'No attendance record matches the filter',
+        'no_match_body' => 'Try another week or status, or clear the filter to see your whole log. The summary above does not change with the filter.',
     ],
 
     'col_session' => 'Session',

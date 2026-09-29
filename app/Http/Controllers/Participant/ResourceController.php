@@ -14,8 +14,10 @@ use App\Presenters\Participant\ResourcePresenter;
 use App\Presenters\Support\Options;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,6 +64,7 @@ final class ResourceController extends Controller
                 'paginator' => null,
                 'weekOptions' => [],
                 'typeOptions' => $this->typeOptions(),
+                'isFiltered' => false,
                 'errorState' => null,
                 'screen' => self::SCREEN,
                 'screenState' => ScreenState::EMPTY,
@@ -70,14 +73,31 @@ final class ResourceController extends Controller
 
         $now = Clock::now();
 
+        $weeks = $cohort->weeks()->orderBy('index')->get();
+
+        // FR-RES-05: three filters, all of them only narrowing THIS cohort's
+        // material. The week must be one of this cohort's own; anything the
+        // screen never offered is ignored (ListFilter).
+        $search = ListFilter::text($request, 'q');
+        $type = ListFilter::enum($request, 'type', ResourceType::class);
+        $week = ListFilter::oneOf($request, 'week', array_map('strval', $weeks->modelKeys()));
+        $isFiltered = $search !== null || $type !== null || $week !== null;
+
         $paginator = Resource::query()
             ->with(['week', 'session'])
             ->where('cohort_id', $cohort->getKey())
+            ->when($search !== null, static function (Builder $query) use ($search): void {
+                $term = ListFilter::like($search);
+
+                $query->where(static fn (Builder $match): Builder => $match
+                    ->where('title', 'like', $term)
+                    ->orWhere('description', 'like', $term));
+            })
+            ->when($type !== null, static fn (Builder $query) => $query->where('type', $type))
+            ->when($week !== null, static fn (Builder $query) => $query->where('week_id', $week))
             ->orderBy('created_at')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
-
-        $weeks = $cohort->weeks()->orderBy('index')->get();
 
         $byWeek = $paginator->getCollection()->groupBy(
             static fn (Resource $item): string => (string) ($item->getAttribute('week_id') ?? ''),
@@ -109,8 +129,16 @@ final class ResourceController extends Controller
             ));
         }
 
+        // A week that simply has no material yet is drawn as empty, with its own
+        // sentence (art. 17). Under a filter that sentence would be false — the
+        // week was filtered out, not empty — so a filter shows only what matched.
+        if ($isFiltered) {
+            $groups = $groups->reject(static fn (ResourceGroupPresenter $group): bool => $group['items']->isEmpty())->values();
+        }
+
         return view('participant.resources', [
             'groups' => $groups,
+            'isFiltered' => $isFiltered,
             'paginator' => $paginator,
             'weekOptions' => Options::fromModels(
                 $weeks,

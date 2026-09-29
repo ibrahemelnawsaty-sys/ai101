@@ -11,6 +11,7 @@ use App\Presenters\Participant\NotificationPresenter;
 use App\Presenters\Support\Options;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -40,8 +41,19 @@ final class NotificationController extends Controller
 
         $this->authorize('viewAny', Notification::class);
 
+        $typeOptions = $this->typeOptions();
+        $stateOptions = $this->stateOptions();
+
+        // FR-NOTIF-02: the two filters only narrow this account's own rows. A
+        // value the screen never offered is ignored (ListFilter), and the
+        // unread badge below counts them all, whatever is listed.
+        $type = ListFilter::oneOf($request, 'type', array_column($typeOptions, 'value'));
+        $state = ListFilter::oneOf($request, 'state', array_column($stateOptions, 'value'));
+
         $notifications = Notification::query()
             ->where('user_id', $user->getKey())
+            ->when($type !== null, static fn ($query) => $query->where('type', $type))
+            ->when($state !== null, static fn ($query) => $query->where('is_read', $state === 'read'))
             ->orderByDesc('created_at')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
@@ -57,8 +69,9 @@ final class NotificationController extends Controller
             ),
             'unreadCount' => $unread,
             'isImpersonating' => ImpersonationContext::isActive(),
-            'typeOptions' => $this->typeOptions(),
-            'stateOptions' => $this->stateOptions(),
+            'typeOptions' => $typeOptions,
+            'stateOptions' => $stateOptions,
+            'isFiltered' => $type !== null || $state !== null,
             'errorState' => null,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::of($notifications->getCollection()->isEmpty()),

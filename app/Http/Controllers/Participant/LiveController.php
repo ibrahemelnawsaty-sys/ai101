@@ -18,6 +18,7 @@ use App\Presenters\Support\Options;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -80,6 +81,7 @@ final class LiveController extends Controller
                 'upcoming' => new Collection,
                 'recordings' => new Collection,
                 'weekOptions' => [],
+                'isFiltered' => false,
                 'errorState' => null,
                 'screen' => self::SCREEN,
                 'screenState' => ScreenState::EMPTY,
@@ -93,7 +95,14 @@ final class LiveController extends Controller
             fn (Session $session): SessionPresenter => SessionPresenter::from($session, $this->window, $now),
         );
 
-        $recordings = $this->recordings($cohortId)
+        $weeks = $cohort->weeks()->orderBy('index')->get();
+
+        // FR-LIVE-08: search and week narrow this cohort's recordings only. The
+        // week must be one of the cohort's own; anything else is ignored.
+        $search = ListFilter::text($request, 'q');
+        $week = ListFilter::oneOf($request, 'week', array_map('strval', $weeks->modelKeys()));
+
+        $recordings = $this->recordings($cohortId, $search, $week)
             ->paginate(self::PER_PAGE)
             ->withQueryString()
             ->through(fn (Session $session): RecordingPresenter => RecordingPresenter::from($session, $this->window));
@@ -105,8 +114,9 @@ final class LiveController extends Controller
                 : LiveSessionPresenter::from($featured, $this->window, $now, $user->can('revealJoinLink', $featured)),
             'upcoming' => $upcoming,
             'recordings' => $recordings,
+            'isFiltered' => $search !== null || $week !== null,
             'weekOptions' => Options::fromModels(
-                $cohort->weeks()->orderBy('index')->get(),
+                $weeks,
                 static fn (Model $week): string => (string) $week->getAttribute('title'),
             ),
             'errorState' => null,
@@ -251,12 +261,20 @@ final class LiveController extends Controller
      *
      * @return \Illuminate\Database\Eloquent\Builder<Session>
      */
-    private function recordings(string $cohortId)
+    private function recordings(string $cohortId, ?string $search = null, ?string $week = null)
     {
         return Session::query()
             ->where('cohort_id', $cohortId)
             ->where('status', SessionStatus::Completed->value)
             ->whereNotNull('recording_url')
+            ->when($search !== null, static function ($query) use ($search): void {
+                $term = ListFilter::like($search);
+
+                $query->where(static fn ($match) => $match
+                    ->where('topic', 'like', $term)
+                    ->orWhere('title', 'like', $term));
+            })
+            ->when($week !== null, static fn ($query) => $query->where('week_id', $week))
             ->orderByDesc('date');
     }
 }

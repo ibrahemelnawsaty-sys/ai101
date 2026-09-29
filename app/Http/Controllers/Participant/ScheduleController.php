@@ -24,6 +24,7 @@ use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Time\Clock;
 use App\Support\AttendanceCounting;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -79,6 +80,7 @@ final class ScheduleController extends Controller
                 'serverNow' => $now,
                 'preferredView' => is_string($preferred) ? $preferred : 'accordion',
                 'weeks' => new Collection,
+                'isFiltered' => false,
                 'calendar' => CalendarPresenter::from(new Collection, null, null, null, null),
                 'selectedSession' => null,
                 'weekOptions' => [],
@@ -110,9 +112,21 @@ final class ScheduleController extends Controller
 
         $minimumRate = $this->eligibility->minAttendanceRate($cohort);
 
-        $groups = $weeks->map(function (Week $week) use (
+        // FR-SCHED-13: week, type and my attendance narrow what is LISTED. Each
+        // week's tally below is still counted over ALL of its sessions
+        // (`$ids`, `$attended`) — a filter changes what is drawn, never what is
+        // counted (BR-01 .. BR-06 are not touched). Anything the screen never
+        // offered is ignored (ListFilter).
+        $weekFilter = ListFilter::oneOf($request, 'week', array_map('strval', $weeks->modelKeys()));
+        $typeFilter = ListFilter::enum($request, 'type', SessionType::class);
+        $attendanceFilter = ListFilter::enum($request, 'attendance', AttendanceStatus::class);
+        $shown = $this->narrowed($presented, $sessions, $user, $typeFilter, $attendanceFilter);
+
+        $groups = $weeks->filter(
+            static fn (Week $week): bool => $weekFilter === null || (string) $week->getKey() === $weekFilter,
+        )->map(function (Week $week) use (
             $byWeek,
-            $presented,
+            $shown,
             $attended,
             $now,
             $minimumRate,
@@ -122,7 +136,7 @@ final class ScheduleController extends Controller
                 ->map(static fn (mixed $id): string => (string) $id)
                 ->all();
 
-            $weekSessions = $presented->filter(
+            $weekSessions = $shown->filter(
                 // $item['id'] and $item->id are the same ViewModel read (both
                 // land in __get and still throw for an unpublished key), but
                 // only the ArrayAccess form has a declared type.
@@ -136,6 +150,7 @@ final class ScheduleController extends Controller
                 new Collection,
                 $this->countAttended($ids, $attended),
                 $minimumRate,
+                count($ids),
             );
         })->values();
 
@@ -147,15 +162,18 @@ final class ScheduleController extends Controller
             ->map(static fn (mixed $id): string => (string) $id)
             ->all();
 
-        if ($looseIds !== []) {
+        // A week filter asks for ONE week: the sessions outside every week are
+        // not in it.
+        if ($looseIds !== [] && $weekFilter === null) {
             $groups->push(WeekPresenter::unscheduled(
                 (string) __('schedule.unscheduled_group'),
-                $presented->filter(
+                $shown->filter(
                     static fn (SessionPresenter $item): bool => in_array((string) $item['id'], $looseIds, true),
                 )->values(),
                 new Collection,
                 $this->countAttended($looseIds, $attended),
                 $minimumRate,
+                count($looseIds),
             ));
         }
 
@@ -163,7 +181,8 @@ final class ScheduleController extends Controller
             'serverNow' => $now,
             'preferredView' => is_string($preferred) ? $preferred : 'accordion',
             'weeks' => $groups,
-            'calendar' => $this->calendarPresenter($weeks, $sessions, $presented, $request, $now),
+            'isFiltered' => $typeFilter !== null || $attendanceFilter !== null,
+            'calendar' => $this->calendarPresenter($weeks, $sessions, $shown, $request, $now),
             'selectedSession' => $this->selectedSession($sessions, $request),
             'weekOptions' => $this->weekOptions($weeks),
             'typeOptions' => $this->typeOptions(),
@@ -357,6 +376,75 @@ final class ScheduleController extends Controller
         }
 
         return $count;
+    }
+
+    /**
+     * The sessions a type / attendance filter leaves on screen.
+     *
+     * "My attendance" is a fact of MY own rows: a session matches when this
+     * participant's record for it has that status. A session with no record
+     * matches no status — nothing is inferred (no "absent unless recorded"),
+     * because attendance is never assumed (BR-01 .. BR-06).
+     *
+     * @param  Collection<int, SessionPresenter>  $presented
+     * @param  Collection<int, Session>  $sessions
+     * @return Collection<int, SessionPresenter>
+     */
+    private function narrowed(Collection $presented, Collection $sessions, User $user, ?string $type, ?string $attendance): Collection
+    {
+        if ($type === null && $attendance === null) {
+            return $presented;
+        }
+
+        $mine = $attendance === null ? [] : $this->statusBySession($user, $sessions);
+        $keep = [];
+
+        foreach ($sessions as $session) {
+            $id = (string) $session->getKey();
+            $sessionType = $session->getAttribute('type');
+
+            if ($type !== null && ($sessionType instanceof SessionType ? $sessionType->value : (string) $sessionType) !== $type) {
+                continue;
+            }
+
+            if ($attendance !== null && ($mine[$id] ?? null) !== $attendance) {
+                continue;
+            }
+
+            $keep[$id] = true;
+        }
+
+        return $presented->filter(
+            static fn (SessionPresenter $item): bool => isset($keep[(string) $item['id']]),
+        )->values();
+    }
+
+    /**
+     * The status of this participant's own record for each session, and only
+     * their own (BR-22).
+     *
+     * @param  Collection<int, Session>  $sessions
+     * @return array<string, string>
+     */
+    private function statusBySession(User $user, Collection $sessions): array
+    {
+        if ($sessions->isEmpty()) {
+            return [];
+        }
+
+        $map = [];
+
+        $rows = Attendance::query()
+            ->where('user_id', $user->getKey())
+            ->whereIn('session_id', $sessions->pluck('id')->all())
+            ->get(['session_id', 'status']);
+
+        foreach ($rows as $row) {
+            $status = $row->getAttribute('status');
+            $map[(string) $row->getAttribute('session_id')] = $status instanceof AttendanceStatus ? $status->value : (string) $status;
+        }
+
+        return $map;
     }
 
     /**

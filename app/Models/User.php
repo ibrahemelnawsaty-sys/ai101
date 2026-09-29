@@ -545,6 +545,56 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The name parts a person search reads: Arabic and English, all four of each.
+     * (`full_name_ar` and `full_name_en` are computed on the profile, not
+     * columns — a query can only ask for these.)
+     */
+    private const SEARCHABLE_NAME_COLUMNS = [
+        'first_name_ar', 'second_name_ar', 'third_name_ar', 'last_name_ar',
+        'first_name_en', 'second_name_en', 'third_name_en', 'last_name_en',
+    ];
+
+    /**
+     * People matching a typed search: EVERY word must match the e-mail or some
+     * part of the name (Arabic or English), in any order, so "Omar Beta" finds
+     * Omar Saleh Nasser Beta and one word never has to be the first name.
+     *
+     * The phone is read only when the caller asks for it. A screen that offers
+     * people to each other (the recipient picker) must not let anyone look a
+     * person up by their number; an administrator's own lists may.
+     *
+     * Only NARROWS: it adds conditions to a query the caller already scoped.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeMatchingPerson(Builder $query, string $term, bool $withPhone = false): Builder
+    {
+        $words = preg_split('/\s+/u', trim($term), -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach ($words === false ? [] : $words as $word) {
+            $like = '%'.$word.'%';
+
+            $query->where(static function (Builder $any) use ($like, $withPhone): void {
+                $any->where('email', 'like', $like)
+                    ->orWhereHas('profile', static function (Builder $profile) use ($like, $withPhone): void {
+                        $columns = $withPhone
+                            ? [...self::SEARCHABLE_NAME_COLUMNS, 'phone']
+                            : self::SEARCHABLE_NAME_COLUMNS;
+
+                        $profile->where(static function (Builder $parts) use ($columns, $like): void {
+                            foreach ($columns as $column) {
+                                $parts->orWhere($column, 'like', $like);
+                            }
+                        });
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * Members of one cohort, whatever their role in it.
      *
      * @param  Builder<self>  $query

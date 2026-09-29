@@ -32,6 +32,8 @@ return [
     'watch' => 'Watch the recording',
     'recordings_empty_title' => 'No recordings yet',
     'recordings_empty_body' => 'A recording is uploaded after each session ends, and appears here with its length and date.',
+    'recordings_no_match_title' => 'No recordings match your search',
+    'recordings_no_match_body' => 'Try another word or week, or clear the filter to see every recording.',
 
     'empty_title' => 'No live sessions coming up right now',
     'empty_body' => 'The next session appears here with a live countdown and a join button as soon as it is scheduled.',

@@ -51,6 +51,8 @@ return [
     'empty_body' => 'It appears here as soon as the programme team approves it, and you are notified.',
     'week_empty_title' => 'No sessions this week',
     'week_empty_body' => 'No sessions have been added to this week yet.',
+    'week_no_match_title' => 'No session in this week matches the filter',
+    'week_no_match_body' => 'Clear the filter to see every session of the week. Your attendance tally for the week covers all its sessions, not only what the filter shows.',
     'calendar_empty_title' => 'No sessions this week',
     'calendar_empty_body' => 'Move to another week with the arrows, or return to the current week.',
     'error_title' => 'The schedule could not be shown',

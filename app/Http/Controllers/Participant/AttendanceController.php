@@ -26,6 +26,7 @@ use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -82,6 +83,7 @@ final class AttendanceController extends Controller
                 'records' => new Collection,
                 'summary' => AttendanceSummaryPresenter::none(),
                 'weekOptions' => [],
+                'isFiltered' => false,
                 'statusOptions' => $this->statusOptions(),
                 'errorState' => null,
                 'screen' => self::SCREEN,
@@ -91,7 +93,20 @@ final class AttendanceController extends Controller
 
         $session = $this->currentOrNextSession((string) $cohort->getKey(), $now);
 
+        $weekOptions = $this->weekOptions($cohort);
+
+        // FR-ATT-26: status and week narrow the LIST of my own rows. They never
+        // reach the summary or the check-in panel, so what is counted (BR-01
+        // .. BR-06) is the same whatever the log is showing.
+        $status = ListFilter::enum($request, 'status', AttendanceStatus::class);
+        $week = ListFilter::oneOf($request, 'week', array_column($weekOptions, 'value'));
+
         $records = $this->logQuery($user, (string) $cohort->getKey())
+            ->when($status !== null, static fn ($query) => $query->where('status', $status))
+            ->when($week !== null, static fn ($query) => $query->whereIn(
+                'session_id',
+                Session::query()->where('cohort_id', $cohort->getKey())->where('week_id', $week)->select('id'),
+            ))
             ->paginate(self::PER_PAGE)
             ->withQueryString()
             ->through(static fn (Attendance $row): AttendanceRecordPresenter => AttendanceRecordPresenter::from($row));
@@ -108,7 +123,8 @@ final class AttendanceController extends Controller
                 ),
             'records' => $records,
             'summary' => AttendanceSummaryPresenter::from($user, $cohort, $this->eligibility, $now),
-            'weekOptions' => $this->weekOptions($cohort),
+            'weekOptions' => $weekOptions,
+            'isFiltered' => $status !== null || $week !== null,
             'statusOptions' => $this->statusOptions(),
             'errorState' => null,
             'screen' => self::SCREEN,

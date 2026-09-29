@@ -45,10 +45,10 @@
         </x-ui.card>
     @elseif ($notifications->isEmpty())
         <x-ui.empty-state icon="bell"
-            :title="request()->hasAny(['type', 'state']) ? __('notifications.no_match_title') : __('notifications.empty_title')"
-            :description="request()->hasAny(['type', 'state']) ? __('notifications.no_match_body') : __('notifications.empty_body')"
-            :action-label="request()->hasAny(['type', 'state']) ? __('app.clear_filters') : null"
-            :action-href="request()->hasAny(['type', 'state']) ? route('notifications') : null" />
+            :title="$isFiltered ? __('notifications.no_match_title') : __('notifications.empty_title')"
+            :description="$isFiltered ? __('notifications.no_match_body') : __('notifications.empty_body')"
+            :action-label="$isFiltered ? __('app.clear_filters') : null"
+            :action-href="$isFiltered ? route('notifications') : null" />
     @else
         <x-ui.card>
             <ul class="notiflist" role="list">

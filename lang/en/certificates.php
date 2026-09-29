@@ -141,6 +141,8 @@ return [
         'serial_format_hint' => 'Serial number format: ATHAR-AI101-2026-0001',
         'empty_title' => 'Nobody meets the conditions yet',
         'empty_body' => 'The eligible list appears once attendance is complete and final scores are recorded.',
+        'no_match_title' => 'Nobody matches your search',
+        'no_match_body' => 'Try another part of the name, e-mail or phone, or clear the search to see every list. The counters above cover what matches the search.',
     ],
 
     /*

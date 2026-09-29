@@ -86,8 +86,8 @@ final class UserController extends Controller
         $search = $request->query('q');
 
         if (is_string($search) && trim($search) !== '') {
-            $term = '%'.trim($search).'%';
-            $query->where('email', 'like', $term);
+            // The box says "by name, e-mail or phone"; it matched the e-mail only.
+            $query->matchingPerson($search, withPhone: true);
         }
 
         $role = $request->query('role');

@@ -91,9 +91,8 @@ final class RegistrationController extends Controller
         $search = $request->query('q');
 
         if (is_string($search) && trim($search) !== '') {
-            $term = '%'.trim($search).'%';
-            $query->whereHas('user', static function ($builder) use ($term): void {
-                $builder->where('email', 'like', $term);
+            $query->whereHas('user', static function ($builder) use ($search): void {
+                $builder->matchingPerson($search, withPhone: true);
             });
         }
 

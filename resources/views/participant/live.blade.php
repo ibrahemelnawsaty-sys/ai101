@@ -161,8 +161,10 @@
                     @endfor
                 @elseif ($recordings->isEmpty())
                     <x-ui.empty-state icon="recording" size="sm"
-                        :title="__('live.recordings_empty_title')"
-                        :description="__('live.recordings_empty_body')" />
+                        :title="$isFiltered ? __('live.recordings_no_match_title') : __('live.recordings_empty_title')"
+                        :description="$isFiltered ? __('live.recordings_no_match_body') : __('live.recordings_empty_body')"
+                        :action-label="$isFiltered ? __('app.clear_filters') : null"
+                        :action-href="$isFiltered ? route('live') : null" />
                 @else
                     @foreach ($recordings as $recording)
                         <div class="row">

@@ -18,6 +18,7 @@ use App\Presenters\Admin\ReportSummary;
 use App\Presenters\Shared\ChartPoint;
 use App\Presenters\Support\Options;
 use App\Support\Dates;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -52,9 +53,21 @@ final class ReportController extends Controller
     {
         $this->authorize('viewAny', Cohort::class);
 
+        $cohortOptions = Options::fromModels(
+            Cohort::query()->orderByDesc('start_date')->get(),
+            static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
+        );
+
+        // FR-ADMIN-12: one cohort, when the picker names one it offered. It
+        // narrows everything the screen derives from the cohort list — the
+        // table, the chart, the headline figures and the trend — and the export
+        // beside it; a value that was never offered is ignored.
+        $only = ListFilter::oneOf($request, 'cohort', array_column($cohortOptions, 'value'));
+
         $cohorts = Cohort::query()
             ->with('program')
             ->withCount(['enrollments', 'sessions', 'certificates'])
+            ->when($only !== null, static fn ($query) => $query->whereKey($only))
             ->orderByDesc('start_date')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
@@ -101,14 +114,11 @@ final class ReportController extends Controller
 
         return view('admin.reports', [
             'contextLabel' => null,
-            'summary' => $this->summary($participants, $completed, $attendance, $scores, $expected, $submitted),
-            'registrationsOverTime' => $this->registrationsOverTime($request),
+            'summary' => $this->summary($participants, $completed, $attendance, $scores, $expected, $submitted, $only),
+            'registrationsOverTime' => $this->registrationsOverTime($request, $only),
             'attendanceByCohort' => $attendanceByCohort,
             'cohortRows' => $rows,
-            'cohortOptions' => Options::fromModels(
-                Cohort::query()->orderByDesc('start_date')->get(),
-                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
-            ),
+            'cohortOptions' => $cohortOptions,
             'errorState' => null,
         ]);
     }
@@ -128,12 +138,15 @@ final class ReportController extends Controller
         array $scores,
         array $expected,
         array $submitted,
+        ?string $cohortId = null,
     ): ReportSummary {
         $attendanceValues = array_values($attendance);
         $scoreValues = array_values($scores);
 
         return ReportSummary::of(
-            registrations: Enrollment::query()->count(),
+            registrations: Enrollment::query()
+                ->when($cohortId !== null, static fn ($query) => $query->where('cohort_id', $cohortId))
+                ->count(),
             averageAttendance: $attendanceValues === [] ? null : array_sum($attendanceValues) / count($attendanceValues),
             averageScore: $scoreValues === [] ? null : array_sum($scoreValues) / count($scoreValues),
             submissionRate: self::ratio((float) array_sum($submitted), (float) array_sum($expected)),
@@ -149,9 +162,11 @@ final class ReportController extends Controller
      *
      * @return Collection<int, ChartPoint>
      */
-    private function registrationsOverTime(Request $request): Collection
+    private function registrationsOverTime(Request $request, ?string $cohortId = null): Collection
     {
-        $query = Enrollment::query()->orderBy('created_at');
+        $query = Enrollment::query()
+            ->when($cohortId !== null, static fn ($inner) => $inner->where('cohort_id', $cohortId))
+            ->orderBy('created_at');
 
         $from = $request->query('from');
 
@@ -338,13 +353,22 @@ final class ReportController extends Controller
     }
 
     /** The cohort table as a CSV, for whoever wants it in a spreadsheet. */
-    public function export(): Response
+    public function export(Request $request): Response
     {
         $this->authorize('viewAny', Cohort::class);
+
+        // The button beside the picker carries its query: the file holds what
+        // the screen shows (FR-ADMIN-12).
+        $only = ListFilter::oneOf(
+            $request,
+            'cohort',
+            Cohort::query()->pluck('id')->map(static fn ($id): string => (string) $id)->all(),
+        );
 
         $rows = Cohort::query()
             ->with('program')
             ->withCount(['enrollments', 'sessions', 'certificates'])
+            ->when($only !== null, static fn ($query) => $query->whereKey($only))
             ->orderByDesc('start_date')
             ->get()
             ->map(static fn (Cohort $cohort): array => [

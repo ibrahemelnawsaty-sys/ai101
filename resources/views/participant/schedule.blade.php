@@ -95,8 +95,8 @@
                         <div class="wk__body">
                             @if ($week->sessions->isEmpty())
                                 <x-ui.empty-state icon="cal" size="sm"
-                                    :title="__('schedule.week_empty_title')"
-                                    :description="__('schedule.week_empty_body')" />
+                                    :title="$isFiltered ? __('schedule.week_no_match_title') : __('schedule.week_empty_title')"
+                                    :description="$isFiltered ? __('schedule.week_no_match_body') : __('schedule.week_empty_body')" />
                             @else
                                 <div class="tscroll">
                                     <table class="atable">

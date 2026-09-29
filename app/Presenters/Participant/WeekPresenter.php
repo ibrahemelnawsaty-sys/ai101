@@ -25,6 +25,12 @@ use Illuminate\Support\Collection;
 final class WeekPresenter extends ViewModel
 {
     /**
+     * `$sessionTotal` is how many sessions the week HAS, when `$sessions` is
+     * only the ones a filter left on screen (FR-SCHED-13). The tally and its
+     * rate are counted over the whole week, never over what happens to be
+     * listed — a filter must not turn "1 of 4" into "1 of 1". Left null, the
+     * listed sessions are the week's sessions, as before.
+     *
      * @param  Collection<int, SessionPresenter>  $sessions
      * @param  Collection<int, AssignmentPresenter>  $assignments
      */
@@ -35,11 +41,12 @@ final class WeekPresenter extends ViewModel
         Collection $assignments,
         int $attendedCount = 0,
         float $minimumRate = 0.0,
+        ?int $sessionTotal = null,
     ): self {
         $startsOn = Present::toDateTime($week->getAttribute('start_date'));
         $endsOn = Present::toDateTime($week->getAttribute('end_date'));
 
-        $sessionCount = $sessions->count();
+        $sessionCount = $sessionTotal ?? $sessions->count();
         $rate = $sessionCount === 0 ? 0.0 : ($attendedCount / $sessionCount) * 100;
         $variant = $sessionCount === 0 ? 'neutral' : Present::rateVariant($rate, $minimumRate);
 
@@ -70,6 +77,8 @@ final class WeekPresenter extends ViewModel
      * absent. The title arrives already translated: no Arabic lives in PHP
      * (Article 15).
      *
+     * `$sessionTotal`: see from().
+     *
      * @param  Collection<int, SessionPresenter>  $sessions
      * @param  Collection<int, AssignmentPresenter>  $assignments
      */
@@ -79,8 +88,9 @@ final class WeekPresenter extends ViewModel
         Collection $assignments,
         int $attendedCount = 0,
         float $minimumRate = 0.0,
+        ?int $sessionTotal = null,
     ): self {
-        $sessionCount = $sessions->count();
+        $sessionCount = $sessionTotal ?? $sessions->count();
         $rate = $sessionCount === 0 ? 0.0 : ($attendedCount / $sessionCount) * 100;
         $variant = $sessionCount === 0 ? 'neutral' : Present::rateVariant($rate, $minimumRate);
 

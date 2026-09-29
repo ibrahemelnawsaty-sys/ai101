@@ -80,8 +80,8 @@
                 @endfor
             @elseif ($eligible->isEmpty())
                 <x-ui.empty-state icon="badge"
-                    :title="__('certificates.admin.empty_title')"
-                    :description="__('certificates.admin.empty_body')" />
+                    :title="$isSearching ? __('certificates.admin.no_match_title') : __('certificates.admin.empty_title')"
+                    :description="$isSearching ? __('certificates.admin.no_match_body') : __('certificates.admin.empty_body')" />
             @else
                 <form method="POST" action="{{ route('admin.certificates.issueBulk') }}">
                     @csrf
@@ -153,9 +153,17 @@
                     </div>
                 @endfor
             @elseif ($notEligible->isEmpty())
-                <x-ui.empty-state variant="success" icon="check"
-                    :title="__('certificates.admin.none_ineligible_title')"
-                    :description="__('certificates.both_required')" />
+                {{-- "Nobody falls short" is a claim about the whole cohort: under a
+                     search it would be false, so a search says only "no match". --}}
+                @if ($isSearching)
+                    <x-ui.empty-state icon="badge"
+                        :title="__('certificates.admin.no_match_title')"
+                        :description="__('certificates.admin.no_match_body')" />
+                @else
+                    <x-ui.empty-state variant="success" icon="check"
+                        :title="__('certificates.admin.none_ineligible_title')"
+                        :description="__('certificates.both_required')" />
+                @endif
             @else
                 <div class="tscroll">
                     <table class="atable">
@@ -263,8 +271,8 @@
                 </div>
             @elseif ($issued->isEmpty())
                 <x-ui.empty-state icon="badge"
-                    :title="__('certificates.admin.empty_title')"
-                    :description="__('certificates.admin.empty_body')" />
+                    :title="$isSearching ? __('certificates.admin.no_match_title') : __('certificates.admin.empty_title')"
+                    :description="$isSearching ? __('certificates.admin.no_match_body') : __('certificates.admin.empty_body')" />
             @else
                 <div class="tscroll">
                     <table class="atable">

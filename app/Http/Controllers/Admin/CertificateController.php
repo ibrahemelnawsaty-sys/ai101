@@ -29,6 +29,7 @@ use App\Services\Certificates\SerialNumberGenerator;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,11 +84,22 @@ final class CertificateController extends Controller
             $issuedQuery->where('cohort_id', $cohort->getKey());
         }
 
-        $eligible = $this->eligibleCandidates($cohort);
-        $notEligible = $this->ineligiblePeople($cohort);
+        // FR-CERT-02: the search narrows WHO is listed — in all four lists and
+        // their counters, which head those lists. It decides nothing about
+        // eligibility: each person is still judged by CertificateEligibility,
+        // and their reasons are shown in full (BR-26).
+        $search = ListFilter::text($request, 'q');
+
+        if ($search !== null) {
+            $issuedQuery->whereHas('user', static fn ($user) => $user->matchingPerson($search, withPhone: true));
+        }
+
+        $eligible = $this->eligibleCandidates($cohort, $search);
+        $notEligible = $this->ineligiblePeople($cohort, $search);
 
         return view('admin.certificates', [
             'contextLabel' => $cohort?->getAttribute('name'),
+            'isSearching' => $search !== null,
             'counts' => CertificateCounts::of(
                 eligible: $eligible->count(),
                 issued: (clone $issuedQuery)->whereNull('revoked_at')->count(),
@@ -145,7 +157,7 @@ final class CertificateController extends Controller
      *
      * @return Collection<int, User>
      */
-    private function participants(?Cohort $cohort): Collection
+    private function participants(?Cohort $cohort, ?string $search = null): Collection
     {
         if ($cohort === null) {
             return collect();
@@ -153,6 +165,7 @@ final class CertificateController extends Controller
 
         return User::query()
             ->with('profile')
+            ->when($search !== null, static fn ($query) => $query->matchingPerson($search, withPhone: true))
             ->whereIn(
                 'id',
                 Enrollment::query()
@@ -170,7 +183,7 @@ final class CertificateController extends Controller
      *
      * @return Collection<int, CertificateCandidate>
      */
-    private function eligibleCandidates(?Cohort $cohort): Collection
+    private function eligibleCandidates(?Cohort $cohort, ?string $search = null): Collection
     {
         if ($cohort === null) {
             return collect();
@@ -182,7 +195,7 @@ final class CertificateController extends Controller
             ->pluck('user_id')
             ->all();
 
-        return $this->participants($cohort)
+        return $this->participants($cohort, $search)
             ->reject(static fn (User $user): bool => in_array($user->getKey(), $holders, true))
             ->filter(fn (User $user): bool => $this->eligibility->isEligible($user, $cohort))
             ->map(fn (User $user): CertificateCandidate => CertificateCandidate::from(
@@ -199,13 +212,13 @@ final class CertificateController extends Controller
      *
      * @return Collection<int, CertificatePerson>
      */
-    private function ineligiblePeople(?Cohort $cohort): Collection
+    private function ineligiblePeople(?Cohort $cohort, ?string $search = null): Collection
     {
         if ($cohort === null) {
             return collect();
         }
 
-        return $this->participants($cohort)
+        return $this->participants($cohort, $search)
             ->reject(fn (User $user): bool => $this->eligibility->isEligible($user, $cohort))
             ->map(fn (User $user): CertificatePerson => CertificatePerson::from(
                 $user,

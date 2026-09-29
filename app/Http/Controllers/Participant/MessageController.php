@@ -179,14 +179,10 @@ final class MessageController extends Controller
 
         $recipients = $this->rules->recipients($user)
             ->with('profile')
-            ->when($search !== '', static function ($query) use ($search): void {
-                $term = '%'.$search.'%';
-                $query->where(static fn ($match) => $match
-                    ->where('email', 'like', $term)
-                    ->orWhereHas('profile', static fn ($profile) => $profile
-                        ->where('full_name_ar', 'like', $term)
-                        ->orWhere('full_name_en', 'like', $term)));
-            })
+            // No phone here: the picker must not let anyone look a person up by
+            // their number (D-136). The old query asked for `full_name_ar` and
+            // `full_name_en`, which are computed accessors, not columns.
+            ->when($search !== '', static fn ($query) => $query->matchingPerson($search))
             ->orderBy('role')
             ->orderBy('email')
             ->paginate(self::RECIPIENTS_PER_PAGE)

@@ -36,10 +36,10 @@
         </div>
     @elseif ($groups->isEmpty())
         <x-ui.empty-state icon="folder"
-            :title="request('q') ? __('resources.no_match_title') : __('resources.empty_title')"
-            :description="request('q') ? __('resources.no_match_body') : __('resources.empty_body')"
-            :action-label="request('q') ? __('app.clear_filters') : null"
-            :action-href="request('q') ? route('resources.index') : null" />
+            :title="$isFiltered ? __('resources.no_match_title') : __('resources.empty_title')"
+            :description="$isFiltered ? __('resources.no_match_body') : __('resources.empty_body')"
+            :action-label="$isFiltered ? __('app.clear_filters') : null"
+            :action-href="$isFiltered ? route('resources.index') : null" />
     @else
         @foreach ($groups as $group)
             <section class="resgroup">

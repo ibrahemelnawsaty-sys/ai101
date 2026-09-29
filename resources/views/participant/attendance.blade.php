@@ -200,8 +200,10 @@
                     </div>
                 @elseif ($records->isEmpty())
                     <x-ui.empty-state icon="user"
-                        :title="__('attendance.log.empty_title')"
-                        :description="__('attendance.log.empty_body')" />
+                        :title="$isFiltered ? __('attendance.log.no_match_title') : __('attendance.log.empty_title')"
+                        :description="$isFiltered ? __('attendance.log.no_match_body') : __('attendance.log.empty_body')"
+                        :action-label="$isFiltered ? __('app.clear_filters') : null"
+                        :action-href="$isFiltered ? route('attendance.index') : null" />
                 @else
                     <div class="tscroll">
                         <table class="atable">
