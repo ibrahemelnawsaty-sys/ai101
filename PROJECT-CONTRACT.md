@@ -286,6 +286,7 @@ final class CertificateEligibility
 | `GET /terms` · `/privacy` | `terms` · `privacy` | — |
 | `GET /dashboard` | `dashboard` | `auth` · `verified` — يوجّه `system_admin` إلى `admin.users.index` (`D-117`) |
 | `POST /dashboard/cohort` | `cohort.switch` | `auth` · `verified` · `role:participant,trainer,coordinator,admin` (`D-117`) |
+| `GET /admin/roles` | `admin.roles.index` | `auth` · `verified` · `role:system_admin` · السياسة `console.roles` — **صفحة شرح الأدوار، قراءة فقط** (`D-133`) |
 | `GET /dashboard/card` | `participant.card` | `auth` · `role:participant` |
 | `GET /dashboard/journey` | `participant.journey` | `auth` · `role:participant` |
 | `GET /dashboard/schedule` | `schedule` | `auth` · `role:participant,trainer,coordinator,admin` (`D-117`) |
@@ -337,6 +338,9 @@ final class CertificateEligibility
 **رابط ملف موقّع منتهٍ أو مُعدَّل** على `files.*`: 403 بصفحة `errors.file-link` («انتهت صلاحية رابط الملف» وما العمل)، ويُكتب `access.denied` بسبب `signature.invalid` مع عنوان IP (`bootstrap/app.php`).
 
 ---
+
+
+**قواعد القائمة الجانبية (`D-127` · `D-133`):** كل عنصر في `Sidebar` يحمل `route` وقد يحمل `also` (صفحات تحته تُضيئه). أي مسار GET جديد تحت اسم عنصر يجب أن يُدرَج في `also` أو يُصنَّف «ليس صفحة» في `NavigationOverhaulTest::NOT_A_SHELL_PAGE`، وإلا فشل الاختبار. والاسم الواحد للمفهوم الواحد في كل الأدوار: «التواصل الداخلي» · «رصد الحضور» · «الدعم الفني» · «التسليمات والتصحيح» · «متدرب».
 
 ## 11 · مصفوفة الانتقال من Cloudflare إلى لارافيل
 
