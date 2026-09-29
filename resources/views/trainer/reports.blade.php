@@ -31,7 +31,7 @@
             <form method="GET" action="{{ route('trainer.reports') }}" class="toolbar__filters">
                 <x-ui.select name="cohort" :label="__('trainer.reports.filter_cohort')"
                     :options="$cohortOptions" :value="request('cohort')" />
-                <x-ui.select name="week" :label="__('schedule.filter_week')"
+                <x-ui.select clearable name="week" :label="__('schedule.filter_week')"
                     :options="$weekOptions" :value="request('week')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>

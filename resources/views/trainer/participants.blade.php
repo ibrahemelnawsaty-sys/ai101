@@ -54,7 +54,7 @@
                 <form method="GET" action="{{ route('trainer.participants') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')"
                         :placeholder="__('trainer.participants.search')" />
-                    <x-ui.select name="state" :label="__('trainer.participants.filter_state')"
+                    <x-ui.select clearable name="state" :label="__('trainer.participants.filter_state')"
                         :options="$stateOptions" :value="request('state')" />
                     <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>

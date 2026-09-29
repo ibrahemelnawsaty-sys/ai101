@@ -35,9 +35,9 @@
                 <div class="f2">
                     <x-ui.input name="title" required :label="__('trainer.resources.field_title')" />
                     <x-ui.select name="resource_type" required :label="__('resources.filter_type')" :options="$typeOptions" />
-                    <x-ui.select name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
+                    <x-ui.select clearable :placeholder="__('trainer.resources.no_week')" name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
                         :hint="__('trainer.resources.week_hint')" />
-                    <x-ui.select name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions" />
+                    <x-ui.select clearable :placeholder="__('trainer.resources.no_link_session')" name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions" />
                 </div>
 
                 <x-ui.file-uploader name="file"
@@ -62,8 +62,8 @@
         {{-- Existing resources -------------------------------------------------- --}}
         <form method="GET" action="{{ route('trainer.resources') }}" class="toolbar u-mt-4">
             <x-ui.search-input name="q" :value="request('q')" :placeholder="__('resources.search_placeholder')" />
-            <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
-            <x-ui.select name="state" :label="__('trainer.resources.filter_state')" :options="$stateOptions" :value="request('state')" />
+            <x-ui.select clearable name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
+            <x-ui.select clearable name="state" :label="__('trainer.resources.filter_state')" :options="$stateOptions" :value="request('state')" />
             <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
         </form>
 
@@ -155,10 +155,10 @@
                     <x-ui.textarea name="description" rows="3" :label="__('trainer.resources.field_description')"
                         :value="old('description', $editing->description)" />
 
-                    <x-ui.select name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
+                    <x-ui.select clearable :placeholder="__('trainer.resources.no_week')" name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
                         :hint="__('trainer.resources.week_hint')" :value="old('week_id', $editing->weekId)" />
 
-                    <x-ui.select name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions"
+                    <x-ui.select clearable :placeholder="__('trainer.resources.no_link_session')" name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions"
                         :value="old('session_id', $editing->sessionId)" />
 
                     @if ($editing->hasAddress)

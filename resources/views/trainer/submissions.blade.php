@@ -43,7 +43,7 @@
                 <form method="GET" action="{{ route('trainer.submissions') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')" :placeholder="__('trainer.submissions.search')" />
                     <x-ui.select name="assignment" :label="__('trainer.submissions.filter_assignment')" :options="$assignmentOptions" :value="request('assignment')" />
-                    <x-ui.select name="status" :label="__('trainer.submissions.filter_status')" :options="$statusOptions" :value="request('status')" />
+                    <x-ui.select clearable name="status" :label="__('trainer.submissions.filter_status')" :options="$statusOptions" :value="request('status')" />
                     <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
                 <div class="toolbar__end">
@@ -230,8 +230,7 @@
                         <x-ui.input name="score" type="number" inputmode="decimal" step="0.5"
                             min="0" :max="$selected->maxScore" required
                             :label="__('grades.score')"
-                            :suffix="__('grades.out_of', ['max' => $selected->maxScore])"
-                            :hint="__('trainer.grading.score_hint')"
+                            :hint="__('trainer.grading.score_hint', ['max' => $selected->maxScore])"
                             :value="old('score', $selected->score)" />
 
                         <x-ui.textarea name="feedback" rows="4" required minlength="10"

@@ -32,12 +32,12 @@
 
         <div class="toolbar">
             <form method="GET" action="{{ route('admin.cohorts.index') }}" class="toolbar__filters">
-                <x-ui.select name="program" :label="__('admin.programs.title')"
+                <x-ui.select clearable name="program" :label="__('admin.programs.title')"
                     :options="$programOptions" :value="request('program')" />
                 {{-- `state`, not `status`: the editor's own status field on
                      this page carries the D-124 refusal, and a filter of the
                      same name would print it a second time. --}}
-                <x-ui.select name="state" :label="__('admin.cohorts.fields.status')"
+                <x-ui.select clearable name="state" :label="__('admin.cohorts.fields.status')"
                     :options="$statusOptions" :value="request('state')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>

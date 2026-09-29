@@ -28,9 +28,9 @@
             </div>
 
             <form method="GET" action="{{ route('schedule') }}" class="toolbar__filters">
-                <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
-                <x-ui.select name="type" :label="__('schedule.filter_type')" :options="$typeOptions" :value="request('type')" />
-                <x-ui.select name="attendance" :label="__('schedule.filter_attendance')" :options="$attendanceOptions" :value="request('attendance')" />
+                <x-ui.select clearable name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
+                <x-ui.select clearable name="type" :label="__('schedule.filter_type')" :options="$typeOptions" :value="request('type')" />
+                <x-ui.select clearable name="attendance" :label="__('schedule.filter_attendance')" :options="$attendanceOptions" :value="request('attendance')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
 
@@ -158,13 +158,13 @@
                          component, so it landed on the <a> as an attribute a link
                          ignores. In RTL «previous» points right (D-86). --}}
                     <x-ui.button variant="secondary" size="sm" icon="chev-end"
-                        :href="route('schedule', ['week' => $calendar->previousWeekIndex, 'view' => 'calendar'])"
+                        :href="route('schedule', ['calendar_week' => $calendar->previousWeekIndex, 'view' => 'calendar'] + request()->only(['week', 'type', 'attendance']))"
                         :state="$calendar->previousWeekIndex ? 'default' : 'disabled'">{{ __('schedule.previous_week') }}</x-ui.button>
                     <b>{{ $calendar->rangeLabel }}</b>
                     <x-ui.button variant="secondary" size="sm"
-                        :href="route('schedule', ['view' => 'calendar'])">{{ __('schedule.today') }}</x-ui.button>
+                        :href="route('schedule', ['view' => 'calendar'] + request()->only(['week', 'type', 'attendance']))">{{ __('schedule.today') }}</x-ui.button>
                     <x-ui.button variant="secondary" size="sm" icon="chev"
-                        :href="route('schedule', ['week' => $calendar->nextWeekIndex, 'view' => 'calendar'])"
+                        :href="route('schedule', ['calendar_week' => $calendar->nextWeekIndex, 'view' => 'calendar'] + request()->only(['week', 'type', 'attendance']))"
                         :state="$calendar->nextWeekIndex ? 'default' : 'disabled'">{{ __('schedule.next_week') }}</x-ui.button>
                 </div>
 
@@ -189,7 +189,7 @@
                                         <x-ui.pill :variant="$session->statusVariant" size="sm">{{ $session->statusLabel }}</x-ui.pill>
                                     </a>
                                 @empty
-                                    <p class="cal__none">{{ __('schedule.no_sessions_that_day') }}</p>
+                                    <p class="cal__none">{{ $isFiltered ? __('schedule.day_no_match') : __('schedule.no_sessions_that_day') }}</p>
                                 @endforelse
                             </div>
                         @endforeach

@@ -44,6 +44,7 @@ return [
     'next_week' => 'Next week',
     'today' => 'Today',
     'no_sessions_that_day' => 'No sessions on this day',
+    'day_no_match' => 'No session matches the filter on this day',
 
     'timezone_note' => 'Every time shown is Riyadh time (Asia/Riyadh), and the server clock is the reference.',
 

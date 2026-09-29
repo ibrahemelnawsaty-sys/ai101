@@ -45,7 +45,7 @@ return [
     'send' => 'إرسال',
     'attach' => 'إرفاق ملف',
     // D-136 — what a message may carry, said before the choice and not after the refusal.
-    'attach_limits' => '{1} ملف واحد، :size ميغابايت على الأكثر|{2} ملفان على الأكثر، :size ميغابايت للملف|[3,10] حتى :count ملفات، :size ميغابايت للملف',
+    'attach_limits' => '{1} ملف واحد، :size ميجابايت على الأكثر|{2} ملفان على الأكثر، :size ميجابايت للملف|[3,10] حتى :count ملفات، :size ميجابايت للملف',
     'attach_selected' => 'سيُرسل مع الرسالة:',
     'attach_clear' => 'إزالة المرفقات',
     'attachment_notice' => '{1} أرسل مرفقًا|{2} أرسل مرفقين|[3,10] أرسل :count مرفقات',

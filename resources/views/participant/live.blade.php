@@ -145,7 +145,7 @@
             <x-ui.card class="dc--2" icon="recording" :title="__('live.recordings_title')">
                 <form method="GET" action="{{ route('live') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')" :placeholder="__('live.search_recordings')" />
-                    <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
+                    <x-ui.select clearable name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
                     <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
 

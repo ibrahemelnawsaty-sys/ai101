@@ -35,11 +35,11 @@
             <form method="GET" action="{{ route('admin.audit.index') }}" class="toolbar__filters">
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('app.search_placeholder')" />
-                <x-ui.select name="actor" :label="__('admin.audit.filters.actor')"
+                <x-ui.select clearable name="actor" :label="__('admin.audit.filters.actor')"
                     :options="$actorOptions" :value="request('actor')" />
-                <x-ui.select name="action" :label="__('admin.audit.filters.action')"
+                <x-ui.select clearable name="action" :label="__('admin.audit.filters.action')"
                     :options="$actionOptions" :value="request('action')" />
-                <x-ui.select name="entity" :label="__('admin.audit.filters.entity')"
+                <x-ui.select clearable name="entity" :label="__('admin.audit.filters.entity')"
                     :options="$entityOptions" :value="request('entity')" />
                 <x-ui.input name="from" type="date" dir="ltr"
                     :label="__('admin.audit.filters.range')" :value="request('from')" />

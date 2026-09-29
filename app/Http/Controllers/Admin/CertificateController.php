@@ -417,12 +417,24 @@ final class CertificateController extends Controller
     }
 
     /** The register of issued certificates as a CSV. */
-    public function export(): Response
+    public function export(Request $request): Response
     {
         $this->authorize('viewAny', Certificate::class);
 
+        // The button sits over a list the person has already narrowed: the file
+        // carries the same cohort and search their link names (FR-CERT-02). Only a
+        // cohort that exists narrows it; the screen's "current cohort" default is
+        // not applied here, so an unfiltered link still exports everything.
+        $cohortId = ListFilter::oneOf($request, 'cohort', Cohort::query()->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all());
+        $search = ListFilter::text($request, 'q');
+
         $rows = Certificate::query()
             ->with(['user.profile', 'cohort'])
+            ->when($cohortId !== null, static fn ($query) => $query->where('cohort_id', $cohortId))
+            ->when($search !== null, static fn ($query) => $query->whereHas(
+                'user',
+                static fn ($user) => $user->matchingPerson($search, withPhone: true),
+            ))
             ->orderBy('issued_at')
             ->get()
             ->map(static fn (Certificate $certificate): array => [

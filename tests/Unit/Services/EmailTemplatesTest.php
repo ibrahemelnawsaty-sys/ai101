@@ -172,3 +172,14 @@ it('BR-31: موضوع الرسالة سطر واحد — فاصل السطر ي�
     // The body is prose: it may span lines.
     expect($this->templates->problemWith('password_reset', 'body', "سطر\nثانٍ"))->toBeNull();
 });
+
+it('BR-31: النص المعروض للقراءة يعزل كل «:اسم» اتجاهيًا فلا تنقلب النقطتان — والنص المحرَّر لا يُمسّ', function (): void {
+    $lri = "\u{2066}";
+    $pdi = "\u{2069}";
+
+    expect(App\Presenters\Support\Present::isolateTokens('جلساتك في :program، وموعدك :datetime.'))
+        ->toBe("جلساتك في {$lri}:program{$pdi}، وموعدك {$lri}:datetime{$pdi}.")
+        // A time, a scheme and a bare colon are not tokens.
+        ->and(App\Presenters\Support\Present::isolateTokens('الساعة 12:30 على https://x.test : نهاية'))
+        ->toBe('الساعة 12:30 على https://x.test : نهاية');
+});

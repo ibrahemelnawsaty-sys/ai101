@@ -454,3 +454,57 @@ it('FR-SCHED-13: أسبوع أفرغته التصفية لا يُقال عنه �
     // the explanations.
     $page->assertSee(__('schedule.week_no_match_body'))->assertDontSee(__('schedule.week_empty_body'));
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('FR-SCHED-13: تنقّل التقويم بالأسابيع لا يحصر قائمة الأسابيع — لكل منهما مفتاحه', function (): void {
+    [$training, $project, $intro] = timetableCase($this);
+
+    // Two real, different weeks: today (12 Oct) is in the first.
+    $this->w1->update(['start_date' => '2026-10-11', 'end_date' => '2026-10-17']);
+    $this->w2->update(['start_date' => '2026-10-18', 'end_date' => '2026-10-24']);
+
+    $range = fn (array $query) => $this->actingAs($this->me)->get(route('schedule', $query))->assertOk();
+
+    $default = $range([])->viewData('calendar')['rangeLabel'];
+
+    // The calendar's own key moves the calendar…
+    $moved = $range(['calendar_week' => $this->w2->id, 'view' => 'calendar']);
+    expect($moved->viewData('calendar')['rangeLabel'])->not->toBe($default);
+
+    // …and leaves the accordion listing every week. The arrows used `week`, the
+    // accordion's FILTER key: going to week 2 in the calendar left the list
+    // showing week 2 only when the person came back to it.
+    expect(timetableIds($moved))->toBe(collect([$training, $project, $intro])->map(static fn ($id) => (string) $id)->sort()->values()->all());
+
+    // The accordion filter, for its part, does not move the calendar.
+    expect($range(['week' => $this->w2->id])->viewData('calendar')['rangeLabel'])->toBe($default);
+});
+
+it('FR-SCHED-13: أسهم التقويم تحمل المرشّحات الجارية — لا تُفقد عند الانتقال بين الأسابيع', function (): void {
+    timetableCase($this);
+
+    $html = (string) $this->actingAs($this->me)
+        ->get(route('schedule', ['type' => 'project', 'view' => 'calendar']))->assertOk()->getContent();
+
+    expect($html)->toContain('type=project')->toContain('calendar_week=');
+});
+
+it('FR-SCHED-13: يوم في التقويم أفرغته التصفية لا يُقال عنه «لا جلسات في هذا اليوم»', function (): void {
+    timetableCase($this);
+
+    $filtered = $this->actingAs($this->me)
+        ->get(route('schedule', ['type' => 'project', 'view' => 'calendar']))->assertOk();
+
+    $filtered->assertSee(__('schedule.day_no_match'))
+        ->assertDontSee(__('schedule.no_sessions_that_day'));
+
+    // Unfiltered, an empty day IS empty.
+    $this->actingAs($this->me)->get(route('schedule', ['view' => 'calendar']))->assertOk()
+        ->assertSee(__('schedule.no_sessions_that_day'))
+        ->assertDontSee(__('schedule.day_no_match'));
+});

@@ -31,8 +31,8 @@
 
         <div class="toolbar">
             <form method="GET" action="{{ route('trainer.sessions') }}" class="toolbar__filters">
-                <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
-                <x-ui.select name="status" :label="__('trainer.sessions.filter_status')" :options="$statusOptions" :value="request('status')" />
+                <x-ui.select clearable name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
+                <x-ui.select clearable name="status" :label="__('trainer.sessions.filter_status')" :options="$statusOptions" :value="request('status')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             @if ($canManage)

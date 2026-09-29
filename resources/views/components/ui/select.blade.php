@@ -75,7 +75,7 @@
                     class="ui-select__value"
                     x-bind:class="{ 'ui-select__value--placeholder': ! selectedLabel }"
                     x-text="selectedLabel || placeholder"
-                >{{ $placeholderText }}</span>
+                >{{ $initialLabel }}</span>
                 <svg class="ui-icon ui-icon--sm ui-select__caret" aria-hidden="true" focusable="false"><use href="#i-chevdown"/></svg>
             </button>
 

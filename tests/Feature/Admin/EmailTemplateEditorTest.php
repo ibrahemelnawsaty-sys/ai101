@@ -456,3 +456,24 @@ it('BR-31: المعاينة تقول الجملة نفسها التي يقوله
     expect($response->json('messages.subject'))->toBe(session('errors')->first('subject'))
         ->and($response->json('messages.subject'))->not->toContain('subject');
 });
+
+it('BR-31: الأصل المعروض تحت الحقل معزول اتجاهيًا — «:program» تبقى في صورتها', function (): void {
+    $html = (string) $this->actingAs($this->sys)->get(route('admin.settings.template', 'sessions_digest'))->assertOk()->getContent();
+
+    expect($html)->toContain("\u{2066}:program\u{2069}");
+});
+
+it('BR-31: رسالة «تعذّرت المعاينة» تحمل زرًا يعيدها — النص يقول «أعد المحاولة» فلا بدّ من زر', function (): void {
+    $html = (string) $this->actingAs($this->sys)->get(route('admin.settings.template', 'welcome'))->assertOk()->getContent();
+
+    expect($html)->toContain('x-on:click="render()"');
+});
+
+it('BR-31: منطقة إعلان الخطأ حيّة دائمًا في الصفحة — العنصر الذي يُظهَر بـ x-show وحده لا تعلنه قارئات الشاشة', function (): void {
+    $html = (string) $this->actingAs($this->sys)->get(route('admin.settings.template', 'welcome'))->assertOk()->getContent();
+
+    // The live region is a wrapper that is always there; only what is inside it
+    // comes and goes.
+    expect($html)->toMatch('/<div[^>]*role="status"[^>]*aria-live="polite"[^>]*>\s*<p class="hint hint--bad" x-show="messages\.subject"/')
+        ->and($html)->toMatch('/<div[^>]*role="alert"[^>]*>\s*<p class="hint hint--bad" x-show="state === \'error\'"/');
+});

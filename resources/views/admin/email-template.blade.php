@@ -67,10 +67,14 @@
                                     :value="old($field['name'], $field['value'])" x-model="drafts.{{ $field['name'] }}" />
                             @endif
 
-                            {{-- The same sentence a save would refuse with, told while typing. --}}
-                            <p class="hint hint--bad" x-show="messages.{{ $field['name'] }}" x-cloak role="status" aria-live="polite">
-                                <x-ui.icon name="warn" /><span x-text="messages.{{ $field['name'] }}"></span>
-                            </p>
+                            {{-- The same sentence a save would refuse with, told while typing.
+                                 The live region is the wrapper, always in the page: an element that
+                                 is only shown by x-show is not announced by a screen reader. --}}
+                            <div role="status" aria-live="polite">
+                                <p class="hint hint--bad" x-show="messages.{{ $field['name'] }}" x-cloak>
+                                    <x-ui.icon name="warn" /><span x-text="messages.{{ $field['name'] }}"></span>
+                                </p>
+                            </div>
 
                             {{-- The values this field carries: the only ones it may use, and all
                                  of them stay. Said under the field, not once for the whole letter —
@@ -91,7 +95,7 @@
 
                             <details class="emed__orig">
                                 <summary>{{ __('admin.email_editor.original') }}</summary>
-                                <p dir="auto">{{ $field['original'] }}</p>
+                                <p dir="auto">{{ \App\Presenters\Support\Present::isolateTokens($field['original']) }}</p>
                                 <p class="footnote">{{ __('admin.email_editor.original_hint') }}</p>
                             </details>
                         @endforeach
@@ -123,7 +127,7 @@
                             @foreach ($editor->fixed as $part)
                                 <div>
                                     <dt>{{ $part['label'] }}</dt>
-                                    <dd>{{ $part['text'] }}</dd>
+                                    <dd>{{ \App\Presenters\Support\Present::isolateTokens($part['text']) }}</dd>
                                 </div>
                             @endforeach
                         </dl>
@@ -151,9 +155,13 @@
                         <b>{{ __('admin.email_editor.preview_subject') }}</b> <span dir="auto" x-text="subject"></span>
                     </p>
 
-                    <p class="hint hint--bad" x-show="state === 'error'" x-cloak role="alert">
-                        <x-ui.icon name="warn" /><span x-text="failure"></span>
-                    </p>
+                    <div role="alert">
+                        <p class="hint hint--bad" x-show="state === 'error'" x-cloak>
+                            <x-ui.icon name="warn" /><span x-text="failure"></span>
+                            <x-ui.button icon="refresh" variant="ghost" size="sm" type="button"
+                                x-on:click="render()">{{ __('app.retry') }}</x-ui.button>
+                        </p>
+                    </div>
 
                     <div class="emed__stage" x-ref="stage">
                         <div class="ui-sk emed__wait" x-show="state === 'loading' && html === ''" role="status" aria-live="polite">

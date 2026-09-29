@@ -53,9 +53,9 @@
                 <form method="GET" action="{{ route('admin.users.index') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')"
                         :placeholder="__('admin.users.filters.search_placeholder')" />
-                    <x-ui.select name="role" :label="__('admin.users.table.role')"
+                    <x-ui.select clearable name="role" :label="__('admin.users.table.role')"
                         :options="$roleOptions" :value="request('role')" />
-                    <x-ui.select name="status" :label="__('admin.users.table.status')"
+                    <x-ui.select clearable name="status" :label="__('admin.users.table.status')"
                         :options="$statusOptions" :value="request('status')" />
                     <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>

@@ -396,3 +396,40 @@ it('FR-ASGN-29: شاشة المشروع الختامي فيها زر «حفظ و
             ->assertSee('name="next"', escape: false);
     }
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('FR-GRADE-15: خانة الدرجة تذكر الدرجة القصوى بالرقم — لا صفة «suffix» يتيمة على الحقل', function (): void {
+    $project = makeFinalProject($this->cohort, ['is_unlocked' => true, 'max_score' => 50]);
+    $submission = makeProjectSubmission($project, makeParticipant($this->cohort));
+
+    $page = $this->actingAs($this->trainer)
+        ->get(route('trainer.finalProject', ['cohort' => $this->cohort->id, 'grade' => $submission->id]))
+        ->assertOk();
+
+    // The hint carries the number the mark may not pass; nothing is left as an
+    // unknown attribute on the input, where no one could read it.
+    $page->assertSee(__('trainer.grading.score_hint', ['max' => 50]))
+        ->assertDontSee('suffix=', escape: false);
+});
+
+it('FR-GRADE-15: روابط صفوف المشروع الختامي و«إلغاء» تحمل الدفعة — لا تسقط عند فتح لوحة التقييم', function (): void {
+    $project = makeFinalProject($this->cohort, ['is_unlocked' => true]);
+    $submission = makeProjectSubmission($project, makeParticipant($this->cohort));
+
+    $open = $this->actingAs($this->trainer)
+        ->get(route('trainer.finalProject', ['cohort' => $this->cohort->id]))->assertOk();
+
+    // The row's link keeps the cohort the person chose…
+    $open->assertSee(e(route('trainer.finalProject', ['cohort' => $this->cohort->id, 'grade' => $submission->id])), escape: false);
+
+    // …and so does the panel's «cancel», which only drops the row.
+    $panel = $this->actingAs($this->trainer)
+        ->get(route('trainer.finalProject', ['cohort' => $this->cohort->id, 'grade' => $submission->id]))->assertOk();
+
+    $panel->assertSee('href="'.e(route('trainer.finalProject', ['cohort' => $this->cohort->id])).'"', escape: false);
+});

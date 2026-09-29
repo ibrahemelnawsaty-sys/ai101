@@ -29,7 +29,7 @@
 
         <div class="toolbar">
             <form method="GET" action="{{ route('admin.certificates.index') }}" class="toolbar__filters">
-                <x-ui.select name="cohort" :label="__('admin.cohorts.title')"
+                <x-ui.select clearable name="cohort" :label="__('admin.cohorts.title')"
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('admin.users.filters.search_placeholder')" />

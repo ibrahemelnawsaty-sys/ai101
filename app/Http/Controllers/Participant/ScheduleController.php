@@ -213,7 +213,8 @@ final class ScheduleController extends Controller
             return CalendarPresenter::from(new Collection, null, null, null, null);
         }
 
-        $requested = $request->query('week');
+        // Its own key: `week` is the accordion's FILTER, and the two must not move together.
+        $requested = $request->query('calendar_week');
         $current = $weeks->first(
             static fn (Week $week): bool => (string) $week->getKey() === (is_string($requested) ? $requested : ''),
         );

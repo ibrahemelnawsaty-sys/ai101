@@ -292,3 +292,28 @@ it('D-136: بحث بآلاف الكلمات في الصفحات الثلاث ا�
     Illuminate\Support\Facades\Auth::forgetGuards();
     $this->actingAs(makeAdmin())->get(route('admin.registrations.index', ['q' => $long]))->assertOk();
 });
+
+it('FR-CERT-02: تصدير الشهادات يحمل الدفعة والبحث اللذين في رابطه — الزر يقول «تصدير» والقائمة أمامك مصفّاة', function (): void {
+    peopleCase($this);
+    $other = makeCohort(['name' => 'Cohort B']);
+    $zed = named(makeParticipant($other, ['email' => 'zed@example.test']), 'Zed Khalid Nasser Gamma', 'زيد خالد ناصر جاما', '0503330003');
+
+    $omarCert = issueCertificateFor($this->omar, $this->cohort);
+    $saraCert = issueCertificateFor($this->sara, $this->cohort);
+    $zedCert = issueCertificateFor($zed, $other);
+
+    $export = static fn (object $test, array $query): string => $test->actingAs(makeAdmin())
+        ->get(route('admin.certificates.export', $query))->assertOk()->getContent();
+
+    $all = $export($this, []);
+    expect($all)->toContain($omarCert->serial_number)->toContain($saraCert->serial_number)->toContain($zedCert->serial_number);
+
+    $b = $export($this, ['cohort' => $other->id]);
+    expect($b)->toContain($zedCert->serial_number)->not->toContain($omarCert->serial_number)->not->toContain($saraCert->serial_number);
+
+    $searched = $export($this, ['cohort' => $this->cohort->id, 'q' => 'Omar']);
+    expect($searched)->toContain($omarCert->serial_number)->not->toContain($saraCert->serial_number)->not->toContain($zedCert->serial_number);
+
+    // A cohort the picker never offered is ignored, like everywhere else.
+    expect($export($this, ['cohort' => 'nope']))->toContain($zedCert->serial_number)->toContain($omarCert->serial_number);
+});

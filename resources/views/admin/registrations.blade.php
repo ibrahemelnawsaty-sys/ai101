@@ -32,9 +32,9 @@
             <form method="GET" action="{{ route('admin.registrations.index') }}" class="toolbar__filters">
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('admin.users.filters.search_placeholder')" />
-                <x-ui.select name="cohort" :label="__('admin.cohorts.title')"
+                <x-ui.select clearable name="cohort" :label="__('admin.cohorts.title')"
                     :options="$cohortOptions" :value="request('cohort')" />
-                <x-ui.select name="state" :label="__('admin.users.table.status')"
+                <x-ui.select clearable name="state" :label="__('admin.users.table.status')"
                     :options="$stateOptions" :value="request('state')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>

@@ -161,7 +161,7 @@
                                     <td class="u-nowrap">
                                         <x-ui.button size="sm"
                                             :variant="$row->isGraded ? 'secondary' : 'primary'"
-                                            :href="route('trainer.finalProject', ['grade' => $row->id])">
+                                            :href="route('trainer.finalProject', array_merge(request()->query(), ['grade' => $row->id]))">
                                             {{ $row->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}
                                         </x-ui.button>
                                     </td>
@@ -217,8 +217,7 @@
                         <x-ui.input name="score" type="number" inputmode="decimal" step="0.5"
                             min="0" :max="$selected->maxScore" required
                             :label="__('grades.score')"
-                            :suffix="__('grades.out_of', ['max' => $selected->maxScore])"
-                            :hint="__('trainer.grading.score_hint')"
+                            :hint="__('trainer.grading.score_hint', ['max' => $selected->maxScore])"
                             :value="old('score', $selected->score)" />
 
                         <x-ui.textarea name="feedback" rows="4" required minlength="10"
@@ -247,7 +246,7 @@
                             <x-ui.button variant="secondary" size="sm" type="submit"
                                 name="next" value="1">{{ __('trainer.grading.record_and_next') }}</x-ui.button>
                             <x-ui.button variant="ghost" size="sm"
-                                :href="route('trainer.finalProject')">{{ __('app.cancel') }}</x-ui.button>
+                                :href="route('trainer.finalProject', request()->except('grade'))">{{ __('app.cancel') }}</x-ui.button>
                         </div>
                     </form>
                 </div>

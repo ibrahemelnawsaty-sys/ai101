@@ -12,8 +12,8 @@
 @section('content')
     <div class="toolbar">
         <form method="GET" action="{{ route('notifications') }}" class="toolbar__filters">
-            <x-ui.select name="type" :label="__('notifications.filter_type')" :options="$typeOptions" :value="request('type')" />
-            <x-ui.select name="state" :label="__('notifications.filter_state')" :options="$stateOptions" :value="request('state')" />
+            <x-ui.select clearable name="type" :label="__('notifications.filter_type')" :options="$typeOptions" :value="request('type')" />
+            <x-ui.select clearable name="state" :label="__('notifications.filter_state')" :options="$stateOptions" :value="request('state')" />
             <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
         </form>
 

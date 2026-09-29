@@ -277,6 +277,18 @@ final class Present
         return $value instanceof \DateTimeInterface ? $value : null;
     }
 
+    /**
+     * A text that carries live values (":program"), made safe to READ inside an
+     * Arabic sentence: each value is isolated left-to-right (U+2066 … U+2069),
+     * so its colon stays on its left instead of jumping to its right and
+     * reading as "program:". For display only — never for a value that will be
+     * edited or stored, which must not gain invisible characters.
+     */
+    public static function isolateTokens(string $text): string
+    {
+        return (string) preg_replace('/:[A-Za-z_][A-Za-z0-9_]*/', "\u{2066}$0\u{2069}", $text);
+    }
+
     public static function text(mixed $value): ?string
     {
         if (! is_string($value)) {

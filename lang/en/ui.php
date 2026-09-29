@@ -11,6 +11,7 @@ return [
 
     'select' => [
         'placeholder' => 'Choose an option',
+        'all' => 'All',
         'search' => 'Search options…',
         'search_label' => 'Search within the list',
         'no_results' => 'No option matches your search. Try another word.',

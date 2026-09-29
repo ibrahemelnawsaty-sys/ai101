@@ -13,8 +13,8 @@
 @section('content')
     <form method="GET" action="{{ route('resources.index') }}" class="toolbar">
         <x-ui.search-input name="q" :value="request('q')" :placeholder="__('resources.search_placeholder')" />
-        <x-ui.select name="type" :label="__('resources.filter_type')" :options="$typeOptions" :value="request('type')" />
-        <x-ui.select name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
+        <x-ui.select clearable name="type" :label="__('resources.filter_type')" :options="$typeOptions" :value="request('type')" />
+        <x-ui.select clearable name="week" :label="__('schedule.filter_week')" :options="$weekOptions" :value="request('week')" />
         <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
     </form>
 

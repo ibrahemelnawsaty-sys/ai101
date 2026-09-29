@@ -29,7 +29,7 @@
 
         <div class="toolbar">
             <form method="GET" action="{{ route('admin.reports.index') }}" class="toolbar__filters">
-                <x-ui.select name="cohort" :label="__('admin.cohorts.title')"
+                <x-ui.select clearable name="cohort" :label="__('admin.cohorts.title')"
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.input name="from" type="date" dir="ltr"
                     :label="__('admin.reports.range')" :value="request('from')" />

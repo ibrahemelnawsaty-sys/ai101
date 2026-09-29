@@ -29,7 +29,7 @@
             <form method="GET" action="{{ route('admin.programs.index') }}" class="toolbar__filters">
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('app.search_placeholder')" />
-                <x-ui.select name="status" :label="__('admin.programs.fields.status')"
+                <x-ui.select clearable name="status" :label="__('admin.programs.fields.status')"
                     :options="$statusOptions" :value="request('status')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
