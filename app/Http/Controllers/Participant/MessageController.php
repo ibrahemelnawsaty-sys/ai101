@@ -25,6 +25,7 @@ use App\Services\Messages\MessageAttachments;
 use App\Services\Notifications\CohortNotices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
+use App\Support\ListFilter;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -181,8 +182,7 @@ final class MessageController extends Controller
 
         $this->authorize('viewAny', Thread::class);
 
-        $search = $request->query('q');
-        $search = is_string($search) ? trim($search) : '';
+        $search = ListFilter::text($request, 'q') ?? '';
 
         $recipients = $this->rules->recipients($user)
             ->with('profile')

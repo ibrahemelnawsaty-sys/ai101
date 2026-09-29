@@ -68,7 +68,14 @@ final class UpdateEmailTemplateRequest extends FormRequest
                 $templates = app(EmailTemplates::class);
 
                 foreach ($templates->fieldsOf($this->template()) as $field) {
-                    $text = trim((string) $this->input($field));
+                    $raw = $this->input($field);
+
+                    // `string` already refused an array: there is no text to judge.
+                    if (! is_string($raw)) {
+                        continue;
+                    }
+
+                    $text = trim($raw);
 
                     // Empty and equal-to-original are "follow the file": nothing to check.
                     if (! $templates->isOverride($this->template(), $field, $text)) {
@@ -102,7 +109,8 @@ final class UpdateEmailTemplateRequest extends FormRequest
         $texts = [];
 
         foreach (app(EmailTemplates::class)->fieldsOf($this->template()) as $field) {
-            $texts[$field] = trim((string) $this->input($field));
+            $raw = $this->input($field);
+            $texts[$field] = is_string($raw) ? trim($raw) : '';
         }
 
         return $texts;
@@ -115,9 +123,12 @@ final class UpdateEmailTemplateRequest extends FormRequest
      */
     public static function message(array $problem): string
     {
+        // Each token is isolated left-to-right (U+2066 … U+2069): inside an
+        // Arabic sentence the colon of ":program" would otherwise jump to its
+        // right and the administrator would be told a different token.
         $names = implode(
             (string) __('admin.email_editor.list_separator'),
-            array_map(static fn (string $name): string => ':'.$name, $problem['names']),
+            array_map(static fn (string $name): string => "\u{2066}:".$name."\u{2069}", $problem['names']),
         );
 
         return (string) __('admin.email_editor.errors.'.$problem['code'], [

@@ -45,7 +45,7 @@ final class PreviewEmailTemplateRequest extends FormRequest
         $rules = [];
 
         foreach (app(EmailTemplates::class)->fieldsOf($this->template()) as $field) {
-            $rules[$field] = ['nullable', 'string', 'max:'.EmailTemplates::MAX_LENGTH[$field]];
+            $rules[$field] = ['nullable', 'string', 'max:'.EmailTemplates::PREVIEW_CEILING];
         }
 
         return $rules;
@@ -64,7 +64,8 @@ final class PreviewEmailTemplateRequest extends FormRequest
         $texts = [];
 
         foreach (app(EmailTemplates::class)->fieldsOf($this->template()) as $field) {
-            $texts[$field] = trim((string) $this->input($field));
+            $raw = $this->input($field);
+            $texts[$field] = is_string($raw) ? trim($raw) : '';
         }
 
         return $texts;

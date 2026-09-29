@@ -144,3 +144,31 @@ it('BR-31: النص المطابق للأصل أو الفارغ ليس تجاو�
         ->and($this->templates->isOverride('sessions_digest', 'subject', null))->toBeFalse()
         ->and($this->templates->isOverride('sessions_digest', 'subject', 'جلساتك في :program'))->toBeTrue();
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent security review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('BR-31: لارافيل يستبدل «:name» و«:Name» و«:NAME» وحدها — ما سواها من الأحرف يُرفض لأنه يصل حرفيًا', function (): void {
+    // `:pRogram` is not replaced: the recipient would read ":pRogram" where the
+    // program's name belongs. The rule "keep every live value" must not count it.
+    expect($this->templates->problemWith('sessions_digest', 'subject', 'جلساتك في :pRogram'))
+        ->toBe(['code' => 'case', 'names' => ['pRogram']]);
+
+    // The three forms Laravel does replace are all fine.
+    foreach ([':program', ':Program', ':PROGRAM'] as $form) {
+        expect($this->templates->problemWith('sessions_digest', 'subject', 'جلساتك في '.$form))->toBeNull();
+    }
+});
+
+it('BR-31: موضوع الرسالة سطر واحد — فاصل السطر يُرفض', function (): void {
+    foreach (["سطر\nثانٍ", "سطر\rثانٍ", "سطر\r\nBcc: x@example.test"] as $subject) {
+        expect($this->templates->problemWith('password_reset', 'subject', $subject))
+            ->toBe(['code' => 'line', 'names' => []]);
+    }
+
+    // The body is prose: it may span lines.
+    expect($this->templates->problemWith('password_reset', 'body', "سطر\nثانٍ"))->toBeNull();
+});

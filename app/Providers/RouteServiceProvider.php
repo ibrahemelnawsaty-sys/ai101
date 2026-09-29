@@ -59,9 +59,14 @@ final class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('upload', fn (Request $request): Limit => Limit::perHour(20)
             ->by($this->actorKey($request)));
 
-        // 30 messages per user per minute.
-        RateLimiter::for('messages', fn (Request $request): Limit => Limit::perMinute(30)
-            ->by($this->actorKey($request)));
+        // 30 messages per user per minute; a message carrying files counts
+        // against 20 an hour instead, like every other upload (D-136, review of
+        // 2-D: a message now writes up to three files of ten megabytes, and
+        // thirty a minute could fill a shared-hosting disk). Plain text keeps its
+        // own bucket, so a long conversation never meets the upload ceiling.
+        RateLimiter::for('messages', fn (Request $request): Limit => $request->hasFile('attachments')
+            ? Limit::perHour(20)->by('files|'.$this->actorKey($request))
+            : Limit::perMinute(30)->by('lines|'.$this->actorKey($request)));
 
         // D-124 — a support ticket's lines: 30 a minute for text, like the
         // messages; a line carrying files counts against 20 an hour, like the

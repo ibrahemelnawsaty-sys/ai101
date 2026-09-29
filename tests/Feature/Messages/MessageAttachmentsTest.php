@@ -270,3 +270,45 @@ it('FR-MSG-06: رفض ملف لا يُضيّع النص الذي كتبه الم
     // restored by a browser, so the message says to choose it again.
     $this->get($conversation)->assertOk()->assertSee('ملاحظاتي على الجدول');
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent security review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('FR-MSG-06: الرسائل الحاملة لملفات تُحدّ بعشرين في الساعة — والنصية وحدها لها سقفها الخاص', function (): void {
+    // A message now writes up to three files of ten megabytes each; at thirty a
+    // minute one account could fill a shared-hosting disk. Files count against
+    // the platform's usual twenty uploads an hour (the support tickets' rule).
+    for ($i = 0; $i < 20; $i++) {
+        sendWithFiles($this, [fakeUpload("f{$i}.pdf", 'pdf')])->assertSessionHasNoErrors();
+    }
+
+    sendWithFiles($this, [fakeUpload('late.pdf', 'pdf')])->assertStatus(429);
+    expect(Message::query()->count())->toBe(20);
+
+    // A line of plain text keeps its own bucket: a long conversation never
+    // meets the upload ceiling.
+    $this->actingAs($this->me)->post(route('messages.store', $this->thread), ['body' => 'نص فقط'])
+        ->assertSessionHasNoErrors();
+    expect(Message::query()->count())->toBe(21);
+});
+
+it('BR-22: أحرف الاتجاه لا تبقى في اسم الملف — «x‮fdp.pdf» لا يظهر كأنه pdf وهو غير ذلك', function (): void {
+    // U+202E (right-to-left override) turns "x" + "exe.pdf" into "xfdp.exe" on
+    // screen and in a download dialog. The name is display data only, but it is
+    // shown to a second person: it must arrive without the override.
+    sendWithFiles($this, [fakeUpload("x\u{202E}fdp.pdf", 'pdf')])->assertSessionHasNoErrors();
+
+    $name = (string) Message::query()->sole()->attachments[0]['original_name'];
+
+    expect($name)->toBe('xfdp.pdf')
+        ->and(preg_match('/[\x{202A}-\x{202E}\x{2066}-\x{2069}\x{200E}\x{200F}\x{061C}]/u', $name))->toBe(0);
+});
+
+it('BR-22: الحرف غير الواصل ZWNJ في اسم ملف فارسي وعربي يبقى — المُزال أحرف الاتجاه وحدها', function (): void {
+    sendWithFiles($this, [fakeUpload("می\u{200C}خواهم.pdf", 'pdf')])->assertSessionHasNoErrors();
+
+    expect((string) Message::query()->sole()->attachments[0]['original_name'])->toBe("می\u{200C}خواهم.pdf");
+});

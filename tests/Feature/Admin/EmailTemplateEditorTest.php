@@ -313,8 +313,15 @@ it('BR-31: المعاينة تقبل نصًّا فارغًا (تعرض الأص�
     $this->actingAs($this->sys)->postJson(route('admin.settings.template.preview', 'welcome'), ['subject' => '', 'body' => ''])
         ->assertOk();
 
+    // Over the real limit the preview answers with the save's own sentence; only
+    // a request that would make the server render a book is refused outright.
     $this->actingAs($this->sys)->postJson(route('admin.settings.template.preview', 'welcome'), ['subject' => str_repeat('ا', 201)])
-        ->assertStatus(422);
+        ->assertOk();
+
+    $this->actingAs($this->sys)->postJson(
+        route('admin.settings.template.preview', 'welcome'),
+        ['subject' => str_repeat('ا', EmailTemplates::PREVIEW_CEILING + 1)],
+    )->assertStatus(422);
 });
 
 /*
@@ -403,4 +410,49 @@ it('BR-31: «أرجع للأصل» خارج نموذج الحفظ — النما
         ->and($reset)->not->toBeFalse()
         // The DELETE form starts only after the save form has closed.
         ->and($reset)->toBeGreaterThan($closes);
+});
+
+/*
+|--------------------------------------------------------------------------
+| The independent security review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('BR-31: حقل يُرسَل مصفوفة يُرفض بـ 422 لا بخطأ خادم — في الحفظ كما في المعاينة', function (): void {
+    saveTemplate($this, 'welcome', ['subject' => ['a'], 'body' => 'نص'])->assertSessionHasErrors('subject');
+    saveTemplate($this, 'welcome', ['subject' => 'موضوع', 'body' => ['a']])->assertSessionHasErrors('body');
+
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    $this->actingAs($this->sys)->postJson(route('admin.settings.template.preview', 'welcome'), ['subject' => ['a']])
+        ->assertUnprocessable();
+
+    expect(EmailTemplateOverride::query()->count())->toBe(0);
+});
+
+it('BR-31: موضوع بفاصل سطر لا يُحفظ، وسبب الرفض بعبارة مفهومة', function (): void {
+    $response = saveTemplate($this, 'welcome', ['subject' => "مرحبًا\r\nBcc: x@example.test", 'body' => '']);
+
+    $response->assertSessionHasErrors('subject');
+    expect(session('errors')->first('subject'))->toBe(__('admin.email_editor.errors.line'))
+        ->and(EmailTemplateOverride::query()->count())->toBe(0);
+});
+
+it('BR-31: متغيّر بحالة أحرف لا يستبدلها لارافيل (:cOhort) لا يُحفظ — وإلا وصل الرسالة حرفيًا', function (): void {
+    $response = saveTemplate($this, 'welcome', ['subject' => 'مرحبًا بك في :program', 'body' => 'التحقت بالدفعة :cOhort.']);
+
+    $response->assertSessionHasErrors('body');
+    expect(EmailTemplateOverride::query()->count())->toBe(0);
+});
+
+it('BR-31: المعاينة تقول الجملة نفسها التي يقولها الحفظ عند تجاوز الطول — لا اسم الحقل الإنجليزي', function (): void {
+    $response = $this->actingAs($this->sys)->postJson(
+        route('admin.settings.template.preview', 'welcome'),
+        ['subject' => str_repeat('ا', 201)],
+    )->assertOk();
+
+    $saved = saveTemplate($this, 'welcome', ['subject' => str_repeat('ا', 201)]);
+    $saved->assertSessionHasErrors('subject');
+
+    expect($response->json('messages.subject'))->toBe(session('errors')->first('subject'))
+        ->and($response->json('messages.subject'))->not->toContain('subject');
 });

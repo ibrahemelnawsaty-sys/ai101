@@ -536,14 +536,19 @@ final class PrivateFileService
     }
 
     /**
-     * The name shown to the participant. Path separators, control characters
-     * and directory traversal are removed; the result is data only and never
-     * touches the filesystem.
+     * The name shown to the participant. Path separators, control characters,
+     * direction overrides and directory traversal are removed; the result is
+     * data only and never touches the filesystem.
+     *
+     * The overrides (U+202A–202E, U+2066–2069, the two direction marks and the
+     * Arabic letter mark) are what let "x" + U+202E + "fdp.pdf" read as a `.pdf`
+     * to the person who is about to open it. The zero-width NON-joiner is NOT
+     * removed: Persian and Arabic file names need it.
      */
     private function sanitizeOriginalName(string $name): string
     {
         $base = basename(str_replace('\\', '/', $name));
-        $clean = preg_replace('/[\x00-\x1F\x7F]/u', '', $base);
+        $clean = preg_replace('/[\x00-\x1F\x7F\x{202A}-\x{202E}\x{2066}-\x{2069}\x{200E}\x{200F}\x{061C}]/u', '', $base);
         $clean = is_string($clean) ? trim($clean) : '';
         $clean = str_replace(['..', '/', '\\'], '', $clean);
 

@@ -263,3 +263,32 @@ it('FR-CERT-02: بحث لا يطابق أحدًا لا يقول «لا أحد خ
     $plain->assertSee(__('certificates.admin.none_ineligible_title'))
         ->assertDontSee(__('certificates.admin.no_match_title'));
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent security review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('D-136: عدد كلمات البحث محدود — ما بعد الحدّ يُهمَل بدل أن يبني استعلامًا بآلاف الشروط', function (): void {
+    peopleCase($this);
+
+    // Fifty times the same word, then one nobody carries: only the first words
+    // are read, so the last never gets the chance to exclude the person.
+    $term = str_repeat('Omar ', 50).'nobody';
+
+    expect(User::query()->matchingPerson($term)->pluck('email')->all())->toBe(['omar.one@example.test']);
+});
+
+it('D-136: بحث بآلاف الكلمات في الصفحات الثلاث التي تقرؤه يُجاب بصفحة لا بخطأ خادم', function (): void {
+    peopleCase($this);
+    $long = trim(str_repeat('a ', 3000));
+
+    $this->actingAs($this->omar)->get(route('messages.create', ['q' => $long]))->assertOk();
+
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    $this->actingAs(makeSystemAdmin())->get(route('admin.users.index', ['q' => $long]))->assertOk();
+
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    $this->actingAs(makeAdmin())->get(route('admin.registrations.index', ['q' => $long]))->assertOk();
+});

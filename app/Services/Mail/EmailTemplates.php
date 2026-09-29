@@ -47,6 +47,13 @@ final class EmailTemplates
     /** Longest text per field, checked before the database sees it. */
     public const MAX_LENGTH = ['subject' => 200, 'body' => 4000];
 
+    /**
+     * The most a PREVIEW will render. Above the real limit the preview still
+     * answers — with the same sentence a save gives — but a request must not
+     * make the server render a book.
+     */
+    public const PREVIEW_CEILING = 20000;
+
     /** Shared wording, not a template of its own. */
     private const NOT_A_TEMPLATE = ['common'];
 
@@ -172,6 +179,20 @@ final class EmailTemplates
             return ['code' => 'long', 'names' => [], 'max' => $max];
         }
 
+        // A subject is ONE line: a line break in it is a header the recipient's
+        // mail program would read as another one.
+        if ($field === 'subject' && preg_match('/[\r\n]/', $text) === 1) {
+            return ['code' => 'line', 'names' => []];
+        }
+
+        // Laravel replaces `:name`, `:Name` and `:NAME` and nothing else. `:pRogram`
+        // would reach the recipient as typed, so it is refused as written.
+        $misspelled = $this->misspelledIn($text);
+
+        if ($misspelled !== []) {
+            return ['code' => 'case', 'names' => $misspelled];
+        }
+
         $used = $this->placeholdersIn($text);
 
         $missing = array_values(array_diff($this->requiredIn($template, $field), $used));
@@ -201,7 +222,8 @@ final class EmailTemplates
     }
 
     /**
-     * The live values a text uses, lower-case, sorted, once each.
+     * The live values a text uses, lower-case, sorted, once each — the ones
+     * Laravel will actually replace: `:name`, `:Name` and `:NAME`.
      *
      * @return list<string>
      */
@@ -209,10 +231,42 @@ final class EmailTemplates
     {
         preg_match_all(self::PLACEHOLDER, $text, $found);
 
-        $names = array_values(array_unique(array_map('strtolower', $found[1])));
+        $names = [];
+
+        foreach ($found[1] as $token) {
+            if ($this->isReplaceable($token)) {
+                $names[] = strtolower($token);
+            }
+        }
+
+        $names = array_values(array_unique($names));
         sort($names);
 
         return $names;
+    }
+
+    /**
+     * The live values written in a form Laravel does NOT replace (`:pRogram`),
+     * as written, once each.
+     *
+     * @return list<string>
+     */
+    public function misspelledIn(string $text): array
+    {
+        preg_match_all(self::PLACEHOLDER, $text, $found);
+
+        return array_values(array_unique(array_filter(
+            $found[1],
+            fn (string $token): bool => ! $this->isReplaceable($token),
+        )));
+    }
+
+    /** Laravel's own three spellings of a live value: as is, first letter up, all up. */
+    private function isReplaceable(string $token): bool
+    {
+        $lower = strtolower($token);
+
+        return $token === $lower || $token === ucfirst($lower) || $token === strtoupper($lower);
     }
 
     /**

@@ -909,6 +909,8 @@ return [
             'missing' => 'The text must keep :names — they are replaced by the real values when the letter is sent, and dropping them sends the letter incomplete.',
             'unknown' => 'This field does not carry :names, so the recipient would read them as typed. The values the field carries are shown under it; no others may be added.',
             'long' => 'The text is longer than the limit of :max characters.',
+            'case' => ':names is written in a form the system does not replace, so the recipient would read it as typed. Write it in lower case, as in the original text.',
+            'line' => 'A subject is one line. Remove the line break and write it on a single line.',
             'field' => 'This field cannot be edited.',
         ],
         'samples' => [

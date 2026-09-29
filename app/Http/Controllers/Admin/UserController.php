@@ -27,6 +27,7 @@ use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
 use App\Services\Credentials\AccountInviter;
 use App\Services\Permissions\RoleResolver;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,9 +84,9 @@ final class UserController extends Controller
     {
         $query = User::query()->with('profile')->orderByDesc('created_at');
 
-        $search = $request->query('q');
+        $search = ListFilter::text($request, 'q');
 
-        if (is_string($search) && trim($search) !== '') {
+        if ($search !== null) {
             // The box says "by name, e-mail or phone"; it matched the e-mail only.
             $query->matchingPerson($search, withPhone: true);
         }

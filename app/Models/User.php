@@ -554,6 +554,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'first_name_en', 'second_name_en', 'third_name_en', 'last_name_en',
     ];
 
+    /** The most words of a typed search that are read. */
+    public const SEARCH_MAX_WORDS = 6;
+
     /**
      * People matching a typed search: EVERY word must match the e-mail or some
      * part of the name (Arabic or English), in any order, so "Omar Beta" finds
@@ -572,7 +575,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $words = preg_split('/\s+/u', trim($term), -1, PREG_SPLIT_NO_EMPTY);
 
-        foreach ($words === false ? [] : $words as $word) {
+        // Every word is one more EXISTS in the query. A name has four parts and an
+        // address one: six words say everything a person can mean, and the rest
+        // are ignored rather than built into thousands of conditions (D-136).
+        $words = array_slice($words === false ? [] : $words, 0, self::SEARCH_MAX_WORDS);
+
+        foreach ($words as $word) {
             $like = '%'.$word.'%';
 
             $query->where(static function (Builder $any) use ($like, $withPhone): void {

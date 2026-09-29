@@ -24,6 +24,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Messages\ThreadProvisioner;
 use App\Services\Notifications\InAppNotifier;
 use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -88,9 +89,9 @@ final class RegistrationController extends Controller
             $query->where('cohort_id', $cohortId);
         }
 
-        $search = $request->query('q');
+        $search = ListFilter::text($request, 'q');
 
-        if (is_string($search) && trim($search) !== '') {
+        if ($search !== null) {
             $query->whereHas('user', static function ($builder) use ($search): void {
                 $builder->matchingPerson($search, withPhone: true);
             });
