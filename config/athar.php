@@ -162,6 +162,12 @@ return [
     'messages' => [
         'poll_seconds' => (int) env('MESSAGES_POLL_SECONDS', 15),
 
+        // The files a message may carry (D-136): the numbers the composer has
+        // always promised, now enforced where they are stored. The formats are
+        // the platform's closed list (D-121); video is not among them.
+        'max_files' => (int) env('MESSAGES_MAX_FILES', 3),
+        'max_kilobytes' => (int) env('MESSAGES_MAX_KILOBYTES', 10240),
+
         // "E-mail if the recipient is offline" (PRD §9.16.1). Offline means no
         // request from any of their sessions in this many minutes; an open
         // conversation polls every poll_seconds, so a reader is never offline.

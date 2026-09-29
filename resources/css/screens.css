@@ -390,6 +390,13 @@ min-block-size: var(--s6);
 
 .filelist { display: grid; gap: var(--s2); }
 .filelist--inline { display: flex; flex-wrap: wrap; gap: var(--s2); }
+/* D-136 — a file in a message or in the composer: the icon BESIDE its name (the
+   global reset makes an svg a block), and a link that reads as one without relying
+   on colour alone — inside a violet bubble it is white, so it is underlined. */
+.filelist--inline li,
+.filelist--inline a { display: inline-flex; align-items: center; gap: var(--s1); }
+.filelist--inline a { color: inherit; text-decoration: underline; text-underline-offset: 0.2em; }
+.filelist--inline .ui-icon { inline-size: var(--icon-sm); block-size: var(--icon-sm); }
 .up__ft { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: space-between; font-size: var(--fs-xs); color: var(--text-muted); margin-block-start: var(--s2); }
 
 /* ==========================================================================
@@ -501,6 +508,13 @@ border: var(--bw-hairline) solid var(--border-1);
   color: var(--text-strong);
 }
 .chat__in input:focus { outline: none; border-color: var(--violet-500); background: var(--surface-1); }
+/* D-136 — the composer's second and third rows: the limits, the chosen files, a refusal. */
+.chat__in { flex-wrap: wrap; }
+.chat__note,
+.chat__files,
+.chat__err { flex-basis: 100%; margin: 0; }
+.chat__note { font-size: var(--fs-2xs); color: var(--text-muted); }
+.chat__files { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: var(--fs-xs); color: var(--text-strong); }
 /* An announcement thread is read-only for participants (PRD §9.14). */
 .chat__readonly { padding: var(--s3) var(--s4); border-block-start: var(--bw-hairline) solid var(--border-1); font-size: var(--fs-xs); color: var(--text-muted); text-align: center; }
 

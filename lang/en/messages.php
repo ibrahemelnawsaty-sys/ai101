@@ -41,6 +41,11 @@ return [
     'compose_placeholder' => 'Write your message…',
     'send' => 'Send',
     'attach' => 'Attach a file',
+    // D-136 — what a message may carry, said before the choice and not after the refusal.
+    'attach_limits' => '{1} One file, :size MB at most|[2,10] Up to :count files, :size MB each',
+    'attach_selected' => 'Will be sent with the message:',
+    'attach_clear' => 'Remove attachments',
+    'attachment_notice' => '{1} Sent an attachment|[2,10] Sent :count attachments',
     'locked' => 'Posting is paused',
     'sent' => 'Sent',
     'read' => 'Read',

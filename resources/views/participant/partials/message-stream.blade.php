@@ -31,8 +31,11 @@
                     @foreach ($message->attachments as $attachment)
                         <li>
                             <a href="{{ $attachment->downloadUrl }}">
-                                <x-ui.icon name="file" />{{ $attachment->name }}
+                                <x-ui.icon name="file" /><span dir="auto">{{ $attachment->name }}</span>
                             </a>
+                            @if ($attachment->sizeLabel)
+                                <small>{{ $attachment->sizeLabel }}</small>
+                            @endif
                         </li>
                     @endforeach
                 </ul>

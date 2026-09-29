@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Participant;
 
+use App\Exceptions\FileException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\ReportMessageRequest;
 use App\Http\Requests\Participant\SendMessageRequest;
@@ -20,6 +21,7 @@ use App\Presenters\Participant\ThreadPresenter;
 use App\Services\Audit\AuditLogger;
 use App\Services\Messages\ConversationRules;
 use App\Services\Messages\ConversationStarter;
+use App\Services\Messages\MessageAttachments;
 use App\Services\Notifications\CohortNotices;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
@@ -28,6 +30,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -73,6 +76,7 @@ final class MessageController extends Controller
         private readonly CohortNotices $notices,
         private readonly ConversationRules $rules,
         private readonly ConversationStarter $starter,
+        private readonly MessageAttachments $attachments,
     ) {}
 
     public function index(Request $request): View
@@ -155,6 +159,9 @@ final class MessageController extends Controller
             // endpoint refuse a preview again on their own.
             'canStart' => ! $isImpersonating,
             'pollSeconds' => max(0, (int) config('athar.messages.poll_seconds')),
+            // D-136 — said next to the paperclip, before the choice is made.
+            'attachmentMaxFiles' => MessageAttachments::maxFiles(),
+            'attachmentMaxMegabytes' => MessageAttachments::maxMegabytes(),
             'errorState' => null,
             'screen' => self::SCREEN,
             'screenState' => ScreenState::of($threads->isEmpty()),
@@ -345,13 +352,36 @@ final class MessageController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        Message::query()->create([
-            'thread_id' => $thread->getKey(),
-            'sender_id' => $user->getKey(),
-            'body' => (string) $request->validated('body'),
-            'attachments' => [],
-            'sent_at' => Clock::now(),
-        ]);
+        $body = (string) $request->validated('body');
+
+        // The files are stored first and the row written second; a failure at
+        // either step leaves neither (the files already written are removed),
+        // so a message never points at a file that is not there and no file
+        // sits on disk that no message points at (D-136). They used to be
+        // validated and then dropped: `'attachments' => []`.
+        $uploads = array_values(array_filter(
+            (array) $request->file('attachments'),
+            static fn (mixed $file): bool => $file instanceof UploadedFile,
+        ));
+        $stored = [];
+
+        try {
+            $stored = $this->attachments->store($uploads, $thread, $user);
+
+            Message::query()->create([
+                'thread_id' => $thread->getKey(),
+                'sender_id' => $user->getKey(),
+                'body' => $body,
+                'attachments' => $stored,
+                'sent_at' => Clock::now(),
+            ]);
+        } catch (FileException $refusal) {
+            return back()->withErrors(['attachments' => $refusal->localizedMessage()])->withInput();
+        } catch (\Throwable $failure) {
+            $this->attachments->discard($stored, $user);
+
+            throw $failure;
+        }
 
         $thread->touch();
 
@@ -359,7 +389,9 @@ final class MessageController extends Controller
         // else, a message to the other members — on the platform now, and by
         // letter to whoever is offline (PRD §9.16.1, D-83). It only ever sent
         // the letter, to everyone, with the thread's empty title in it.
-        $this->notices->posted($thread, $user, (string) $request->validated('body'));
+        // A message that is only a file has no words to quote: the other side
+        // is told it is an attachment, not shown an empty line.
+        $this->notices->posted($thread, $user, $body !== '' ? $body : trans_choice('messages.attachment_notice', count($stored)));
 
         return back()->with('status', __('messages.sent'));
     }

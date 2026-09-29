@@ -241,6 +241,10 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
         ->whereNumber('index')->name('assignment');
     Route::get('/final-projects/{project}/{index}', [FileDownloadController::class, 'finalProject'])
         ->whereNumber('index')->name('finalProject');
+    // D-136 — a file attached to a message: the position in the message's
+    // `attachments`, and the thread's own policy asked again on arrival.
+    Route::get('/messages/{message}/{index}', [FileDownloadController::class, 'message'])
+        ->whereUuid('message')->whereNumber('index')->name('message');
     // D-124 — a picture or a video on a support ticket, shown inside the page.
     Route::get('/support-attachments/{attachment}', [FileDownloadController::class, 'supportAttachment'])
         ->whereUuid('attachment')->name('supportAttachment');

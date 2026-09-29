@@ -6,6 +6,7 @@ namespace App\Http\Requests\Participant;
 
 use App\Http\Requests\Concerns\UploadRules;
 use App\Models\Thread;
+use App\Services\Messages\MessageAttachments;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -48,14 +49,42 @@ final class SendMessageRequest extends FormRequest
     {
         return [
             'body' => ['nullable', 'string', 'max:5000'],
-            'attachments' => array_merge(['nullable'], $this->fileArrayRules(3)),
-            'attachments.*' => $this->fileRules(10240),
+            'attachments' => array_merge(['nullable'], $this->fileArrayRules(MessageAttachments::maxFiles())),
+            'attachments.*' => $this->fileRules(MessageAttachments::maxKilobytes()),
+        ];
+    }
+
+    /**
+     * What a person is told about a file, in the platform's own file sentences
+     * (errors.file.*) rather than "attachments.0 must be…".
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'attachments.max' => __('errors.file.too_many', ['max' => MessageAttachments::maxFiles()]),
+            'attachments.*.max' => __('errors.file.too_large', ['max' => MessageAttachments::maxMegabytes()]),
+            'attachments.*.extensions' => __('errors.file.mime_not_allowed'),
+            'attachments.*.file' => __('errors.file.unreadable'),
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            // The composer shows ONE place for a file problem. Laravel keys it
+            // by the file's position (`attachments.1`), which no field on the
+            // page is named after — so the first one is also filed under
+            // `attachments`, where the screen looks.
+            foreach ($validator->errors()->keys() as $key) {
+                if (str_starts_with($key, 'attachments.')) {
+                    $validator->errors()->add('attachments', $validator->errors()->first($key));
+
+                    break;
+                }
+            }
+
             $hasBody = is_string($this->input('body')) && $this->input('body') !== '';
             $hasFiles = is_array($this->file('attachments')) && $this->file('attachments') !== [];
 

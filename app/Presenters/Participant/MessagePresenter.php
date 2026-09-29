@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
 use App\Presenters\Support\Present;
+use App\Support\SignedFiles;
 use App\Support\ViewModel;
 use Carbon\CarbonImmutable;
 
@@ -44,7 +45,12 @@ final class MessagePresenter extends ViewModel
             'isMine' => $isMine,
             'authorName' => self::authorName($message),
             'body' => (string) $message->getAttribute('body'),
-            'attachments' => FilePresenter::collect($message->getAttribute('attachments')),
+            // Signed for fifteen minutes; the download route asks the thread's
+            // policy again (D-136). Before, no link existed at all.
+            'attachments' => FilePresenter::collect(
+                $message->getAttribute('attachments'),
+                SignedFiles::for('files.message', 'message', $message),
+            ),
             'sentAt' => $sentAt,
             'isRead' => self::isRead($sentAt, $otherPartyReadAt),
             'canEdit' => $isMine && self::withinEditWindow($sentAt, $now),

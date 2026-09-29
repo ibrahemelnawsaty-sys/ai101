@@ -7,11 +7,13 @@ namespace App\Http\Controllers;
 use App\Exceptions\FileException;
 use App\Models\Assignment;
 use App\Models\FinalProject;
+use App\Models\Message;
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketAttachment;
 use App\Models\SupportTicketEntry;
+use App\Models\Thread;
 use App\Services\FinalProject\SubmissionFields;
 use App\Services\Storage\PrivateFileService;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +45,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * read back through SubmissionFields::read(), the same reader the screen that
  * minted the link used, so the two positions can never disagree.
  *
- * @see PRD §12.5 · BR-22, BR-23 · FR-PROJ-10 · CONSTITUTION art. 5, art. 24 · D-80, D-121, D-124
+ * @see PRD §12.5 · BR-22, BR-23 · FR-PROJ-10, FR-MSG-06 · CONSTITUTION art. 5, art. 24 · D-80, D-121, D-124, D-136
  */
 final class FileDownloadController extends Controller
 {
@@ -71,6 +73,26 @@ final class FileDownloadController extends Controller
         $entry = SubmissionFields::read($projectSubmission->getAttribute('answers'))[$answer] ?? null;
 
         return $this->streamDescriptor($entry === null ? null : ($entry['files'][$index] ?? null));
+    }
+
+    /**
+     * D-136 — a file attached to a message. The policy asked is the THREAD's:
+     * only someone who may read the conversation may open what is in it, so a
+     * link forwarded to an outsider (or used after they lost access) answers
+     * 403 — asked before the position is looked at, so a missing file and a
+     * forbidden one cannot be told apart by an outsider (BR-22).
+     */
+    public function message(Message $message, int $index): StreamedResponse
+    {
+        $thread = $message->thread;
+
+        if (! $thread instanceof Thread) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
+        $this->authorize('view', $thread);
+
+        return $this->stream($message, 'attachments', $index);
     }
 
     public function assignment(Assignment $assignment, int $index): StreamedResponse

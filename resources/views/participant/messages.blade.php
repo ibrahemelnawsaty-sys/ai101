@@ -78,17 +78,40 @@
                 </div>
 
                 @if ($activeThread->canPost)
+                    {{-- D-136: a message may be a file alone, so the words are not
+                         `required` here — the server refuses a message with neither
+                         (SendMessageRequest), and the button waits for one of them. --}}
                     <form method="POST" action="{{ route('messages.store', $activeThread->id) }}"
-                        enctype="multipart/form-data" class="chat__in">
+                        enctype="multipart/form-data" class="chat__in"
+                        x-data="{ files: [], body: @js(old('body', ''), JSON_UNESCAPED_UNICODE) }">
                         @csrf
                         <x-ui.input name="body" :label="__('messages.compose_label')" label-hidden
-                            :placeholder="__('messages.compose_placeholder')" required />
+                            :placeholder="__('messages.compose_placeholder')" :value="old('body')" x-model="body" />
                         <x-ui.button variant="ghost" size="sm" type="button" icon="attach"
                             :aria-label="__('messages.attach')"
                             x-on:click="$refs.attach.click()" />
                         <input type="file" name="attachments[]" multiple class="sr" x-ref="attach"
-                            aria-label="{{ __('messages.attach') }}">
-                        <x-ui.button icon="send" variant="primary" size="sm" type="submit">{{ __('messages.send') }}</x-ui.button>
+                            aria-label="{{ __('messages.attach') }}"
+                            x-on:change="files = Array.from($event.target.files).map((file) => file.name)">
+                        <x-ui.button icon="send" variant="primary" size="sm" type="submit"
+                            x-bind:disabled="body.trim() === '' && files.length === 0">{{ __('messages.send') }}</x-ui.button>
+
+                        <p class="chat__note">{{ trans_choice('messages.attach_limits', $attachmentMaxFiles, ['count' => $attachmentMaxFiles, 'size' => $attachmentMaxMegabytes]) }}</p>
+
+                        <div class="chat__files" x-show="files.length > 0" x-cloak>
+                            <span>{{ __('messages.attach_selected') }}</span>
+                            <ul class="filelist filelist--inline">
+                                <template x-for="name in files" :key="name">
+                                    <li><x-ui.icon name="file" /><span dir="auto" x-text="name"></span></li>
+                                </template>
+                            </ul>
+                            <x-ui.button variant="ghost" size="sm" type="button" icon="x"
+                                x-on:click="$refs.attach.value = ''; files = []">{{ __('messages.attach_clear') }}</x-ui.button>
+                        </div>
+
+                        @error('attachments')
+                            <p class="hint hint--bad chat__err" role="alert"><x-ui.icon name="warn" /><span>{{ $message }}</span></p>
+                        @enderror
                     </form>
                 @else
                     <p class="chat__readonly" role="status">

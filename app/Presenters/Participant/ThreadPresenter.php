@@ -143,6 +143,17 @@ final class ThreadPresenter extends ViewModel
             return (string) __('messages.thread_empty_title');
         }
 
-        return Present::text($latest->getAttribute('body')) ?? (string) __('messages.thread_empty_title');
+        $words = Present::text($latest->getAttribute('body'));
+
+        if ($words !== null) {
+            return $words;
+        }
+
+        // A message that is only a file has no words to show.
+        $files = $latest->getAttribute('attachments');
+
+        return is_array($files) && $files !== []
+            ? trans_choice('messages.attachment_notice', count($files))
+            : (string) __('messages.thread_empty_title');
     }
 }
