@@ -169,3 +169,60 @@ it('D-139: رابط تسليم المتدرّب (مشروع يعمل · GitHub) 
 
     expect($rule)->not->toBeEmpty()->and($rule[1])->toContain('min-block-size: var(--touch)');
 });
+
+/*
+|--------------------------------------------------------------------------
+| The independent review (Art. 27), each finding pinned
+|--------------------------------------------------------------------------
+*/
+
+it('D-139: خلية جدول تحمل u-num تبقى خلية جدول — inline-block كان يدمج خلايا كشف المدرّب في خلية بلا اسم', function (): void {
+    // `.u-num { display: inline-block }` turned every <td class="u-num"> into an
+    // anonymous box: the roster's check-in and check-out merged, and its status
+    // landed under the wrong header.
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    preg_match('/td\.u-num,\s*th\.u-num\s*\{([^}]*)\}/', $css, $rule);
+
+    expect($rule)->not->toBeEmpty()->and($rule[1])->toContain('display: table-cell');
+});
+
+it('D-139: عدّاد الجلسة التالية داخل بطاقة الجدول لا يتجاوز عرضها — 302px في بطاقة 276px يقصّ «ثانية» عند 360px', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    preg_match('/@media \(max-width: 699px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+
+    expect($block)->not->toBeEmpty()
+        ->and($block[0])->toMatch('/\.atable--stack \.ui-countdown[^{]*\{[^}]*max-inline-size: 100%/');
+});
+
+it('D-139: آخر بطاقة في الجدول المكدّس تحتفظ بفواصل خلاياها — قاعدة «آخر صف بلا حدّ» الأقدم تغلب عليها بالتخصيص', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    preg_match('/@media \(max-width: 699px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+
+    expect($block)->not->toBeEmpty()
+        ->and($block[0])->toContain('.atable--stack tbody tr:last-child td');
+});
+
+it('D-139: كل صف وخلية في الجداول المكدّسة تحمل دورها — بما فيها صف الرأس، وبلا دور خارج هذه الجداول', function (): void {
+    // The rows and cells stop being table boxes on a phone (display: block/flex),
+    // and some assistive technology then drops the table. The explicit roles give
+    // it back; one row or cell without a role leaves a hole in it.
+    foreach (['participant/schedule', 'participant/attendance', 'participant/profile'] as $view) {
+        $html = (string) file_get_contents(resource_path("views/{$view}.blade.php"));
+
+        preg_match_all('/<table class="atable atable--stack.*?<\/table>/s', $html, $tables);
+
+        expect($tables[0])->not->toBeEmpty($view);
+
+        foreach ($tables[0] as $table) {
+            expect(preg_match_all('/<tr(?![^>]*\brole=)/', $table))->toBe(0, "{$view}: <tr> without role")
+                ->and(preg_match_all('/<t[dh](?![^>]*\brole=)/', $table))->toBe(0, "{$view}: <td>/<th> without role");
+        }
+
+        // …and roles exist nowhere else in the view.
+        $outside = preg_replace('/<table class="atable atable--stack.*?<\/table>/s', '', $html) ?? '';
+        expect(preg_match('/<(?:tr|td|th|thead|tbody)\b[^>]*\brole=/', $outside))->toBe(0, "{$view}: role outside the stack tables");
+    }
+});

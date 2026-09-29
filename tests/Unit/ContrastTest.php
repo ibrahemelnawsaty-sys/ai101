@@ -271,17 +271,32 @@ it('D-124: مراحل تذكرة الدعم الأربع تبلغ 4.5:1 على �
     expect($failures)->toBe([]);
 });
 
-it('D-139: «الحكم» على بطاقة الدرجة الكلية — الأبيض على --ln-06 فوق أفتح نقطة في التدرّج يبلغ 4.5:1', function (): void {
+it('D-139: «الحكم» على بطاقة الدرجة الكلية — الأبيض على غشاء الرمز الذي تستعمله القاعدة فعلًا يبلغ 4.5:1 فوق أفتح نقطة في التدرّج', function (): void {
     // The verdict pill sat on the dark grades card with its light-surface tint:
     // a warm brown on violet, unreadable. On that card it is white on a white
-    // 22% veil; the words and the icon say pass or not yet, colour says nothing.
+    // veil; the words and the icon say pass or not yet, colour says nothing.
+    // The pair is read from the STYLESHEET and the TOKEN FILE, not restated here:
+    // deleting the rule, or thinning the veil, must fail this.
+    $screens = (string) File::get(resource_path('css/screens.css'));
+    $tokenFile = (string) File::get(resource_path('css/tokens.css'));
+
+    expect(preg_match('/\.gtotal \.ui-pill\s*\{([^}]*)\}/', $screens, $rule))->toBe(1);
+    expect(preg_match('/background:\s*var\(--(ln-\d+)\)/', $rule[1], $veilToken))->toBe(1);
+    expect($rule[1])->toContain('color: var(--white)');
+
+    expect(preg_match('/--'.preg_quote($veilToken[1], '/').':\s*rgba\(255,\s*255,\s*255,\s*([0-9.]+)\)/', $tokenFile, $alphaMatch))->toBe(1);
+    $alpha = (float) $alphaMatch[1];
+
     $tokens = tokenHexes();
-    $veil = static function (string $under): string {
-        $over = static fn (int $c, int $u): int => (int) round(0.22 * $c + 0.78 * $u);
+    $veil = static function (string $under) use ($alpha): string {
+        $over = static fn (int $c, int $u): int => (int) round($alpha * $c + (1 - $alpha) * $u);
         $rgb = sscanf(ltrim($under, '#'), '%02x%02x%02x');
 
         return sprintf('#%02x%02x%02x', $over(255, $rgb[0]), $over(255, $rgb[1]), $over(255, $rgb[2]));
     };
+
+    // The card's gradient runs violet-700 → violet-900 (see `.gtotal`).
+    expect($screens)->toMatch('/\.gtotal\s*\{[^}]*linear-gradient\([^)]*var\(--violet-700\)[^)]*var\(--violet-900\)/s');
 
     foreach (['violet-700', 'violet-900'] as $end) {
         expect(contrastRatio('#FFFFFF', $veil($tokens[$end])))->toBeGreaterThanOrEqual(4.5, $end);

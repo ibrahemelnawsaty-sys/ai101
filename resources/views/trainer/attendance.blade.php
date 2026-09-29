@@ -178,8 +178,8 @@
                                                     {{ $entry->participantName }}
                                                 </span>
                                             </th>
-                                            <td class="u-num" data-cell="in">{{ $entry->checkedInLabel }}</td>
-                                            <td class="u-num" data-cell="out">{{ $entry->checkedOutLabel }}</td>
+                                            <td class="u-when" data-cell="in">{{ $entry->checkedInLabel }}</td>
+                                            <td class="u-when" data-cell="out">{{ $entry->checkedOutLabel }}</td>
                                             <td data-cell="status">@include('trainer.partials.roster-status', ['entry' => $entry])</td>
                                             <td data-cell="edit">@include('trainer.partials.roster-edit', ['entry' => $entry])</td>
                                         </tr>
@@ -225,10 +225,10 @@
                             @foreach ($pendingExceptions as $item)
                                 <tr>
                                     <th scope="row">{{ $item->participantName }}</th>
-                                    <td>{{ $item->sessionTitle }} <span class="u-num u-muted">{{ $item->sessionDate }}</span></td>
+                                    <td>{{ $item->sessionTitle }} <span class="u-when u-muted">{{ $item->sessionDate }}</span></td>
                                     <td><x-ui.pill variant="neutral">{{ $item->typeLabel }}</x-ui.pill></td>
                                     <td>{{ $item->reason }}</td>
-                                    <td class="u-num u-nowrap">{{ $item->requestedAt }}</td>
+                                    <td class="u-when u-nowrap">{{ $item->requestedAt }}</td>
                                     <td>
                                         <div class="row__acts" x-data="{ rejecting: false }">
                                             <form method="POST" action="{{ route('trainer.attendance-exceptions.approve', $item->id) }}">
@@ -285,7 +285,7 @@
                                 <tr>
                                     <th scope="row">
                                         {{ $row->topic }}
-                                        <span class="u-num u-muted">{{ $row->date }}</span>
+                                        <span class="u-when u-muted">{{ $row->date }}</span>
                                     </th>
                                     <td>
                                         @if ($row->hasRecording)

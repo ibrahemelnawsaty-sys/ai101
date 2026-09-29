@@ -102,7 +102,7 @@
                                     <table class="atable atable--stack" role="table">
                                         <caption class="sr">{{ __('schedule.table_caption', ['week' => $week->title]) }}</caption>
                                         <thead role="rowgroup">
-                                            <tr>
+                                            <tr role="row">
                                                 <th scope="col" role="columnheader">{{ __('schedule.col_date') }}</th>
                                                 <th scope="col" role="columnheader">{{ __('schedule.col_time') }}</th>
                                                 <th scope="col" role="columnheader">{{ __('schedule.col_title') }}</th>

@@ -184,6 +184,12 @@ outline-offset: var(--s1);
     unicode-bidi: isolate;
   }
 
+  /* A table cell that carries .u-num stays a table cell. `display: inline-block`
+     turned it into an anonymous box: the trainer roster's check-in and check-out
+     merged into one cell and its status landed under the wrong header (D-139). */
+  td.u-num,
+  th.u-num { display: table-cell; }
+
   .u-ltr { direction: ltr; unicode-bidi: isolate; text-align: left; }
   .u-measure { max-inline-size: var(--measure); }
   .u-nowrap { white-space: nowrap; }

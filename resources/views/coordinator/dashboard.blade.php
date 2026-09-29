@@ -116,7 +116,7 @@
                             <b>{{ $item->participantName }}</b>
                             <span>
                                 {{ $item->sessionTitle }} ·
-                                <span class="u-num">{{ $item->sessionDate }}</span>
+                                <span class="u-when">{{ $item->sessionDate }}</span>
                             </span>
                         </div>
                         <div class="row__e">

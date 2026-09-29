@@ -73,7 +73,7 @@ it('BR-31: شريط المؤشرات وشارات البطل والشريط ال
         ->and($body)->toContain('CANARY-WEEK-TWO')
         // The threshold shown is the cohort's own, so moving it in the admin
         // panel moves it here and nowhere else (BR-31, BR-36).
-        ->and($body)->toContain('>75</span>%')
+        ->and($body)->toContain('>75%</span>')
         // The marker-pen sweep: its CSS and its IntersectionObserver were both
         // complete, but no template ever carried the class, so it had never
         // once rendered. Wrapped whole, never per letter (Article 16-bis).

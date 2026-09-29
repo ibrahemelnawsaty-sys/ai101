@@ -96,7 +96,7 @@
                 @if (filled(data_get($certificate, 'revoked_at')))
                     <div class="verify__row">
                         <dt>{{ __('verify.certificate.revoked_at') }}</dt>
-                        <dd class="u-num">{{ data_get($certificate, 'revoked_at') }}</dd>
+                        <dd class="u-when">{{ data_get($certificate, 'revoked_at') }}</dd>
                     </div>
                 @endif
 
@@ -141,7 +141,7 @@
 
                 <div class="verify__row">
                     <dt>{{ __('verify.certificate.issued_at') }}</dt>
-                    <dd class="u-num">{{ data_get($certificate, 'issued_at') }}</dd>
+                    <dd class="u-when">{{ data_get($certificate, 'issued_at') }}</dd>
                 </div>
 
                 <div class="verify__row">
@@ -156,7 +156,7 @@
             @if (filled($checkedAt ?? null))
                 <p class="verify__checked">
                     {{ __('verify.shared.checked_at') }}
-                    <span class="u-num">{{ $checkedAt }}</span>
+                    <span class="u-when">{{ $checkedAt }}</span>
                 </p>
             @endif
         </div>

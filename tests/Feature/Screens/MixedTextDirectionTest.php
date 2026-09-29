@@ -55,8 +55,12 @@ it('D-139: عنصر u-num لا يحمل ما يطبعه لنا نصٌّ عربي
         preg_match_all('/<(\w+)\b[^>]*\bclass="[^"]*\bu-num\b[^"]*"[^>]*>(.*?)<\/\1>/s', $html, $hits, PREG_SET_ORDER);
 
         foreach ($hits as $hit) {
-            // `isoUtc` is the machine attribute (`datetime=`), never displayed.
-            if (preg_match('/Dates::(?!isoUtc)|Present::fileSize|fileSize\(|sizeLabel|trans_choice\(|::relative\(|@lang|\b__\(/', $hit[2]) === 1) {
+            // `isoUtc` is the machine attribute (`datetime=`), never displayed. The last
+            // alternative is the values a PRESENTER hands over already formatted as
+            // Arabic dates and times (`sessionDate`, `requestedAt`, `sentAt`,
+            // `checkedInLabel`, a chart point's `label`, `issued_at`, `checkedAt`…):
+            // the phase's first pass could not see them from the view.
+            if (preg_match('/Dates::(?!isoUtc)|Present::fileSize|fileSize\(|sizeLabel|trans_choice\(|::relative\(|@lang|\b__\(|->(?:sessionDate|requestedAt|sentAt|date|label|checked(?:In|Out)Label)\b|\'(?:issued|revoked)_at\'|\$checkedAt/', $hit[2]) === 1) {
                 $offenders[] = viewName($file).' → '.mb_substr(preg_replace('/\s+/', ' ', trim($hit[2])) ?? '', 0, 80);
             }
         }
@@ -78,8 +82,11 @@ it('D-139: الدرجة «3.7 / 12» وحدة واحدة معزولة — لا �
         // pair split in two, whichever way it is written.
         if (preg_match('/<small class="u-num">\s*\/\s*\{\{/', $html) === 1
             || preg_match('/<span class="u-num"[^>]*>[^<]*<\/span>\s*<small>/', $html) === 1
-            // …or two isolated numbers with a bare slash between them.
-            || preg_match('/<\/span>\s*\/\s*<span class="u-num"/', $html) === 1) {
+            // …or two isolated numbers with a bare slash between them…
+            || preg_match('/<\/span>\s*\/\s*<span class="u-num"/', $html) === 1
+            // …or a number isolated on its own with its slash or its percent sign
+            // left outside, in whatever element follows it.
+            || preg_match('/<(\w+) class="u-num"[^>]*>[^<]*<\/\1>\s*(?:%|<\w+[^>]*>\s*\/)/', $html) === 1) {
             $offenders[] = viewName($file);
         }
     }

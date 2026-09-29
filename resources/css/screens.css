@@ -1933,6 +1933,14 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack td:not([data-label]):has(> .atable__none:only-child) { display: none; }
   .atable--stack td:last-child,
   .atable--stack .atable__lead + td:last-child { border-block-end: 0; }
+  /* app.css says the LAST row of a table has no bottom rule; that rule is more
+     specific than the one above, so the last card lost its cell dividers. */
+  .atable--stack tbody tr:last-child td { border-block-end: var(--bw-hairline) solid var(--n-200); }
+  .atable--stack tbody tr:last-child td:last-child { border-block-end: 0; }
+  /* The next-session countdown is 302px wide; a card at 360px has 276 (D-139). */
+  .atable--stack .ui-countdown { max-inline-size: 100%; }
+  .atable--stack .ui-countdown--compact .ui-countdown__grid { flex-wrap: wrap; }
+  .atable--stack td .ui-pill { max-inline-size: 100%; white-space: normal; }
   .atable--stack tr.atable__note { padding-block: var(--s2); background: transparent; border-style: dashed; }
   .atable--stack tr.atable__note td { display: block; padding: 0; border: 0; }
 }

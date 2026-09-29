@@ -210,7 +210,7 @@
                         <table class="atable atable--stack" role="table">
                             <caption class="sr">{{ __('attendance.log.title') }}</caption>
                             <thead role="rowgroup">
-                                <tr>
+                                <tr role="row">
                                     <th scope="col" role="columnheader">{{ __('attendance.col_session') }}</th>
                                     <th scope="col" role="columnheader">{{ __('attendance.col_date') }}</th>
                                     <th scope="col" role="columnheader">{{ __('attendance.col_check_in') }}</th>

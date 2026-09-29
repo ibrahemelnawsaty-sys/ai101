@@ -148,7 +148,7 @@
                         <tbody>
                             @foreach ($history as $row)
                                 <tr>
-                                    <th scope="row" class="u-num">{{ $row->sentAt }}</th>
+                                    <th scope="row" class="u-when">{{ $row->sentAt }}</th>
                                     <td><x-ui.pill :variant="$row->kindVariant">{{ $row->kindLabel }}</x-ui.pill></td>
                                     <td>{{ $row->subject }}</td>
                                     <td>{{ $row->cohortName }}</td>

@@ -90,7 +90,7 @@
                 <ul class="trend trend--chart" role="list">
                     @foreach ($registrationsOverTime as $point)
                         <li class="trend__i">
-                            <span class="trend__l u-num">{{ $point->label }}</span>
+                            <span class="trend__l u-when">{{ $point->label }}</span>
                             <x-ui.progress-bar :value="$point->value" :max="$point->max" size="sm"
                                 variant="brand" :label="$point->label" />
                             <span class="trend__v u-num">{{ $point->value }}</span>

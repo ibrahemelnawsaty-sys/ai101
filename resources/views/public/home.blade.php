@@ -751,7 +751,7 @@
                          used to print the requirement ids and the config key names verbatim,
                          which is developer shorthand no visitor can parse. --}}
                     <div class="sim__tags">
-                        <span class="simtag simtag--rule">{{ __('landing.sim.tag_attendance') }} <span class="u-num">{{ data_get($cohort, 'min_attendance_rate', 0) }}</span>%</span>
+                        <span class="simtag simtag--rule">{{ __('landing.sim.tag_attendance') }} <span class="u-num">{{ data_get($cohort, 'min_attendance_rate', 0) }}%</span></span>
                         <span class="simtag simtag--rule">{{ __('landing.sim.tag_score') }} <span class="u-num">{{ data_get($cohort, 'pass_score', 0) }}</span></span>
                     </div>
                 </div>

@@ -175,7 +175,7 @@
                             <table class="atable atable--stack atable--prefs" role="table">
                                 <caption class="sr">{{ __('notifications.preferences_title') }}</caption>
                                 <thead role="rowgroup">
-                                    <tr>
+                                    <tr role="row">
                                         <th scope="col" role="columnheader">{{ __('notifications.event') }}</th>
                                         <th scope="col" role="columnheader">{{ __('notifications.channel_platform') }}</th>
                                         <th scope="col" role="columnheader">{{ __('notifications.channel_email') }}</th>
