@@ -11,7 +11,6 @@ use App\Presenters\Admin\GeneralSettings;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * General settings (PRD §9.18).
@@ -39,7 +38,6 @@ final class SettingController extends Controller
             'contextLabel' => null,
             'settings' => GeneralSettings::fromConfig(),
             'locale' => (string) config('athar.locales.default', 'ar'),
-            'template' => null,
             'errorState' => null,
         ]);
     }
@@ -77,31 +75,5 @@ final class SettingController extends Controller
         );
 
         return back()->with('status', __('admin.settings.saved'));
-    }
-
-    /**
-     * One e-mail template, shown for review.
-     *
-     * Template bodies live in lang/ar/emails.php like every other Arabic string
-     * on the platform (Art. 15), so this screen shows the text that will be
-     * sent; editing it is a translation change, not a form submission.
-     */
-    public function template(string $template): View
-    {
-        $this->authorize('console.settings');
-
-        $body = __('emails.'.$template);
-
-        if (! is_array($body)) {
-            abort(Response::HTTP_NOT_FOUND);
-        }
-
-        return view('admin.settings', [
-            'contextLabel' => null,
-            'settings' => GeneralSettings::fromConfig(),
-            'locale' => (string) config('athar.locales.default', 'ar'),
-            'template' => ['key' => $template, 'body' => $body],
-            'errorState' => null,
-        ]);
     }
 }

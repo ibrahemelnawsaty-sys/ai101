@@ -389,6 +389,9 @@ function authorizationMatrix(object $test): array
         'admin.settings.update' => ['put', [], ['system_admin']],
         'admin.settings.notifications' => ['put', [], ['system_admin']],
         'admin.settings.template' => ['get', ['template' => 'welcome'], ['system_admin']],
+        'admin.settings.template.update' => ['put', ['template' => 'welcome'], ['system_admin']],
+        'admin.settings.template.reset' => ['delete', ['template' => 'welcome'], ['system_admin']],
+        'admin.settings.template.preview' => ['post', ['template' => 'welcome'], ['system_admin']],
     ];
 }
 

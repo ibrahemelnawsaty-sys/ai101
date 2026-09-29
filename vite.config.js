@@ -26,6 +26,7 @@ export default defineConfig({
                 // entries of their own, so neither the dashboard nor a visitor
                 // downloads them.
                 'resources/js/admin-landing.js',
+                'resources/js/admin-email-template.js',
                 'resources/js/landing-preview.js',
             ],
             refresh: [

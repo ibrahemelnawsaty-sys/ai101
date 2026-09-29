@@ -4,7 +4,7 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-6fz6FMf5.css",
+    "file": "assets/app-hFWwiVOi.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -12,6 +12,16 @@
     "file": "assets/public-Cp6UF8aH.css",
     "src": "resources/css/public.css",
     "isEntry": true
+  },
+  "resources/js/admin-email-template.js": {
+    "file": "assets/admin-email-template-W_n9c0sO.js",
+    "name": "admin-email-template",
+    "src": "resources/js/admin-email-template.js",
+    "isEntry": true,
+    "imports": [
+      "_alpine-Czm6yrXi.js",
+      "resources/js/dashboard.js"
+    ]
   },
   "resources/js/admin-landing.js": {
     "file": "assets/admin-landing-CPoWqyw4.js",

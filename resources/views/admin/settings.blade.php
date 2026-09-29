@@ -135,6 +135,9 @@
                     <div class="row">
                         <div class="row__m">
                             <b>{{ $template->label }}</b>
+                            @if ($template->isCustomised)
+                                <x-ui.pill variant="primary" icon="pencil">{{ __('admin.email_editor.customised') }}</x-ui.pill>
+                            @endif
                             <span>{{ $template->subject }}</span>
                         </div>
                         <div class="row__e">

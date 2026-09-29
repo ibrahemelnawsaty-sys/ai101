@@ -1820,3 +1820,19 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .rolechange { display: grid; gap: var(--s3); }
 .rolechange dt { font-size: var(--fs-xs); color: var(--text-muted); }
 .rolechange dd { margin: 0; color: var(--text-strong); }
+
+/* D-136 — the e-mail template editor: the words beside a live picture of the letter. */
+.emed { display: grid; gap: var(--s5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1100px) { .emed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.emed__vars { display: grid; gap: var(--s1); margin-block: var(--s1) var(--s2); font-size: var(--fs-xs); color: var(--text-muted); }
+.emed__vars b { color: var(--text-strong); }
+.emed__orig { margin-block: var(--s1) var(--s4); }
+.emed__orig summary { cursor: pointer; font-size: var(--fs-xs); color: var(--text-muted); }
+.emed__orig p { margin: var(--s2) 0 0; }
+.emed__bar { display: flex; justify-content: flex-start; margin-block: var(--s3); }
+.emed__subject { margin-block: 0 var(--s3); overflow-wrap: anywhere; }
+.emed__stage { display: flex; justify-content: center; overflow: hidden; background: var(--surface-2); border: var(--bw-hairline) solid var(--border-1); border-radius: var(--r-lg); padding: var(--s3); }
+.emed__box { position: relative; flex: none; }
+.emed__frame { position: absolute; inset-block-start: 0; inset-inline-start: 0; border: 0; background: var(--white); border-radius: var(--r-md); transform-origin: top left; }
+[dir='rtl'] .emed__frame { transform-origin: top right; }
+.emed__wait { inline-size: 100%; block-size: var(--d-6); border-radius: var(--r-md); }

@@ -8,6 +8,9 @@ use App\Models;
 use App\Services\Landing\LandingCatalog;
 use App\Services\Landing\LandingContentLoader;
 use App\Services\Landing\LandingOverrides;
+use App\Services\Mail\EmailContentLoader;
+use App\Services\Mail\EmailOverrides;
+use App\Services\Mail\EmailTemplates;
 use App\Services\Time\Clock;
 use App\Support\ConfiguredUrlGenerator;
 use App\View\Components\Ui\SwitchControl;
@@ -65,6 +68,14 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->scoped(LandingOverrides::class);
         $this->app->singleton(LandingCatalog::class);
         $this->app->extend('translation.loader', static fn (Loader $loader, $app): Loader => new LandingContentLoader($loader, $app));
+
+        // BR-31 / D-136: the same for the e-mail templates' subject and body,
+        // laid over lang/*/emails.php by a second decorator. Only the two fields
+        // the editor may write are ever replaced (EmailTemplates), whatever the
+        // table holds.
+        $this->app->scoped(EmailOverrides::class);
+        $this->app->singleton(EmailTemplates::class);
+        $this->app->extend('translation.loader', static fn (Loader $loader, $app): Loader => new EmailContentLoader($loader, $app));
     }
 
     public function boot(): void

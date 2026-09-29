@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\BroadcastController as AdminBroadcastController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EmailTemplateController as AdminEmailTemplateController;
 use App\Http\Controllers\Admin\FinalProjectController as AdminFinalProjectController;
 use App\Http\Controllers\Admin\FinalProjectFieldController as AdminFinalProjectFieldController;
 use App\Http\Controllers\Admin\ImpersonationController;
@@ -932,8 +933,24 @@ Route::middleware(['auth', 'verified', 'role:system_admin'])
         // D-117 — the platform settings are the system administrator's: the
         // role that runs the platform, not the programme (ConsolePolicy).
         Route::get('/settings', [AdminSettingController::class, 'edit'])->name('settings.edit');
-        Route::get('/settings/templates/{template}', [AdminSettingController::class, 'template'])
+        // D-136 — the e-mail template editor: the subject and the body, over the
+        // file's defaults. A draft is rendered as its letter and thrown away;
+        // nothing is sent. Writes refuse an account preview (BR-33).
+        Route::get('/settings/templates/{template}', [AdminEmailTemplateController::class, 'edit'])
+            ->where('template', '[a-z_]+')
             ->name('settings.template');
+        Route::put('/settings/templates/{template}', [AdminEmailTemplateController::class, 'update'])
+            ->where('template', '[a-z_]+')
+            ->middleware('not.impersonating')
+            ->name('settings.template.update');
+        Route::delete('/settings/templates/{template}', [AdminEmailTemplateController::class, 'reset'])
+            ->where('template', '[a-z_]+')
+            ->middleware('not.impersonating')
+            ->name('settings.template.reset');
+        Route::post('/settings/templates/{template}/preview', [AdminEmailTemplateController::class, 'preview'])
+            ->where('template', '[a-z_]+')
+            ->middleware('throttle:60,1')
+            ->name('settings.template.preview');
         Route::put('/settings', [AdminSettingController::class, 'update'])
             ->middleware('not.impersonating')
             ->name('settings.update');
