@@ -64,11 +64,11 @@
                     </div>
                     <div>
                         <dt>{{ __('admin.users.table.last_login') }}</dt>
-                        <dd class="u-num">{{ $user->lastLoginAt ? \App\Support\Dates::dateTime($user->lastLoginAt) : '—' }}</dd>
+                        <dd class="u-when">{{ $user->lastLoginAt ? \App\Support\Dates::dateTime($user->lastLoginAt) : '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ __('admin.users.registered_at') }}</dt>
-                        <dd class="u-num">{{ \App\Support\Dates::longDate($user->registeredAt) }}</dd>
+                        <dd class="u-when">{{ \App\Support\Dates::longDate($user->registeredAt) }}</dd>
                     </div>
                 </dl>
             </div>

@@ -98,7 +98,7 @@
                         <li>
                             <a href="{{ $attachment->downloadUrl }}">
                                 <x-ui.icon name="file" />{{ $attachment->name }}
-                                <small class="u-num">{{ $attachment->sizeLabel }}</small>
+                                <small class="u-when">{{ $attachment->sizeLabel }}</small>
                             </a>
                         </li>
                     @endforeach
@@ -115,7 +115,7 @@
                         <span>{{ __('grades.recorded_on', ['date' => \App\Support\Dates::longDate($evaluation->recordedAt)]) }}</span>
                     </div>
                     <div class="row__e">
-                        <b class="row__score"><span class="u-num">{{ $evaluation->score }}</span><small class="u-num"> / {{ $project->maxScore }}</small></b>
+                        <b class="row__score u-num"><span>{{ $evaluation->score }}</span><small> / {{ $project->maxScore }}</small></b>
                     </div>
                 </div>
                 <div class="note note--ok">
@@ -143,7 +143,7 @@
             @if ($submission)
                 <div class="note u-mt-4">
                     <b>{{ __('assignments.current_submission', ['version' => $submission->version]) }}</b>
-                    <span class="u-num">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
+                    <span class="u-when">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
                 </div>
                 @include('partials.hand-in-answers', ['answers' => $submission->answers])
             @endif

@@ -59,11 +59,11 @@
                     <dd class="u-num" dir="ltr">{{ $card->number }}</dd>
 
                     <dt>{{ __('card.issued_on') }}</dt>
-                    <dd class="u-num">{{ \App\Support\Dates::longDate($card->issuedAt) }}</dd>
+                    <dd class="u-when">{{ \App\Support\Dates::longDate($card->issuedAt) }}</dd>
 
                     @if ($card->expiresAt !== null)
                         <dt>{{ __('card.expires_on') }}</dt>
-                        <dd class="u-num">{{ \App\Support\Dates::longDate($card->expiresAt) }}</dd>
+                        <dd class="u-when">{{ \App\Support\Dates::longDate($card->expiresAt) }}</dd>
                     @endif
                 </dl>
             </div>

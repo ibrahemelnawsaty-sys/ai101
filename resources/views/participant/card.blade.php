@@ -80,7 +80,7 @@
                                 <div class="idcard__meta">
                                     {{ __('card.role') }} · <b>{{ $card->roleLabel }}</b><br>
                                     {{ __('card.number') }} · <b class="u-num">{{ $card->number }}</b><br>
-                                    {{ __('card.issued_on') }} · <b class="u-num">{{ \App\Support\Dates::longDate($card->issuedAt) }}</b>
+                                    {{ __('card.issued_on') }} · <b class="u-when">{{ \App\Support\Dates::longDate($card->issuedAt) }}</b>
                                 </div>
                                 {{-- Rendered on the server as an inline SVG; no client-side QR library. --}}
                                 <div class="qr" role="img" aria-label="{{ __('card.qr_alt') }}">

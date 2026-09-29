@@ -96,7 +96,7 @@
                                     </th>
                                     <td dir="ltr" class="u-ltr">{{ $request->email }}</td>
                                     <td>{{ $request->cohortName }}</td>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::dateTime($request->requestedAt) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($request->requestedAt) }}</td>
                                     <td>
                                         <x-ui.pill :variant="$request->stateVariant" :icon="$request->stateIcon">{{ $request->stateLabel }}</x-ui.pill>
                                     </td>
@@ -135,11 +135,11 @@
                         <div><dt>{{ __('admin.cohorts.fields.name') }}</dt><dd>{{ $reviewing->cohortName }}</dd></div>
                         <div>
                             <dt>{{ __('admin.cohorts.fields.capacity') }}</dt>
-                            <dd class="u-num">{{ __('admin.cohorts.seats_taken', ['taken' => $reviewing->seatsTaken, 'capacity' => $reviewing->capacity]) }}</dd>
+                            <dd class="u-when">{{ __('admin.cohorts.seats_taken', ['taken' => $reviewing->seatsTaken, 'capacity' => $reviewing->capacity]) }}</dd>
                         </div>
                         <div>
                             <dt>{{ __('admin.registrations.requested_at') }}</dt>
-                            <dd class="u-num">{{ \App\Support\Dates::dateTime($reviewing->requestedAt) }}</dd>
+                            <dd class="u-when">{{ \App\Support\Dates::dateTime($reviewing->requestedAt) }}</dd>
                         </div>
                     </dl>
                 </div>

@@ -47,11 +47,11 @@
                     <div class="row__m">
                         <b>{{ $nextSession->topic }}</b>
                         <span>
-                            <span class="u-num">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
                             ·
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
                             —
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
                         </span>
                         <span>
                             {{ $nextSession->typeLabel }} ·
@@ -85,7 +85,7 @@
                         <div class="row__m">
                             <b>{{ $row->topic }}</b>
                             <span>
-                                <span class="u-num">{{ \App\Support\Dates::longDate($row->startsAt) }}</span>
+                                <span class="u-when">{{ \App\Support\Dates::longDate($row->startsAt) }}</span>
                                 ·
                                 {{ $row->isInPerson ? __('coordinator.dashboard.attention_queue_in_person') : __('coordinator.dashboard.attention_queue_online') }}
                             </span>

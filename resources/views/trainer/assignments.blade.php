@@ -95,7 +95,7 @@
                                         @endif
                                     </th>
                                     <td>{{ $assignment->weekTitle }}</td>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</td>
                                     <td class="u-num">{{ $assignment->maxScore }}</td>
                                     <td class="u-num">{{ $assignment->submittedCount }} / {{ $assignment->cohortSize }}</td>
                                     <td><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>

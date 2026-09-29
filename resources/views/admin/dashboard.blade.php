@@ -79,7 +79,7 @@
                             <b>{{ $request->name }}</b>
                             <span>
                                 {{ $request->cohortName }} ·
-                                <span class="u-num">{{ \App\Support\Dates::relative($request->requestedAt) }}</span>
+                                <span class="u-when">{{ \App\Support\Dates::relative($request->requestedAt) }}</span>
                             </span>
                         </div>
                         <div class="row__e">

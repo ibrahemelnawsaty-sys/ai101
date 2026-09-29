@@ -93,7 +93,7 @@
                                         {{ $cohort->name }}
                                         <span class="u-muted">{{ $cohort->programName }}</span>
                                     </th>
-                                    <td class="u-num u-nowrap">
+                                    <td class="u-when u-nowrap">
                                         {{ \App\Support\Dates::longDate($cohort->startsAt) }}
                                         —
                                         {{ \App\Support\Dates::longDate($cohort->endsAt) }}

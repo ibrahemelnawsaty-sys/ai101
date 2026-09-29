@@ -69,7 +69,7 @@
                                     <span>
                                         <x-ui.icon name="file" />
                                         <span dir="ltr">{{ $attachment->name }}</span>
-                                        <small class="u-num">{{ $attachment->sizeLabel }}</small>
+                                        <small class="u-when">{{ $attachment->sizeLabel }}</small>
                                     </span>
                                 </li>
                             @endforeach
@@ -81,7 +81,7 @@
                     <dl class="deflist">
                         <div>
                             <dt>{{ __('trainer.final_project.due_at') }}</dt>
-                            <dd class="u-num">{{ \App\Support\Dates::dateTime($project->dueAt) }}</dd>
+                            <dd class="u-when">{{ \App\Support\Dates::dateTime($project->dueAt) }}</dd>
                         </div>
                         <div>
                             <dt>{{ __('trainer.final_project.max_score') }}</dt>
@@ -147,13 +147,13 @@
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::dateTime($row->submittedAt) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($row->submittedAt) }}</td>
                                     <td>
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
                                     </td>
                                     <td>
                                         @if ($row->isGraded)
-                                            <b class="row__score"><span class="u-num">{{ $row->score }}</span><small class="u-num"> / {{ $row->maxScore }}</small></b>
+                                            <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->maxScore }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
@@ -188,7 +188,7 @@
 
                         <p class="footnote">
                             {{ __('assignments.current_submission', ['version' => $selected->version]) }} ·
-                            <span class="u-num">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
                         </p>
                     </div>
 

@@ -61,11 +61,11 @@
                     <div class="row__m">
                         <b>{{ $nextSession->topic }}</b>
                         <span>
-                            <span class="u-num">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
                             ·
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
                             —
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
                         </span>
                         <span>
                             {{ $nextSession->typeLabel }} ·

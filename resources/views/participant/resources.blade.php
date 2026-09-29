@@ -66,9 +66,9 @@
                                 <div class="res__meta">
                                     <span>{{ $resource->typeLabel }}</span>
                                     @if ($resource->sizeLabel)
-                                        · <span class="u-num">{{ $resource->sizeLabel }}</span>
+                                        · <span class="u-when">{{ $resource->sizeLabel }}</span>
                                     @endif
-                                    · <span class="u-num">{{ \App\Support\Dates::shortDate($resource->addedAt) }}</span>
+                                    · <span class="u-when">{{ \App\Support\Dates::shortDate($resource->addedAt) }}</span>
                                 </div>
                                 <div class="res__acts">
                                     @if ($resource->isPreviewable)

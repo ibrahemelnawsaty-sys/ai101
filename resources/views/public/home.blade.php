@@ -698,7 +698,7 @@
                     <div class="sl">
                         <div class="sl__hd">
                             <label for="simSessions">{{ __('landing.sim.q_sessions') }}</label>
-                            <b><span class="u-num" id="simVSessions">{{ data_get($cohort, 'sessions_total', 0) }}</span><small class="u-num"> / {{ data_get($cohort, 'sessions_total', 0) }}</small></b>
+                            <b class="u-num"><span id="simVSessions">{{ data_get($cohort, 'sessions_total', 0) }}</span><small> / {{ data_get($cohort, 'sessions_total', 0) }}</small></b>
                         </div>
                         <div class="sl__track">
                             <div class="sl__rail" aria-hidden="true"></div>
@@ -715,7 +715,7 @@
                     <div class="sl">
                         <div class="sl__hd">
                             <label for="simTasks">{{ __('landing.sim.q_tasks') }}</label>
-                            <b><span class="u-num" id="simVTasks">{{ data_get($cohort, 'assignments_total', 0) }}</span><small class="u-num"> / {{ data_get($cohort, 'assignments_total', 0) }}</small></b>
+                            <b class="u-num"><span id="simVTasks">{{ data_get($cohort, 'assignments_total', 0) }}</span><small> / {{ data_get($cohort, 'assignments_total', 0) }}</small></b>
                         </div>
                         <div class="sl__track">
                             <div class="sl__rail" aria-hidden="true"></div>
@@ -732,7 +732,7 @@
                     <div class="sl">
                         <div class="sl__hd">
                             <label for="simProject">{{ __('landing.sim.q_project') }}</label>
-                            <b><span class="u-num" id="simVProject">{{ data_get($cohort, 'project_points', 0) }}</span><small class="u-num"> / {{ data_get($cohort, 'project_points', 0) }}</small></b>
+                            <b class="u-num"><span id="simVProject">{{ data_get($cohort, 'project_points', 0) }}</span><small> / {{ data_get($cohort, 'project_points', 0) }}</small></b>
                         </div>
                         <div class="sl__track">
                             <div class="sl__rail" aria-hidden="true"></div>
@@ -763,7 +763,7 @@
                             <span class="gate__ic" id="simIcA" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
                             <span>{{ __('landing.sim.gate_attendance') }}</span>
                         </div>
-                        <div class="gate__val"><span class="u-num" id="simPctA">0</span><small>%</small></div>
+                        <div class="gate__val u-num"><span id="simPctA">0</span><small>%</small></div>
                         <div class="gate__bar">
                             <div class="gate__barf" id="simBarA"></div>
                             <div class="gate__min"
@@ -781,7 +781,7 @@
                             <span class="gate__ic" id="simIcB" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
                             <span>{{ __('landing.sim.gate_score') }}</span>
                         </div>
-                        <div class="gate__val"><span class="u-num" id="simPctB">0</span><small class="u-num"> / {{ data_get($cohort, 'grand_total', 100) }}</small></div>
+                        <div class="gate__val u-num"><span id="simPctB">0</span><small> / {{ data_get($cohort, 'grand_total', 100) }}</small></div>
                         <div class="gate__bar">
                             <div class="gate__barf" id="simBarB"></div>
                             <div class="gate__min"

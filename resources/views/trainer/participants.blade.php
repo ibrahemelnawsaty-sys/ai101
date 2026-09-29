@@ -125,7 +125,7 @@
                                     <td class="u-num u-nowrap">{{ $row->submittedCount }} / {{ $row->assignmentsCount }}</td>
                                     <td>
                                         @if ($row->hasScore)
-                                            <b class="row__score"><span class="u-num">{{ $row->score }}</span><small class="u-num"> / {{ $row->scoreMax }}</small></b>
+                                            <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->scoreMax }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
@@ -160,7 +160,7 @@
                             <div><dt>{{ __('profile.full_name_en') }}</dt><dd dir="ltr">{{ $selected->fullNameEn }}</dd></div>
                             <div><dt>{{ __('profile.email') }}</dt><dd dir="ltr">{{ $selected->email }}</dd></div>
                             <div><dt>{{ __('profile.phone') }}</dt><dd dir="ltr">{{ $selected->phone }}</dd></div>
-                            <div><dt>{{ __('trainer.participants.enrolled_at') }}</dt><dd class="u-num">{{ \App\Support\Dates::longDate($selected->enrolledAt) }}</dd></div>
+                            <div><dt>{{ __('trainer.participants.enrolled_at') }}</dt><dd class="u-when">{{ \App\Support\Dates::longDate($selected->enrolledAt) }}</dd></div>
                         </dl>
                     </div>
 
@@ -214,7 +214,7 @@
                                 @foreach ($selected->submissions as $submission)
                                     <tr>
                                         <th scope="row">{{ $submission->assignmentTitle }}</th>
-                                        <td class="u-num u-nowrap">
+                                        <td class="u-when u-nowrap">
                                             {{ $submission->submittedAt ? \App\Support\Dates::dateTime($submission->submittedAt) : '—' }}
                                         </td>
                                         <td>
@@ -222,7 +222,7 @@
                                         </td>
                                         <td>
                                             @if ($submission->isGraded)
-                                                <b class="row__score"><span class="u-num">{{ $submission->score }}</span><small class="u-num"> / {{ $submission->maxScore }}</small></b>
+                                                <b class="row__score u-num"><span>{{ $submission->score }}</span><small> / {{ $submission->maxScore }}</small></b>
                                             @else
                                                 <span class="u-muted">—</span>
                                             @endif

@@ -31,7 +31,7 @@
         <div class="certdoc__rule"></div>
         <div class="certdoc__ft">
             <div><b class="u-num"><bdi>{{ $certificate->serialNumber }}</bdi></b>{{ __('certificates.serial_number') }}</div>
-            <div><b class="u-num">{{ \App\Support\Dates::longDate($certificate->issuedAt) }}</b>{{ __('certificates.issued_on') }}</div>
+            <div><b class="u-when">{{ \App\Support\Dates::longDate($certificate->issuedAt) }}</b>{{ __('certificates.issued_on') }}</div>
             <div><b class="u-num">{{ $certificate->finalScore }} / {{ $certificate->grandTotal }}</b>{{ __('certificates.final_score') }}</div>
         </div>
     </div>

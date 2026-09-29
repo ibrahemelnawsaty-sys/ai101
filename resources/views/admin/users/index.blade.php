@@ -120,7 +120,7 @@
                                     <td>
                                         <x-ui.pill :variant="$user->statusVariant" :icon="$user->statusIcon">{{ $user->statusLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-num u-nowrap">
+                                    <td class="u-when u-nowrap">
                                         {{ $user->lastLoginAt ? \App\Support\Dates::dateTime($user->lastLoginAt) : '—' }}
                                     </td>
                                     <td class="u-nowrap">

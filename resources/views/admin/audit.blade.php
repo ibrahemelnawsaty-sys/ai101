@@ -97,7 +97,7 @@
                         <tbody>
                             @foreach ($entries as $entry)
                                 <tr @class(['is-selected' => $entry->id === ($opened->id ?? null)])>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::dateTime($entry->at) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($entry->at) }}</td>
                                     <th scope="row">
                                         <span class="cellpair">
                                             <x-ui.avatar size="sm" :name="$entry->actorName" />
@@ -128,7 +128,7 @@
         @if ($opened)
             <x-ui.card class="dc--span u-mt-4" icon="shield" :title="$opened->actionLabel">
                 <dl class="deflist">
-                    <div><dt>{{ __('admin.audit.table.at') }}</dt><dd class="u-num">{{ \App\Support\Dates::dateTime($opened->at) }}</dd></div>
+                    <div><dt>{{ __('admin.audit.table.at') }}</dt><dd class="u-when">{{ \App\Support\Dates::dateTime($opened->at) }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.actor') }}</dt><dd>{{ $opened->actorName }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.entity') }}</dt><dd dir="ltr">{{ $opened->entityLabel }} · {{ $opened->entityId }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.ip') }}</dt><dd dir="ltr" class="u-num">{{ $opened->ipAddress }}</dd></div>

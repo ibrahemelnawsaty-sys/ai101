@@ -31,8 +31,8 @@
                 <div class="gtotal__hd">
                     <div class="gtotal__main">
                         <div class="gtotal__l">{{ __('grades.total.current') }}</div>
-                        <div class="gtotal__n">
-                            <span class="u-num">{{ $total->finalScore }}</span><small> / {{ $total->grandTotal }}</small>
+                        <div class="gtotal__n u-num">
+                            <span>{{ $total->finalScore }}</span><small> / {{ $total->grandTotal }}</small>
                         </div>
                     </div>
                     <div class="gtotal__split">
@@ -97,11 +97,11 @@
                             <div class="gitem__hd">
                                 <x-ui.pill :variant="$item->statusVariant" :icon="$item->statusIcon">{{ $item->statusLabel }}</x-ui.pill>
                                 <b>{{ $item->title }}</b>
-                                <span class="gitem__sc">
+                                <span class="gitem__sc u-num">
                                     @if ($item->isGraded)
-                                        <span class="u-num">{{ $item->score }}</span><small class="u-num"> / {{ $item->maxScore }}</small>
+                                        <span>{{ $item->score }}</span><small> / {{ $item->maxScore }}</small>
                                     @else
-                                        —<small class="u-num"> / {{ $item->maxScore }}</small>
+                                        —<small> / {{ $item->maxScore }}</small>
                                     @endif
                                 </span>
                             </div>
@@ -114,7 +114,7 @@
                                     <b>{{ __('grades.trainer_feedback', ['trainer' => $item->graderName]) }}</b>
                                     {{-- Full text. Never clamped, never truncated, never behind a "read more". --}}
                                     <p class="note__body">{{ $item->feedback }}</p>
-                                    <span class="note__meta u-num">{{ \App\Support\Dates::longDate($item->gradedAt) }}</span>
+                                    <span class="note__meta u-when">{{ \App\Support\Dates::longDate($item->gradedAt) }}</span>
                                 </div>
 
                                 @if ($item->revisionReason)

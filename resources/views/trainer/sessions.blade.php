@@ -86,7 +86,7 @@
                             @foreach ($sessions as $session)
                                 <tr @class(['is-cancelled' => $session->isCancelled])>
                                     <td class="u-nowrap">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
                                     <th scope="row">{{ $session->topic }}</th>
                                     <td>{{ $session->typeLabel }}</td>
                                     <td>
@@ -233,7 +233,7 @@
                     @csrf
 
                     <p><b>{{ $cancelling->topic }}</b> ·
-                        <span class="u-num">{{ \App\Support\Dates::dateTime($cancelling->startsAt) }}</span></p>
+                        <span class="u-when">{{ \App\Support\Dates::dateTime($cancelling->startsAt) }}</span></p>
 
                     <x-ui.textarea name="cancel_reason" rows="3" required minlength="10"
                         :label="__('trainer.sessions.cancel_reason')"

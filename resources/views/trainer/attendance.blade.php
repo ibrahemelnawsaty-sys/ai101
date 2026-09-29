@@ -124,7 +124,7 @@
                 <div class="tablebar">
                     <div>
                         <b>{{ $roster->sessionTitle }}</b>
-                        <span class="u-num">
+                        <span class="u-when">
                             {{ \App\Support\Dates::longDate($roster->startsAt) }} ·
                             {{ \App\Support\Dates::timeRange12($roster->startsAt, $roster->endsAt) }}
                         </span>
@@ -133,9 +133,9 @@
                         @if ($roster->isLive)
                             <x-ui.pill variant="live" icon="clock">{{ __('trainer.attendance.live_now') }}</x-ui.pill>
                         @endif
-                        <b class="roster__count">
-                            <span class="u-num" data-cell="present">{{ $roster->presentCount }}</span>
-                            <small class="u-num"> / {{ $roster->totalCount }}</small>
+                        <b class="roster__count u-num">
+                            <span data-cell="present">{{ $roster->presentCount }}</span>
+                            <small> / {{ $roster->totalCount }}</small>
                         </b>
                         <span class="u-muted">{{ __('trainer.attendance.checked_in_of_total') }}</span>
                     </div>
@@ -432,7 +432,7 @@
                                 <tr>
                                     <th scope="col">{{ __('trainer.col_participant') }}</th>
                                     @foreach ($matrix->sessions as $session)
-                                        <th scope="col" class="u-num">
+                                        <th scope="col" class="u-when">
                                             <abbr title="{{ $session->topic }}">{{ \App\Support\Dates::shortDate($session->date) }}</abbr>
                                         </th>
                                     @endforeach

@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <dt>{{ __('project.receipt.details.submitted_at') }}</dt>
-                    <dd class="u-num">
+                    <dd class="u-when">
                         {{ \App\Support\Dates::dateTime($receipt->submittedAt) }}
                         @if ($receipt->isLate)
                             <x-ui.pill variant="warning" icon="clock">{{ __('project.receipt.late') }}</x-ui.pill>

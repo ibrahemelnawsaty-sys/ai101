@@ -56,7 +56,7 @@
                                     <a href="{{ $attachment->downloadUrl }}">
                                         <x-ui.icon name="file" />
                                         {{ $attachment->name }}
-                                        <small class="u-num">{{ $attachment->sizeLabel }}</small>
+                                        <small class="u-when">{{ $attachment->sizeLabel }}</small>
                                     </a>
                                 </li>
                             @endforeach
@@ -66,8 +66,8 @@
 
                 <div class="abrief__due abrief__due--{{ $assignment->urgencyVariant }}">
                     <span>{{ __('assignments.deadline') }}</span>
-                    <b class="u-num">{{ \App\Support\Dates::longDate($assignment->dueAt) }}</b>
-                    <span class="u-num">{{ \App\Support\Dates::time12($assignment->dueAt) }}</span>
+                    <b class="u-when">{{ \App\Support\Dates::longDate($assignment->dueAt) }}</b>
+                    <span class="u-when">{{ \App\Support\Dates::time12($assignment->dueAt) }}</span>
                 </div>
             </div>
         </x-ui.card>
@@ -86,7 +86,7 @@
                         <span>{{ __('grades.recorded_on', ['date' => \App\Support\Dates::longDate($submission->gradedAt)]) }}</span>
                     </div>
                     <div class="row__e">
-                        <b class="row__score"><span class="u-num">{{ $submission->score }}</span><small class="u-num"> / {{ $assignment->maxScore }}</small></b>
+                        <b class="row__score u-num"><span>{{ $submission->score }}</span><small> / {{ $assignment->maxScore }}</small></b>
                     </div>
                 </div>
             @endif
@@ -94,7 +94,7 @@
             @if ($submission)
                 <div class="note">
                     <b>{{ __('assignments.current_submission', ['version' => $submission->version]) }}</b>
-                    <span class="u-num">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
+                    <span class="u-when">{{ \App\Support\Dates::dateTime($submission->submittedAt) }}</span>
                     @if ($submission->isLate)
                         <x-ui.pill variant="warning" icon="clock">{{ __('assignments.late') }}</x-ui.pill>
                     @endif
@@ -105,7 +105,7 @@
                             <a href="{{ $file->downloadUrl }}">
                                 <x-ui.icon name="file" />
                                 {{ $file->name }}
-                                <small class="u-num">{{ $file->sizeLabel }}</small>
+                                <small class="u-when">{{ $file->sizeLabel }}</small>
                             </a>
                         </li>
                     @endforeach
@@ -206,7 +206,7 @@
                     <div class="row">
                         <x-ui.pill variant="neutral"><span class="u-num">{{ $version->number }}</span></x-ui.pill>
                         <div class="row__m">
-                            <b class="u-num">{{ \App\Support\Dates::dateTime($version->submittedAt) }}</b>
+                            <b class="u-when">{{ \App\Support\Dates::dateTime($version->submittedAt) }}</b>
                             <span>{{ trans_choice('assignments.file_count', $version->fileCount, ['count' => $version->fileCount]) }}</span>
                         </div>
                     </div>

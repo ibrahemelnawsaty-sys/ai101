@@ -39,8 +39,8 @@
                     <div class="row__m">
                         <b>{{ $featured->topic }}</b>
                         <span>
-                            <span class="u-num">{{ \App\Support\Dates::longDate($featured->startsAt) }}</span>
-                            · <span class="u-num">{{ \App\Support\Dates::timeRange12($featured->startsAt, $featured->endsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::longDate($featured->startsAt) }}</span>
+                            · <span class="u-when">{{ \App\Support\Dates::timeRange12($featured->startsAt, $featured->endsAt) }}</span>
                         </span>
                         <span class="row__by">
                             <x-ui.avatar size="sm" :name="$featured->trainerName" />
@@ -131,7 +131,7 @@
                         <div class="row">
                             <div class="row__m">
                                 <b>{{ $session->topic }}</b>
-                                <span class="u-num">{{ \App\Support\Dates::dateTime($session->startsAt) }}</span>
+                                <span class="u-when">{{ \App\Support\Dates::dateTime($session->startsAt) }}</span>
                             </div>
                             <div class="row__e">
                                 <x-ui.pill :variant="$session->statusVariant">{{ $session->statusLabel }}</x-ui.pill>
@@ -171,7 +171,7 @@
                             <div class="row__m">
                                 <b>{{ $recording->topic }}</b>
                                 <span>
-                                    <span class="u-num">{{ \App\Support\Dates::shortDate($recording->startsAt) }}</span>
+                                    <span class="u-when">{{ \App\Support\Dates::shortDate($recording->startsAt) }}</span>
                                     · <span class="u-num">{{ $recording->durationMinutes }}</span> {{ trans_choice('app.minutes', $recording->durationMinutes) }}
                                 </span>
                             </div>

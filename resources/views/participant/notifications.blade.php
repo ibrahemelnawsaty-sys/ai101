@@ -64,7 +64,7 @@
                             <span>{{ $notification->body }}</span>
                         </div>
                         <div class="row__e">
-                            <time class="u-num" datetime="{{ \App\Support\Dates::isoUtc($notification->createdAt) }}">
+                            <time class="u-when" datetime="{{ \App\Support\Dates::isoUtc($notification->createdAt) }}">
                                 {{ \App\Support\Dates::relative($notification->createdAt) }}
                             </time>
                             @unless ($notification->isRead)

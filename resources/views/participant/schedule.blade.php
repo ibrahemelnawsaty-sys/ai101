@@ -78,7 +78,7 @@
                             <div class="wk__t">
                                 <b>{{ $week->title }}</b>
                                 <span>
-                                    <span class="u-num">{{ \App\Support\Dates::shortRange($week->startsOn, $week->endsOn) }}</span>
+                                    <span class="u-when">{{ \App\Support\Dates::shortRange($week->startsOn, $week->endsOn) }}</span>
                                     · {{ trans_choice('schedule.session_count', $week->sessionCount, ['count' => $week->sessionCount]) }}
                                 </span>
                             </div>
@@ -115,7 +115,7 @@
                                             @foreach ($week->sessions as $session)
                                                 <tr class="{{ $session->isNext ? 'is-next' : '' }} {{ $session->isCancelled ? 'is-cancelled' : '' }}">
                                                     <td class="u-nowrap">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
-                                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
+                                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
                                                     <td>{{ $session->title }}</td>
                                                     <td>{{ $session->topic }}</td>
                                                     <td>{{ $session->trainerName ?? __('app.not_assigned') }}</td>
@@ -178,12 +178,12 @@
                             <div class="cal__day {{ $day->isToday ? 'is-today' : '' }}">
                                 <div class="cal__dayhd">
                                     <b>{{ $day->weekdayLabel }}</b>
-                                    <span class="u-num">{{ \App\Support\Dates::shortDate($day->date) }}</span>
+                                    <span class="u-when">{{ \App\Support\Dates::shortDate($day->date) }}</span>
                                 </div>
                                 @forelse ($day->sessions as $session)
                                     <a class="cal__ev cal__ev--{{ $session->type }}"
                                         href="{{ route('schedule', ['session' => $session->id, 'view' => 'calendar']) }}">
-                                        <span class="u-num">{{ \App\Support\Dates::time12($session->startsAt) }}</span>
+                                        <span class="u-when">{{ \App\Support\Dates::time12($session->startsAt) }}</span>
                                         <b>{{ $session->title }}</b>
                                         <span>{{ $session->topic }}</span>
                                         <x-ui.pill :variant="$session->statusVariant" size="sm">{{ $session->statusLabel }}</x-ui.pill>
@@ -200,7 +200,7 @@
                 @if ($selectedSession)
                     <aside class="cal__panel" aria-label="{{ __('schedule.session_details') }}">
                         <h3>{{ $selectedSession->topic }}</h3>
-                        <p class="u-num">{{ \App\Support\Dates::longDate($selectedSession->startsAt) }} · {{ \App\Support\Dates::timeRange12($selectedSession->startsAt, $selectedSession->endsAt) }}</p>
+                        <p class="u-when">{{ \App\Support\Dates::longDate($selectedSession->startsAt) }} · {{ \App\Support\Dates::timeRange12($selectedSession->startsAt, $selectedSession->endsAt) }}</p>
                         <p>{{ $selectedSession->description }}</p>
                         <x-ui.button icon="cal" variant="secondary" size="sm"
                             :href="route('schedule.session.ics', $selectedSession->id)">{{ __('schedule.add_to_calendar') }}</x-ui.button>

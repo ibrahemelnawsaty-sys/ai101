@@ -44,9 +44,9 @@
                 <div class="att__ses">
                     {{ $window->isToday ? __('attendance.todays_session') : __('attendance.next_session') }}
                     <b>{{ $window->sessionTitle }}</b>
-                    <span class="u-num">{{ \App\Support\Dates::longDate($window->startsAt) }}</span>
+                    <span class="u-when">{{ \App\Support\Dates::longDate($window->startsAt) }}</span>
                     ·
-                    <span class="u-num">{{ \App\Support\Dates::timeRange12($window->startsAt, $window->endsAt) }}</span>
+                    <span class="u-when">{{ \App\Support\Dates::timeRange12($window->startsAt, $window->endsAt) }}</span>
                 </div>
 
                 @if ($window->isCancelled)
@@ -223,9 +223,9 @@
                                 @foreach ($records as $record)
                                     <tr>
                                         <td>{{ $record->sessionTitle }}</td>
-                                        <td class="u-num u-nowrap">{{ \App\Support\Dates::shortDate($record->sessionDate) }}</td>
-                                        <td class="u-num">{{ $record->checkedInAt ? \App\Support\Dates::time12($record->checkedInAt) : '—' }}</td>
-                                        <td class="u-num">{{ $record->checkedOutAt ? \App\Support\Dates::time12($record->checkedOutAt) : '—' }}</td>
+                                        <td class="u-when u-nowrap">{{ \App\Support\Dates::shortDate($record->sessionDate) }}</td>
+                                        <td class="u-when">{{ $record->checkedInAt ? \App\Support\Dates::time12($record->checkedInAt) : '—' }}</td>
+                                        <td class="u-when">{{ $record->checkedOutAt ? \App\Support\Dates::time12($record->checkedOutAt) : '—' }}</td>
                                         <td>
                                             <x-ui.pill :variant="$record->statusVariant" :icon="$record->statusIcon">{{ $record->statusLabel }}</x-ui.pill>
                                             @if ($record->isExcused)

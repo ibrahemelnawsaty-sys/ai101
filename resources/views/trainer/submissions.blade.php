@@ -114,7 +114,7 @@
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
-                                    <td class="u-num u-nowrap">
+                                    <td class="u-when u-nowrap">
                                         {{ $row->submittedAt ? \App\Support\Dates::dateTime($row->submittedAt) : '—' }}
                                     </td>
                                     <td>
@@ -139,7 +139,7 @@
                                     </td>
                                     <td>
                                         @if ($row->isGraded)
-                                            <b class="row__score"><span class="u-num">{{ $row->score }}</span><small class="u-num"> / {{ $row->maxScore }}</small></b>
+                                            <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->maxScore }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
@@ -183,13 +183,13 @@
                                         <a href="{{ $file->downloadUrl }}">
                                             <x-ui.icon name="file" />
                                             <span dir="ltr">{{ $file->name }}</span>
-                                            <small class="u-num">{{ $file->sizeLabel }}</small>
+                                            <small class="u-when">{{ $file->sizeLabel }}</small>
                                         </a>
                                     @else
                                         <span>
                                             <x-ui.icon name="file" />
                                             <span dir="ltr">{{ $file->name }}</span>
-                                            <small class="u-num">{{ $file->sizeLabel }}</small>
+                                            <small class="u-when">{{ $file->sizeLabel }}</small>
                                         </span>
                                     @endif
                                 </li>
@@ -206,7 +206,7 @@
                         @endif
                         <p class="footnote">
                             {{ __('assignments.current_submission', ['version' => $selected->version]) }} ·
-                            <span class="u-num">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
                         </p>
                     </div>
 

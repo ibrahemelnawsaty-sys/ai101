@@ -291,7 +291,7 @@
                                 <tr>
                                     <th scope="row">{{ $certificate->holderName }}</th>
                                     <td dir="ltr" class="u-ltr u-num">{{ $certificate->serialNumber }}</td>
-                                    <td class="u-num u-nowrap">{{ \App\Support\Dates::longDate($certificate->issuedAt) }}</td>
+                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::longDate($certificate->issuedAt) }}</td>
                                     <td>
                                         <x-ui.pill :variant="$certificate->statusVariant" :icon="$certificate->statusIcon">{{ $certificate->statusLabel }}</x-ui.pill>
                                     </td>

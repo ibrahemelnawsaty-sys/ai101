@@ -89,14 +89,14 @@
                                         <div class="row__m">
                                             <b>{{ $assignment->title }}</b>
                                             <span>
-                                                <span class="u-num">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</span>
+                                                <span class="u-when">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</span>
                                                 · {{ $assignment->isMandatory ? __('assignments.mandatory') : __('assignments.optional') }}
                                                 · <span class="u-num">{{ $assignment->maxScore }}</span> {{ trans_choice('grades.points', $assignment->maxScore) }}
                                             </span>
                                         </div>
                                         <div class="row__e">
                                             @if ($assignment->isGraded)
-                                                <b class="row__score"><span class="u-num">{{ $assignment->score }}</span><small class="u-num"> / {{ $assignment->maxScore }}</small></b>
+                                                <b class="row__score u-num"><span>{{ $assignment->score }}</span><small> / {{ $assignment->maxScore }}</small></b>
                                             @else
                                                 <x-ui.pill :variant="$assignment->urgencyVariant" :icon="$assignment->urgencyIcon">
                                                     {{ $assignment->remainingLabel }}

@@ -33,7 +33,7 @@
                                     @else
                                         <span dir="ltr">{{ $file->name }}</span>
                                     @endif
-                                    <small class="u-num">{{ $file->sizeLabel }}</small>
+                                    <small class="u-when">{{ $file->sizeLabel }}</small>
                                 </li>
                             @endforeach
                         </ul>

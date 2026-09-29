@@ -173,6 +173,17 @@ outline-offset: var(--s1);
     display: inline-block;
   }
 
+  /* Arabic text with numbers in it — a date, a time, a file size, a count
+     phrase ("23 سبتمبر 2026", "5:00 مساءً", "556.6 كيلوبايت"). Isolated so its
+     neighbours never reorder it, but NOT forced left-to-right: it reads from the
+     right like the sentence around it. Forced left-to-right (.u-num) it read
+     "2026 سبتمبر 23" (D-139). .u-num stays for what is Latin all the way
+     through — a serial, a phone number, a score, a percentage. */
+  .u-when {
+    font-variant-numeric: tabular-nums;
+    unicode-bidi: isolate;
+  }
+
   .u-ltr { direction: ltr; unicode-bidi: isolate; text-align: left; }
   .u-measure { max-inline-size: var(--measure); }
   .u-nowrap { white-space: nowrap; }

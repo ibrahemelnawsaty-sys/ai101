@@ -74,11 +74,11 @@
                     <div class="row__m">
                         <b>{{ $nextSession->title }}</b>
                         <span>
-                            <span class="u-num">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::longDate($nextSession->startsAt) }}</span>
                             ·
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->startsAt) }}</span>
                             —
-                            <span class="u-num">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
+                            <span class="u-when">{{ \App\Support\Dates::time12($nextSession->endsAt) }}</span>
                         </span>
                         <span class="row__by">
                             <x-ui.avatar size="sm" :name="$nextSession->trainerName" />
@@ -127,7 +127,7 @@
             @else
                 <div class="stat">
                     <div>
-                        <div class="stat__n"><span class="u-num">{{ $attendance->ratePercent }}</span><small>%</small></div>
+                        <div class="stat__n u-num"><span>{{ $attendance->ratePercent }}</span><small>%</small></div>
                         <div class="stat__l">{{ trans_choice('attendance.rate.of_total', $attendance->attendedSessions, ['attended' => $attendance->attendedSessions, 'total' => $attendance->totalSessions]) }}</div>
                     </div>
                 </div>
@@ -166,7 +166,7 @@
             @else
                 <div class="stat">
                     <div>
-                        <div class="stat__n"><span class="u-num">{{ $journey->completedSteps }}</span><small> / {{ $journey->totalSteps }}</small></div>
+                        <div class="stat__n u-num"><span>{{ $journey->completedSteps }}</span><small> / {{ $journey->totalSteps }}</small></div>
                         <div class="stat__l">{{ __('journey.progress.completed_steps') }}</div>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
             @else
                 <div class="stat">
                     <div>
-                        <div class="stat__n"><span class="u-num">{{ $gradeSummary->finalScore }}</span><small> / {{ $gradeSummary->grandTotal }}</small></div>
+                        <div class="stat__n u-num"><span>{{ $gradeSummary->finalScore }}</span><small> / {{ $gradeSummary->grandTotal }}</small></div>
                         <div class="stat__l">{{ __('grades.total.recorded_so_far', ['available' => $gradeSummary->recordedMaximum]) }}</div>
                     </div>
                 </div>
@@ -241,7 +241,7 @@
                         <div class="row__m">
                             <b>{{ $item->title }}</b>
                             <span>
-                                <span class="u-num">{{ \App\Support\Dates::dateTime($item->dueAt) }}</span>
+                                <span class="u-when">{{ \App\Support\Dates::dateTime($item->dueAt) }}</span>
                                 · {{ $item->isMandatory ? __('assignments.mandatory') : __('assignments.optional') }}
                                 · <span class="u-num">{{ $item->maxScore }}</span> {{ trans_choice('grades.points', $item->maxScore) }}
                             </span>
@@ -285,7 +285,7 @@
                             <span>{{ __('grades.recorded_on', ['date' => \App\Support\Dates::longDate($grade->recordedAt)]) }}</span>
                         </div>
                         <div class="row__e">
-                            <b class="row__score"><span class="u-num">{{ $grade->score }}</span><small class="u-num"> / {{ $grade->maxScore }}</small></b>
+                            <b class="row__score u-num"><span>{{ $grade->score }}</span><small> / {{ $grade->maxScore }}</small></b>
                         </div>
                     </div>
                 @endforeach

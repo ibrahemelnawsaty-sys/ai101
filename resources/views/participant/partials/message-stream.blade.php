@@ -41,7 +41,7 @@
                 </ul>
             @endif
 
-            <time class="u-num" datetime="{{ \App\Support\Dates::isoUtc($message->sentAt) }}">
+            <time class="u-when" datetime="{{ \App\Support\Dates::isoUtc($message->sentAt) }}">
                 {{ \App\Support\Dates::time12($message->sentAt) }}
             </time>
 

@@ -110,7 +110,7 @@
                         <div class="row">
                             <div class="row__m">
                                 <b>{{ __('certificates.tvtc_ready') }}</b>
-                                <span class="u-num">{{ \App\Support\Dates::longDate($tvtc->issuedAt) }}</span>
+                                <span class="u-when">{{ \App\Support\Dates::longDate($tvtc->issuedAt) }}</span>
                             </div>
                             <div class="row__e">
                                 <x-ui.button variant="primary" size="sm" icon="download"
