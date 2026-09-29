@@ -270,3 +270,20 @@ it('D-124: مراحل تذكرة الدعم الأربع تبلغ 4.5:1 على �
 
     expect($failures)->toBe([]);
 });
+
+it('D-139: «الحكم» على بطاقة الدرجة الكلية — الأبيض على --ln-06 فوق أفتح نقطة في التدرّج يبلغ 4.5:1', function (): void {
+    // The verdict pill sat on the dark grades card with its light-surface tint:
+    // a warm brown on violet, unreadable. On that card it is white on a white
+    // 22% veil; the words and the icon say pass or not yet, colour says nothing.
+    $tokens = tokenHexes();
+    $veil = static function (string $under): string {
+        $over = static fn (int $c, int $u): int => (int) round(0.22 * $c + 0.78 * $u);
+        $rgb = sscanf(ltrim($under, '#'), '%02x%02x%02x');
+
+        return sprintf('#%02x%02x%02x', $over(255, $rgb[0]), $over(255, $rgb[1]), $over(255, $rgb[2]));
+    };
+
+    foreach (['violet-700', 'violet-900'] as $end) {
+        expect(contrastRatio('#FFFFFF', $veil($tokens[$end])))->toBeGreaterThanOrEqual(4.5, $end);
+    }
+});

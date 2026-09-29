@@ -39,7 +39,7 @@
                         </ul>
                     </dd>
                 @elseif ($answer->href)
-                    <dd><a href="{{ $answer->href }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $answer->value }}</a></dd>
+                    <dd><a class="deflist__link" href="{{ $answer->href }}" dir="ltr" target="_blank" rel="noopener nofollow">{{ $answer->value }}</a></dd>
                 @elseif ($answer->isLongText)
                     <dd class="deflist__long">{{ $answer->value }}</dd>
                 @else

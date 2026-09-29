@@ -77,7 +77,9 @@ it('D-139: الدرجة «3.7 / 12» وحدة واحدة معزولة — لا �
         // …a `u-num` number followed by a bare <small> ("/ 12" or "%") is the same
         // pair split in two, whichever way it is written.
         if (preg_match('/<small class="u-num">\s*\/\s*\{\{/', $html) === 1
-            || preg_match('/<span class="u-num"[^>]*>[^<]*<\/span>\s*<small>/', $html) === 1) {
+            || preg_match('/<span class="u-num"[^>]*>[^<]*<\/span>\s*<small>/', $html) === 1
+            // …or two isolated numbers with a bare slash between them.
+            || preg_match('/<\/span>\s*\/\s*<span class="u-num"/', $html) === 1) {
             $offenders[] = viewName($file);
         }
     }

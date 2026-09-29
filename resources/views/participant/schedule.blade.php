@@ -86,7 +86,7 @@
                                 <x-ui.pill variant="live">{{ __('schedule.current_week') }}</x-ui.pill>
                             @else
                                 <x-ui.pill :variant="$week->attendanceVariant" :icon="$week->attendanceIcon">
-                                    <span class="u-num">{{ $week->attendedCount }}</span>/<span class="u-num">{{ $week->sessionCount }}</span>
+                                    <span class="u-num">{{ $week->attendedCount }}/{{ $week->sessionCount }}</span>
                                     {{ __('attendance.short_label') }}
                                 </x-ui.pill>
                             @endif
@@ -99,27 +99,27 @@
                                     :description="$isFiltered ? __('schedule.week_no_match_body') : __('schedule.week_empty_body')" />
                             @else
                                 <div class="tscroll">
-                                    <table class="atable">
+                                    <table class="atable atable--stack" role="table">
                                         <caption class="sr">{{ __('schedule.table_caption', ['week' => $week->title]) }}</caption>
-                                        <thead>
+                                        <thead role="rowgroup">
                                             <tr>
-                                                <th scope="col">{{ __('schedule.col_date') }}</th>
-                                                <th scope="col">{{ __('schedule.col_time') }}</th>
-                                                <th scope="col">{{ __('schedule.col_title') }}</th>
-                                                <th scope="col">{{ __('schedule.col_topic') }}</th>
-                                                <th scope="col">{{ __('schedule.col_trainer') }}</th>
-                                                <th scope="col">{{ __('schedule.col_status') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_date') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_time') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_title') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_topic') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_trainer') }}</th>
+                                                <th scope="col" role="columnheader">{{ __('schedule.col_status') }}</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody role="rowgroup">
                                             @foreach ($week->sessions as $session)
-                                                <tr class="{{ $session->isNext ? 'is-next' : '' }} {{ $session->isCancelled ? 'is-cancelled' : '' }}">
-                                                    <td class="u-nowrap">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
-                                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
-                                                    <td>{{ $session->title }}</td>
-                                                    <td>{{ $session->topic }}</td>
-                                                    <td>{{ $session->trainerName ?? __('app.not_assigned') }}</td>
-                                                    <td>
+                                                <tr role="row" class="{{ $session->isNext ? 'is-next' : '' }} {{ $session->isCancelled ? 'is-cancelled' : '' }}">
+                                                    <td role="cell" data-label="{{ __('schedule.col_date') }}" class="u-nowrap">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
+                                                    <td role="cell" data-label="{{ __('schedule.col_time') }}" class="u-when u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
+                                                    <td role="cell" class="atable__lead">{{ $session->title }}</td>
+                                                    <td role="cell" data-label="{{ __('schedule.col_topic') }}">{{ $session->topic }}</td>
+                                                    <td role="cell" data-label="{{ __('schedule.col_trainer') }}">{{ $session->trainerName ?? __('app.not_assigned') }}</td>
+                                                    <td role="cell" data-label="{{ __('schedule.col_status') }}">
                                                         @if ($session->isNext && ! $session->isCancelled)
                                                             <x-ui.pill variant="primary" icon="clock">
                                                                 <x-ui.countdown :until="$session->startsAt" :server-now="$serverNow"
@@ -131,8 +131,8 @@
                                                     </td>
                                                 </tr>
                                                 @if ($session->isCancelled)
-                                                    <tr class="atable__note">
-                                                        <td colspan="6">
+                                                    <tr role="row" class="atable__note">
+                                                        <td role="cell" colspan="6">
                                                             {{ __('schedule.cancelled_reason', ['reason' => $session->cancellationReason]) }}
                                                             @if ($session->replacementStartsAt)
                                                                 · {{ __('schedule.replacement_at', ['when' => \App\Support\Dates::dateTime($session->replacementStartsAt)]) }}

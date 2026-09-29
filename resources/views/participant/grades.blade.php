@@ -37,9 +37,13 @@
                     </div>
                     <div class="gtotal__split">
                         {{ __('grades.assignments_part') }} ·
-                        <b><span class="u-num">{{ $total->assignmentsScore }}</span> / <span class="u-num">{{ $total->assignmentsTotal }}</span></b><br>
+                        <b class="u-num">{{ $total->assignmentsScore }} / {{ $total->assignmentsTotal }}</b><br>
                         {{ __('grades.project_part') }} ·
-                        <b>{{ $total->projectGraded ? $total->projectScore . ' / ' . $total->projectTotal : __('grades.project_not_graded') }}</b>
+                        @if ($total->projectGraded)
+                            <b class="u-num">{{ $total->projectScore }} / {{ $total->projectTotal }}</b>
+                        @else
+                            <b>{{ __('grades.project_not_graded') }}</b>
+                        @endif
                     </div>
                 </div>
 

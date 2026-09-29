@@ -197,8 +197,8 @@ border: var(--bw-hairline) solid var(--border-1);
   padding: var(--s3) var(--s4);
   transition: border-color var(--t-base), box-shadow var(--t-base);
 }
-.jn__b b { font-size: var(--fs-sm); color: var(--text-strong); display: block; }
-.jn__b span { font-size: var(--fs-xs); color: var(--text-muted); }
+.jn__b > b { font-size: var(--fs-sm); color: var(--text-strong); display: block; }
+.jn__b > span { font-size: var(--fs-xs); color: var(--text-muted); }
 .jn__i.is-done .jn__d { background: var(--teal-500); border-color: var(--teal-500); }
 /* 7.35. White on --teal-500 measures 2.86 — the exact pairing CLAUDE.md
    names by hand as failing. The violet dot below keeps white at 8.6. */
@@ -214,8 +214,8 @@ border: var(--bw-hairline) solid var(--border-1);
 .jn__i.is-lock b,
 .jn__i.is-lock span { color: var(--text-faint); }
 .jn__x { margin-block-start: var(--s3); padding-block-start: var(--s3); border-block-start: var(--bw-hairline) solid var(--border-1); display: grid; gap: var(--s2); }
-.jn__day { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-xs); color: var(--text-muted); }
-.jn__day b { font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-strong); }
+.jn__day { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); font-size: var(--fs-xs); color: var(--text-muted); }
+.jn__day b { font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-strong); white-space: nowrap; }
 .jn__act { margin-block-start: var(--s3); }
 .jn__more { margin-block-start: var(--s3); font-size: var(--fs-xs); color: var(--text-accent); }
 
@@ -309,6 +309,7 @@ min-block-size: var(--s15);
   font-weight: var(--fw-bold);
   color: var(--text-strong);
 }
+.arate__cap { margin: var(--s2) 0 0; text-align: center; font-size: var(--fs-sm); color: var(--text-muted); }
 .attsum { display: grid; gap: var(--s4); grid-template-columns: 1fr; align-items: center; }
 @media (min-width: 760px) { .attsum { grid-template-columns: 160px 1fr; } }
 
@@ -420,6 +421,10 @@ min-block-size: var(--s6);
 .gtotal__ft { margin-block-start: var(--s4); font-size: var(--fs-xs); color: var(--dk-tint-2); }
 .gtotal__verdict { display: inline-flex; align-items: center; gap: var(--s2); font-weight: var(--fw-semi); }
 .gtotal .bar { margin-block-start: var(--s4); background: var(--ln-05); }
+/* The verdict pill keeps its light-surface tint everywhere else; on this dark
+   card that tint is a brown on violet nobody can read. White on a white veil
+   here — the icon and the words say pass or not yet (D-139). */
+.gtotal .ui-pill { background: var(--ln-06); color: var(--white); }
 
 .gweek { margin-block-start: var(--s6); }
 .gweek__t { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text-muted); margin-block-end: var(--s3); }
@@ -437,8 +442,9 @@ min-block-size: var(--s6);
    once, for every note on the platform. */
 .note {
   display: flex;
-  align-items: flex-start;
-  gap: var(--s3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s1);
   margin-block-start: var(--s3);
   padding: var(--s3) var(--s4);
   border-radius: var(--r-md);
@@ -449,6 +455,10 @@ border-inline-start: var(--bw-marker) solid var(--violet-300);
   line-height: var(--lh-body);
   box-shadow: var(--sh-sm);
 }
+/* A note that leads with an icon is a row (icon | text); one without is a
+   column — its heading, paragraph and date used to stand side by side and
+   squeeze the text into a strip one word wide (D-139). */
+.note:has(> svg) { flex-direction: row; align-items: flex-start; gap: var(--s3); }
 .note > svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; color: var(--text-accent); }
 .note > p,
 .note > div { flex: 1; min-inline-size: 0; }
@@ -604,7 +614,13 @@ border: var(--bw-hairline) solid var(--border-1);
 .row--plain { border-block-end: 0; }
 .row--sk { pointer-events: none; }
 .row__acts { flex: none; display: flex; gap: var(--s2); align-items: center; }
-.row__by { font-size: var(--fs-xs); color: var(--text-faint); }
+/* A row's time ("قبل 21 ساعة") is a note about the row, not the row: it took the
+   page's 16px and read louder than the notification's own title (D-139). */
+.row__e > time { font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
+/* The trainer under a session's date: its own line, name kept whole beside the
+   avatar — it used to run on from the date and break between first and last
+   name at 390px (D-139). */
+.row__by { display: flex; align-items: center; gap: var(--s2); margin-block-start: var(--s2); font-size: var(--fs-xs); color: var(--text-faint); }
 .row__ltr { direction: ltr; unicode-bidi: isolate; text-align: left; }
 /* A verification URL is one unbroken 64-character token, so it has nowhere to
    wrap on its own: without `anywhere` it either overflows the card or gets cut
@@ -1035,6 +1051,19 @@ block-size: var(--s19);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+@media (max-width: 699px) {
+  /* appbar title — beside the burger, the bell, the messages and the account the
+     heading has little room: «المحاضرات المباشرة» was cut to «المحاضرات المب…».
+     On a phone it may take a second line; the sub-line, which only describes,
+     keeps to one (D-139). */
+  .appbar__t h1 { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+  .appbar__t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* A link a person handed in (a working project, a repository) is pressed with a
+   thumb: a full 44px target, not the 21px of a line of text (D-139). */
+.deflist__link { display: inline-flex; align-items: center; min-block-size: var(--touch); overflow-wrap: anywhere; }
 
 /* The burger exists only while the rail is hidden. */
 /* The burger opens the mobile drawer, and below 1024px that drawer is the ONLY
@@ -1836,3 +1865,74 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .emed__frame { position: absolute; inset-block-start: 0; inset-inline-start: 0; border: 0; background: var(--white); border-radius: var(--r-md); transform-origin: top left; }
 [dir='rtl'] .emed__frame { transform-origin: top right; }
 .emed__wait { inline-size: 100%; block-size: var(--d-6); border-radius: var(--r-md); }
+
+/* The notification-preferences table: the event is the row heading and the
+   channel is the column heading, so the switch's own long sentence ("… عبر داخل
+   المنصة") only repeated both. It stays for the screen reader; the switch gets a
+   full 44px to press (D-139). */
+.atable--prefs .ui-check__title {
+  position: absolute;
+  inline-size: var(--s1);
+  block-size: var(--s1);
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.atable--prefs .ui-switch { min-block-size: var(--touch); }
+
+@media (max-width: 699px) {
+  /* atable--stack — a table that becomes a stack of cards on a phone (D-139).
+     Six columns of schedule do not fit 390px: they scrolled sideways inside their
+     box and hid the status. Here each ROW is a card and each cell carries its own
+     column's name (`data-label`, printed by the page, not by the stylesheet).
+     The header row stays for assistive technology and leaves the screen. */
+  .atable--stack thead {
+    position: absolute;
+    inline-size: var(--s1);
+    block-size: var(--s1);
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .atable--stack,
+  .atable--stack tbody,
+  .atable--stack tr,
+  .atable--stack th[scope="row"],
+  .atable--stack td { display: block; }
+  .atable--stack tbody tr {
+    margin-block-end: var(--s3);
+    padding: var(--s2) var(--s4);
+    border: var(--bw-hairline) solid var(--border-1);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+  }
+  .atable--stack tbody tr:hover { background: var(--surface-1); }
+  .atable--stack th[scope="row"],
+  .atable--stack .atable__lead {
+    padding: var(--s2) 0;
+    font-weight: var(--fw-semi);
+    color: var(--text-strong);
+    border-block-end: var(--bw-hairline) solid var(--n-200);
+  }
+  .atable--stack td {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s1) var(--s3);
+    padding: var(--s2) 0;
+    border-block-end: var(--bw-hairline) solid var(--n-200);
+  }
+  .atable--stack td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+  }
+  .atable--stack td:not([data-label])::before { content: none; }
+  /* An empty actions cell prints a dash on a wide table; a card has no use for it. */
+  .atable--stack .atable__none { display: none; }
+  .atable--stack td:not([data-label]):has(> .atable__none:only-child) { display: none; }
+  .atable--stack td:last-child,
+  .atable--stack .atable__lead + td:last-child { border-block-end: 0; }
+  .atable--stack tr.atable__note { padding-block: var(--s2); background: transparent; border-style: dashed; }
+  .atable--stack tr.atable__note td { display: block; padding: 0; border: 0; }
+}

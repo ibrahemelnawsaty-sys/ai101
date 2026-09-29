@@ -172,26 +172,26 @@
                         @csrf
                         @method('PUT')
                         <div class="tscroll">
-                            <table class="atable">
+                            <table class="atable atable--stack atable--prefs" role="table">
                                 <caption class="sr">{{ __('notifications.preferences_title') }}</caption>
-                                <thead>
+                                <thead role="rowgroup">
                                     <tr>
-                                        <th scope="col">{{ __('notifications.event') }}</th>
-                                        <th scope="col">{{ __('notifications.channel_platform') }}</th>
-                                        <th scope="col">{{ __('notifications.channel_email') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('notifications.event') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('notifications.channel_platform') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('notifications.channel_email') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody role="rowgroup">
                                     @foreach ($preferences as $preference)
-                                        <tr>
-                                            <th scope="row">{{ $preference->label }}</th>
-                                            <td>
+                                        <tr role="row">
+                                            <th scope="row" role="rowheader">{{ $preference->label }}</th>
+                                            <td role="cell" data-label="{{ __('notifications.channel_platform') }}">
                                                 <x-ui.toggle name="prefs[{{ $preference->key }}][platform]"
                                                     :checked="$preference->platform"
                                                     :disabled="$isImpersonating || ! $preference->platformEditable"
                                                     :label="__('notifications.toggle_aria', ['event' => $preference->label, 'channel' => __('notifications.channel_platform')])" />
                                             </td>
-                                            <td>
+                                            <td role="cell" data-label="{{ __('notifications.channel_email') }}">
                                                 <x-ui.toggle name="prefs[{{ $preference->key }}][email]"
                                                     :checked="$preference->email"
                                                     :disabled="$isImpersonating || ! $preference->emailEditable"

@@ -144,9 +144,10 @@
                         </svg>
                         <div class="arate__v">
                             <b class="u-num">{{ $summary->ratePercent }}%</b>
-                            <span>{{ __('attendance.rate.label') }}</span>
                         </div>
                     </div>
+                    {{-- The ring is 120px: the number fits in it, the words do not (D-139). --}}
+                    <p class="arate__cap">{{ __('attendance.rate.label') }}</p>
 
                     <dl class="attsum">
                         <div><dt>{{ __('attendance.summary.total') }}</dt><dd class="u-num">{{ $summary->totalSessions }}</dd></div>
@@ -206,34 +207,34 @@
                         :action-href="$isFiltered ? route('attendance.index') : null" />
                 @else
                     <div class="tscroll">
-                        <table class="atable">
+                        <table class="atable atable--stack" role="table">
                             <caption class="sr">{{ __('attendance.log.title') }}</caption>
-                            <thead>
+                            <thead role="rowgroup">
                                 <tr>
-                                    <th scope="col">{{ __('attendance.col_session') }}</th>
-                                    <th scope="col">{{ __('attendance.col_date') }}</th>
-                                    <th scope="col">{{ __('attendance.col_check_in') }}</th>
-                                    <th scope="col">{{ __('attendance.col_check_out') }}</th>
-                                    <th scope="col">{{ __('attendance.col_status') }}</th>
-                                    <th scope="col">{{ __('attendance.col_note') }}</th>
-                                    <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_session') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_date') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_check_in') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_check_out') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_status') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('attendance.col_note') }}</th>
+                                    <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody role="rowgroup">
                                 @foreach ($records as $record)
-                                    <tr>
-                                        <td>{{ $record->sessionTitle }}</td>
-                                        <td class="u-when u-nowrap">{{ \App\Support\Dates::shortDate($record->sessionDate) }}</td>
-                                        <td class="u-when">{{ $record->checkedInAt ? \App\Support\Dates::time12($record->checkedInAt) : '—' }}</td>
-                                        <td class="u-when">{{ $record->checkedOutAt ? \App\Support\Dates::time12($record->checkedOutAt) : '—' }}</td>
-                                        <td>
+                                    <tr role="row">
+                                        <td role="cell" class="atable__lead">{{ $record->sessionTitle }}</td>
+                                        <td role="cell" data-label="{{ __('attendance.col_date') }}" class="u-when u-nowrap">{{ \App\Support\Dates::shortDate($record->sessionDate) }}</td>
+                                        <td role="cell" data-label="{{ __('attendance.col_check_in') }}" class="u-when">{{ $record->checkedInAt ? \App\Support\Dates::time12($record->checkedInAt) : '—' }}</td>
+                                        <td role="cell" data-label="{{ __('attendance.col_check_out') }}" class="u-when">{{ $record->checkedOutAt ? \App\Support\Dates::time12($record->checkedOutAt) : '—' }}</td>
+                                        <td role="cell" data-label="{{ __('attendance.col_status') }}">
                                             <x-ui.pill :variant="$record->statusVariant" :icon="$record->statusIcon">{{ $record->statusLabel }}</x-ui.pill>
                                             @if ($record->isExcused)
                                                 <x-ui.pill variant="info" icon="check">{{ __('enums.attendance_status.excused') }}</x-ui.pill>
                                             @endif
                                         </td>
-                                        <td>{{ $record->note ?? '—' }}</td>
-                                        <td>
+                                        <td role="cell" data-label="{{ __('attendance.col_note') }}">{{ $record->note ?? '—' }}</td>
+                                        <td role="cell">
                                             {{-- D-106: at most one of these three states applies to a row. --}}
                                             @if ($record->exceptionPending)
                                                 <span class="hint">{{ __('attendance.exception.pending_note') }}</span>
@@ -267,7 +268,7 @@
                                                     </form>
                                                 </div>
                                             @else
-                                                —
+                                                <span class="atable__none" aria-hidden="true">—</span>
                                             @endif
                                         </td>
                                     </tr>
