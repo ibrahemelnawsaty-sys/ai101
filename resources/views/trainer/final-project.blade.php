@@ -192,9 +192,20 @@
                         </p>
                     </div>
 
-                    <form method="POST" action="{{ route('trainer.finalProject.grade', $selected->id) }}"
+                    {{-- Recording and amending are different endpoints (BR-14): an
+                         amendment addresses the EVALUATION, carries a written reason,
+                         and is audited. This panel used to post an already-marked
+                         project to the record endpoint, which refuses a second mark —
+                         so a wrong project mark could never be corrected here. --}}
+                    <form method="POST"
+                        action="{{ $selected->isRevision
+                            ? route('trainer.submissions.revise', $selected->evaluationId)
+                            : route('trainer.finalProject.grade', $selected->id) }}"
                         x-data="{ feedback: @js(old('feedback', $selected->feedback ?? '')) }">
                         @csrf
+                        @if ($selected->isRevision)
+                            @method('PATCH')
+                        @endif
 
                         @if ($selected->isGraded)
                             <div class="note note--warn">
@@ -223,8 +234,18 @@
                             <span x-show="feedback.trim().length >= 10" x-cloak>{{ __('grades.feedback_ok') }}</span>
                         </p>
 
+                        @if ($selected->isGraded)
+                            {{-- BR-14: revising a recorded score requires a written reason. --}}
+                            <x-ui.textarea name="revision_reason" rows="2" required minlength="10"
+                                :label="__('grades.revision_reason')"
+                                :hint="__('grades.revision_reason_hint')"
+                                :value="old('revision_reason')" />
+                        @endif
+
                         <div class="row__acts">
                             <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('trainer.grading.record') }}</x-ui.button>
+                            <x-ui.button variant="secondary" size="sm" type="submit"
+                                name="next" value="1">{{ __('trainer.grading.record_and_next') }}</x-ui.button>
                             <x-ui.button variant="ghost" size="sm"
                                 :href="route('trainer.finalProject')">{{ __('app.cancel') }}</x-ui.button>
                         </div>

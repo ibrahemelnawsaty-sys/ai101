@@ -281,6 +281,7 @@ return [
         'feedback_placeholder' => 'Say what went well, what needs work, and one practical step for next time',
         'record' => 'Record the score',
         'record_and_next' => 'Save and go to the next',
+        'queue_done' => 'That was the last hand-in waiting for a mark here.',
         'revising_title' => 'You are revising a recorded score',
         'revising_body' => 'Write why. The reason is written to the audit log, and the participant is notified of the new score.',
         'totals_warning_title' => 'Assignment maxima do not add up',

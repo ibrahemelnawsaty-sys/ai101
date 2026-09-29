@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Trainer;
 
+use App\Http\Controllers\Concerns\OpensNextHandIn;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreProjectEvaluationRequest;
@@ -12,6 +13,7 @@ use App\Models\ProjectSubmission;
 use App\Presenters\Trainer\FinalProjectBrief;
 use App\Presenters\Trainer\ProjectSubmissionRow;
 use App\Services\Grading\EvaluationRecorder;
+use App\Services\Grading\GradingQueue;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,13 +34,17 @@ use Illuminate\Support\Collection;
  * The screen is handed presenters, never models: it reads `$project->isUnlocked`
  * and `$row->stateVariant`, and both are decisions taken here (art. 5).
  *
- * @see BR-12, BR-13, BR-15, BR-16, BR-23 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 6
+ * @see BR-12, BR-13, BR-14, BR-15, BR-16, BR-23 · FR-ASGN-29, FR-GRADE-15 · PRD §9.14, §9.15 · CONSTITUTION art. 5, art. 6 · D-136
  */
 final class FinalProjectController extends Controller
 {
+    use OpensNextHandIn;
     use ReadsCohortScope;
 
-    public function __construct(private readonly EvaluationRecorder $evaluations) {}
+    public function __construct(
+        private readonly EvaluationRecorder $evaluations,
+        private readonly GradingQueue $queue,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -126,6 +132,10 @@ final class FinalProjectController extends Controller
             (string) $request->validated('feedback'),
         );
 
-        return back()->with('status', __('grades.recorded'));
+        // «Save and go to the next» (FR-ASGN-29, D-136): the flag only chooses
+        // where the trainer lands; the mark above is already recorded.
+        return $request->wantsNext()
+            ? $this->projectAfter($submission, (string) __('grades.recorded'))
+            : back()->with('status', __('grades.recorded'));
     }
 }

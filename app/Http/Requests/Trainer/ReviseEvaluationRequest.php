@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Trainer;
 
 use App\Enums\EvaluationEntity;
+use App\Http\Requests\Trainer\Concerns\AsksForNext;
 use App\Models\Assignment;
 use App\Models\Evaluation;
 use App\Models\FinalProject;
@@ -25,6 +26,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 final class ReviseEvaluationRequest extends FormRequest
 {
+    use AsksForNext;
+
     public const MIN_FEEDBACK_LENGTH = 10;
 
     public const MIN_REASON_LENGTH = 10;
@@ -59,7 +62,7 @@ final class ReviseEvaluationRequest extends FormRequest
             'score' => ['required', 'numeric', 'min:0', 'max:'.$this->maxScore(), 'decimal:0,2'],
             'feedback' => ['required', 'string', 'min:'.self::MIN_FEEDBACK_LENGTH, 'max:10000'],
             'revision_reason' => ['required', 'string', 'min:'.self::MIN_REASON_LENGTH, 'max:1000'],
-        ];
+        ] + $this->nextRules();
     }
 
     /**

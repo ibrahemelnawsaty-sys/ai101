@@ -219,8 +219,8 @@
                          discarded and the old mark untouched (D-65). --}}
                     <form method="POST"
                         action="{{ $selected->isRevision
-                            ? route('trainer.submissions.revise', $selected->evaluationId)
-                            : route('trainer.submissions.grade', $selected->id) }}"
+                            ? route('trainer.submissions.revise', ['evaluation' => $selected->evaluationId] + $carriedQuery)
+                            : route('trainer.submissions.grade', ['submission' => $selected->id] + $carriedQuery) }}"
                         x-data="{ feedback: @js(old('feedback', $selected->feedback ?? '')) }">
                         @csrf
                         @if ($selected->isRevision)

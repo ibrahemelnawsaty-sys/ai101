@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Trainer;
 
+use App\Http\Requests\Trainer\Concerns\AsksForNext;
 use App\Models\ProjectSubmission;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,6 +19,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 final class StoreProjectEvaluationRequest extends FormRequest
 {
+    use AsksForNext;
+
     public const MIN_FEEDBACK_LENGTH = 10;
 
     public function authorize(): bool
@@ -47,7 +50,7 @@ final class StoreProjectEvaluationRequest extends FormRequest
         return [
             'score' => ['required', 'numeric', 'min:0', 'max:'.$this->maxScore(), 'decimal:0,2'],
             'feedback' => ['required', 'string', 'min:'.self::MIN_FEEDBACK_LENGTH, 'max:10000'],
-        ];
+        ] + $this->nextRules();
     }
 
     /**

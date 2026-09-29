@@ -58,6 +58,11 @@ final class ProjectSubmissionRow extends ViewModel
             'isLate' => (bool) $submission->getAttribute('is_late'),
 
             'isGraded' => $isGraded,
+            // BR-14 amends an EVALUATION, so the panel needs its id to address
+            // the amendment endpoint at all; the decision of which endpoint the
+            // form posts to is taken here, not in the template (art. 13).
+            'evaluationId' => $evaluation === null ? null : (string) $evaluation->getKey(),
+            'isRevision' => $isGraded && $evaluation !== null,
             'score' => $isGraded ? self::score((float) $rawScore) : null,
             'feedback' => self::stringOrNull(self::attr($evaluation, 'feedback')),
             'gradedAt' => self::attr($evaluation, 'evaluated_at'),

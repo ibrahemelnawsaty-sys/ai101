@@ -10,6 +10,7 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\SubmissionStatus;
 use App\Events\AssignmentReminderRequested;
 use App\Http\Controllers\Concerns\ExportsCsv;
+use App\Http\Controllers\Concerns\OpensNextHandIn;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\RemindAssignmentRequest;
@@ -29,6 +30,7 @@ use App\Presenters\Trainer\SubmissionRow;
 use App\Presenters\Trainer\SubmissionStats;
 use App\Services\Audit\AuditLogger;
 use App\Services\Grading\EvaluationRecorder;
+use App\Services\Grading\GradingQueue;
 use App\Services\Grading\ScoreCalculator;
 use App\Services\Mail\CohortAudience;
 use App\Services\Notifications\InAppNotifier;
@@ -61,11 +63,12 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * reads `$row->stateVariant` and `$selected->maxScore`, and both are decisions
  * about how the number looks, taken here on the server (art. 5, art. 6).
  *
- * @see BR-11, BR-12, BR-13, BR-14, BR-19, BR-22, BR-23, FR-ASGN-30 · PRD §9.11.3, §9.15 · CONSTITUTION art. 5, art. 6
+ * @see BR-11, BR-12, BR-13, BR-14, BR-19, BR-22, BR-23, FR-ASGN-29, FR-ASGN-30, FR-GRADE-15 · PRD §9.11.3, §9.15 · CONSTITUTION art. 5, art. 6 · D-136
  */
 final class SubmissionController extends Controller
 {
     use ExportsCsv;
+    use OpensNextHandIn;
     use ReadsCohortScope;
 
     private const PER_PAGE = 50;
@@ -91,6 +94,7 @@ final class SubmissionController extends Controller
         private readonly CohortAudience $audience,
         private readonly InAppNotifier $notifier,
         private readonly PrivateFileService $files,
+        private readonly GradingQueue $queue,
     ) {}
 
     public function index(Request $request): View
@@ -112,6 +116,7 @@ final class SubmissionController extends Controller
                 'bulkDownloadHref' => null,
                 'remindAssignmentId' => null,
                 'selectedParam' => self::SELECTED_PARAM,
+                'carriedQuery' => [],
             ]);
         }
 
@@ -151,6 +156,7 @@ final class SubmissionController extends Controller
             'bulkDownloadHref' => $this->bulkDownloadHref($request, $assignments->modelKeys()),
             'remindAssignmentId' => $this->remindAssignmentId($request, $assignments, $cohort),
             'selectedParam' => self::SELECTED_PARAM,
+            'carriedQuery' => $this->carriedQuery($request),
         ]);
     }
 
@@ -332,6 +338,29 @@ final class SubmissionController extends Controller
         );
     }
 
+    /**
+     * What the grading form posts back with, as the query of its own URL: the
+     * cohort and the board filters the trainer is looking at, as plain
+     * strings. «Save and go to the next» reads them to land on the same view;
+     * a value that is not on the list is never carried (art. 22).
+     *
+     * @return array<string, string>
+     */
+    private function carriedQuery(Request $request): array
+    {
+        $carried = [];
+
+        foreach (['cohort', 'assignment', 'status', 'q'] as $key) {
+            $value = $request->query($key);
+
+            if (is_string($value) && $value !== '') {
+                $carried[$key] = $value;
+            }
+        }
+
+        return $carried;
+    }
+
     /** BR-12, BR-13 — record a grade against one submission. */
     public function grade(StoreEvaluationRequest $request, Submission $submission): RedirectResponse
     {
@@ -345,7 +374,11 @@ final class SubmissionController extends Controller
             (string) $request->validated('feedback'),
         );
 
-        return back()->with('status', __('grades.recorded'));
+        // «Save and go to the next» (FR-ASGN-29, D-136): the flag only chooses
+        // where the trainer lands; the mark above is already recorded.
+        return $request->wantsNext()
+            ? $this->boardAfter($request, $submission, (string) __('grades.recorded'))
+            : back()->with('status', __('grades.recorded'));
     }
 
     /** BR-14 — amend a recorded grade, with a reason, audited and notified. */
@@ -362,7 +395,9 @@ final class SubmissionController extends Controller
             (string) $request->validated('revision_reason'),
         );
 
-        return back()->with('status', __('grades.revised'));
+        return $request->wantsNext()
+            ? $this->nextAfterRevision($request, $evaluation, (string) __('grades.revised'))
+            : back()->with('status', __('grades.revised'));
     }
 
     /**
