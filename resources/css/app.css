@@ -508,7 +508,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     font-size: var(--fs-2xs);
     font-weight: var(--fw-bold);
     letter-spacing: 0.1em;
-    color: var(--text-faint);
+    /* D-127 — a heading a screen reader now names the group by, and every trainee now
+       sees: the faint grey (n-400) is 2.78:1 on white and decorative only; muted is 6.8. */
+    color: var(--text-muted);
     padding: 0 var(--s3) var(--s2);
   }
   .side__b {
@@ -526,6 +528,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     transition: background var(--t-fast), color var(--t-fast);
   }
   .side__b:hover { background: var(--surface-2); color: var(--text-strong); }
+  .side__b[aria-current="true"],
   .side__b[aria-current="page"] {
     background: var(--violet-100);
     color: var(--violet-700);
@@ -533,6 +536,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   }
   /* Active marker on the RIGHT edge (PRD §9.5.1) = inline-START in RTL. It was
      written as inline-end and a browser measured it at left:-8px. */
+  .side__b[aria-current="true"]::before,
   .side__b[aria-current="page"]::before {
     content: "";
     position: absolute;
@@ -1752,6 +1756,7 @@ border: var(--bw-hairline) solid var(--border-2);
    ========================================================================== */
 @media (forced-colors: active) {
   .btn, .card, .dc, .inp, .side__b { border: var(--bw-hairline) solid ButtonBorder; }
+  .side__b[aria-current="true"],
   .side__b[aria-current="page"] { forced-color-adjust: none; }
 }
 

@@ -16,7 +16,7 @@ return [
     'roles_title' => 'Roles',
     'scope_label' => 'Reach',
     'matrix_title' => 'Permission matrix',
-    'matrix_intro' => '"Yes" means the role reaches this screen or action. What it sees there is set by the reach written on its card, and the server decides on every request; this page explains, it is not the source of a permission.',
+    'matrix_intro' => '"Yes" means the role reaches this screen or action. What it sees there is set by the reach written on its card, and the server decides on every request; this page explains, it is not the source of a permission. The columns are the role on the account: someone who is a trainer in one cohort and a trainee in another holds both roles\' abilities, each in its own cohort.',
 
     'matrix' => [
         'capability' => 'Permission',
@@ -56,6 +56,11 @@ return [
         'contact' => 'Contact and support',
     ],
 
+    'notes' => [
+        'grade_submissions' => 'A supervisor seated as a cohort\'s trainer records them too, in that cohort only.',
+        'revise_grades' => 'A supervisor seated as a cohort\'s trainer revises them too, in that cohort only.',
+    ],
+
     'capabilities' => [
         'view_schedule' => 'Reading the session schedule',
         'live_sessions' => 'Live sessions',
@@ -84,7 +89,7 @@ return [
         'registrations' => 'Registration requests',
         'certificates_screen' => 'The certificates screen',
         'final_project_settings' => 'Final-project settings and opening it',
-        'broadcasts' => 'Writing to and reminding trainees',
+        'broadcasts' => 'Bulk messages to trainees',
         'platform_reports' => 'Platform reports',
         'audit_log' => 'The audit log',
         'manage_accounts' => 'Accounts: create, edit and suspend',
@@ -96,7 +101,7 @@ return [
         'internal_messaging' => 'Internal messaging',
         'support_area' => 'Technical support: the ticket list',
         'open_ticket' => 'Opening a technical-support ticket',
-        'handle_tickets' => 'Handling technical-support tickets',
+        'handle_tickets' => 'Finishing the handling of a technical-support ticket',
     ],
 
     'change' => [

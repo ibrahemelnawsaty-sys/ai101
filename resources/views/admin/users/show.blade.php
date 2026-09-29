@@ -115,11 +115,12 @@
                  submits this form. The server is unchanged: the reason is still required
                  (FormRequest), the change still audited, the last supervisor still kept
                  (BR-32). Without scripting the plain submit below is what is shown. --}}
-            <div x-data="{ current: @js($user->role), chosen: @js($user->role), meanings: @js($roleMeanings, JSON_UNESCAPED_UNICODE) }">
+            <div x-data="{ current: @js($user->role), chosen: @js($user->role), unchanged: false, meanings: @js($roleMeanings, JSON_UNESCAPED_UNICODE) }">
             <form method="POST" action="{{ route('admin.users.role', $user->id) }}" id="role-change-form" x-ref="roleForm">
                 @csrf
                 @method('PUT')
 
+                <p class="hint"><a href="{{ route('admin.roles.index') }}">{{ __('roles.title') }}</a></p>
                 <x-ui.select name="role" required :label="__('admin.users.actions.change_role')"
                     :options="$roleOptions" :value="old('role', $user->role)"
                     :disabled="! $user->canChangeRole" />
@@ -135,17 +136,22 @@
                             :disabled="! $user->canChangeRole">{{ __('app.save_changes') }}</x-ui.button>
                     </noscript>
                     {{-- Checks the form is complete first (the reason is required), reads the
-                         chosen role, and only asks when the role really changes. --}}
+                         chosen role, and only asks when the role really changes; when it did
+                         not, it says so and sends nothing. --}}
                     <x-ui.button x-cloak icon="check" variant="primary" size="sm" type="button"
                         :disabled="! $user->canChangeRole"
-                        x-on:click="if (! $refs.roleForm.reportValidity()) return; chosen = $refs.roleForm.elements['role'].value; if (chosen === current) { $refs.roleForm.requestSubmit(); return; } $dispatch('ui-dialog-open', 'change-role')">{{ __('app.save_changes') }}</x-ui.button>
+                        x-on:click="if (! $refs.roleForm.reportValidity()) return; chosen = $refs.roleForm.elements['role'].value; unchanged = (chosen === current); if (unchanged) return; $dispatch('ui-dialog-open', 'change-role')">{{ __('app.save_changes') }}</x-ui.button>
                 </div>
+                {{-- Nothing to confirm and nothing to save when the role was not changed:
+                     say so, and write no empty audit row. --}}
+                <p class="hint" role="status" aria-live="polite" x-show="unchanged" x-cloak>{{ __('roles.change.unchanged') }}</p>
             </form>
 
             <x-ui.confirm name="change-role" target-form="role-change-form" variant="primary" icon="info"
                 :title="__('roles.change.title')" :description="__('roles.change.description')"
-                :confirm-label="__('roles.change.confirm')" confirm-icon="check">
-                <dl class="rolechange">
+                :confirm-label="__('roles.change.confirm')" confirm-icon="check"
+                described-by="role-change-summary">
+                <dl class="rolechange" id="role-change-summary">
                     <div><dt>{{ __('roles.change.current') }}</dt><dd x-text="meanings[current].label"></dd></div>
                     <div><dt>{{ __('roles.change.new') }}</dt><dd x-text="meanings[chosen].label"></dd></div>
                     <div><dt>{{ __('roles.change.meaning') }}</dt><dd x-text="meanings[chosen].summary"></dd></div>

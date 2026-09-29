@@ -11,7 +11,7 @@
 
 return [
 
-    'title' => 'Support',
+    'title' => 'Technical support',
     'subtitle' => 'Your tickets with the support team, and where each one stands.',
     'staff_subtitle' => 'The tickets waiting on you, and every ticket you follow.',
     'new' => 'New ticket',

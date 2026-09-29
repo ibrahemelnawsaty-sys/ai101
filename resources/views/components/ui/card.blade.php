@@ -53,12 +53,12 @@
                     <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#{{ str_starts_with($icon, 'i-') ? $icon : 'i-'.$icon }}"/></svg>
                 @endif
                 @if ($title !== null)
-                    <h2 class="ui-card__title" id="{{ $headingId }}">
+                    <h{{ $level }} class="ui-card__title" id="{{ $headingId }}">
                         {{ $title }}
                         @if ($subtitle !== null)
                             <span class="ui-card__subtitle">{{ $subtitle }}</span>
                         @endif
-                    </h2>
+                    </h{{ $level }}>
                 @endif
                 @isset($action)
                     <div class="ui-card__actions">{{ $action }}</div>

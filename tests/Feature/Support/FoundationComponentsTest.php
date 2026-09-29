@@ -361,3 +361,28 @@ it('D-133: the id of the form a confirmation targets can carry nothing but id ch
     expect($html)->not->toContain('<script>alert')
         ->and($html)->toContain('form="a-script-alert-1-script"');
 });
+
+it('D-133: a card can sit under a heading of its own, so its title is one level lower', function (): void {
+    $default = Blade::render('<x-ui.card title="T">b</x-ui.card>');
+    $nested = Blade::render('<x-ui.card :level="3" title="T">b</x-ui.card>');
+    $clamped = Blade::render('<x-ui.card :level="9" title="T">b</x-ui.card>');
+
+    expect($default)->toContain('<h2 class="ui-card__title"')
+        ->and($nested)->toContain('<h3 class="ui-card__title"')->and($nested)->not->toContain('<h2')
+        ->and($clamped)->toContain('<h6 class="ui-card__title"'); // never a level HTML does not have
+});
+
+it('D-133: a dialog can be described by the summary inside it as well as by its description line', function (): void {
+    $html = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="c" title="T" description="D" confirm-label="Go" target-form="f" described-by="the-summary"><p id="the-summary">S</p></x-ui.confirm>',
+    ), ENT_QUOTES);
+
+    expect($html)->toContain('aria-describedby="c-desc the-summary"');
+
+    // No description line: the summary alone.
+    $bare = html_entity_decode(Blade::render(
+        '<x-ui.confirm name="c" title="T" confirm-label="Go" target-form="f" described-by="the-summary"><p id="the-summary">S</p></x-ui.confirm>',
+    ), ENT_QUOTES);
+
+    expect($bare)->toContain('aria-describedby="the-summary"');
+});

@@ -35,6 +35,7 @@ final class RolesOverview extends ViewModel
         foreach (RoleCapabilities::areas() as $area) {
             $rows = $matrix->where('area', $area)->map(static fn (array $row): array => [
                 'text' => (string) __('roles.capabilities.'.$row['key']),
+                'note' => in_array($row['key'], RoleCapabilities::noted(), true) ? (string) __('roles.notes.'.$row['key']) : null,
                 'cells' => array_map(
                     static fn (string $role): bool => in_array($role, $row['roles'], true),
                     RoleCapabilities::ROLE_ORDER,

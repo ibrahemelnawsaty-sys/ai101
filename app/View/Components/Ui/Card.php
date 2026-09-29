@@ -31,10 +31,13 @@ final class Card extends UiComponent
         public ?string $href = null,
         mixed $flush = false,
         public string $as = 'section',
+        public int $level = 2,
     ) {
         $this->variant = self::oneOf($variant, ['default', 'flat', 'interactive', 'brand', 'raised'], 'default');
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');
 
+        // The title's heading level: 2 unless the card sits under a heading of its own.
+        $this->level = max(2, min(6, $level));
         $this->tag = $href !== null ? 'a' : $as;
         $this->isFlush = filter_var($flush, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? (bool) $flush;
         $this->headingId = $title !== null ? 'card-'.Str::random(6) : null;

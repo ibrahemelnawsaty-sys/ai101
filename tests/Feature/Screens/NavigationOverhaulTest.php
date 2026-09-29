@@ -70,7 +70,7 @@ function railRoutesFor(App\Models\User $user): array
 /** The hrefs the rail lights as the current page, from the rendered HTML (rail and drawer both draw it). */
 function litRailHrefs(string $html): array
 {
-    preg_match_all('/<a\s+href="([^"]+)"\s+class="side__b"[^>]*aria-current="page"/s', $html, $matches);
+    preg_match_all('/<a\s+href="([^"]+)"\s+class="side__b"[^>]*aria-current="(?:page|true)"/s', $html, $matches);
 
     return array_values(array_unique($matches[1]));
 }
@@ -98,12 +98,16 @@ it('D-127: الاسم الواحد للمفهوم الواحد في كل الأ�
     expect([__('enums.user_role.participant'), __('enums.enrollment_role.participant')])->each->toBe('متدرب');
 });
 
-it('D-127: لا تبقى كلمة «مشارك» في أي نصّ عربي (وتبقى «مشاركة» بمعنى Share)', function (): void {
+it('D-127: لا تبقى كلمة «مشارك» في أي نصّ عربي، مسبوقةً بحرف أو لا (وتبقى «مشاركة» بمعنى Share)', function (): void {
     $found = [];
 
-    foreach (File::allFiles(lang_path('ar')) as $file) {
+    // The Arabic the platform shows: its lang files AND the content it seeds (landing page, schedule).
+    $files = [...File::allFiles(lang_path('ar')), ...File::allFiles(database_path('seeders/data'))];
+
+    foreach ($files as $file) {
         foreach (explode("\n", (string) File::get($file->getPathname())) as $index => $line) {
-            if (preg_match('/(?<!\p{L})(ال)?مشارك(ين|ون)?(?!\p{L})/u', $line) === 1) {
+            // «المشارك» «للمشارك» «والمشاركين» «مشاركًا» — but not «مشاركة» (a letter follows).
+            if (preg_match('/مشارك(?:ين|ون)?(?![\p{L}])/u', $line) === 1) {
                 $found[] = $file->getFilename().':'.($index + 1);
             }
         }
@@ -285,4 +289,33 @@ it('D-127: كل مسار في قائمة جانبية أو في «also» مسج�
     }
 
     expect($missing)->toBe([]);
+});
+
+it('D-127: عنوان مجموعة القائمة بلون مقروء لا بالرمادي الزخرفي (2.78:1)', function (): void {
+    preg_match('/\.side__t \{(.*?)\}/s', (string) File::get(resource_path('css/app.css')), $rule);
+
+    expect($rule[1] ?? '')->toContain('color: var(--text-muted)')
+        ->and($rule[1] ?? '')->not->toContain('--text-faint');
+});
+
+it('D-127: الصفحة نفسها aria-current="page"، والقسم الذي تقع تحته aria-current="true"، ولكليهما مظهر الحالي', function (): void {
+    $cohort = makeCohort();
+    $participant = makeParticipant($cohort);
+    $assignment = makeAssignment($cohort, ['max_score' => 10]);
+
+    $current = static function (string $html): array {
+        preg_match_all('/<a\s+href="([^"]+)"\s+class="side__b"[^>]*aria-current="([^"]+)"/s', $html, $m, PREG_SET_ORDER);
+
+        return array_values(array_unique(array_map(static fn (array $row): string => $row[2], $m)));
+    };
+
+    expect($current($this->actingAs($participant)->get(route('assignments.index'))->getContent()))->toBe(['page']);
+    $this->flushSession();
+    expect($current($this->actingAs($participant)->get(route('assignments.show', $assignment))->getContent()))->toBe(['true']);
+
+    // The shell paints both the same way (and keeps the forced-colours reset).
+    $css = (string) File::get(resource_path('css/app.css'));
+
+    expect($css)->toContain('.side__b[aria-current="true"]::before,')
+        ->and($css)->toContain('.side__b[aria-current="true"],');
 });

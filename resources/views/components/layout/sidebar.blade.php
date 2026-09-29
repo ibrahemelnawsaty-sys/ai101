@@ -2,11 +2,13 @@
     Sidebar rail, pinned to the RIGHT edge of the screen.
 
     264px open · 72px collapsed · a right-hand Drawer on mobile.
-    Grouping follows PRD §9.5.1 exactly for the participant:
-      overview   (dashboard, digital card, my journey)
-      programme  (schedule, attendance, live sessions)
-      work       (assignments, resources, final project, grades)
-      contact    (messages)
+    Grouping follows PRD §9.5.1 for the participant, re-ordered by importance and
+    headed (D-127):
+      overview            (dashboard, my journey, digital card)
+      programme           (live sessions, schedule, attendance)
+      work                (assignments, final project, grades, certificate)
+      contact & materials (internal messaging, the training kit)
+      and the public home page last, under no heading.
 
     @see PRD §9.5.1 · CONSTITUTION Article 16 · PROJECT-CONTRACT §10
 
@@ -101,7 +103,7 @@
                                      tooltip. $data, not a bare name: the drawer renders this
                                      same list outside the rail's scope (D-86). --}}
                                 x-bind:title="$data.collapsed ? @js($item['label']) : null"
-                                @if ($item['active']) aria-current="page" @endif
+                                @if ($item['current']) aria-current="{{ $item['current'] }}" @endif
                                 @if ($item['locked']) data-locked="true" aria-disabled="true" tabindex="-1" @endif
                             >
                                 <x-ui.icon :name="$item['icon']" />

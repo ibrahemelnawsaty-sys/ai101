@@ -8,7 +8,9 @@ declare(strict_types=1);
  * The 403, 404 and 405 pages used to suggest the TRAINEE's destinations — the
  * schedule, attendance, assignments — to every signed-in role but the system
  * administrator: a supervisor who mistyped an address was offered "your
- * assignments". Each role is now offered its own. Nothing about existence leaks:
+ * assignments". Each role is now offered its own — on the pages that know who is
+ * asking: a refusal (403) and a missing record behind a real route (404). An address
+ * that matches no route is D-134 and is not covered here. Nothing about existence leaks:
  * the list differs by the account's OWN role only, never by the record asked for
  * (BR-22, BR-23), and it asks the database for nothing — an error page may be
  * rendering because the database is the thing that failed (art. 7).
@@ -21,10 +23,27 @@ beforeEach(function (): void {
     $this->cohort = makeCohort();
 });
 
-/** The page a signed-in user gets for an address that does not exist. */
+/**
+ * The 404 a signed-in user gets from a REAL route whose record is missing (model
+ * binding inside a route that carries the session), through a real session login
+ * — not `actingAs`, which pre-loads the user and so also "works" on an address no
+ * route matches. That other case is D-134: Laravel starts no session for an
+ * address that matches nothing, so the page cannot know who is asking.
+ */
 function missingPageFor(App\Models\User $user): string
 {
-    return test()->actingAs($user)->get('/definitely-not-a-page-'.uniqid())->assertNotFound()->getContent();
+    // One test makes several requests in one application; the guard would keep the
+    // previous request's user. A real request starts with none.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+
+    $absent = '00000000-0000-0000-0000-000000000000';
+    $url = $user->role === App\Enums\UserRole::SystemAdmin ? route('admin.users.show', $absent) : route('assignments.show', $absent);
+
+    return test()
+        ->withSession(['login_web_'.sha1(Illuminate\Auth\SessionGuard::class) => $user->getKey()])
+        ->get($url)
+        ->assertNotFound()
+        ->getContent();
 }
 
 it('D-127: صفحة 404 تقترح على كل دور وجهاته هو', function (): void {

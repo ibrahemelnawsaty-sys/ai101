@@ -136,6 +136,38 @@ final class RoleCapabilities
     }
 
     /**
+     * Capabilities that carry a footnote on the page, keyed by capability. A
+     * footnote states a case the role columns cannot: BR-23 lets a supervisor
+     * account be seated as a cohort's trainer, and in that cohort the supervisor
+     * holds the trainer's abilities. Texts: lang/roles.php `notes.<key>`.
+     *
+     * @var list<string>
+     */
+    private const NOTED = ['grade_submissions', 'revise_grades'];
+
+    /**
+     * The capability keys that carry a footnote.
+     *
+     * @return list<string>
+     */
+    public static function noted(): array
+    {
+        return self::NOTED;
+    }
+
+    /**
+     * Every capability key the list declares, whether or not its route exists in
+     * this build — so a test can tell a row that was dropped from one that was
+     * never there (matrix() leaves a missing route out rather than throw).
+     *
+     * @return list<string>
+     */
+    public static function declaredKeys(): array
+    {
+        return array_map(static fn (array $capability): string => $capability[0], self::CAPABILITIES);
+    }
+
+    /**
      * The area keys in the order the page prints them.
      *
      * @return list<string>

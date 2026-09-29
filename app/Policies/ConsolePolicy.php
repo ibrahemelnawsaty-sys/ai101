@@ -43,7 +43,10 @@ final class ConsolePolicy
 
     /**
      * The page that explains the five roles (D-133): the system administrator's,
-     * who changes them. Read-only, so a preview does not withhold it.
+     * who changes them. It writes nothing, so it does not ask writesAllowed().
+     * During an account preview the acting account is the PREVIEWED one, never a
+     * system administrator (BR-35), so the role middleware refuses it before this
+     * is asked.
      */
     public function roles(User $user): bool
     {

@@ -47,6 +47,8 @@
                      cannot know which of several rows the error belongs to
       open           render already open (a server-rendered confirmation)
       close-href     Cancel becomes this link (clears the query string that opened it)
+      described-by   id of an element inside the dialog that the dialog is ALSO described by
+                     (the summary of what is being confirmed, read on open)
       target-form    id of a form elsewhere on the page to confirm instead of drawing one
                      (D-133): the slot is then the summary, and reason-* are ignored
 
@@ -74,6 +76,7 @@
     size="sm"
     :open="$open"
     :close-href="$closeHref"
+    :described-by="$describedBy"
 >
     @if ($targetForm !== null)
         {{-- The form being confirmed is elsewhere on the page: nothing is posted from

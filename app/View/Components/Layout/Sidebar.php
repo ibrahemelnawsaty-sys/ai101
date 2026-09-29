@@ -364,7 +364,14 @@ final class Sidebar extends UiComponent
                 // D-127 — lit for its own page AND for every page that lives under
                 // it (`also`): a rail that goes dark on the detail of the thing it
                 // lists tells the person they are nowhere.
-                $item['active'] = request()->routeIs($name, ...array_values(array_filter((array) ($item['also'] ?? []), 'is_string')));
+                $under = array_values(array_filter((array) ($item['also'] ?? []), 'is_string'));
+                $exact = request()->routeIs($name);
+                $inside = ! $exact && $under !== [] && request()->routeIs(...$under);
+
+                $item['active'] = $exact || $inside;
+                // "page" is the page itself; "true" says the item is the current SECTION
+                // while a page under it is open.
+                $item['current'] = $exact ? 'page' : ($inside ? 'true' : null);
                 $item['locked'] = (bool) ($item['locked'] ?? false);
                 // A locked item wears the padlock, whatever it is — decided here, not in the template.
                 $item['icon'] = $item['locked'] ? Icons::LOCKED : $item['icon'];

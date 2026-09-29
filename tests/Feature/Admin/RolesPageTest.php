@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Support\RoleCapabilities;
+use Illuminate\Support\Facades\Route;
 
 uses()->group('authz');
 
@@ -61,6 +62,52 @@ it('D-133: كل قدرة في الصفحة خلف وسيط دور في الرا�
     }
 
     expect($wrong)->toBe([]);
+});
+
+it('D-133: لا يسقط سطر بصمت إن اختفى مساره، ولا يُبتلع دور مكتوب خطأً في وسيط الراوتر', function (): void {
+    // RoleCapabilities::matrix() leaves out a capability whose route is gone, so every
+    // test that loops over it would still pass. Compare with what was declared.
+    expect(array_column(RoleCapabilities::matrix(), 'key'))->toBe(RoleCapabilities::declaredKeys());
+
+    // rolesOf() keeps only known roles, so a typo (`role:trainer,admn`) would be dropped
+    // quietly. Read the raw tokens of every capability route and check them against the enum.
+    $valid = array_map(static fn (UserRole $role): string => $role->value, UserRole::cases());
+    $typos = [];
+
+    foreach (RoleCapabilities::matrix() as $row) {
+        foreach (Route::getRoutes()->getByName($row['route'])->middleware() as $middleware) {
+            if (is_string($middleware) && str_starts_with($middleware, 'role:')) {
+                foreach (array_diff(array_map('trim', explode(',', substr($middleware, 5))), $valid) as $unknown) {
+                    $typos[] = "{$row['route']}: unknown role token '{$unknown}'";
+                }
+            }
+        }
+    }
+
+    expect($typos)->toBe([]);
+});
+
+it('D-133: مشرف عام أُسند مدربًا يرصد الدرجة في تلك الدفعة فعلًا (BR-23) — والصفحة تقول ذلك', function (): void {
+    $participant = makeParticipant($this->cohort);
+    $submission = makeSubmission(makeAssignment($this->cohort, ['max_score' => 10]), $participant);
+    $target = ['cohort' => $this->cohort->id, 'submission' => $submission->id];
+
+    $plain = makeAdmin();
+    $seated = makeAdmin();
+    enroll($seated, $this->cohort, 'trainer');
+
+    // A plain supervisor is refused; the same role seated as this cohort's trainer is not.
+    $this->actingAs($plain)->post(route('trainer.submissions.grade', $target))->assertForbidden();
+    $this->flushSession();
+    expect($this->actingAs($seated)->post(route('trainer.submissions.grade', $target))->status())->not->toBe(403);
+    $this->flushSession();
+
+    // So the page must not leave the "No" under the supervisor unexplained.
+    $html = $this->actingAs($this->sysadmin)->get(route('admin.roles.index'))->getContent();
+
+    expect($html)->toContain(__('roles.notes.grade_submissions'))
+        ->and($html)->toContain(__('roles.notes.revise_grades'))
+        ->and(RoleCapabilities::noted())->toBe(['grade_submissions', 'revise_grades']);
 });
 
 it('D-133: ما تقوله الصفحة عن الأدوار يطابق الراوتر في أحكام لا يجوز أن تنحرف', function (): void {
@@ -206,7 +253,7 @@ it('D-133: نافذة تأكيد تغيير الدور تسمّي الدورين
     }
 
     // Without scripting the plain submit is still there.
-    expect($html)->toMatch('/<noscript>.*?type="submit".*?<\/noscript>/s');
+    expect($html)->toMatch('/<noscript>\s*<button[^>]*type="submit"[^>]*>.*?<\/button>\s*<\/noscript>/s');
 });
 
 it('D-133: تغيير الدور بعد التأكيد كما كان — السبب إلزامي والخادم هو الحَكَم', function (): void {
@@ -224,4 +271,26 @@ it('D-133: تغيير الدور بعد التأكيد كما كان — الس�
         ->assertSessionHasNoErrors();
 
     expect($account->refresh()->role)->toBe(UserRole::Coordinator);
+});
+
+it('D-133: بنية الصفحة — قائمة حقيقية للبطاقات، عناوينها أدنى مستوى، ومنطقة تمرير يبلغها لوحة المفاتيح، ومجموعات الصفوف بنطاقها الصحيح', function (): void {
+    $html = $this->actingAs($this->sysadmin)->get(route('admin.roles.index'))->assertOk()->getContent();
+
+    expect($html)->toContain('<ul class="rolegrid"')
+        ->and($html)->not->toContain('role="listitem"')
+        // Five cards: each title one level under the section heading.
+        ->and(substr_count($html, '<h3 class="ui-card__title"'))->toBe(5)
+        // The area rows head a group of ROWS, not a column.
+        ->and($html)->toContain('scope="rowgroup"')->and($html)->not->toContain('scope="colgroup"')
+        // A scroller a keyboard can reach and a screen reader can name.
+        ->and($html)->toMatch('/<div class="tscroll[^"]*" role="region" tabindex="0" aria-labelledby="matrix-h">/');
+});
+
+it('D-133: النافذة تُوصف بملخّص ما يُؤكَّد، ويصل إلى صفحة الأدوار من شاشة الحساب', function (): void {
+    $account = makeParticipant($this->cohort);
+    $html = html_entity_decode($this->actingAs($this->sysadmin)->get(route('admin.users.show', $account))->assertOk()->getContent(), ENT_QUOTES);
+
+    expect($html)->toContain('aria-describedby="change-role-desc role-change-summary"')
+        ->and($html)->toContain('id="role-change-summary"')
+        ->and($html)->toContain('href="'.route('admin.roles.index').'"');
 });

@@ -1788,13 +1788,19 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
    Roles and permissions (D-133)
    ========================================================================== */
 
-.rolegrid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(var(--d-6), 1fr)); }
-.role__scope { margin-block-start: var(--s3); font-size: var(--fs-xs); color: var(--text-muted); }
+.rolegrid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--d-6)), 1fr)); margin: 0; padding: 0; list-style: none; }
+.role__scope { margin-block-start: var(--s3); font-size: var(--fs-sm); color: var(--text-muted); }
+.roles__h { margin-block-end: var(--s3); }
 .role__scope b { color: var(--text-strong); }
 .atable .atable__group th { background: var(--surface-2); color: var(--text-strong); font-size: var(--fs-sm); }
-.atable__cap { font-weight: var(--fw-regular); color: var(--text-strong); }
-.atable__cell { text-align: center; color: var(--text-muted); }
-.atable__cell .ui-icon { margin-inline: auto; color: var(--status-ok-text); }
+/* `.atable th` / `.atable td` (app.css) are more specific than a bare class, so these say
+   `.atable` first. The capability column wraps and stays in view while the role
+   columns scroll under it; the role names above the ticks are centred with them. */
+.atable .atable__cap { font-weight: var(--fw-regular); color: var(--text-strong); font-size: var(--fs-sm); white-space: normal; min-inline-size: var(--d-3); position: sticky; inset-inline-start: 0; background: var(--surface-1); }
+.atable .atable__cap .atable__note { display: block; margin-block-start: var(--s1); }
+.atable .atable__cell { text-align: center; color: var(--text-muted); }
+.atable .atable__cell .ui-icon { margin-inline: auto; color: var(--status-ok-text); }
+.atable .roles__col { text-align: center; }
 
 /* The summary inside the role-change confirmation (D-133). */
 .rolechange { display: grid; gap: var(--s3); }

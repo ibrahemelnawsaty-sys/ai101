@@ -37,9 +37,13 @@ final class Modal extends UiComponent
         mixed $open = false,
         mixed $dismissible = true,
         public ?string $closeHref = null,
+        public ?string $describedBy = null,
     ) {
         $this->open = (bool) $open;
         $this->closeHref = self::localPath($closeHref);
+        // An extra element the dialog is described by (a summary of what is being confirmed).
+        $extra = $describedBy !== null ? trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '-', $describedBy), '-') : '';
+        $this->describedBy = $extra !== '' ? $extra : null;
         $this->dismissible = (bool) $dismissible;
         $this->variant = self::oneOf($variant, ['default', 'danger', 'warning', 'success'], 'default');
         $this->size = self::oneOf($size, ['sm', 'md', 'lg'], 'md');

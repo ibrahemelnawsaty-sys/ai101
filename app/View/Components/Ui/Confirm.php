@@ -80,6 +80,7 @@ final class Confirm extends UiComponent
         mixed $open = false,
         public ?string $closeHref = null,
         public ?string $targetForm = null,
+        public ?string $describedBy = null,
     ) {
         $this->variant = self::oneOf($variant, ['danger', 'primary'], 'danger');
         $this->triggerVariant = self::oneOf(

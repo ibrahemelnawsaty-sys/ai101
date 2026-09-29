@@ -53,12 +53,12 @@ return [
     'resources' => 'Training pack',
     'final_project' => 'Final project',
     'grades' => 'Grades',
-    'messages' => 'Messages',
+    'messages' => 'Internal messaging',
     'certificate' => 'Certificate',
     'notifications' => 'Notifications',
     'profile' => 'My account',
     // D-124 — Support in the account menu, and the support team's tab in the rail.
-    'support' => 'Support',
+    'support' => 'Technical support',
     'support_tickets' => 'Technical support',
 
     'admin' => [
@@ -115,7 +115,7 @@ return [
         'resources' => 'Training pack',
         'final_project' => 'Final project',
         'grades' => 'Grades',
-        'messages' => 'Messages',
+        'messages' => 'Internal messaging',
         'certificate' => 'Certificate',
         'notifications' => 'Notifications',
         'profile' => 'My account',

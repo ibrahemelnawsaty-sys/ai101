@@ -60,7 +60,7 @@
             role="dialog"
             aria-modal="true"
             aria-labelledby="{{ $titleId }}"
-            @if ($descId) aria-describedby="{{ $descId }}" @endif
+            @if ($descId || $describedBy) aria-describedby="{{ trim(($descId ?? '').' '.($describedBy ?? '')) }}" @endif
             tabindex="-1"
             x-ref="panel"
         >

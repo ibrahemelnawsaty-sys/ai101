@@ -60,8 +60,8 @@ return [
         'trainer_attached' => 'أُسند المدرب إلى الدفعة، وصار يرى جلساتها ومتدربيها ومهامها.',
         'trainer_detached' => 'أُزيل إسناد المدرب من الدفعة، ولم يعد يرى شيئًا من بياناتها.',
         'coordinator_not_found' => 'لا حساب منسّق أو مشرف عام يستخدم هذا العنوان. تحقّق من كتابته. إن كان الشخص جديدًا فاطلب من مدير النظام إضافته بدور منسّق.',
-        'coordinator_attached' => 'أُسند المنسّق إلى الدفعة، وصار يقدر يتولى تحضير جلساتها.',
-        'coordinator_detached' => 'أُزيل إسناد المنسّق من الدفعة، ولم يعد يصل تحضير جلساتها.',
+        'coordinator_attached' => 'أُسند المنسّق إلى الدفعة، وصار يتولى رصد حضور جلساتها.',
+        'coordinator_detached' => 'أُزيل إسناد المنسّق من الدفعة، ولم يعد يتولى رصد حضور جلساتها.',
         'title' => 'الدفعات',
         'create' => 'دفعة جديدة',
         'fields' => [
@@ -90,7 +90,7 @@ return [
         'coordinator_email_hint' => 'اكتب بريد حساب منسّق موجود في المنصة لإسناده لهذه الدفعة.',
         'remove_coordinator' => 'إزالة الإسناد',
         'coordinators_empty_title' => 'لا منسّقين مسندين لهذه الدفعة',
-        'coordinators_empty_body' => 'أسند منسّقًا واحدًا على الأقل ليتولى تحضير جلساتها.',
+        'coordinators_empty_body' => 'أسند منسّقًا واحدًا على الأقل ليتولى رصد حضور جلساتها.',
         // D-124 — the primary coordinator: the one a support ticket reaches first.
         'primary_badge' => 'المنسّق الأساسي',
         'make_primary' => 'تعيين منسق أساسي',
@@ -319,7 +319,7 @@ return [
         'actions' => [
             'view_profile' => 'الملف الكامل',
             'preview' => 'معاينة',
-            'change_role' => 'غيّر الدور',
+            'change_role' => 'تغيير الدور',
             'suspend' => 'تعطيل الحساب',
             'activate' => 'تفعيل الحساب',
             'reset_password' => 'إعادة تعيين كلمة المرور',
