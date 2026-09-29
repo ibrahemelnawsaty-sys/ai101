@@ -27,7 +27,7 @@ return [
     'current_week' => 'الأسبوع الحالي',
     'print_title' => 'جدول البرنامج التدريبي',
     'printed_at' => 'طُبع في :at بتوقيت الرياض',
-    'table_caption' => 'جلسات :week',
+    'table_caption' => ':week',
     'unscheduled_group' => 'جلسات خارج الأسابيع',
     'session_details' => 'تفاصيل الجلسة',
 

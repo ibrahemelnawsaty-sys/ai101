@@ -56,7 +56,7 @@
         @if ($src !== null)
             <img src="{{ $src }}" alt="{{ $alt }}" loading="lazy" decoding="async">
         @else
-            <span aria-hidden="true">{{ $initials }}</span>
+            <span class="ui-avatar__i" aria-hidden="true">{{ $initials }}</span>
         @endif
     </span>
 @endif

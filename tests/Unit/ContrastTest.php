@@ -302,3 +302,13 @@ it('D-139: «الحكم» على بطاقة الدرجة الكلية — الأ
         expect(contrastRatio('#FFFFFF', $veil($tokens[$end])))->toBeGreaterThanOrEqual(4.5, $end);
     }
 });
+
+it('D-139: نصّ شريط التقدّم على بطاقة الدرجة الكلية الداكنة يبلغ 4.5:1 على أفتح نقطة في التدرّج', function (): void {
+    $tokens = tokenHexes();
+
+    // The label (--dk-tint-2) and the value (white), on the card's lightest stop.
+    expect(contrastRatio($tokens['dk-tint-2'], $tokens['violet-700']))->toBeGreaterThanOrEqual(4.5)
+        ->and(contrastRatio('#FFFFFF', $tokens['violet-700']))->toBeGreaterThanOrEqual(4.5)
+        // …and the avatar's initials on the avatar's own fill.
+        ->and(contrastRatio('#FFFFFF', $tokens['violet-500']))->toBeGreaterThanOrEqual(4.5);
+});

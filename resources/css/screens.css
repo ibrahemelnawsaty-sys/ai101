@@ -390,6 +390,7 @@ min-block-size: var(--s6);
 .abrief__due--error   { color: var(--status-bad-text); }
 
 .filelist { display: grid; gap: var(--s2); }
+.filelist a { display: inline-flex; align-items: center; gap: var(--s1); }
 .filelist--inline { display: flex; flex-wrap: wrap; gap: var(--s2); }
 /* D-136 — a file in a message or in the composer: the icon BESIDE its name (the
    global reset makes an svg a block), and a link that reads as one without relying
@@ -421,6 +422,13 @@ min-block-size: var(--s6);
 .gtotal__ft { margin-block-start: var(--s4); font-size: var(--fs-xs); color: var(--dk-tint-2); }
 .gtotal__verdict { display: inline-flex; align-items: center; gap: var(--s2); font-weight: var(--fw-semi); }
 .gtotal .bar { margin-block-start: var(--s4); background: var(--ln-05); }
+/* The progress bar on this dark card: `variant="on-dark"` was passed and nothing
+   styled it, so its label was grey (90,90,102) and its value near-black on violet
+   — 1.4:1 (D-139). */
+.gtotal .ui-progress__head { color: var(--dk-tint-2); }
+.gtotal .ui-progress__value { color: var(--white); }
+.gtotal .ui-progress__track { background: var(--ln-05); }
+.gtotal__part { display: inline-block; white-space: nowrap; }
 /* The verdict pill keeps its light-surface tint everywhere else; on this dark
    card that tint is a brown on violet nobody can read. White on a white veil
    here — the icon and the words say pass or not yet (D-139). */
@@ -459,6 +467,7 @@ border-inline-start: var(--bw-marker) solid var(--violet-300);
    column — its heading, paragraph and date used to stand side by side and
    squeeze the text into a strip one word wide (D-139). */
 .note:has(> svg) { flex-direction: row; align-items: flex-start; gap: var(--s3); }
+.note > .ui-pill { align-self: flex-start; }
 .note > svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; color: var(--text-accent); }
 .note > p,
 .note > div { flex: 1; min-inline-size: 0; }
@@ -1879,12 +1888,16 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 }
 .atable--prefs .ui-switch { min-block-size: var(--touch); }
 
-@media (max-width: 699px) {
+@media (max-width: 1199px) {
   /* atable--stack — a table that becomes a stack of cards on a phone (D-139).
      Six columns of schedule do not fit 390px: they scrolled sideways inside their
      box and hid the status. Here each ROW is a card and each cell carries its own
      column's name (`data-label`, printed by the page, not by the stylesheet).
      The header row stays for assistive technology and leaves the screen. */
+  /* The cards are the box: the scroll frame around them would draw a second
+     border round a stack of bordered cards, and sat flush against the filter
+     button above it. */
+  .tscroll:has(> .atable--stack) { border: 0; background: transparent; overflow: visible; margin-block-start: var(--s3); }
   .atable--stack thead {
     position: absolute;
     inline-size: var(--s1);
@@ -1898,6 +1911,8 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack th[scope="row"],
   .atable--stack td { display: block; }
   .atable--stack tbody tr {
+    display: flex;
+    flex-direction: column;
     margin-block-end: var(--s3);
     padding: var(--s2) var(--s4);
     border: var(--bw-hairline) solid var(--border-1);
@@ -1905,6 +1920,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     background: var(--surface-1);
   }
   .atable--stack tbody tr:hover { background: var(--surface-1); }
+  /* The heading of a card is FIRST in it, wherever its column sits in the table
+     (the schedule's title is the third cell). */
+  .atable--stack .atable__lead { order: -1; }
   .atable--stack th[scope="row"],
   .atable--stack .atable__lead {
     padding: var(--s2) 0;
@@ -1943,4 +1961,12 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack td .ui-pill { max-inline-size: 100%; white-space: normal; }
   .atable--stack tr.atable__note { padding-block: var(--s2); background: transparent; border-style: dashed; }
   .atable--stack tr.atable__note td { display: block; padding: 0; border: 0; }
+}
+
+/* Between a phone and the rail the cards sit two to a row: one label-and-value
+   line stretched across 800px reads worse than the table it replaced. */
+@media (min-width: 700px) and (max-width: 1199px) {
+  .atable--stack tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+  .atable--stack tbody tr { margin-block-end: 0; }
+  .atable--stack tbody tr.atable__note { grid-column: 1 / -1; }
 }

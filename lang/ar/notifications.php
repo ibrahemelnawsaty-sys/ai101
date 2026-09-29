@@ -28,7 +28,7 @@ return [
     'event' => 'الحدث',
     'channel_platform' => 'داخل المنصة',
     'channel_email' => 'البريد الإلكتروني',
-    'toggle_aria' => ':event عبر :channel',
+    'toggle_aria' => ':event — :channel',
     'preferences_empty_title' => 'لا إعدادات لعرضها',
     'preferences_empty_body' => 'تظهر خيارات الإشعارات بعد التحاقك بدفعة. الإشعارات الأمنية تصلك دائمًا لحماية حسابك.',
 

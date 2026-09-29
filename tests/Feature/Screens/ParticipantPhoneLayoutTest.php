@@ -129,10 +129,10 @@ it('D-139: تفضيلات الإشعارات بطاقة لكل حدث — قنا
         ->and($html)->toContain('data-label="'.__('notifications.channel_email').'"');
 });
 
-it('D-139: قاعدة البطاقات في CSS — تحت 700px يُخفى الرأس ويظهر عنوان كل خلية من data-label', function (): void {
+it('D-139: قاعدة البطاقات في CSS — تحت 1200px يُخفى الرأس ويظهر عنوان كل خلية من data-label', function (): void {
     $css = (string) file_get_contents(resource_path('css/screens.css'));
 
-    preg_match('/@media \(max-width: 699px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+    preg_match('/@media \(max-width: 1199px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
 
     expect($block)->not->toBeEmpty()
         ->and($block[0])->toContain('.atable--stack thead')
@@ -190,7 +190,7 @@ it('D-139: خلية جدول تحمل u-num تبقى خلية جدول — inlin
 it('D-139: عدّاد الجلسة التالية داخل بطاقة الجدول لا يتجاوز عرضها — 302px في بطاقة 276px يقصّ «ثانية» عند 360px', function (): void {
     $css = (string) file_get_contents(resource_path('css/screens.css'));
 
-    preg_match('/@media \(max-width: 699px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+    preg_match('/@media \(max-width: 1199px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
 
     expect($block)->not->toBeEmpty()
         ->and($block[0])->toMatch('/\.atable--stack \.ui-countdown[^{]*\{[^}]*max-inline-size: 100%/');
@@ -199,7 +199,7 @@ it('D-139: عدّاد الجلسة التالية داخل بطاقة الجدو
 it('D-139: آخر بطاقة في الجدول المكدّس تحتفظ بفواصل خلاياها — قاعدة «آخر صف بلا حدّ» الأقدم تغلب عليها بالتخصيص', function (): void {
     $css = (string) file_get_contents(resource_path('css/screens.css'));
 
-    preg_match('/@media \(max-width: 699px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+    preg_match('/@media \(max-width: 1199px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
 
     expect($block)->not->toBeEmpty()
         ->and($block[0])->toContain('.atable--stack tbody tr:last-child td');
@@ -225,4 +225,85 @@ it('D-139: كل صف وخلية في الجداول المكدّسة تحمل د
         $outside = preg_replace('/<table class="atable atable--stack.*?<\/table>/s', '', $html) ?? '';
         expect(preg_match('/<(?:tr|td|th|thead|tbody)\b[^>]*\brole=/', $outside))->toBe(0, "{$view}: role outside the stack tables");
     }
+});
+
+it('D-139: البطاقات تبقى حتى 1199px لا 699 فقط — الجدول يحتاج ~705px ويتبقّى له 684 فيخرج عمود الإجراء', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    // Between a phone and the rail the cards sit two to a row rather than
+    // stretching one label-and-value line across 800px.
+    expect($css)->toMatch('/@media \(min-width: 700px\) and \(max-width: 1199px\) \{[^@]*\.atable--stack tbody\s*\{[^}]*grid-template-columns: repeat\(2,/s');
+});
+
+it('D-139: عنوان البطاقة أول ما فيها — الجلسة لا تأتي بعد تاريخها ووقتها', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    preg_match('/@media \(max-width: 1199px\) \{\s*\/\* atable--stack.*?\n\}/s', $css, $block);
+
+    expect($block)->not->toBeEmpty()
+        ->and($block[0])->toMatch('/\.atable--stack tbody tr\s*\{[^}]*flex-direction: column/')
+        ->and($block[0])->toMatch('/\.atable--stack \.atable__lead\s*\{[^}]*order: -1/');
+});
+
+it('D-139: بطاقة الدرجة الكلية الداكنة — عنوان شريط التقدّم وقيمته ولونا مساره لها، لا لون سطح فاتح على بنفسجي داكن (1.4:1)', function (): void {
+    // `variant="on-dark"` was passed and nothing styled it: the label was grey
+    // (90,90,102) and «27.2%» near-black on violet.
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->toMatch('/\.gtotal \.ui-progress__head\s*\{[^}]*color: var\(--dk-tint-2\)/')
+        ->and($css)->toMatch('/\.gtotal \.ui-progress__value\s*\{[^}]*color: var\(--white\)/')
+        ->and($css)->toMatch('/\.gtotal \.ui-progress__track\s*\{[^}]*background: var\(--ln-05\)/');
+});
+
+it('D-139: نص درجة المهام ودرجة المشروع في بطاقة الدرجة الكلية زوجان كاملان — لا نص وقيمة يتفرّقان في عنصري flex منفصلين', function (): void {
+    $html = (string) file_get_contents(resource_path('views/participant/grades.blade.php'));
+
+    preg_match('/<div class="gtotal__split">(.*?)<\/div>/s', $html, $split);
+
+    expect($split)->not->toBeEmpty()
+        ->and(substr_count($split[1], 'class="gtotal__part"'))->toBe(2)
+        ->and($split[1])->not->toContain('<br');
+});
+
+it('D-139: حروف الصورة الرمزية بلونها هي — لا يبلغها «span» رمادي من صفّ أو بطاقة حولها (تباين 1.5:1 على البنفسجي)', function (): void {
+    // `.row__m span { color: muted }` reached the avatar's initials: grey on violet.
+    // The initials carry their own class, and its rule is more specific than any
+    // "spans inside a row" rule.
+    expect((string) file_get_contents(resource_path('views/components/ui/avatar.blade.php')))
+        ->toContain('class="ui-avatar__i"');
+
+    $css = (string) file_get_contents(resource_path('css/components.css'));
+
+    expect($css)->toMatch('/\.ui-avatar\.ui-avatar,\s*\.ui-avatar \.ui-avatar__i\s*\{[^}]*color: var\(--avatar-fg\)/');
+});
+
+it('D-139: شارة داخل ملاحظة عمودية لا تتمدّد بعرضها — تبقى بحجمها عند بداية السطر', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->toMatch('/\.note > \.ui-pill\s*\{[^}]*align-self: flex-start/');
+});
+
+it('D-139: قائمة ملفات المتدرّب رمزها بجانب اسمها — لا فوقه', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->toMatch('/\.filelist a\s*[,{][^}]*display: inline-flex/s');
+});
+
+it('D-139: اسم مفتاح التفضيل للقارئ الآلي جملة مفهومة — «… عبر داخل المنصة» لا تُقرأ', function (): void {
+    expect(__('notifications.toggle_aria', ['event' => 'تذكير بجلسة', 'channel' => 'داخل المنصة']))->not->toContain('عبر داخل');
+});
+
+it('D-139: عنوان جدول ورقة الطباعة بلا «:week» حرفية — وعنوان جدول جلسات «خارج الأسابيع» بلا تكرار «جلسات جلسات»', function (): void {
+    $week = makeWeek($this->cohort, 1, ['title' => 'Week alpha']);
+    sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 0, $week->id);
+
+    // The printed sheet asked for the caption without the week it names, so the
+    // paper read "جلسات :week".
+    $print = (string) $this->actingAs($this->participant)->get(route('schedule.pdf'))->assertOk()->getContent();
+
+    expect($print)->not->toContain(':week');
+
+    // On screen the caption is the week's own title: «جلسات» is already in the one
+    // that says «جلسات خارج الأسابيع».
+    expect(__('schedule.table_caption', ['week' => 'جلسات خارج الأسابيع']))->not->toContain('جلسات جلسات');
 });

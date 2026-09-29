@@ -54,7 +54,7 @@
             />
         @else
             <table class="sheet__table">
-                <caption class="sheet__caption">{{ __('schedule.table_caption') }}</caption>
+                <caption class="sheet__caption">{{ __('schedule.print_title') }}</caption>
 
                 <thead>
                     <tr>

@@ -1391,6 +1391,15 @@ border: var(--bw-hairline) solid var(--border-2);
   user-select: none;
   text-decoration: none;
 }
+/* The avatar keeps its own colour whatever "spans inside a row/card" rule
+   surrounds it. The avatar IS a <span>, and `.row__m span { color: muted }` (and
+   its cousins `.chat__ci span`, `.wk__t span`…) painted it and its initials grey
+   on violet — 1.5:1, on every avatar list. The colour is a custom property read
+   by a doubled selector, which no descendant-span rule outweighs (D-139). */
+.ui-avatar { --avatar-fg: var(--white); }
+.ui-avatar.ui-avatar,
+.ui-avatar .ui-avatar__i { color: var(--avatar-fg); }
+.ui-avatar .ui-avatar__i { font-size: inherit; }
 .ui-avatar img { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
 
 .ui-avatar--xs { inline-size: var(--s6); block-size: var(--s6); font-size: var(--fs-2xs); }
@@ -1399,8 +1408,8 @@ border: var(--bw-hairline) solid var(--border-2);
 .ui-avatar--lg { inline-size: var(--s16); block-size: var(--s16); font-size: var(--fs-h3); }
 .ui-avatar--xl { inline-size: var(--s24); block-size: var(--s24); font-size: var(--fs-h2); }
 
-.ui-avatar--teal { background: var(--teal-700); color: var(--white); }
-.ui-avatar--neutral { background: var(--surface-3); color: var(--text-muted); }
+.ui-avatar--teal { background: var(--teal-700); --avatar-fg: var(--white); }
+.ui-avatar--neutral { background: var(--surface-3); --avatar-fg: var(--text-muted); }
 .ui-avatar--ring { box-shadow: 0 0 0 var(--bw-strong) var(--surface-1), 0 0 0 var(--s1) var(--border-accent); }
 
 .ui-avatar-stack { display: inline-flex; align-items: center; }
