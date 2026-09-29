@@ -112,7 +112,7 @@
                                     <td><x-ui.pill :variant="$resource->stateVariant">{{ $resource->stateLabel }}</x-ui.pill></td>
                                     <td class="u-nowrap">
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$resource->title"
-                                            :href="route('trainer.resources', ['edit' => $resource->id])">{{ __('app.edit') }}</x-ui.button>
+                                            :href="route('trainer.resources', $carriedQuery + ['edit' => $resource->id])">{{ __('app.edit') }}</x-ui.button>
                                         {{-- The route is declared DELETE (routes/web.php); the method
                                              spoof must agree or the form 405s. Archiving writes a
                                              deleted_at stamp — nothing is destroyed. --}}
@@ -134,5 +134,45 @@
                 <x-ui.pagination :paginator="$resources" />
             @endif
         </x-ui.card>
+
+        {{-- The edit drawer (D-136): open because the server rendered it so, from
+             `?edit={id}`; every way out is a link back to the list, so closing works
+             with scripting off too. A wrong entry re-renders it open, with its
+             errors and what was typed. Data only: the file, the type, the size and
+             the download count are not in this form. --}}
+        @if ($editing)
+            <x-ui.drawer name="resource-edit" :title="__('trainer.resources.edit_title')" :open="true" :close-href="$closeHref">
+                <form method="POST" action="{{ route('trainer.resources.update', ['resource' => $editing->id] + $carriedQuery) }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <p class="footnote">{{ __('trainer.resources.edit_intro') }}</p>
+                    <p class="u-mb-4"><x-ui.pill variant="neutral" icon="file">{{ __('trainer.resources.edit_type', ['type' => $editing->typeLabel]) }}</x-ui.pill></p>
+
+                    <x-ui.input name="title" required :label="__('trainer.resources.field_title')"
+                        :value="old('title', $editing->title)" />
+
+                    <x-ui.textarea name="description" rows="3" :label="__('trainer.resources.field_description')"
+                        :value="old('description', $editing->description)" />
+
+                    <x-ui.select name="week_id" :label="__('schedule.filter_week')" :options="$weekOptions"
+                        :hint="__('trainer.resources.week_hint')" :value="old('week_id', $editing->weekId)" />
+
+                    <x-ui.select name="session_id" :label="__('trainer.resources.link_session')" :options="$sessionOptions"
+                        :value="old('session_id', $editing->sessionId)" />
+
+                    @if ($editing->hasAddress)
+                        <x-ui.input name="url" type="url" dir="ltr" required
+                            :label="__('trainer.resources.external_url')"
+                            :value="old('url', $editing->url)" />
+                    @endif
+
+                    <div class="row__acts">
+                        <x-ui.button icon="check" variant="primary" type="submit">{{ __('trainer.resources.save_changes') }}</x-ui.button>
+                        <x-ui.button variant="ghost" :href="$closeHref">{{ __('app.cancel') }}</x-ui.button>
+                    </div>
+                </form>
+            </x-ui.drawer>
+        @endif
     @endif
 @endsection

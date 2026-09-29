@@ -535,6 +535,13 @@ Route::middleware(['auth', 'verified', 'role:trainer,admin', 'cohort.scope'])
         Route::post('/resources', [TrainerResourceController::class, 'store'])
             ->middleware(['not.impersonating', 'throttle:upload'])
             ->name('resources.store');
+        // D-136 — the edit drawer's form: the item's data only, never its file.
+        // `withTrashed` like archive: an archived item may be corrected before
+        // it is restored.
+        Route::patch('/resources/{resource}', [TrainerResourceController::class, 'update'])
+            ->middleware('not.impersonating')
+            ->withTrashed()
+            ->name('resources.update');
         Route::delete('/resources/{resource}', [TrainerResourceController::class, 'archive'])
             ->middleware('not.impersonating')
             ->withTrashed()

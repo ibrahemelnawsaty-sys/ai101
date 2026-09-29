@@ -266,6 +266,7 @@ function authorizationMatrix(object $test): array
 
         'trainer.resources' => ['get', $cohort, ['trainer', 'admin']],
         'trainer.resources.store' => ['post', $cohort, ['trainer', 'admin']],
+        'trainer.resources.update' => ['patch', $cohort + ['resource' => $test->resource->id], ['trainer', 'admin']],
         'trainer.resources.archive' => ['delete', $cohort + ['resource' => $test->resource->id], ['trainer', 'admin']],
 
         'trainer.reports' => ['get', $cohort, ['trainer', 'admin']],

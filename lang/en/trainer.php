@@ -330,6 +330,12 @@ return [
         'created' => 'The resource was added and appears in the training pack.',
         'archived' => 'The resource was archived and no longer appears to participants.',
         'restored' => 'The resource has been restored.',
+        // D-136 — the edit drawer: the item's data, never its file.
+        'edit_title' => 'Edit the resource details',
+        'edit_intro' => 'You edit the details only. The file itself does not change; to replace it, add a new resource and archive this one.',
+        'edit_type' => 'Type: :type',
+        'save_changes' => 'Save changes',
+        'updated' => 'The resource details were saved.',
 
         'empty_title' => 'No resources added yet',
         'empty_body' => 'Upload the files of the week, or add its links, so they appear in the participant training pack.',

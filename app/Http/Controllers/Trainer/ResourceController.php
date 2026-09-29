@@ -9,17 +9,20 @@ use App\Exceptions\FileException;
 use App\Http\Controllers\Concerns\ReadsCohortScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trainer\StoreResourceRequest;
+use App\Http\Requests\Trainer\UpdateResourceRequest;
 use App\Models\Cohort;
 use App\Models\Resource;
 use App\Models\Session;
 use App\Models\User;
 use App\Models\Week;
 use App\Presenters\Support\Options;
+use App\Presenters\Trainer\ResourceEditForm;
 use App\Presenters\Trainer\ResourceRow;
 use App\Services\Audit\AuditLogger;
 use App\Services\Notifications\CohortNotices;
 use App\Services\Storage\PrivateFileService;
 use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -41,7 +44,7 @@ use Illuminate\Http\UploadedFile;
  * model carries, and all of which are presentation decisions taken on the
  * server (art. 5).
  *
- * @see BR-23 · PRD §9.12, §12.5 · CONSTITUTION art. 5, art. 22, art. 24
+ * @see BR-23 · FR-RES-08, FR-RES-10 · PRD §9.12, §12.5 · CONSTITUTION art. 5, art. 8, art. 22, art. 24 · D-136
  */
 final class ResourceController extends Controller
 {
@@ -67,6 +70,9 @@ final class ResourceController extends Controller
                 'sessionOptions' => [],
                 'typeOptions' => Options::fromEnum(ResourceType::class),
                 'stateOptions' => $this->stateOptions(),
+                'editing' => null,
+                'closeHref' => null,
+                'carriedQuery' => [],
                 'errorState' => null,
             ]));
         }
@@ -103,8 +109,63 @@ final class ResourceController extends Controller
             ),
             'typeOptions' => Options::fromEnum(ResourceType::class),
             'stateOptions' => $this->stateOptions(),
+            // D-136 — the edit drawer, open on `?edit={id}` when that names an
+            // item of THIS cohort; anything else opens nothing.
+            'editing' => $this->editing($request, $cohort),
+            // A PATH, not a URL: the drawer accepts a local path only (anything
+            // else is dropped and the panel would merely hide, leaving `?edit=`
+            // in the address).
+            'closeHref' => route('trainer.resources', $this->carriedQuery($request, (string) $cohort->getKey()), false),
+            'carriedQuery' => $this->carriedQuery($request, (string) $cohort->getKey()),
             'errorState' => null,
         ]));
+    }
+
+    /**
+     * The item the edit drawer is open on. Asked inside the scoped cohort, so
+     * an id from another cohort finds nothing and no drawer opens; the update
+     * endpoint runs its own policy check regardless — a drawer that does not
+     * open is not a permission (art. 5, art. 22). An archived item is
+     * included: it may be corrected before it is restored.
+     */
+    private function editing(Request $request, Cohort $cohort): ?ResourceEditForm
+    {
+        $id = $request->query('edit');
+
+        if (! is_string($id) || $id === '') {
+            return null;
+        }
+
+        /** @var resource|null $resource */
+        $resource = Resource::query()
+            ->withTrashed()
+            ->where('cohort_id', $cohort->getKey())
+            ->whereKey($id)
+            ->first();
+
+        return $resource === null ? null : ResourceEditForm::from($resource);
+    }
+
+    /**
+     * What the drawer's links and its form carry back: the cohort and the
+     * list's own filters, as plain strings — so closing or saving returns to
+     * the same list, not to an unfiltered one.
+     *
+     * @return array<string, string>
+     */
+    private function carriedQuery(Request $request, string $cohortId): array
+    {
+        $carried = ['cohort' => $cohortId];
+
+        foreach (['q', 'state', 'week'] as $key) {
+            $value = ListFilter::text($request, $key);
+
+            if ($value !== null) {
+                $carried[$key] = $value;
+            }
+        }
+
+        return $carried;
     }
 
     /**
@@ -212,7 +273,7 @@ final class ResourceController extends Controller
             try {
                 $stored = $this->files->store($file, 'resources/'.$columns['cohort_id'], $uploader);
             } catch (FileException $failure) {
-                return back()->withErrors(['file' => $failure->getMessage()])->withInput();
+                return back()->withErrors(['file' => $failure->localizedMessage()])->withInput();
             }
 
             $columns['file_url'] = $stored['path'];
@@ -228,6 +289,39 @@ final class ResourceController extends Controller
         $this->notices->resourceAdded((string) $columns['cohort_id'], (string) $columns['title']);
 
         return back()->with('status', __('trainer.resources.created'));
+    }
+
+    /**
+     * FR-RES-10 — correct an item's DATA (D-136): title, description, week,
+     * session, and the address of a link or a video. The file is never touched
+     * here, and neither are the type, the size, the download count, the
+     * uploader or the cohort: UpdateResourceRequest does not read them.
+     *
+     * The edit is written to the audit trail with what it changed, before it is
+     * saved (art. 8). It tells nobody: the cohort was told when the material was
+     * added (FR-RES-09), and a corrected title is not news.
+     */
+    public function update(UpdateResourceRequest $request, Resource $resource): RedirectResponse
+    {
+        $resource->fill($request->columns());
+
+        $before = [];
+        $after = [];
+
+        foreach ($resource->getDirty() as $column => $value) {
+            $before[$column] = $resource->getOriginal($column);
+            $after[$column] = $value;
+        }
+
+        if ($after !== []) {
+            $this->audit->log('resource.updated', $resource, $before, $after);
+            $resource->save();
+        }
+
+        // Back to the list the drawer was opened from — closing it.
+        return redirect()
+            ->route('trainer.resources', $this->carriedQuery($request, (string) $resource->getAttribute('cohort_id')))
+            ->with('status', __('trainer.resources.updated'));
     }
 
     /**
