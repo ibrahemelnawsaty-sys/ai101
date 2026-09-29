@@ -171,9 +171,10 @@ final class MessageController extends Controller
 
     /**
      * The people this account may start a conversation with (D-118): exactly
-     * ConversationRules::recipients, searched by name or address, a page at a
-     * time — the start endpoint asks the same query, so nothing offered here
-     * is refused there, and nothing refused there is offered here.
+     * ConversationRules::recipients, searched by name — and by address only for
+     * those who see addresses elsewhere (D-138) — a page at a time. The start
+     * endpoint asks the same query, so nothing offered here is refused there, and
+     * nothing refused there is offered here.
      */
     public function create(Request $request): View
     {
@@ -184,12 +185,15 @@ final class MessageController extends Controller
 
         $search = ListFilter::text($request, 'q') ?? '';
 
+        // D-138: an address is searched only by those who see addresses elsewhere.
+        $canSearchAddress = $user->can('searchByAddress', Thread::class);
+
         $recipients = $this->rules->recipients($user)
             ->with('profile')
             // No phone here: the picker must not let anyone look a person up by
             // their number (D-136). The old query asked for `full_name_ar` and
             // `full_name_en`, which are computed accessors, not columns.
-            ->when($search !== '', static fn ($query) => $query->matchingPerson($search))
+            ->when($search !== '', static fn ($query) => $query->matchingPerson($search, withEmail: $canSearchAddress))
             ->orderBy('role')
             ->orderBy('email')
             ->paginate(self::RECIPIENTS_PER_PAGE)

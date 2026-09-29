@@ -359,3 +359,51 @@ it('FR-ADMIN-12: منحنى التسجيل يتبع الدفعة المختار�
 
     expect($total($all))->toBe(3)->and($total($one))->toBe(2);
 });
+
+/*
+|--------------------------------------------------------------------------
+| D-138 — the recipient picker searches an address only for those who see addresses
+|--------------------------------------------------------------------------
+*/
+
+it('D-138: بحث المنتقي بالبريد لمن يرى العناوين وحدهم — المتدرّب والمدرّب والمنسّق لا يستنتجون بريدًا لم يُعرض لهم', function (): void {
+    peopleCase($this);
+    $trainer = named(makeTrainer($this->cohort, ['email' => 'secret.trainer.7741@example.test']), 'Nadia Hamad Rashed Gamma', 'نادية حمد راشد جاما', '0503330003');
+
+    $labels = static fn ($page): array => collect($page->viewData('options'))->pluck('label')->all();
+    $name = $trainer->profile->full_name_ar;
+
+    $me = makeParticipant($this->cohort);
+
+    foreach (['7741', 'secret.trainer', 'example.test'] as $fragment) {
+        Illuminate\Support\Facades\Auth::forgetGuards();
+        $found = $this->actingAs($me)->get(route('messages.create', ['q' => $fragment]))->assertOk();
+
+        expect($labels($found))->not->toContain($name);
+    }
+
+    // Names still find them, in either script.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    expect($labels($this->actingAs($me)->get(route('messages.create', ['q' => 'Nadia']))->assertOk()))->toContain($name);
+
+    // The general supervisor sees addresses on their own screens: theirs still works.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    $byAddress = $this->actingAs(makeAdmin())->get(route('messages.create', ['q' => 'secret.trainer.7741']))->assertOk();
+
+    expect($labels($byAddress))->toContain($name);
+})->group('authz');
+
+it('D-138: صلاحية «البحث بالعنوان» للمشرف العام ومدير النظام وحدهما', function (): void {
+    $cases = [
+        'participant' => [makeParticipant($this->cohort), false],
+        'trainer' => [makeTrainer($this->cohort), false],
+        'coordinator' => [makeCoordinator($this->cohort), false],
+        'admin' => [makeAdmin(), true],
+        'system_admin' => [makeSystemAdmin(), true],
+    ];
+
+    foreach ($cases as $role => [$user, $allowed]) {
+        expect(Illuminate\Support\Facades\Gate::forUser($user)->allows('searchByAddress', App\Models\Thread::class))
+            ->toBe($allowed, $role);
+    }
+})->group('authz');

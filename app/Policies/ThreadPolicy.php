@@ -67,6 +67,17 @@ final class ThreadPolicy
         return $this->writesAllowed() && app(ConversationRules::class)->mayStartWith($user, $recipient);
     }
 
+    /**
+     * Whether the recipient picker may match a person by their e-mail address
+     * (D-138). The picker shows a name and a role, never an address, so anyone who
+     * does not see addresses on their own screens would otherwise find them out by
+     * typing fragments. The general supervisor and the system administrator do.
+     */
+    public function searchByAddress(User $user): bool
+    {
+        return $this->admin($user) || $this->systemAdmin($user);
+    }
+
     /** Write to the system administrators' shared inbox (D-118). */
     public function startInbox(User $user): bool
     {

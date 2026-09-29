@@ -564,14 +564,16 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * The phone is read only when the caller asks for it. A screen that offers
      * people to each other (the recipient picker) must not let anyone look a
-     * person up by their number; an administrator's own lists may.
+     * person up by their number; an administrator's own lists may. The e-mail is
+     * read unless the caller says otherwise: the same picker shows no address, so
+     * for anyone who does not see addresses elsewhere it must not match one (D-138).
      *
      * Only NARROWS: it adds conditions to a query the caller already scoped.
      *
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeMatchingPerson(Builder $query, string $term, bool $withPhone = false): Builder
+    public function scopeMatchingPerson(Builder $query, string $term, bool $withPhone = false, bool $withEmail = true): Builder
     {
         $words = preg_split('/\s+/u', trim($term), -1, PREG_SPLIT_NO_EMPTY);
 
@@ -583,19 +585,22 @@ class User extends Authenticatable implements MustVerifyEmail
         foreach ($words as $word) {
             $like = '%'.$word.'%';
 
-            $query->where(static function (Builder $any) use ($like, $withPhone): void {
-                $any->where('email', 'like', $like)
-                    ->orWhereHas('profile', static function (Builder $profile) use ($like, $withPhone): void {
-                        $columns = $withPhone
-                            ? [...self::SEARCHABLE_NAME_COLUMNS, 'phone']
-                            : self::SEARCHABLE_NAME_COLUMNS;
+            $query->where(static function (Builder $any) use ($like, $withPhone, $withEmail): void {
+                if ($withEmail) {
+                    $any->where('email', 'like', $like);
+                }
 
-                        $profile->where(static function (Builder $parts) use ($columns, $like): void {
-                            foreach ($columns as $column) {
-                                $parts->orWhere($column, 'like', $like);
-                            }
-                        });
+                $any->orWhereHas('profile', static function (Builder $profile) use ($like, $withPhone): void {
+                    $columns = $withPhone
+                        ? [...self::SEARCHABLE_NAME_COLUMNS, 'phone']
+                        : self::SEARCHABLE_NAME_COLUMNS;
+
+                    $profile->where(static function (Builder $parts) use ($columns, $like): void {
+                        foreach ($columns as $column) {
+                            $parts->orWhere($column, 'like', $like);
+                        }
                     });
+                });
             });
         }
 

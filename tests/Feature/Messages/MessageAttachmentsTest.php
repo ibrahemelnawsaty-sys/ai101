@@ -329,3 +329,27 @@ it('FR-MSG-06: الخدمة نفسها ترفض أكثر من الحدّ ولا 
     expect($thrown)->not->toBeNull()
         ->and(Storage::disk('private')->allFiles())->toBe([]);
 });
+
+it('D-137: أثناء معاينة حساب لا يُنزَّل مرفق رسالة — 403 يُسجَّل، وخارج المعاينة يُنزَّل بالرابط نفسه', function (): void {
+    sendWithFiles($this, [fakeUpload('agenda.pdf', 'pdf')]);
+    $message = Message::query()->sole();
+    $signed = messageFileUrl($this, $message, $this->me);
+
+    // A conversation is more private than a hand-in: the previewer sees the
+    // screen, not the file. (Outside a preview the very same link works.)
+    $this->actingAs($this->me)->get($signed)->assertOk();
+
+    Auth::forgetGuards();
+    $this->actingAs(makeSystemAdmin())->post(route('admin.users.preview', $this->me))->assertRedirect();
+
+    $this->get($signed)->assertForbidden();
+
+    $denials = AuditLog::query()
+        ->where('action', 'access.denied')
+        ->where('after->reason', 'impersonation.write_attempt')
+        ->where('after->route', 'files.message')
+        ->get();
+
+    expect($denials)->toHaveCount(1)
+        ->and($denials->first()->ip_address)->not->toBeNull();
+})->group('authz');

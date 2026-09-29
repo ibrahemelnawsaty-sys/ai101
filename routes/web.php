@@ -244,7 +244,10 @@ Route::middleware(['auth', 'verified', 'signed'])->prefix('files')->name('files.
         ->whereNumber('index')->name('finalProject');
     // D-136 — a file attached to a message: the position in the message's
     // `attachments`, and the thread's own policy asked again on arrival.
+    // D-137 — not from inside an account preview: a private conversation is more
+    // than a hand-in, and the previewer looks at the screen, not the file.
     Route::get('/messages/{message}/{index}', [FileDownloadController::class, 'message'])
+        ->middleware('not.impersonating')
         ->whereUuid('message')->whereNumber('index')->name('message');
     // D-124 — a picture or a video on a support ticket, shown inside the page.
     Route::get('/support-attachments/{attachment}', [FileDownloadController::class, 'supportAttachment'])
