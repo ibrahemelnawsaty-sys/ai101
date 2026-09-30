@@ -70,8 +70,8 @@ final class BulkAttendanceRequest extends FormRequest
 
     /**
      * What each refusal SAYS. The rules are untouched; only the words are: the
-     * stock text named a field called "المستخدم", which tells a trainer nothing
-     * about what to do next.
+     * stock text named the field ("the user is required"), which tells a trainer
+     * nothing about what to do next.
      *
      * @return array<string, string>
      */
