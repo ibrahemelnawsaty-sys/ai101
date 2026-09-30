@@ -28,6 +28,21 @@ final class UpdateCohortRequest extends FormRequest
     }
 
     /**
+     * `<input type="datetime-local">` posts `2026-10-20T23:59`; the rule below wants a
+     * space. The page fills the field in the browser's own format (D-147: a cohort that
+     * already had a closing date could not be saved at all), so the request meets it
+     * there. What the value MEANS is unchanged: Riyadh wall time.
+     */
+    protected function prepareForValidation(): void
+    {
+        $closes = $this->input('registration_closes_at');
+
+        if (is_string($closes) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', trim($closes)) === 1) {
+            $this->merge(['registration_closes_at' => str_replace('T', ' ', trim($closes))]);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array

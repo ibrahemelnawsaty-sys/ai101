@@ -485,7 +485,7 @@ it('D-124: منسّق أُوقف حسابه ولا أساسي بعده — يص�
     // Two more coordinators join: the first stays primary, written down.
     foreach ([makeUser('coordinator'), makeUser('coordinator')] as $joining) {
         $this->actingAs($this->supervisor)
-            ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $joining->email])
+            ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['coordinator_email' => $joining->email])
             ->assertSessionHasNoErrors();
     }
 

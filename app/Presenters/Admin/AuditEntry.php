@@ -7,7 +7,6 @@ namespace App\Presenters\Admin;
 use App\Models\AuditLog;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Support\ViewModel;
-use Illuminate\Support\Facades\Lang;
 
 /**
  * One entry of the append-only audit trail.
@@ -44,8 +43,8 @@ final class AuditEntry extends ViewModel
                 ?? self::attr($actor, 'email')
                 ?? '—'
             ),
-            'actionLabel' => self::translated('admin.audit.actions.'.$action, $action),
-            'entityLabel' => self::translated('admin.audit.entities.'.class_basename($entityType), class_basename($entityType)),
+            'actionLabel' => self::actionLabel($action),
+            'entityLabel' => self::entityLabel($entityType),
             'entityId' => (string) ($entry->getAttribute('entity_id') ?? '—'),
             'ipAddress' => (string) ($entry->getAttribute('ip_address') ?? '—'),
             'userAgent' => (string) ($entry->getAttribute('user_agent') ?? '—'),
@@ -54,14 +53,31 @@ final class AuditEntry extends ViewModel
         ]);
     }
 
-    /** A phrase when lang has one, the raw code when it does not. */
-    private static function translated(string $key, string $fallback): string
+    /** What a recorded action code means; the code itself when lang has no phrase for it. */
+    public static function actionLabel(string $code): string
     {
-        if ($fallback === '') {
+        return self::phrase('actions', $code);
+    }
+
+    /** What a recorded entity type is called; the type itself when lang has no name for it. */
+    public static function entityLabel(string $type): string
+    {
+        return self::phrase('entities', class_basename($type));
+    }
+
+    /**
+     * The codes are keyed WITH their dots (`certificate.revoked`), so the group is read
+     * whole and indexed, not looked up by a dotted path that would nest them.
+     */
+    private static function phrase(string $group, string $code): string
+    {
+        if ($code === '') {
             return '—';
         }
 
-        return Lang::has($key) ? (string) __($key) : $fallback;
+        $map = trans('admin.audit.'.$group);
+
+        return is_array($map) && isset($map[$code]) && is_string($map[$code]) ? $map[$code] : $code;
     }
 
     /** Pretty JSON, or null so the detail panel can say "none" instead. */

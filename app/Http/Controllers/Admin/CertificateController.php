@@ -309,6 +309,12 @@ final class CertificateController extends Controller
      */
     public function revoke(RevokeCertificateRequest $request, Certificate $certificate): RedirectResponse
     {
+        // Revoking twice would overwrite the moment of the first revocation and write a
+        // second trail line whose «before» claims it was live (D-147).
+        if ($certificate->getAttribute('revoked_at') !== null) {
+            return back()->withErrors(['certificate' => __('certificates.errors.revoked')]);
+        }
+
         $this->audit->log(
             action: AuditLogger::CERTIFICATE_REVOKED,
             entity: $certificate,
@@ -408,16 +414,25 @@ final class CertificateController extends Controller
         /** @var User $admin */
         $admin = request()->user();
 
-        $this->audit->log(
-            action: AuditLogger::CERTIFICATE_REVOKED,
-            entity: $certificate,
-            before: ['revoked_at' => null],
-            after: ['reason' => 'reissue'],
-        );
+        // One unit: the old certificate is revoked only if the replacement exists. A
+        // replacement that cannot be written (the register allows one row per person and
+        // cohort — D-149) must leave the old row, its revocation time and the trail exactly
+        // as they were, not revoke it again and stop.
+        DB::transaction(function () use ($certificate, $holder, $cohort, $admin): void {
+            // A certificate that is already revoked keeps the moment it was revoked.
+            if ($certificate->getAttribute('revoked_at') === null) {
+                $this->audit->log(
+                    action: AuditLogger::CERTIFICATE_REVOKED,
+                    entity: $certificate,
+                    before: ['revoked_at' => null],
+                    after: ['reason' => 'reissue'],
+                );
 
-        $certificate->forceFill(['revoked_at' => Clock::now()])->save();
+                $certificate->forceFill(['revoked_at' => Clock::now()])->save();
+            }
 
-        $this->persist($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, 'reissue');
+            $this->persist($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, 'reissue');
+        });
 
         return back()->with('status', __('certificates.reissued'));
     }

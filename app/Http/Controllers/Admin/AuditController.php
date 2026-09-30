@@ -10,6 +10,8 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Presenters\Admin\AuditEntry;
 use App\Presenters\Support\Options;
+use App\Services\Time\Clock;
+use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,7 +39,31 @@ final class AuditController extends Controller
     {
         $this->authorize('viewAny', AuditLog::class);
 
-        $query = AuditLog::query()->with('actor.profile')->orderByDesc('created_at');
+        $query = $this->filtered($request)->with('actor.profile');
+
+        return view('admin.audit', [
+            'contextLabel' => null,
+            'entries' => $query->paginate(self::PER_PAGE)
+                ->withQueryString()
+                ->through(static fn (AuditLog $entry): AuditEntry => AuditEntry::from($entry)),
+            'opened' => $this->opened($request),
+            'actorOptions' => $this->actorOptions(),
+            'actionOptions' => $this->actionOptions(),
+            'entityOptions' => $this->entityOptions(),
+            'errorState' => null,
+        ]);
+    }
+
+    /**
+     * The entries the screen lists and the file it exports: ONE query, so the two cannot
+     * disagree (D-147: the export ignored every filter on the screen, and the search box
+     * on it was read by nothing).
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<AuditLog>
+     */
+    private function filtered(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = AuditLog::query()->orderByDesc('created_at');
 
         $action = $request->query('action');
 
@@ -62,6 +88,17 @@ final class AuditController extends Controller
             });
         }
 
+        // The search box: who acted (name, e-mail or phone) or the exact id of the record
+        // acted on. A provisional reading of a control that had none (D-147), kept narrow.
+        $search = ListFilter::text($request, 'q');
+
+        if ($search !== null) {
+            $query->where(static function ($builder) use ($search): void {
+                $builder->where('entity_id', $search)
+                    ->orWhereHas('actor', static fn ($actor) => $actor->matchingPerson($search, withPhone: true));
+            });
+        }
+
         $from = $request->query('from');
 
         if (is_string($from) && $from !== '') {
@@ -74,17 +111,7 @@ final class AuditController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
-        return view('admin.audit', [
-            'contextLabel' => null,
-            'entries' => $query->paginate(self::PER_PAGE)
-                ->withQueryString()
-                ->through(static fn (AuditLog $entry): AuditEntry => AuditEntry::from($entry)),
-            'opened' => $this->opened($request),
-            'actorOptions' => $this->actorOptions(),
-            'actionOptions' => $this->actionOptions(),
-            'entityOptions' => $this->entityOptions(),
-            'errorState' => null,
-        ]);
+        return $query;
     }
 
     /**
@@ -149,7 +176,7 @@ final class AuditController extends Controller
         $options = [];
 
         foreach ($actions as $action) {
-            $options[] = ['value' => (string) $action, 'label' => (string) $action];
+            $options[] = ['value' => (string) $action, 'label' => AuditEntry::actionLabel((string) $action)];
         }
 
         return $options;
@@ -171,7 +198,7 @@ final class AuditController extends Controller
         $options = [];
 
         foreach ($types as $type) {
-            $options[] = ['value' => (string) $type, 'label' => class_basename((string) $type)];
+            $options[] = ['value' => (string) $type, 'label' => AuditEntry::entityLabel((string) $type)];
         }
 
         return $options;
@@ -182,9 +209,8 @@ final class AuditController extends Controller
     {
         $this->authorize('export', AuditLog::class);
 
-        $rows = AuditLog::query()
+        $rows = $this->filtered($request)
             ->with('actor')
-            ->orderByDesc('created_at')
             ->limit(5000)
             ->get();
 
@@ -197,11 +223,14 @@ final class AuditController extends Controller
         ])];
 
         foreach ($rows as $row) {
+            $at = $row->getAttribute('created_at');
+
             $lines[] = $this->csvRow([
-                (string) ($row->getAttribute('created_at')?->toIso8601String() ?? ''),
+                // The time as the screen shows it: Riyadh, not the UTC the trail stores.
+                $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d H:i') : '',
                 (string) ($row->actor?->getAttribute('email') ?? ''),
-                (string) $row->getAttribute('action'),
-                (string) ($row->getAttribute('entity_type') ?? ''),
+                AuditEntry::actionLabel((string) $row->getAttribute('action')),
+                AuditEntry::entityLabel((string) ($row->getAttribute('entity_type') ?? '')),
                 (string) ($row->getAttribute('ip_address') ?? ''),
             ]);
         }

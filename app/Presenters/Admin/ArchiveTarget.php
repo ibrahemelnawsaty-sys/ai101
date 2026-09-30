@@ -22,6 +22,7 @@ final class ArchiveTarget extends ViewModel
     {
         return new self([
             'id' => (string) $program->getKey(),
+            'slug' => (string) $program->getAttribute('slug'),
             'name' => (string) $program->getAttribute('name_ar'),
         ]);
     }

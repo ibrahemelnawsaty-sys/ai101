@@ -30,6 +30,7 @@
         <div class="toolbar">
             <form method="GET" action="{{ route('admin.certificates.index') }}" class="toolbar__filters">
                 <x-ui.select clearable name="cohort" :label="__('admin.cohorts.title')"
+                    :placeholder="__('certificates.admin.current_cohort')"
                     :options="$cohortOptions" :value="request('cohort')" />
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('admin.users.filters.search_placeholder')" />
@@ -48,7 +49,7 @@
              comes back as validation errors. The reason fields print their own below
              the box; everything else is printed here, once (D-144). --}}
         @if ($formErrors !== [])
-            <div class="note note--bad u-mt-4" role="alert">
+            <div class="note note--bad u-mt-4" role="alert" data-open-panel tabindex="-1">
                 <b>{{ __('certificates.admin.form_error_title') }}</b>
                 <ul class="note__list" role="list">
                     @foreach ($formErrors as $message)
@@ -270,7 +271,7 @@
 
         {{-- Manual override — reason mandatory and audited ------------------------------ --}}
         @if ($overriding)
-            <x-ui.card class="dc--span u-mt-4" icon="key" :title="__('certificates.admin.override')">
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="key" :title="__('certificates.admin.override')">
                 <div class="note note--warn">
                     <b>{{ $overriding->name }}</b>
                     {{ __('certificates.admin.override_note') }}
@@ -320,8 +321,8 @@
                 </div>
             @elseif ($issued->isEmpty())
                 <x-ui.empty-state icon="badge"
-                    :title="$isSearching ? __('certificates.admin.no_match_title') : __('certificates.admin.empty_title')"
-                    :description="$isSearching ? __('certificates.admin.no_match_body') : __('certificates.admin.empty_body')" />
+                    :title="$isSearching ? __('certificates.admin.no_match_title') : __('certificates.admin.issued_empty_title')"
+                    :description="$isSearching ? __('certificates.admin.no_match_body') : __('certificates.admin.issued_empty_body')" />
             @else
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">
@@ -372,7 +373,7 @@
 
         {{-- Revocation, reason mandatory --------------------------------------------------- --}}
         @if ($revoking)
-            <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('certificates.admin.revoke')">
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="warn" :title="__('certificates.admin.revoke')">
                 <div class="note note--bad">
                     <b>{{ $revoking->holderName }}</b>
                     <span dir="ltr" class="u-ltr u-num">{{ $revoking->serialNumber }}</span>

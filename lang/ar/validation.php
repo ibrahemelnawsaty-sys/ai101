@@ -102,7 +102,7 @@ return [
         'array' => 'يجب ألا يحتوي :attribute على أكثر من :max عنصرًا.',
         'file' => 'حجم :attribute يتجاوز الحد المسموح وهو :max كيلوبايت.',
         'numeric' => 'يجب ألا تتجاوز قيمة :attribute :max.',
-        'string' => 'يجب ألا يتجاوز طول :attribute :max حرفًا.',
+        'string' => 'يجب ألا يتجاوز عدد حروف :attribute :max.',
     ],
 
     'max_digits' => 'يجب ألا يتجاوز عدد أرقام :attribute :max رقمًا.',
@@ -113,7 +113,7 @@ return [
         'array' => 'يجب أن يحتوي :attribute على :min عنصرًا على الأقل.',
         'file' => 'يجب ألا يقل حجم :attribute عن :min كيلوبايت.',
         'numeric' => 'يجب ألا تقل قيمة :attribute عن :min.',
-        'string' => 'يجب ألا يقل طول :attribute عن :min حرفًا.',
+        'string' => 'يجب ألا يقل عدد حروف :attribute عن :min.',
     ],
 
     'min_digits' => 'يجب ألا يقل عدد أرقام :attribute عن :min رقمًا.',
@@ -254,7 +254,7 @@ return [
         ],
 
         'email' => [
-            'required' => 'صيغة البريد الإلكتروني غير صحيحة',
+            'required' => 'اكتب البريد الإلكتروني.',
             'email' => 'صيغة البريد الإلكتروني غير صحيحة',
             'unique' => 'هذا البريد مسجّل مسبقًا. هل تريد تسجيل الدخول؟',
             'format' => 'صيغة البريد الإلكتروني غير صحيحة',
@@ -382,7 +382,7 @@ return [
         ],
 
         'capacity' => [
-            'min' => 'سعة الدفعة لا تقل عن مقعد واحد.',
+            'min' => 'يجب ألا تقل السعة عن :min، وهو عدد المقاعد المشغولة الآن (ومقعد واحد على الأقل).',
         ],
 
         'body' => [
@@ -469,6 +469,9 @@ return [
         'checked_in_at' => 'وقت تسجيل الحضور',
         'checked_out_at' => 'وقت تسجيل الانصراف',
         'edit_reason' => 'سبب التعديل',
+        'trainer_email' => 'بريد المدرب',
+        'coordinator_email' => 'بريد المنسّق',
+        'participant_email' => 'بريد المتدرب',
         'note' => 'الملاحظة',
 
         // Assignments and submissions

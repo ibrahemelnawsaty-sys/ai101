@@ -46,7 +46,7 @@ it('BR-23: إسناد مدرّب ببريده ينشئ التحاق مدرّب �
     $trainer = makeTrainer(null, ['email' => 'coach@example.test']);
 
     $this->actingAs($this->admin)->from($this->panel)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => '  Coach@Example.test '])
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => '  Coach@Example.test '])
         ->assertSessionHasNoErrors()
         ->assertSessionHas('status', __('admin.cohorts.trainer_attached'));
 
@@ -60,22 +60,22 @@ it('BR-23: بريد متدرّب يُرفض على حقل البريد، وال�
     $participant = makeParticipant();
 
     $this->actingAs($this->admin)->from($this->panel)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $participant->email])
-        ->assertSessionHasErrors(['email' => __('admin.cohorts.trainer_not_found')]);
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => $participant->email])
+        ->assertSessionHasErrors(['trainer_email' => __('admin.cohorts.trainer_not_found')]);
 
     expect(Enrollment::query()->where('cohort_id', $this->cohort->id)->where('user_id', $participant->id)->exists())
         ->toBeFalse();
 
     $this->actingAs($this->admin)->from($this->panel)->followingRedirects()
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $participant->email])
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => $participant->email])
         ->assertOk()
         ->assertSee(e((string) __('admin.cohorts.trainer_not_found')), false);
 });
 
 it('BR-23: بريد مُرسَل مصفوفةً يُرفض بخطأ تحقّق لا بـ500', function (): void {
     $this->actingAs($this->admin)->from($this->panel)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => ['x']])
-        ->assertSessionHasErrors('email');
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => ['x']])
+        ->assertSessionHasErrors('trainer_email');
 });
 
 it('BR-23: المدرّب المُزال لا يبقى مدرجًا في الدفعة', function (): void {

@@ -145,7 +145,7 @@
 
         {{-- Editor ------------------------------------------------------------------ --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="users"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="users"
                 :title="$editing->exists ? __('app.edit') : __('admin.cohorts.create')">
 
                 <form method="POST"
@@ -214,7 +214,7 @@
 
         {{-- Seating an existing participant (D-84; moved here from the account page by D-117) --}}
         @if ($seating)
-            <x-ui.card id="seat" class="dc--span u-mt-4" icon="user"
+            <x-ui.card id="seat" data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="user"
                 :title="__('admin.cohorts.add_participant')">
 
                 <p><b>{{ $seating->name }}</b> · {{ $seating->programName }}</p>
@@ -239,7 +239,7 @@
 
         {{-- Trainer assignment --------------------------------------------------------- --}}
         @if ($assigning)
-            <x-ui.card class="dc--span u-mt-4" icon="user"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="user"
                 :title="__('admin.cohorts.assign_trainer')">
 
                 <p><b>{{ $assigning->name }}</b> · {{ $assigning->programName }}</p>
@@ -266,12 +266,15 @@
                                     <span dir="ltr">{{ $trainer->email }}</span>
                                 </div>
                                 <div class="row__e">
-                                    <form method="POST"
-                                        action="{{ route('admin.cohorts.trainers.detach', [$assigning->id, $trainer->id]) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <x-ui.button icon="x" variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_trainer') }}</x-ui.button>
-                                    </form>
+                                    {{-- Told what it does BEFORE it does it: the consequence used to be a
+                                         toast after the fact (D-147). --}}
+                                    <x-ui.confirm name="detach-trainer-{{ $trainer->id }}"
+                                        :action="route('admin.cohorts.trainers.detach', [$assigning->id, $trainer->id])" method="DELETE"
+                                        :title="__('admin.cohorts.detach_trainer_title', ['name' => $trainer->name])"
+                                        :description="__('admin.cohorts.detach_trainer_body')"
+                                        :confirm-label="__('admin.cohorts.remove_trainer')" confirm-icon="x"
+                                        :trigger-label="__('admin.cohorts.remove_trainer')" trigger-icon="x"
+                                        trigger-variant="secondary" :trigger-context="$trainer->name" />
                                 </div>
                             </li>
                         @endforeach
@@ -281,10 +284,10 @@
                 <form method="POST" action="{{ route('admin.cohorts.trainers.attach', $assigning->id) }}">
                     @csrf
 
-                    <x-ui.input name="email" id="trainer-email" type="email" dir="ltr" required
+                    <x-ui.input name="trainer_email" id="trainer-email" type="email" dir="ltr" required
                         :label="__('admin.cohorts.trainer_email')"
                         :hint="__('admin.cohorts.trainer_email_hint')"
-                        :value="old('email')" />
+                        :value="old('trainer_email')" />
 
                     <div class="row__acts">
                         <x-ui.button icon="user-plus" variant="primary" type="submit">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
@@ -350,12 +353,13 @@
                                             <x-ui.button icon="star" variant="ghost" size="sm" type="submit">{{ __('admin.cohorts.make_primary') }}</x-ui.button>
                                         </form>
                                     @endif
-                                    <form method="POST"
-                                        action="{{ route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id]) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <x-ui.button icon="x" variant="secondary" size="sm" type="submit">{{ __('admin.cohorts.remove_coordinator') }}</x-ui.button>
-                                    </form>
+                                    <x-ui.confirm name="detach-coordinator-{{ $coordinator->id }}"
+                                        :action="route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id])" method="DELETE"
+                                        :title="__('admin.cohorts.detach_coordinator_title', ['name' => $coordinator->name])"
+                                        :description="__('admin.cohorts.detach_coordinator_body')"
+                                        :confirm-label="__('admin.cohorts.remove_coordinator')" confirm-icon="x"
+                                        :trigger-label="__('admin.cohorts.remove_coordinator')" trigger-icon="x"
+                                        trigger-variant="secondary" :trigger-context="$coordinator->name" />
                                 </div>
                             </li>
                         @endforeach
@@ -365,10 +369,10 @@
                 <form method="POST" action="{{ route('admin.cohorts.coordinators.attach', $assigning->id) }}">
                     @csrf
 
-                    <x-ui.input name="email" id="coordinator-email" type="email" dir="ltr" required
+                    <x-ui.input name="coordinator_email" id="coordinator-email" type="email" dir="ltr" required
                         :label="__('admin.cohorts.coordinator_email')"
                         :hint="__('admin.cohorts.coordinator_email_hint')"
-                        :value="old('email')" />
+                        :value="old('coordinator_email')" />
 
                     <div class="row__acts">
                         <x-ui.button icon="user-plus" variant="primary" type="submit">{{ __('admin.cohorts.assign_coordinator') }}</x-ui.button>

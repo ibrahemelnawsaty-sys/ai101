@@ -104,7 +104,7 @@ it('D-124: صاحب التذكرة لا يستلمها ولو صار منسّق�
     // Made a coordinator of the same cohort (the one enrolment row is
     // rewritten), then the other two coordinators leave: it is now the
     // cohort's only — so primary — coordinator.
-    $this->actingAs($this->supervisor)->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $trainee->email])->assertSessionHasNoErrors();
+    $this->actingAs($this->supervisor)->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['coordinator_email' => $trainee->email])->assertSessionHasNoErrors();
     $this->actingAs($this->supervisor)->delete(route('admin.cohorts.coordinators.detach', [$this->cohort, $this->second]))->assertSessionHasNoErrors();
     $this->cohort->update(['primary_coordinator_id' => $trainee->id]);
     $this->actingAs($this->supervisor)->delete(route('admin.cohorts.coordinators.detach', [$this->cohort, $this->primary]))->assertSessionHasNoErrors();

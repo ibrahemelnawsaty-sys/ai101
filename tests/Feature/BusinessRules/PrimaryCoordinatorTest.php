@@ -78,7 +78,7 @@ it('D-124: حين يُسند منسّق ثانٍ يبقى الأول أساسي�
     $second = makeUser('coordinator');
 
     $this->actingAs($this->supervisor)
-        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $second->email])
+        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['coordinator_email' => $second->email])
         ->assertSessionHasNoErrors();
 
     expect($this->cohort->fresh()->primary_coordinator_id)->toBe($first->id)
@@ -339,7 +339,7 @@ it('D-124: حين يُسند منسّق جديد وعمود الأساسي يس�
     $newcomer = makeUser('coordinator');
 
     $this->actingAs($this->supervisor)
-        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $newcomer->email])
+        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['coordinator_email' => $newcomer->email])
         ->assertSessionHasNoErrors();
 
     $pin = AuditLog::query()->where('action', 'cohort.primary_coordinator_set')->where('entity_id', $this->cohort->id)->sole();
@@ -372,7 +372,7 @@ it('D-124: إسناد المنسّق مدرّبًا في دفعته يخضع ل�
     enroll($only, $this->cohort, 'coordinator');
 
     $this->actingAs($this->supervisor)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $only->email])
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => $only->email])
         ->assertSessionHasErrors(['trainer' => __('admin.cohorts.trainer_is_last_coordinator')]);
 
     expect(app(PrimaryCoordinator::class)->coordinatorIds($this->cohort))->toBe([$only->id]);
@@ -383,12 +383,12 @@ it('D-124: إسناد المنسّق مدرّبًا في دفعته يخضع ل�
     $this->cohort->update(['primary_coordinator_id' => $only->id]);
 
     $this->actingAs($this->supervisor)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $only->email])
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => $only->email])
         ->assertSessionHasErrors(['trainer' => __('admin.cohorts.trainer_is_primary_coordinator')]);
 
     // A coordinator who is not primary may become the cohort's trainer.
     $this->actingAs($this->supervisor)
-        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => $third->email])
+        ->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => $third->email])
         ->assertSessionHasNoErrors();
 
     expect(app(PrimaryCoordinator::class)->coordinatorIds($this->cohort))->toEqualCanonicalizing([$only->id, $second->id])

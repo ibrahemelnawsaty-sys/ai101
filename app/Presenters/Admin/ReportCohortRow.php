@@ -44,6 +44,9 @@ final class ReportCohortRow extends ViewModel
                 ? 'default'
                 : self::rateVariant($averageAttendance),
             'averageScore' => self::score($averageScore),
+            // «—» when nothing has been aggregated, never «0» (D-147, D-150).
+            'averageAttendanceLabel' => $averageAttendance === null ? '—' : self::percent($averageAttendance).'%',
+            'averageScoreLabel' => $averageScore === null ? '—' : self::score($averageScore).' / '.ScoreCalculator::GRAND_TOTAL,
             'scoreMax' => ScoreCalculator::GRAND_TOTAL,
             'submissionRate' => self::percent($submissionRate),
             'completionRate' => self::percent($completionRate),

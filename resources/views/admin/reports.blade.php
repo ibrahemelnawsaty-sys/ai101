@@ -59,10 +59,10 @@
                 <x-ui.stat-card :value="$summary->registrations"
                     :label="__('admin.stats.total_registered')" />
                 <x-ui.stat-card :variant="$summary->attendanceVariant"
-                    :value="$summary->averageAttendance . '%'"
+                    :value="$summary->averageAttendanceLabel"
                     :label="__('admin.reports.average_attendance')" />
                 <x-ui.stat-card variant="brand"
-                    :value="$summary->averageScore . ' / ' . $summary->scoreMax"
+                    :value="$summary->averageScoreLabel"
                     :label="__('admin.reports.average_score')" />
                 <x-ui.stat-card :variant="$summary->submissionRateVariant"
                     :value="$summary->submissionRate . '%'"
@@ -173,8 +173,8 @@
                                         <span class="u-muted">{{ $row->programName }}</span>
                                     </th>
                                     <td role="cell" data-label="{{ __('admin.reports.col_participants') }}"><span class="u-num">{{ $row->participants }}</span></td>
-                                    <td role="cell" data-label="{{ __('admin.reports.average_attendance') }}"><span class="u-num">{{ $row->averageAttendance }}%</span></td>
-                                    <td role="cell" data-label="{{ __('admin.reports.average_score') }}" class="u-nowrap"><span class="u-num">{{ $row->averageScore }} / {{ $row->scoreMax }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.average_attendance') }}"><span class="u-num">{{ $row->averageAttendanceLabel }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.average_score') }}" class="u-nowrap"><span class="u-num">{{ $row->averageScoreLabel }}</span></td>
                                     <td role="cell" data-label="{{ __('admin.reports.submission_rate') }}"><span class="u-num">{{ $row->submissionRate }}%</span></td>
                                     <td role="cell" data-label="{{ __('admin.reports.completion_rate') }}"><span class="u-num">{{ $row->completionRate }}%</span></td>
                                 </tr>

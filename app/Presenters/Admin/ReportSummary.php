@@ -42,6 +42,10 @@ final class ReportSummary extends ViewModel
                 ? 'default'
                 : self::rateVariant((float) $attendance),
             'averageScore' => self::score($averageScore),
+            // «—», not «0%» / «0 / 100», when nothing has been aggregated: zero says the
+            // people scored nothing, and nobody has been measured (D-147, D-150).
+            'averageAttendanceLabel' => $averageAttendance === null ? '—' : $attendance.'%',
+            'averageScoreLabel' => $averageScore === null ? '—' : self::score($averageScore).' / '.ScoreCalculator::GRAND_TOTAL,
             'scoreMax' => ScoreCalculator::GRAND_TOTAL,
             'submissionRate' => $submissions,
             'submissionRateVariant' => self::rateVariant((float) $submissions),

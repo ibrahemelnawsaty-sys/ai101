@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CohortStatus;
+use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Events\EnrollmentApproved;
 use App\Events\EnrollmentRejected;
@@ -69,8 +70,40 @@ final class RegistrationController extends Controller
     {
         $this->authorize('viewAny', Enrollment::class);
 
+        $query = $this->filtered($request)
+            ->with(['user.profile', 'cohort.program']);
+
+        return view('admin.registrations', [
+            'contextLabel' => null,
+            'requests' => $query->paginate(self::PER_PAGE)
+                ->withQueryString()
+                ->through(static fn (Enrollment $row): RegistrationRow => RegistrationRow::from($row)),
+            'reviewing' => $this->reviewing($request),
+            'cohortOptions' => Options::fromModels(
+                Cohort::query()->orderByDesc('start_date')->get(),
+                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
+            ),
+            'stateOptions' => Options::fromEnum(EnrollmentStatus::class),
+            'intake' => $this->intakeRows(),
+            'errorState' => null,
+        ]);
+    }
+
+    /**
+     * The requests the screen lists, and the file it exports: ONE query, so the two cannot
+     * disagree about what «the registrations» are (D-147: the export ignored every filter
+     * on the screen).
+     *
+     * A registration request is a PARTICIPANT's. Trainers and coordinators also hold
+     * enrolment rows (their assignment to a cohort), and listing them here put a detached
+     * coordinator among the applicants.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Enrollment>
+     */
+    private function filtered(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
         $query = Enrollment::query()
-            ->with(['user.profile', 'cohort.program'])
+            ->where('role_in_cohort', EnrollmentRole::Participant->value)
             ->orderBy('created_at');
 
         // The queue defaults to what is still waiting; a decided request is
@@ -97,20 +130,7 @@ final class RegistrationController extends Controller
             });
         }
 
-        return view('admin.registrations', [
-            'contextLabel' => null,
-            'requests' => $query->paginate(self::PER_PAGE)
-                ->withQueryString()
-                ->through(static fn (Enrollment $row): RegistrationRow => RegistrationRow::from($row)),
-            'reviewing' => $this->reviewing($request),
-            'cohortOptions' => Options::fromModels(
-                Cohort::query()->orderByDesc('start_date')->get(),
-                static fn (Cohort $cohort): string => (string) $cohort->getAttribute('name'),
-            ),
-            'stateOptions' => Options::fromEnum(EnrollmentStatus::class),
-            'intake' => $this->intakeRows(),
-            'errorState' => null,
-        ]);
+        return $query;
     }
 
     /**
@@ -376,14 +396,12 @@ final class RegistrationController extends Controller
     }
 
     /** The waiting list of requests as a CSV. */
-    public function export(): Response
+    public function export(Request $request): Response
     {
         $this->authorize('viewAny', Enrollment::class);
 
-        $rows = Enrollment::query()
+        $rows = $this->filtered($request)
             ->with(['user.profile', 'cohort'])
-            ->where('status', EnrollmentStatus::Pending->value)
-            ->orderBy('created_at')
             ->get()
             ->map(static fn (Enrollment $enrollment): array => [
                 (string) ($enrollment->user?->profile?->getAttribute('full_name_ar') ?? ''),

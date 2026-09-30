@@ -50,7 +50,7 @@ final class ProgramController extends Controller
             });
         }
 
-        $status = $request->query('status');
+        $status = $request->query('state');
 
         if (is_string($status) && ProgramStatus::tryFrom($status) !== null) {
             $query->where('status', $status);
@@ -99,7 +99,14 @@ final class ProgramController extends Controller
         /** @var Program|null $program */
         $program = Program::query()->find($id);
 
-        return $program === null ? null : ArchiveTarget::from($program);
+        // After archiving, `back()` returns to this very address: a programme that is
+        // already archived has nothing left to confirm, and the panel must not come back
+        // with a live «archive» button (D-69 did the same for the registration review).
+        if ($program === null || $program->getAttribute('status') === ProgramStatus::Archived) {
+            return null;
+        }
+
+        return ArchiveTarget::from($program);
     }
 
     public function store(StoreProgramRequest $request): RedirectResponse

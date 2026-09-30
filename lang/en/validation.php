@@ -248,7 +248,7 @@ return [
         ],
 
         'email' => [
-            'required' => 'That email address is not in a valid format',
+            'required' => 'Enter the email address.',
             'email' => 'That email address is not in a valid format',
             'unique' => 'That email is already registered. Would you like to sign in?',
             'format' => 'That email address is not in a valid format',
@@ -376,7 +376,7 @@ return [
         ],
 
         'capacity' => [
-            'min' => 'The cohort capacity cannot be below one seat.',
+            'min' => 'The capacity cannot be below :min, the number of seats taken now (and at least one seat).',
         ],
 
         'body' => [
@@ -463,6 +463,9 @@ return [
         'checked_in_at' => 'check-in time',
         'checked_out_at' => 'check-out time',
         'edit_reason' => 'reason for the change',
+        'trainer_email' => 'trainer email',
+        'coordinator_email' => 'coordinator email',
+        'participant_email' => 'trainee email',
         'note' => 'note',
 
         // Assignments and submissions

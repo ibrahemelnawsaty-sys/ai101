@@ -66,9 +66,11 @@
                     </table>
                 </div>
             @elseif ($requests->isEmpty())
+                {{-- «No requests awaiting review» is true of the default queue only; under a
+                     state, a cohort or a search it would claim the wrong thing (D-147). --}}
                 <x-ui.empty-state icon="check"
-                    :title="__('admin.registrations.empty_title')"
-                    :description="__('admin.registrations.empty_body')"
+                    :title="request()->hasAny(['q', 'cohort', 'state']) ? __('app.no_search_results_title') : __('admin.registrations.empty_title')"
+                    :description="request()->hasAny(['q', 'cohort', 'state']) ? __('app.no_search_results') : __('admin.registrations.empty_body')"
                     :action-label="request()->hasAny(['q', 'cohort', 'state']) ? __('app.clear_filters') : null"
                     :action-href="request()->hasAny(['q', 'cohort', 'state']) ? route('admin.registrations.index') : null" />
             @else
@@ -120,7 +122,7 @@
 
         {{-- Review one request --------------------------------------------------------- --}}
         @if ($reviewing)
-            <x-ui.card class="dc--span u-mt-4" icon="file"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="file"
                 :title="__('admin.registrations.review_title', ['name' => $reviewing->name])">
 
                 <div class="f2">

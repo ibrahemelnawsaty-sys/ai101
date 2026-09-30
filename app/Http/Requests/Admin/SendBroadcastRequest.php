@@ -60,6 +60,17 @@ final class SendBroadcastRequest extends FormRequest
     }
 
     /**
+     * The platform-wide «write something or attach a file» is about messaging; this form
+     * has no attachment, so it says what this form asks (D-147).
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['body.required' => (string) __('admin.broadcasts.body_required')];
+    }
+
+    /**
      * @return array<string, string>
      */
     public function attributes(): array

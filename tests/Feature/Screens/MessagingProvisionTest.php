@@ -64,7 +64,7 @@ it('D-82: إسناد مدرّب يمنحه القناتين ومحادثة مع 
     $admin = makeAdmin();
 
     foreach ([1, 2] as $_) {
-        $this->actingAs($admin)->post(route('admin.cohorts.trainers.attach', $this->cohort), ['email' => 'coach@example.test']);
+        $this->actingAs($admin)->post(route('admin.cohorts.trainers.attach', $this->cohort), ['trainer_email' => 'coach@example.test']);
     }
 
     $types = threadsOf($coach);

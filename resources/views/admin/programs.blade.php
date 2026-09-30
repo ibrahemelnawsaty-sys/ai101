@@ -29,8 +29,10 @@
             <form method="GET" action="{{ route('admin.programs.index') }}" class="toolbar__filters">
                 <x-ui.search-input name="q" :value="request('q')"
                     :placeholder="__('app.search_placeholder')" />
-                <x-ui.select clearable name="status" :label="__('admin.programs.fields.status')"
-                    :options="$statusOptions" :value="request('status')" />
+                {{-- `state`, not `status`: the editor below has a `status` field of its own, and two
+                     controls of one name shared an id and let a failed save rewrite this filter (D-147). --}}
+                <x-ui.select clearable name="state" :label="__('admin.programs.fields.status')"
+                    :options="$statusOptions" :value="request('state')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
             </form>
             <div class="toolbar__end">
@@ -59,10 +61,10 @@
                 </div>
             @elseif ($programs->isEmpty())
                 <x-ui.empty-state icon="folder"
-                    :title="request()->hasAny(['q', 'status']) ? __('app.no_search_results_title') : __('admin.programs.empty_title')"
-                    :description="request()->hasAny(['q', 'status']) ? __('app.no_search_results') : __('admin.programs.empty_body')"
-                    :action-label="request()->hasAny(['q', 'status']) ? __('app.clear_filters') : __('admin.programs.create')"
-                    :action-href="request()->hasAny(['q', 'status']) ? route('admin.programs.index') : route('admin.programs.index', ['edit' => 'new'])" />
+                    :title="request()->hasAny(['q', 'state']) ? __('app.no_search_results_title') : __('admin.programs.empty_title')"
+                    :description="request()->hasAny(['q', 'state']) ? __('app.no_search_results') : __('admin.programs.empty_body')"
+                    :action-label="request()->hasAny(['q', 'state']) ? __('app.clear_filters') : __('admin.programs.create')"
+                    :action-href="request()->hasAny(['q', 'state']) ? route('admin.programs.index') : route('admin.programs.index', ['edit' => 'new'])" />
             @else
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">
@@ -109,11 +111,13 @@
 
         {{-- Editor ------------------------------------------------------------------ --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="folder"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="folder"
                 :title="$editing->exists ? __('app.edit') : __('admin.programs.create')">
 
+                {{-- A programme is addressed by its SLUG in the route (Program::getRouteKeyName);
+                     the uuid answered 404, and every typed edit was lost with it (D-147). --}}
                 <form method="POST"
-                    action="{{ $editing->exists ? route('admin.programs.update', $editing->id) : route('admin.programs.store') }}">
+                    action="{{ $editing->exists ? route('admin.programs.update', $editing->slug) : route('admin.programs.store') }}">
                     @csrf
                     @if ($editing->exists)
                         @method('PATCH')
@@ -169,13 +173,13 @@
 
         {{-- Archive confirmation ------------------------------------------------------ --}}
         @if ($archiving)
-            <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('app.archive')">
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="warn" :title="__('app.archive')">
                 <div class="note note--warn">
                     <b>{{ $archiving->name }}</b>
                     {{ __('admin.programs.archive_confirm') }}
                 </div>
 
-                <form method="POST" action="{{ route('admin.programs.archive', $archiving->id) }}">
+                <form method="POST" action="{{ route('admin.programs.archive', $archiving->slug) }}">
                     @csrf
                     @method('PUT')
 

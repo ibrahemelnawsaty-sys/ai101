@@ -34,10 +34,10 @@ final class AssignCoordinatorRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $email = $this->input('email');
+        $email = $this->input('coordinator_email');
 
         if (is_string($email)) {
-            $this->merge(['email' => mb_strtolower(trim($email))]);
+            $this->merge(['coordinator_email' => mb_strtolower(trim($email))]);
         }
     }
 
@@ -47,7 +47,7 @@ final class AssignCoordinatorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => [
+            'coordinator_email' => [
                 'bail', 'required', 'string', 'email:rfc', 'max:190',
                 Rule::exists('users', 'email')
                     ->whereNull('deleted_at')
@@ -61,7 +61,7 @@ final class AssignCoordinatorRequest extends FormRequest
      */
     public function messages(): array
     {
-        return ['email.exists' => (string) __('admin.cohorts.coordinator_not_found')];
+        return ['coordinator_email.exists' => (string) __('admin.cohorts.coordinator_not_found')];
     }
 
     public function cohort(): Cohort
@@ -76,7 +76,7 @@ final class AssignCoordinatorRequest extends FormRequest
     {
         /** @var User $coordinator */
         $coordinator = User::query()
-            ->where('email', (string) $this->validated('email'))
+            ->where('email', (string) $this->validated('coordinator_email'))
             ->whereIn('role', self::assignableRoles())
             ->sole();
 

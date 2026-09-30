@@ -64,7 +64,7 @@
     @endif
 
     @if ($message !== null)
-        <p class="ui-field__hint ui-field__hint--error" id="{{ $errorId }}" role="alert">
+        <p class="ui-field__hint ui-field__hint--error" id="{{ $errorId }}" role="alert" data-open-panel tabindex="-1">
             <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#i-warn"/></svg>
             <span>{{ $message }}</span>
         </p>

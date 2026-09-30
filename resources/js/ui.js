@@ -612,7 +612,13 @@ function uiSearch(options = {}) {
         clear() {
             if (this.timer) window.clearTimeout(this.timer);
             this.value = '';
-            if (this.$refs.input) this.$refs.input.focus();
+            // The form is submitted in this same tick, before Alpine writes `value` back to
+            // the input: without this the reload carried the old search and «clear» did
+            // nothing (found on the certificates screen, D-147).
+            if (this.$refs.input) {
+                this.$refs.input.value = '';
+                this.$refs.input.focus();
+            }
             this.commit();
         },
 

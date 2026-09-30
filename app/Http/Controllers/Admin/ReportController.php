@@ -367,15 +367,22 @@ final class ReportController extends Controller
 
         $rows = Cohort::query()
             ->with('program')
-            ->withCount(['enrollments', 'sessions', 'certificates'])
+            // The screen's «participants» is the participant role, not every enrolment row
+            // (trainers and coordinators hold rows too); the file says the same number.
+            ->withCount([
+                'enrollments as participants_count' => static fn ($query) => $query->where('role_in_cohort', EnrollmentRole::Participant->value),
+                'sessions',
+                'certificates',
+            ])
             ->when($only !== null, static fn ($query) => $query->whereKey($only))
             ->orderByDesc('start_date')
             ->get()
             ->map(static fn (Cohort $cohort): array => [
                 (string) ($cohort->program?->getAttribute('name_ar') ?? ''),
                 (string) $cohort->getAttribute('name'),
-                (string) $cohort->getAttribute('status')?->value,
-                (string) $cohort->getAttribute('enrollments_count'),
+                // In words, as the screen says it — not the English code the column stores.
+                (string) $cohort->getAttribute('status')?->label(),
+                (string) $cohort->getAttribute('participants_count'),
                 (string) $cohort->getAttribute('sessions_count'),
                 (string) $cohort->getAttribute('certificates_count'),
             ])

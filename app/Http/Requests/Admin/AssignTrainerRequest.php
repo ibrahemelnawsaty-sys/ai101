@@ -48,10 +48,10 @@ final class AssignTrainerRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        $email = $this->input('email');
+        $email = $this->input('trainer_email');
 
         if (is_string($email)) {
-            $this->merge(['email' => mb_strtolower(trim($email))]);
+            $this->merge(['trainer_email' => mb_strtolower(trim($email))]);
         }
     }
 
@@ -61,7 +61,7 @@ final class AssignTrainerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => [
+            'trainer_email' => [
                 'bail', 'required', 'string', 'email:rfc', 'max:190',
                 Rule::exists('users', 'email')
                     ->whereNull('deleted_at')
@@ -75,7 +75,7 @@ final class AssignTrainerRequest extends FormRequest
      */
     public function messages(): array
     {
-        return ['email.exists' => (string) __('admin.cohorts.trainer_not_found')];
+        return ['trainer_email.exists' => (string) __('admin.cohorts.trainer_not_found')];
     }
 
     /**
@@ -95,7 +95,7 @@ final class AssignTrainerRequest extends FormRequest
             // The rules above proved the account exists; read by the input, not
             // by validated(), which is not settled while the validator runs.
             $trainerId = User::query()
-                ->where('email', (string) $this->input('email'))
+                ->where('email', (string) $this->input('trainer_email'))
                 ->whereIn('role', self::assignableRoles())
                 ->value('id');
 
@@ -131,7 +131,7 @@ final class AssignTrainerRequest extends FormRequest
     {
         /** @var User $trainer */
         $trainer = User::query()
-            ->where('email', (string) $this->validated('email'))
+            ->where('email', (string) $this->validated('trainer_email'))
             ->whereIn('role', self::assignableRoles())
             ->sole();
 

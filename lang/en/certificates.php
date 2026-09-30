@@ -128,6 +128,9 @@ return [
     'error_body' => 'Something went wrong while fetching it. Try again shortly — your certificate is safe and unaffected.',
 
     'admin' => [
+        'issued_empty_title' => 'No certificates issued yet',
+        'issued_empty_body' => 'Issued certificates appear here once the first one is issued from the eligible list.',
+        'current_cohort' => 'Current cohort',
         'title' => 'Issue certificates',
         'issue_one' => 'Issue the certificate',
         'issue_selected' => 'Issue to those eligible',
@@ -175,7 +178,7 @@ return [
         'cohort' => 'Cohort',
         'score' => 'Final score',
         'attendance' => 'Attendance rate',
-        'revoked' => 'Revoked on',
+        'revoked' => 'Revoked (1 = yes)',
     ],
 
 ];

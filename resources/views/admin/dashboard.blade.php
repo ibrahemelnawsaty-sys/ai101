@@ -40,9 +40,9 @@
                 <x-ui.stat-card variant="brand" :value="$stats->activeUsers"
                     :label="__('admin.stats.active_users')" />
                 <x-ui.stat-card :variant="$stats->attendanceVariant"
-                    :value="$stats->averageAttendance . '%'"
+                    :value="$stats->averageAttendanceLabel"
                     :label="__('admin.stats.average_attendance')" />
-                <x-ui.stat-card :value="$stats->averageScore . ' / ' . $stats->scoreMax"
+                <x-ui.stat-card :value="$stats->averageScoreLabel"
                     :label="__('admin.stats.average_score')" />
                 <x-ui.stat-card :variant="$stats->ungradedSubmissions > 0 ? 'warning' : 'success'"
                     :value="$stats->ungradedSubmissions"

@@ -103,7 +103,7 @@ it('D-105: المشرف يسند منسّقًا للدفعة عبر بريده،
     $newCoordinator = makeCoordinator();
 
     $this->actingAs($this->admin)
-        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['email' => $newCoordinator->email])
+        ->post(route('admin.cohorts.coordinators.attach', $this->cohort), ['coordinator_email' => $newCoordinator->email])
         ->assertSessionHasNoErrors();
 
     expect(

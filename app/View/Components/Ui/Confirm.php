@@ -71,6 +71,7 @@ final class Confirm extends UiComponent
         public ?string $triggerIcon = null,
         public string $triggerVariant = 'danger-ghost',
         public string $triggerSize = 'sm',
+        public ?string $triggerContext = null,
         mixed $triggerIconOnly = false,
         public ?string $reasonName = null,
         public ?string $reasonLabel = null,

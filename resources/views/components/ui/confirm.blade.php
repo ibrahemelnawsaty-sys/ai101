@@ -40,6 +40,7 @@
       confirm-icon   glyph on the confirming button
       trigger-label  when given, the component draws its own trigger
       trigger-icon · trigger-variant · trigger-size · trigger-icon-only
+      trigger-context  what the trigger acts ON (a row's person): a screen reader hears "Remove — <context>"
       reason-name    when given, asks for a reason (a textarea named so)
       reason-label · reason-hint · reason-required
       reason-value   what was typed, when a failed validation re-renders this dialog — the
@@ -62,6 +63,7 @@
         :icon="$triggerIcon"
         :icon-only="$iconOnlyTrigger"
         :label="$triggerLabel"
+        :context="$triggerContext"
         type="button"
         x-on:click="$dispatch('ui-dialog-open', '{{ $uid }}')"
     >{{ $triggerLabel }}</x-ui.button>

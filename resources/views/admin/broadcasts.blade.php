@@ -50,7 +50,10 @@
                 </div>
             @enderror
 
-            <form method="POST" action="{{ route('admin.broadcasts.store') }}" class="form">
+            {{-- A message to a whole cohort cannot be taken back: the button asks first and says so
+                 (D-147). Without script it is the plain submit below and the server decides. --}}
+            <div x-data>
+            <form method="POST" action="{{ route('admin.broadcasts.store') }}" class="form" id="broadcast-form" x-ref="broadcastForm">
                 @csrf
 
                 {{-- Two forms on one page, a cohort field in each: own ids, and
@@ -81,10 +84,19 @@
                     :description="__('admin.broadcasts.in_app_hint')" />
 
                 <div class="form__submit">
-                    <x-ui.button variant="primary" type="submit" icon="mail">{{ __('admin.broadcasts.send') }}</x-ui.button>
+                    <noscript>
+                        <x-ui.button variant="primary" type="submit" icon="mail">{{ __('admin.broadcasts.send') }}</x-ui.button>
+                    </noscript>
+                    <x-ui.button x-cloak variant="primary" type="button" icon="mail"
+                        x-on:click="if (! $refs.broadcastForm.reportValidity()) return; $dispatch('ui-dialog-open', 'confirm-broadcast')">{{ __('admin.broadcasts.send') }}</x-ui.button>
                 </div>
                 <p class="form__note">{{ __('admin.broadcasts.send_note') }}</p>
             </form>
+
+            <x-ui.confirm name="confirm-broadcast" target-form="broadcast-form" variant="primary" icon="mail"
+                :title="__('admin.broadcasts.confirm_title')" :description="__('admin.broadcasts.confirm_body')"
+                :confirm-label="__('admin.broadcasts.send')" confirm-icon="mail" />
+            </div>
         </x-ui.card>
 
         {{-- 2 · The reminders, by hand. The automatic ones are untouched. --}}

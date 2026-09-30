@@ -126,7 +126,7 @@
 
         {{-- One entry, before and after ------------------------------------------------ --}}
         @if ($opened)
-            <x-ui.card class="dc--span u-mt-4" icon="shield" :title="$opened->actionLabel">
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="shield" :title="$opened->actionLabel">
                 <dl class="deflist">
                     <div><dt>{{ __('admin.audit.table.at') }}</dt><dd class="u-when">{{ \App\Support\Dates::dateTime($opened->at) }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.actor') }}</dt><dd>{{ $opened->actorName }}</dd></div>

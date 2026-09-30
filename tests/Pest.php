@@ -866,3 +866,126 @@ function ooxmlBytes(array $declared, array $extra = []): string
 
     return zipBytes($entries + $extra);
 }
+
+/**
+ * A form read out of a page and filled in, the way a browser sends it (Phase 5).
+ *
+ * Every test of a form so far posted the array its FormRequest wants, and not what
+ * the page sends: the roster's «0» companions, the certificates' `candidates[]`, the
+ * programme editor's uuid in a slug route and the cohort's `T` in a date were all
+ * invisible to them. This reads the FIRST form matching `$formXPath`, takes its
+ * enabled, named controls with the values the page gave them (a hidden input always
+ * sends; a checkbox only when it is `checked` or listed in `$ticked`; a select its
+ * selected option; a textarea its text), lets `$values` change what a person typed,
+ * and returns what the browser would post.
+ *
+ * `_method` stays in the fields, so posting them with ->post() reaches the spoofed
+ * PATCH / PUT / DELETE route exactly as the page does.
+ *
+ * @param  array<string, string|list<string>>  $values  name => what the person typed
+ * @param  list<string>  $ticked  checkbox values to tick (others keep the page's state)
+ * @return array{0: string, 1: array<string, mixed>} action, fields
+ */
+function browserForm(string $html, string $formXPath, array $values = [], array $ticked = []): array
+{
+    $dom = new DOMDocument;
+    @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    $xpath = new DOMXPath($dom);
+
+    $form = $xpath->query($formXPath)->item(0);
+
+    if (! $form instanceof DOMElement) {
+        throw new RuntimeException('No form matches '.$formXPath);
+    }
+
+    $controls = [];
+
+    foreach ($xpath->query('.//input[@name]|.//select[@name]|.//textarea[@name]', $form) as $control) {
+        $controls[] = $control;
+    }
+
+    if ($form->getAttribute('id') !== '') {
+        foreach ($xpath->query('//*[@form="'.$form->getAttribute('id').'"][@name][not(self::button)]') as $control) {
+            $controls[] = $control;
+        }
+    }
+
+    $pairs = [];
+    $typed = [];
+
+    foreach ($controls as $control) {
+        /** @var DOMElement $control */
+        if ($control->hasAttribute('disabled')) {
+            continue;
+        }
+
+        $name = $control->getAttribute('name');
+        $tag = strtolower($control->tagName);
+        $type = strtolower($control->getAttribute('type') ?: 'text');
+
+        if ($type === 'checkbox' || $type === 'radio') {
+            $on = $control->hasAttribute('checked') || in_array($control->getAttribute('value'), $ticked, true);
+
+            if ($on) {
+                $pairs[] = [$name, $control->getAttribute('value')];
+            }
+
+            continue;
+        }
+
+        if ($type === 'submit' || $type === 'button' || $type === 'file') {
+            continue;
+        }
+
+        if (array_key_exists($name, $values) && $type !== 'hidden') {
+            foreach ((array) $values[$name] as $one) {
+                $pairs[] = [$name, (string) $one];
+            }
+
+            $typed[$name] = true;
+
+            continue;
+        }
+
+        if ($type === 'hidden' && array_key_exists($name, $values) && ! isset($typed[$name])) {
+            // A custom listbox posts through a hidden input: what the person picked replaces it.
+            foreach ((array) $values[$name] as $one) {
+                $pairs[] = [$name, (string) $one];
+            }
+
+            $typed[$name] = true;
+
+            continue;
+        }
+
+        if ($tag === 'textarea') {
+            $pairs[] = [$name, trim($control->textContent)];
+
+            continue;
+        }
+
+        if ($tag === 'select') {
+            $selected = null;
+
+            foreach ($xpath->query('.//option', $control) as $option) {
+                /** @var DOMElement $option */
+                if ($selected === null || $option->hasAttribute('selected')) {
+                    $selected = $option->getAttribute('value');
+                }
+            }
+
+            $pairs[] = [$name, (string) $selected];
+
+            continue;
+        }
+
+        $pairs[] = [$name, $control->getAttribute('value')];
+    }
+
+    parse_str(implode('&', array_map(
+        static fn (array $pair): string => urlencode($pair[0]).'='.urlencode($pair[1]),
+        $pairs,
+    )), $fields);
+
+    return [$form->getAttribute('action'), $fields];
+}

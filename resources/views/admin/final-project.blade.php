@@ -182,7 +182,7 @@
 
                 {{-- Removal prompt ---------------------------------------------------- --}}
                 @if ($fieldsPanel->removal)
-                    <x-ui.card class="dc--span u-mt-4" icon="warn" id="field-removal"
+                    <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="warn" id="field-removal"
                         :title="$fieldsPanel->removal['title']">
                         <div class="note note--warn">
                             {{ __('admin.final_project.submission_fields.remove_body') }}
@@ -204,7 +204,7 @@
 
                 {{-- Field editor ------------------------------------------------------ --}}
                 @if ($fieldsPanel->editor)
-                    <x-ui.card class="dc--span u-mt-4" icon="upload" id="field-editor" :title="$fieldsPanel->editor->title">
+                    <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="upload" id="field-editor" :title="$fieldsPanel->editor->title">
                         <form method="POST"
                             action="{{ $fieldsPanel->editor->exists
                                 ? route('admin.finalProject.fields.update', [$fieldsPanel->projectId, $fieldsPanel->editor->id])
