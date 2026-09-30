@@ -33,6 +33,7 @@ use App\Presenters\Trainer\RosterEntry;
 use App\Presenters\Trainer\SessionRow;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\AttendanceWindow;
+use App\Services\Attendance\RosterSession;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Time\Clock;
 use App\Support\ImpersonationContext;
@@ -80,6 +81,7 @@ final class AttendanceController extends Controller
         private readonly AttendanceRecorder $recorder,
         private readonly AttendanceWindow $window,
         private readonly CertificateEligibility $eligibility,
+        private readonly RosterSession $defaultSession,
     ) {}
 
     public function index(Request $request): View
@@ -132,6 +134,9 @@ final class AttendanceController extends Controller
                 ? AttendanceRoster::none()
                 : AttendanceRoster::of($session, $participants, $records, $this->window),
             'matrix' => $this->matrix($request, $cohort, $sessions, $participants, $rates),
+            // The picker shows the session the roster is OF, not "choose from the
+            // list" above a roster of one (D-142).
+            'selectedSessionId' => $session?->getKey(),
             'sessionOptions' => Options::fromModels(
                 $sessions,
                 static fn (Session $item): string => (string) (
@@ -528,9 +533,9 @@ final class AttendanceController extends Controller
             }
         }
 
-        $first = $sessions->first();
-
-        return $first instanceof Session ? $first : null;
+        // No (valid) session in the address: the live one, else the next, else
+        // the last held (D-142) — not the oldest of the cohort.
+        return $this->defaultSession->defaultFor($sessions, Clock::now());
     }
 
     /**

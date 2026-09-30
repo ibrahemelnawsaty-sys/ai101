@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Phase 4 (4-أ) — the attendance roster opens on the session the trainer needs.
+ *
+ * It opened on the OLDEST session of the cohort, so on the day of the fourth week
+ * the trainer met week one's roster and had to find today's session in a list.
+ * Now, with no `?session=` in the address, it opens on:
+ *
+ *   1. the session that is LIVE — AttendanceWindow::isLive, S ≤ now ≤ E, never
+ *      a cancelled one (the definition the live pill and the poll already use);
+ *   2. else the NEXT session — the earliest one that has not started;
+ *   3. else the LAST session held.
+ *
+ * Which session is opened decides nothing about anybody's attendance: no window,
+ * no status and no counting rule is touched, and a `?session=` in the address
+ * always wins. The definition of "live" is the window service's, asked, not
+ * restated. Cancelled sessions are never the default (a roster of a session that
+ * will not happen is not what anyone opens the screen for) — recorded as an
+ * assumption in D-142.
+ *
+ * @see BR-07, BR-08 · PRD §9.9.7 · CONSTITUTION art. 5 · D-142
+ */
+
+use App\Enums\SessionStatus;
+
+beforeEach(function (): void {
+    $this->cohort = makeCohort(['status' => 'running']);
+    $this->trainer = makeTrainer($this->cohort);
+
+    // Two evenings, Riyadh time.
+    $this->a = sessionInCohort($this->cohort, riyadhAt('2026-10-05 18:00:00'), riyadhAt('2026-10-05 21:00:00'), ['title' => 'Session A']);
+    $this->b = sessionInCohort($this->cohort, riyadhAt('2026-10-06 18:00:00'), riyadhAt('2026-10-06 21:00:00'), ['title' => 'Session B']);
+});
+
+/** The id of the session the roster opened on at `$now`. */
+function rosterOpensOn(object $test, string $at, array $query = []): ?string
+{
+    freezeAt(riyadhAt($at));
+    Illuminate\Support\Facades\Auth::forgetGuards();
+
+    $roster = $test->actingAs($test->trainer)
+        ->get(route('trainer.attendance', $query))
+        ->assertOk()
+        ->viewData('roster');
+
+    return $roster['sessionId'];
+}
+
+it('BR-07: قبل بدء الجلسة الأولى بثانية تفتح الشاشة عليها — هي «القادمة»', function (): void {
+    expect(rosterOpensOn($this, '2026-10-05 17:59:59'))->toBe($this->a->id);
+});
+
+it('BR-07: عند S وعند E بالضبط تفتح على الجلسة الجارية — الحدّان مشمولان', function (): void {
+    expect(rosterOpensOn($this, '2026-10-05 18:00:00'))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-05 21:00:00'))->toBe($this->a->id);
+});
+
+it('BR-07: بعد E بثانية تنتقل إلى القادمة — الجلسة الثانية لا الأولى المنتهية', function (): void {
+    expect(rosterOpensOn($this, '2026-10-05 21:00:01'))->toBe($this->b->id);
+});
+
+it('BR-07: بعد آخر جلسة تفتح على آخر جلسة عُقدت', function (): void {
+    expect(rosterOpensOn($this, '2026-10-06 21:00:00'))->toBe($this->b->id)
+        ->and(rosterOpensOn($this, '2026-10-06 21:00:01'))->toBe($this->b->id)
+        ->and(rosterOpensOn($this, '2026-12-01 09:00:00'))->toBe($this->b->id);
+});
+
+it('BR-07: قبل كل الجلسات تفتح على أقدمها بدءًا — لا على آخرها', function (): void {
+    expect(rosterOpensOn($this, '2026-09-01 09:00:00'))->toBe($this->a->id);
+});
+
+it('BR-07: الجلسة الملغاة لا تكون افتراضًا — لا حيّة ولا قادمة', function (): void {
+    $this->b->update(['status' => SessionStatus::Cancelled->value]);
+
+    // Between the two, the next non-cancelled session is none: the last held is A.
+    expect(rosterOpensOn($this, '2026-10-05 21:00:01'))->toBe($this->a->id);
+
+    // Live, cancelled: not live, so not the default at its own start.
+    expect(rosterOpensOn($this, '2026-10-06 18:00:00'))->toBe($this->a->id);
+});
+
+it('BR-07: ما يكتبه المدرّب في العنوان يغلب — جلسة صريحة تُفتح مهما كان الوقت، وجلسة مجهولة تُتجاهل', function (): void {
+    expect(rosterOpensOn($this, '2026-10-06 19:00:00', ['session' => $this->a->id]))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-06 19:00:00', ['session' => 'not-a-session']))->toBe($this->b->id);
+});
+
+it('BR-23: جلسة دفعة أخرى في العنوان لا تُفتح — يبقى الافتراض من جلسات دفعته', function (): void {
+    $foreign = sessionInCohort(makeCohort(), riyadhAt('2026-10-06 18:00:00'), riyadhAt('2026-10-06 21:00:00'), ['title' => 'Foreign']);
+
+    expect(rosterOpensOn($this, '2026-10-06 19:00:00', ['session' => $foreign->id]))->toBe($this->b->id);
+})->group('authz');
+
+it('BR-07: قائمة الاختيار تُظهر الجلسة المفتوحة فعلًا — لا «اختر من القائمة» فوق كشف جلسة بعينها', function (): void {
+    freezeAt(riyadhAt('2026-10-06 19:00:00'));
+
+    $page = $this->actingAs($this->trainer)->get(route('trainer.attendance'))->assertOk();
+
+    expect($page->viewData('selectedSessionId'))->toBe($this->b->id);
+});
+
+it('BR-07: إن أُلغيت كل الجلسات تُعرض آخرها — الشاشة لا تخلو من كشف الدفعة', function (): void {
+    $this->a->update(['status' => SessionStatus::Cancelled->value]);
+    $this->b->update(['status' => SessionStatus::Cancelled->value]);
+
+    expect(rosterOpensOn($this, '2026-10-05 19:00:00'))->toBe($this->b->id);
+});
+
+it('BR-07: دفعة بلا جلسات — لا كشف ولا خطأ', function (): void {
+    $cohort = makeCohort(['status' => 'running']);
+    $trainer = makeTrainer($cohort);
+
+    freezeAt(riyadhAt('2026-10-05 19:00:00'));
+
+    $roster = $this->actingAs($trainer)->get(route('trainer.attendance'))->assertOk()->viewData('roster');
+
+    expect($roster['hasNoSession'])->toBeTrue();
+});

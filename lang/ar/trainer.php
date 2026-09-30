@@ -204,6 +204,10 @@ return [
         'checked_in_of_total' => 'سجّلوا حضورهم من إجمالي المتدربين',
         'roster_caption' => 'كشف حضور جلسة :session',
         'select_participant' => 'تحديد :name للتسجيل الجماعي',
+        'select_all' => 'تحديد كل المتدربين',
+        'select_row' => 'تحديد للتسجيل الجماعي',
+        'selected_label' => 'المحدَّدون',
+        'bulk_hint' => 'للحالات الطارئة: حدّد المتدربين ثم طبّق عليهم حالة واحدة بسبب مكتوب.',
         'col_edit' => 'تعديل',
 
         'edit_title' => 'تعديل سجل :name',

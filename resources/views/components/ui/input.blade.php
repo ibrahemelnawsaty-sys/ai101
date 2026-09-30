@@ -21,6 +21,7 @@
       state     default | loading | disabled | readonly | success
       name      form field name (also the default id)
       label     visible label — omit only when an aria-label is supplied
+      label-hidden  keep the label for assistive technology, draw it off-screen (D-143)
       hint      helper text under the field
       error     explicit error message; falls back to $errors->first($name)
       ltr       force LTR text direction inside the box
@@ -37,7 +38,7 @@
     @endif
 >
     @if ($label !== null)
-        <label class="ui-field__label" for="{{ $fieldId }}">
+        <label @class(['ui-field__label', 'ui-sr' => $labelHidden]) for="{{ $fieldId }}">
             {{ $label }}
             @if ($required)
                 <i class="ui-field__required" aria-hidden="true">*</i>

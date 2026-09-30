@@ -18,6 +18,7 @@
       options   array of ['value','label','description','disabled']
       checked   the server's answer for a single box
       value     array|scalar of selected values for a group
+      label-hidden  keep the label for assistive technology, draw it off-screen (D-143)
 --}}
 
 
@@ -74,7 +75,7 @@
             <input type="hidden" name="{{ $name }}" value="{{ $hiddenValue }}">
         @endif
 
-        <label class="ui-check @if ($isDisabled) ui-check--disabled @endif" for="{{ $baseId }}">
+        <label @class(['ui-check', 'ui-check--disabled' => $isDisabled, 'ui-check--bare' => $labelHidden]) for="{{ $baseId }}">
             <span class="ui-check__control">
                 <input
                     type="checkbox"
@@ -90,16 +91,15 @@
                     @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
                     {{ $attributes->except('class') }}
                 >
+                {{-- Both glyphs are drawn; the stylesheet shows the dash while the input is
+                     `:indeterminate`, so a select-all box can go partial from script. --}}
                 <span class="ui-check__box" aria-hidden="true">
-                    @if ($indeterminate)
-                        <span class="ui-check__dash"></span>
-                    @else
-                        <svg class="ui-icon ui-check__mark" focusable="false"><use href="#i-check"/></svg>
-                    @endif
+                    <svg class="ui-icon ui-check__mark" focusable="false"><use href="#i-check"/></svg>
+                    <span class="ui-check__dash"></span>
                 </span>
             </span>
             <span class="ui-check__text">
-                <span class="ui-check__title">
+                <span @class(['ui-check__title', 'ui-sr' => $labelHidden])>
                     {{ $label ?? $slot }}
                     @if ($required)
                         <i class="ui-field__required" aria-hidden="true">*</i>

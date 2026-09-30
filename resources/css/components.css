@@ -580,7 +580,13 @@ border: var(--bw-icon) solid var(--border-3);
 .ui-check__input[aria-invalid="true"] + .ui-check__box { border-color: var(--bad); }
 .ui-check__mark { inline-size: var(--s3); block-size: var(--s3); }
 .ui-check__mark use { stroke-width: var(--bw-glyph-mark); }
-.ui-check__dash { inline-size: var(--s3); block-size: var(--s1); background: currentColor; border-radius: var(--r-xs); }
+.ui-check__dash { display: none; inline-size: var(--s3); block-size: var(--s1); background: currentColor; border-radius: var(--r-xs); }
+.ui-check__input:indeterminate + .ui-check__box .ui-check__dash { display: block; }
+.ui-check__input:indeterminate + .ui-check__box .ui-check__mark { display: none; }
+
+/* A box with no words beside it (a row selector, D-143) is still a 44px target
+   in BOTH axes — the label is the click area, and with no text it was 24px wide. */
+.ui-check--bare { justify-content: center; min-inline-size: var(--touch); padding-inline: 0; }
 
 .ui-check__text { min-inline-size: 0; }
 .ui-check__title { display: block; font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-body); line-height: var(--lh-sm); }
@@ -658,6 +664,10 @@ border: var(--bw-hairline) solid var(--border-1);
   transition: box-shadow var(--t-base) var(--e-out), border-color var(--t-base) var(--e-out);
 }
 .ui-card--flat { box-shadow: none; }
+/* `overflow: hidden` makes the card a scroll container, and a sticky bar inside it
+   then has nothing to stick to. `clip` rounds the corners the same way without
+   becoming one; a browser without it keeps `hidden` and loses only the stickiness. */
+.ui-card--sticky-bar { overflow: hidden; overflow: clip; }
 .ui-card--interactive { cursor: pointer; }
 .ui-card--interactive:hover { box-shadow: var(--sh-md); border-color: var(--border-accent); }
 .ui-card--brand { background: var(--violet-a08); border-color: var(--border-accent); box-shadow: none; }

@@ -1255,6 +1255,71 @@ function atharThread() {
  * partials. Polling runs only while the server says the session is live, stops
  * by itself when it ends, and a hidden tab does not poll.
  */
+/**
+ * Row selection for a bulk form (D-143).
+ *
+ * The page is the form: the boxes are named inputs the server already reads, so
+ * this only COUNTS what is ticked and drives the "select all" box, and never
+ * changes what would be submitted. Without script the form still posts every
+ * ticked box; the bar simply stays open.
+ */
+function atharBulkSelect() {
+    return (config = {}) => ({
+        picked: 0,
+        total: 0,
+        watch: null,
+
+        init() {
+            this.count();
+
+            // The bar that follows the person down the list covers the bottom of
+            // the screen. Its height is handed to the page's scroll padding so a
+            // box reached by keyboard is scrolled clear of it, never under it.
+            const bar = this.$root.querySelector('.bulkbar');
+            if (bar && 'ResizeObserver' in window) {
+                this.watch = new ResizeObserver(() => this.reserve(bar));
+                this.watch.observe(bar);
+            }
+        },
+
+        destroy() {
+            if (this.watch) this.watch.disconnect();
+            document.documentElement.style.removeProperty('--bulkbar-h');
+        },
+
+        reserve(bar) {
+            const height = bar.offsetParent === null ? 0 : bar.offsetHeight;
+            document.documentElement.style.setProperty('--bulkbar-h', `${height}px`);
+        },
+
+        boxes() {
+            const name = String(config.name || '');
+            return Array.from(this.$root.querySelectorAll('input[type="checkbox"]')).filter(
+                (box) => box.name === name && !box.disabled,
+            );
+        },
+
+        count() {
+            const boxes = this.boxes();
+            this.total = boxes.length;
+            this.picked = boxes.filter((box) => box.checked).length;
+
+            const all = this.$refs.all;
+            if (all) {
+                all.checked = this.total > 0 && this.picked === this.total;
+                all.indeterminate = this.picked > 0 && this.picked < this.total;
+            }
+        },
+
+        toggleAll(on) {
+            this.boxes().forEach((box) => {
+                box.checked = on;
+            });
+            this.count();
+        },
+    });
+}
+
 function atharRoster() {
     return (config = {}) => ({
         busy: false,
@@ -1417,6 +1482,7 @@ Alpine.data('atharWelcome', atharWelcome());
 Alpine.data('atharSchedule', atharSchedule());
 Alpine.data('atharThread', atharThread());
 Alpine.data('atharRoster', atharRoster());
+Alpine.data('atharBulkSelect', atharBulkSelect());
 Alpine.data('atharCheckinCode', atharCheckinCode());
 Alpine.data('resendCooldown', resendCooldown());
 

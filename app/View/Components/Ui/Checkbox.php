@@ -6,6 +6,7 @@ namespace App\View\Components\Ui;
 
 use App\View\Components\UiComponent;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 
 /**
  * Checkbox and checkbox-group view model.
@@ -45,6 +46,9 @@ final class Checkbox extends UiComponent
 
     public bool $withFalse;
 
+    /** The label is for assistive technology only — drawn off-screen, never removed (D-143). */
+    public bool $labelHidden;
+
     /** What the hidden companion posts — see SwitchControl::$hiddenValue (D-78). */
     public mixed $hiddenValue;
 
@@ -69,15 +73,27 @@ final class Checkbox extends UiComponent
         mixed $required = false,
         mixed $withFalse = true,
         mixed $disabled = false,
+        mixed $labelHidden = false,
     ) {
         $this->checked = (bool) $checked;
         $this->indeterminate = (bool) $indeterminate;
         $this->required = (bool) $required;
-        $this->withFalse = (bool) $withFalse;
+        // A list of boxes (`name="user_id[]"`) has no "false" to post: the companion
+        // would add a literal "0" to the very array the server validates as ids, so
+        // every bulk form built on one was refused (D-143).
+        $this->withFalse = (bool) $withFalse && ! str_ends_with((string) $name, '[]');
+        $this->labelHidden = (bool) $labelHidden;
         $this->isDisabled = (bool) $disabled || $state === 'disabled';
         $this->hiddenValue = $this->isDisabled && $this->checked ? ($value ?? 1) : 0;
         $this->message = self::errorFor($name, $error);
         $this->baseId = self::fieldId('c', $name, $id);
+
+        // Sixty boxes named `user_id[]` all became `c-user-id`, and a <label for> then
+        // points at the FIRST of them: the wide hit area beside any row toggled the top
+        // row's box, and a screen reader read one name for all of them (D-143).
+        if ($name !== null && str_ends_with($name, '[]') && ($id === null || $id === '') && $options === null && is_scalar($value)) {
+            $this->baseId .= '-'.Str::slug((string) $value);
+        }
 
         $this->items = is_array($options) ? array_values($options) : null;
 

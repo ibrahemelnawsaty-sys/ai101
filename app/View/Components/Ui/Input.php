@@ -61,6 +61,9 @@ final class Input extends UiComponent
 
     public bool $counter;
 
+    /** The label is for assistive technology only — drawn off-screen, never removed (D-143). */
+    public bool $labelHidden;
+
     public function __construct(
         public string $variant = 'text',
         public string $size = 'md',
@@ -79,7 +82,9 @@ final class Input extends UiComponent
         mixed $rows = 4,
         mixed $maxlength = null,
         mixed $counter = false,
+        mixed $labelHidden = false,
     ) {
+        $this->labelHidden = (bool) $labelHidden;
         $this->required = (bool) $required;
         $this->ltr = (bool) $ltr;
         $this->rows = (int) $rows;

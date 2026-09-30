@@ -22,7 +22,7 @@
     @else
 
         <form method="GET" action="{{ route('trainer.attendance') }}" class="toolbar">
-            <x-ui.select name="session" :label="__('trainer.attendance.pick_session')" :options="$sessionOptions" :value="request('session')" />
+            <x-ui.select name="session" :label="__('trainer.attendance.pick_session')" :options="$sessionOptions" :value="$selectedSessionId ?? request('session')" />
             <x-ui.button icon="eye" variant="secondary" size="sm" type="submit">{{ __('app.show') }}</x-ui.button>
             <div class="toolbar__end">
                 {{-- D-117 — no export from inside an account preview.
@@ -110,7 +110,7 @@
                 @endif
             </x-ui.card>
 
-            <x-ui.card class="dc--span u-mt-4" flush>
+            <x-ui.card class="dc--span u-mt-4 ui-card--sticky-bar" flush>
                 {{-- The roster refreshes itself while the session is live (PRD §9.9.7):
                      the server re-renders the four cells that can change, and only
                      those are replaced — never the checkboxes or the reason being
@@ -147,53 +147,79 @@
                         :description="__('trainer.attendance.roster_empty_body')"
                         :action-label="__('trainer.participants.title')" :action-href="route('trainer.participants')" />
                 @else
-                    {{-- Bulk marking, for emergencies only, reason required. --}}
-                    <form method="POST" action="{{ route('trainer.attendance.bulk', $roster->sessionId) }}">
+                    {{-- Bulk marking, for emergencies only, reason required.
+                         The boxes are the form's own named inputs; the script only
+                         counts them (D-143). --}}
+                    <form method="POST" action="{{ route('trainer.attendance.bulk', $roster->sessionId) }}"
+                        x-data="atharBulkSelect({ name: 'user_id[]' })" x-on:change="count()"
+                        x-on:pageshow.window="count()">
                         @csrf
 
+                        <div class="selectbar">
+                            <x-ui.checkbox :with-false="false" x-ref="all" x-on:change="toggleAll($event.target.checked)"
+                                :label="__('trainer.attendance.select_all')" />
+                            <p class="selectbar__hint">{{ __('trainer.attendance.bulk_hint') }}</p>
+                        </div>
+
+                        @error('user_id')
+                            <p class="hint hint--bad" role="alert"><x-ui.icon name="warn" /><span>{{ $message }}</span></p>
+                        @enderror
+                        @error('user_id.*')
+                            <p class="hint hint--bad" role="alert"><x-ui.icon name="warn" /><span>{{ $message }}</span></p>
+                        @enderror
+
                         <div class="tscroll">
-                            <table class="atable">
+                            <table class="atable atable--stack atable--roster" role="table">
                                 <caption class="sr">{{ __('trainer.attendance.roster_caption', ['session' => $roster->sessionTitle]) }}</caption>
-                                <thead>
-                                    <tr>
-                                        <th scope="col"><span class="sr">{{ __('app.select') }}</span></th>
-                                        <th scope="col">{{ __('trainer.col_participant') }}</th>
-                                        <th scope="col">{{ __('attendance.col_check_in') }}</th>
-                                        <th scope="col">{{ __('attendance.col_check_out') }}</th>
-                                        <th scope="col">{{ __('attendance.col_status') }}</th>
-                                        <th scope="col">{{ __('trainer.attendance.col_edit') }}</th>
+                                <thead role="rowgroup">
+                                    <tr role="row">
+                                        <th scope="col" role="columnheader"><span class="sr">{{ __('app.select') }}</span></th>
+                                        <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('attendance.col_check_in') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('attendance.col_check_out') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('attendance.col_status') }}</th>
+                                        <th scope="col" role="columnheader">{{ __('trainer.attendance.col_edit') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody role="rowgroup">
                                     @foreach ($roster->entries as $entry)
-                                        <tr data-participant="{{ $entry->participantId }}">
-                                            <td>
+                                        <tr role="row" data-participant="{{ $entry->participantId }}">
+                                            <td role="cell" class="atable__pick" data-label="{{ __('trainer.attendance.select_row') }}">
                                                 <x-ui.checkbox name="user_id[]" :value="$entry->participantId"
                                                     :label="__('trainer.attendance.select_participant', ['name' => $entry->participantName])"
                                                     label-hidden />
                                             </td>
-                                            <th scope="row">
+                                            <th scope="row" role="rowheader" class="atable__lead">
                                                 <span class="cellpair">
                                                     <x-ui.avatar size="sm" :name="$entry->participantName" />
                                                     {{ $entry->participantName }}
                                                 </span>
                                             </th>
-                                            <td class="u-when" data-cell="in">{{ $entry->checkedInLabel }}</td>
-                                            <td class="u-when" data-cell="out">{{ $entry->checkedOutLabel }}</td>
-                                            <td data-cell="status">@include('trainer.partials.roster-status', ['entry' => $entry])</td>
-                                            <td data-cell="edit">@include('trainer.partials.roster-edit', ['entry' => $entry])</td>
+                                            <td role="cell" class="u-when" data-label="{{ __('attendance.col_check_in') }}" data-cell="in">{{ $entry->checkedInLabel }}</td>
+                                            <td role="cell" class="u-when" data-label="{{ __('attendance.col_check_out') }}" data-cell="out">{{ $entry->checkedOutLabel }}</td>
+                                            <td role="cell" data-label="{{ __('attendance.col_status') }}" data-cell="status">@include('trainer.partials.roster-status', ['entry' => $entry])</td>
+                                            <td role="cell" data-label="{{ __('trainer.attendance.col_edit') }}" data-cell="edit">@include('trainer.partials.roster-edit', ['entry' => $entry])</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
 
-                        <div class="tablebar">
-                            <x-ui.select name="attendance_status" :label="__('trainer.attendance.bulk_status')" :options="$statusOptions" required />
-                            <x-ui.input name="edit_reason" minlength="10" required
-                                :label="__('trainer.attendance.reason')"
-                                :hint="__('trainer.attendance.reason_hint', ['min' => 10])" />
-                            <x-ui.button icon="attendance" variant="secondary" size="sm" type="submit">{{ __('trainer.attendance.apply_bulk') }}</x-ui.button>
+                        {{-- Appears once someone is ticked and then stays in view, so the action
+                             is never a long scroll away from the rows it applies to. --}}
+                        <div class="bulkbar" x-bind:class="{ 'is-idle': picked === 0 }">
+                            <p class="bulkbar__count" role="status" aria-live="polite">
+                                <span>{{ __('trainer.attendance.selected_label') }}</span>
+                                <b class="u-num"><span x-text="picked">0</span> / <span x-text="total">{{ $roster->entries->count() }}</span></b>
+                            </p>
+                            <div class="bulkbar__fields">
+                                <x-ui.select name="attendance_status" :label="__('trainer.attendance.bulk_status')" :options="$statusOptions" required />
+                                <x-ui.input name="edit_reason" minlength="10" required
+                                    :label="__('trainer.attendance.reason')"
+                                    :hint="__('trainer.attendance.reason_hint', ['min' => 10])" />
+                            </div>
+                            <x-ui.button icon="attendance" variant="secondary" size="sm" type="submit"
+                                x-bind:disabled="picked === 0">{{ __('trainer.attendance.apply_bulk') }}</x-ui.button>
                         </div>
                     </form>
                 @endif

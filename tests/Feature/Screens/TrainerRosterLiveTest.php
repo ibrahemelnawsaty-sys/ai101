@@ -39,7 +39,7 @@ it('D-72: كل خانة يسمّيها صفّ الكشف تعيدها نقطة �
         ->getContent();
 
     $id = (string) $this->participant->id;
-    expect(preg_match('#<tr data-participant="'.preg_quote($id, '#').'">(.*?)</tr>#s', $html, $row))->toBe(1);
+    expect(preg_match('#<tr[^>]*data-participant="'.preg_quote($id, '#').'"[^>]*>(.*?)</tr>#s', $html, $row))->toBe(1);
     preg_match_all('/data-cell="([a-z]+)"/', $row[1], $cells);
 
     $rows = $this->actingAs($this->trainer)

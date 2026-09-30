@@ -171,6 +171,10 @@ return [
         'checked_in_of_total' => 'checked in, out of all participants',
         'roster_caption' => 'Attendance roster for session :session',
         'select_participant' => 'Select :name for the bulk action',
+        'select_all' => 'Select all participants',
+        'select_row' => 'Select for the bulk action',
+        'selected_label' => 'Selected',
+        'bulk_hint' => 'For emergencies: select participants, then apply one status to them with a written reason.',
         'col_edit' => 'Edit',
 
         'edit_title' => 'Edit the record of :name',

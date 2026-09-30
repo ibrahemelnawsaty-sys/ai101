@@ -606,7 +606,42 @@ border: var(--bw-hairline) solid var(--border-1);
 .toolbar { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: flex-end; margin-block-end: var(--s4); }
 .toolbar__filters { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: flex-end; }
 .toolbar__end { margin-inline-start: auto; display: flex; gap: var(--s2); }
+/* A select that names a long thing (a session title) took its full text width and
+   pushed the whole page 25px past a phone; it may shrink and truncates instead. */
+.toolbar > .ui-field, .toolbar__filters > .ui-field { min-inline-size: 0; max-inline-size: 100%; }
 .tablebar { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; justify-content: space-between; padding-block-end: var(--s3); }
+
+/* Row selection over a list (the attendance roster, D-143). The bar above holds
+   "select all"; the bar below holds the action and follows the person down a long
+   list once anyone is ticked. With no script it never collapses — the form works. */
+.selectbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s4); padding-inline: var(--s4); border-block-start: var(--bw-hairline) solid var(--border-1); }
+.selectbar .ui-field { margin: 0; }
+.selectbar__hint { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.bulkbar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3) var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--surface-1);
+  border-block-start: var(--bw-hairline) solid var(--border-2);
+  box-shadow: var(--sh-md);
+}
+.bulkbar.is-idle { display: none; }
+/* Focus is never left under the bar: the script writes its height here. */
+html, body.page--app { scroll-padding-block-end: var(--bulkbar-h, 0px); }
+@media (max-width: 699px) {
+  .bulkbar { gap: var(--s2) var(--s3); padding: var(--s2) var(--s4); }
+  .bulkbar__fields { flex-basis: 100%; gap: var(--s2); }
+  .bulkbar__fields > * { flex-basis: 100%; }
+}
+.bulkbar .ui-field { margin: 0; }
+.bulkbar__count { margin: 0; align-self: center; display: flex; gap: var(--s2); font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text-strong); }
+.bulkbar__fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s3) var(--s4); flex: 1 1 var(--d-4); min-inline-size: 0; }
+.bulkbar__fields > * { flex: 1 1 var(--d-2); min-inline-size: 0; }
 .roster__count { font-size: var(--fs-xs); color: var(--text-muted); }
 
 .atable__note { font-size: var(--fs-xs); color: var(--text-muted); }
@@ -1961,6 +1996,21 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack td .ui-pill { max-inline-size: 100%; white-space: normal; }
   .atable--stack tr.atable__note { padding-block: var(--s2); background: transparent; border-style: dashed; }
   .atable--stack tr.atable__note td { display: block; padding: 0; border: 0; }
+}
+
+@media (max-width: 1199px) {
+  /* The attendance roster's card (D-143). Sixty participants is sixty cards, so the
+     two times sit side by side, the status and the edit take a full line each, and
+     the row selector sits on the name's own line instead of a row of its own. */
+  .atable--roster tbody tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s4); padding-block: var(--s1); }
+  .atable--roster .atable__lead { grid-column: 1 / -1; background: transparent; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-end: var(--touch); }
+  .atable--roster .cellpair { flex-direction: row; align-items: center; gap: var(--s3); }
+  .atable--roster .atable__pick { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 1; display: block; padding: 0; border: 0; }
+  .atable--roster .atable__pick::before { content: none; }
+  .atable--roster td[data-cell="in"],
+  .atable--roster td[data-cell="out"] { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; }
+  .atable--roster td[data-cell="status"],
+  .atable--roster td[data-cell="edit"] { grid-column: 1 / -1; }
 }
 
 /* Between a phone and the rail the cards sit two to a row: one label-and-value
