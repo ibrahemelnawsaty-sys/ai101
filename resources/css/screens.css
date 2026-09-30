@@ -483,6 +483,9 @@ border-inline-start: var(--bw-marker) solid var(--violet-300);
 .note--warn > svg { color: var(--status-warn-text); }
 .note--bad > svg  { color: var(--status-bad-text); }
 .note__body { display: block; }
+.note__list--icons { list-style: none; padding-inline-start: 0; }
+.note__list--icons > li { display: flex; align-items: flex-start; gap: var(--s2); }
+.note__list--icons > li > .ui-icon { flex: none; margin-block-start: var(--s1); }
 .note__list { display: grid; gap: var(--s1); margin-block-start: var(--s2); padding-inline-start: var(--s4); list-style: disc; }
 .note__meta { display: block; font-size: var(--fs-xs); color: var(--text-faint); margin-block-start: var(--s2); }
 .note__timer { font-variant-numeric: tabular-nums; }
@@ -1986,8 +1989,8 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .atable .atable__cell .ui-icon { margin-inline: auto; color: var(--status-ok-text); }
 .atable .roles__col { text-align: center; }
 /* Only a phone scrolls the matrix sideways, so only a phone is told (D-147). */
-.roles__scroll-hint { display: none; }
-@media (max-width: 699px) { .roles__scroll-hint { display: flex; } }
+.hint.roles__scroll-hint { display: none; }
+@media (max-width: 699px) { .hint.roles__scroll-hint { display: flex; } }
 
 /* The summary inside the role-change confirmation (D-133). */
 .rolechange { display: grid; gap: var(--s3); }
@@ -2061,6 +2064,10 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack th[scope="row"],
   .atable--stack .atable__lead {
     padding: var(--s2) 0;
+    /* The heading of a card is a heading: the values under it are 14px, so a 12px title said
+       «heading» by weight alone (D-147). A long unbreakable address wraps instead of being cut. */
+    font-size: var(--fs-body);
+    overflow-wrap: anywhere;
     font-weight: var(--fw-semi);
     color: var(--text-strong);
     /* The row-header fill of the wide table would draw a grey bar inside the card. */

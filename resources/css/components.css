@@ -1661,7 +1661,10 @@ border: var(--bw-hairline) solid transparent;
 .ui-search__icon {
   position: absolute;
   inset-inline-start: 0;
-  inset-block: 0;
+  /* The input's own box, not the wrapper: the wrapper also holds the status line, and the
+     magnifier sat about 12px below the middle of the field (D-147). */
+  inset-block-start: 0;
+  block-size: var(--touch-min);
   inline-size: var(--s10);
   display: grid;
   place-items: center;

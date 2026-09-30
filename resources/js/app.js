@@ -1562,14 +1562,30 @@ function syncThemeColour() {
  * inside it and a screen reader is told where it is.
  */
 function focusOpenPanel() {
-    const panel = document.querySelector('[data-open-panel]');
+    // A refusal's own line first (the person is sent to WHAT went wrong), else the panel the
+    // address opened.
+    const panel = document.querySelector('[data-open-panel][role="alert"]') || document.querySelector('[data-open-panel]');
     if (!panel) return;
 
-    const top = panel.getBoundingClientRect().top;
-    if (top >= 0 && top < window.innerHeight * 0.6) return;
+    // Scroll only when the panel is not already where the eye is: below the sticky header and in
+    // the upper part of the screen. The scroll is INSTANT — a smooth one (the page's own
+    // `scroll-behavior`) was overtaken by content above the panel settling a moment later, and
+    // ended with the panel's title under the header (D-147).
+    const settle = () => {
+        const header = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+        const top = panel.getBoundingClientRect().top;
 
-    panel.scrollIntoView({ block: 'start', behavior: 'auto' });
+        if (top < header || top > window.innerHeight * 0.6) {
+            panel.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }
+    };
+
+    settle();
+    // Focus ALWAYS moves, whether or not the page had to scroll: a keyboard or screen-reader
+    // user is told where the refusal or the panel is.
     panel.focus({ preventScroll: true });
+    // Images and fonts change the height above the panel after the first paint.
+    window.addEventListener('load', settle, { once: true });
 }
 
 function boot() {

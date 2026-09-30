@@ -26,7 +26,7 @@
             :action-label="__('app.retry')" :action-href="route('admin.audit.index')" />
     @else
 
-        <div class="note note--warn">
+        <div class="note note--info">
             <x-ui.icon name="lock" />
             {{ __('admin.audit.immutable_note') }}
         </div>
@@ -42,7 +42,7 @@
                 <x-ui.select clearable name="entity" :label="__('admin.audit.filters.entity')"
                     :options="$entityOptions" :value="request('entity')" />
                 <x-ui.input name="from" type="date" dir="ltr"
-                    :label="__('admin.audit.filters.range')" :value="request('from')" />
+                    :label="__('app.time.from')" :value="request('from')" />
                 <x-ui.input name="to" type="date" dir="ltr"
                     :label="__('app.time.to')" :value="request('to')" />
                 <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
@@ -130,7 +130,7 @@
                 <dl class="deflist">
                     <div><dt>{{ __('admin.audit.table.at') }}</dt><dd class="u-when">{{ \App\Support\Dates::dateTime($opened->at) }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.actor') }}</dt><dd>{{ $opened->actorName }}</dd></div>
-                    <div><dt>{{ __('admin.audit.table.entity') }}</dt><dd dir="ltr">{{ $opened->entityLabel }} · {{ $opened->entityId }}</dd></div>
+                    <div><dt>{{ __('admin.audit.table.entity') }}</dt><dd>{{ $opened->entityLabel }} · <bdi dir="ltr">{{ $opened->entityId }}</bdi></dd></div>
                     <div><dt>{{ __('admin.audit.table.ip') }}</dt><dd dir="ltr" class="u-num">{{ $opened->ipAddress }}</dd></div>
                     <div><dt>{{ __('admin.audit.table.user_agent') }}</dt><dd dir="ltr">{{ $opened->userAgent }}</dd></div>
                 </dl>

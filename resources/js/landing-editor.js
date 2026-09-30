@@ -1057,6 +1057,8 @@ export default function landingEditor() {
                 return;
             }
 
+            this.calmFrame(win);
+
             try {
                 if (this.pendingFocus) {
                     win.AtharPreview.focus(this.pendingFocus, false);
@@ -1068,6 +1070,21 @@ export default function landingEditor() {
             }
 
             this.activeFrame = name;
+        },
+
+        /**
+         * The preview is a picture of the page, not a second interface: its links and buttons
+         * take no Tab, so a keyboard user does not walk through a whole page of controls that
+         * do nothing here (D-147). It stays scrollable and readable.
+         */
+        calmFrame(win) {
+            try {
+                win.document
+                    .querySelectorAll('a[href], button, input, select, textarea, summary, [tabindex]')
+                    .forEach((el) => el.setAttribute('tabindex', '-1'));
+            } catch (e) {
+                /* The page is shown as it came. */
+            }
         },
 
         /** Jump the visible frame to the section being edited, and flash it. */

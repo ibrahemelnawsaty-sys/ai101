@@ -126,10 +126,10 @@
                                              parameters, so two forms never share a screen. --}}
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$cohort->name"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['trainers', 'participants']), ['edit' => $cohort->id]))">{{ __('app.edit') }}</x-ui.button>
-                                        <x-ui.button icon="user-plus" variant="secondary" size="sm"
+                                        <x-ui.button icon="user-plus" variant="secondary" size="sm" :context="$cohort->name"
                                             :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'participants']), ['trainers' => $cohort->id]))">{{ __('admin.cohorts.assign_trainer') }}</x-ui.button>
                                         @if ($cohort->canSeat)
-                                            <x-ui.button icon="user-plus" variant="secondary" size="sm"
+                                            <x-ui.button icon="user-plus" variant="secondary" size="sm" :context="$cohort->name"
                                                 :href="route('admin.cohorts.index', array_merge(request()->except(['edit', 'trainers']), ['participants' => $cohort->id])) . '#seat'">{{ __('admin.cohorts.add_participant_short') }}</x-ui.button>
                                         @endif
                                     </td>
@@ -161,7 +161,7 @@
                         {{-- The server never moves an existing cohort to another programme
                              (UpdateCohortRequest has no such field), so the control is shown
                              locked with the reason, not as a choice that silently does nothing. --}}
-                        <x-ui.select name="program_id" required :label="__('admin.programs.title')"
+                        <x-ui.select name="program_id" :required="! $editing->exists" :label="__('admin.cohorts.fields.program')"
                             :options="$programOptions" :value="old('program_id', $editing->programId)"
                             :state="$editing->exists ? 'disabled' : 'default'"
                             :hint="$editing->exists ? __('admin.cohorts.fields.program_locked_hint') : null" />
@@ -274,7 +274,7 @@
                                         :description="__('admin.cohorts.detach_trainer_body')"
                                         :confirm-label="__('admin.cohorts.remove_trainer')" confirm-icon="x"
                                         :trigger-label="__('admin.cohorts.remove_trainer')" trigger-icon="x"
-                                        trigger-variant="secondary" :trigger-context="$trainer->name" />
+                                        :trigger-context="$trainer->name" />
                                 </div>
                             </li>
                         @endforeach
@@ -356,10 +356,10 @@
                                     <x-ui.confirm name="detach-coordinator-{{ $coordinator->id }}"
                                         :action="route('admin.cohorts.coordinators.detach', [$assigning->id, $coordinator->id])" method="DELETE"
                                         :title="__('admin.cohorts.detach_coordinator_title', ['name' => $coordinator->name])"
-                                        :description="__('admin.cohorts.detach_coordinator_body')"
+                                        :description="$coordinator->isPrimary ? __('admin.cohorts.detach_primary_body') : __('admin.cohorts.detach_coordinator_body')"
                                         :confirm-label="__('admin.cohorts.remove_coordinator')" confirm-icon="x"
                                         :trigger-label="__('admin.cohorts.remove_coordinator')" trigger-icon="x"
-                                        trigger-variant="secondary" :trigger-context="$coordinator->name" />
+                                        :trigger-context="$coordinator->name" />
                                 </div>
                             </li>
                         @endforeach

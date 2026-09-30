@@ -1883,6 +1883,14 @@ border: var(--bw-hairline) solid var(--border-2);
     max(var(--s3), env(safe-area-inset-left));
 }
 .toasts { inset-block-start: max(var(--s4), env(safe-area-inset-top)); }
+/* Inside the app the messages start BELOW the sticky header (and the preview bar): on a phone
+   they covered the menu, the bell and the account for five seconds (D-147). */
+body.page--app .toasts { inset-block-start: calc(var(--header-h) + var(--impbar-h) + var(--s2)); }
+/* With the rail docked (1024px and up) it starts at the content column, so it never lies over the
+   navigation on the same edge. The position stays the top corner PRD §5.8 names. */
+@media (min-width: 1024px) {
+  body.page--app .toasts { inset-inline-start: calc(var(--side-w) + var(--s4)); }
+}
 .foot { padding-block-end: max(var(--s8), env(safe-area-inset-bottom)); }
 .foot--app { padding-block-end: max(var(--s6), env(safe-area-inset-bottom)); }
 

@@ -52,7 +52,7 @@
 
             {{-- A message to a whole cohort cannot be taken back: the button asks first and says so
                  (D-147). Without script it is the plain submit below and the server decides. --}}
-            <div x-data>
+            <div x-data="{ target: '', subject: '', labels: @js(collect($cohortOptions)->pluck('label', 'value')) }">
             <form method="POST" action="{{ route('admin.broadcasts.store') }}" class="form" id="broadcast-form" x-ref="broadcastForm">
                 @csrf
 
@@ -88,14 +88,22 @@
                         <x-ui.button variant="primary" type="submit" icon="mail">{{ __('admin.broadcasts.send') }}</x-ui.button>
                     </noscript>
                     <x-ui.button x-cloak variant="primary" type="button" icon="mail"
-                        x-on:click="if (! $refs.broadcastForm.reportValidity()) return; $dispatch('ui-dialog-open', 'confirm-broadcast')">{{ __('admin.broadcasts.send') }}</x-ui.button>
+                        x-on:click="const f = $refs.broadcastForm; if (! f.reportValidity()) return; const cohort = f.elements['cohort_id'].value; if (! cohort) { f.requestSubmit(); return; } target = labels[cohort] ?? ''; subject = f.elements['subject'].value; $dispatch('ui-dialog-open', 'confirm-broadcast')">{{ __('admin.broadcasts.send') }}</x-ui.button>
                 </div>
                 <p class="form__note">{{ __('admin.broadcasts.send_note') }}</p>
             </form>
 
             <x-ui.confirm name="confirm-broadcast" target-form="broadcast-form" variant="primary" icon="mail"
                 :title="__('admin.broadcasts.confirm_title')" :description="__('admin.broadcasts.confirm_body')"
-                :confirm-label="__('admin.broadcasts.send')" confirm-icon="mail" />
+                :confirm-label="__('admin.broadcasts.send')" confirm-icon="mail"
+                described-by="broadcast-summary">
+                {{-- Who and what, read back before the button that cannot be taken back. No cohort
+                     chosen never gets here: the form goes to the server, which says what is missing. --}}
+                <dl class="rolechange" id="broadcast-summary">
+                    <div><dt>{{ __('admin.broadcasts.confirm_to') }}</dt><dd x-text="target"></dd></div>
+                    <div><dt>{{ __('admin.broadcasts.fields.subject') }}</dt><dd x-text="subject"></dd></div>
+                </dl>
+            </x-ui.confirm>
             </div>
         </x-ui.card>
 

@@ -256,7 +256,7 @@
                                         x-on:load="frameLoaded('a')"
                                         sandbox="allow-same-origin allow-scripts"
                                         title="{{ __('admin.landing_editor.preview.title') }}"
-                                        x-bind:tabindex="activeFrame === 'a' ? 0 : -1"
+                                        tabindex="-1"
                                         x-bind:aria-hidden="(activeFrame !== 'a').toString()"></iframe>
                                 <iframe name="le-frame-b" x-ref="frameB" class="le__frame"
                                         x-bind:class="{ 'is-active': activeFrame === 'b' }"
@@ -264,7 +264,7 @@
                                         x-on:load="frameLoaded('b')"
                                         sandbox="allow-same-origin allow-scripts"
                                         title="{{ __('admin.landing_editor.preview.title') }}"
-                                        x-bind:tabindex="activeFrame === 'b' ? 0 : -1"
+                                        tabindex="-1"
                                         x-bind:aria-hidden="(activeFrame !== 'b').toString()"></iframe>
                             </div>
                             <div class="le__pv-loading" x-show="! previewReady" role="status" aria-live="polite">

@@ -92,7 +92,7 @@
                                     <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$program->name"
                                             :href="route('admin.programs.index', ['edit' => $program->id])">{{ __('app.edit') }}</x-ui.button>
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button variant="secondary" size="sm" :context="$program->name"
                                             :href="route('admin.cohorts.index', ['program' => $program->id])">{{ __('admin.cohorts.title') }}</x-ui.button>
                                         @unless ($program->isArchived)
                                             <x-ui.button icon="archive" :icon-only="true" variant="secondary" size="sm" :context="$program->name"

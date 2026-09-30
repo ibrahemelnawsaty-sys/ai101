@@ -93,7 +93,7 @@
             @endif
 
             <h3 class="abrief__sub">{{ __('admin.preview.rules_title') }}</h3>
-            <ul class="note__list" role="list">
+            <ul class="note__list note__list--icons" role="list">
                 <li><x-ui.icon name="lock" /> {{ __('admin.preview.rules.write_blocked') }}</li>
                 <li><x-ui.icon name="lock" /> {{ __('admin.preview.rules.no_traces') }}</li>
                 <li><x-ui.icon name="lock" /> {{ __('admin.preview.rules.time_limit') }}</li>
@@ -177,7 +177,7 @@
                         :description="__('admin.users.confirm.suspend_body')"
                         :confirm-label="__('admin.users.actions.suspend')" confirm-icon="ban"
                         :trigger-label="__('admin.users.actions.suspend')" trigger-icon="ban"
-                        trigger-variant="secondary" :trigger-context="$user->name">
+                        :trigger-context="$user->name">
                         <input type="hidden" name="status" value="{{ $user->toggleStatusValue }}">
                     </x-ui.confirm>
                 @else
@@ -188,7 +188,7 @@
                     :title="__('admin.users.confirm.reset_title', ['name' => $user->name])"
                     :description="__('admin.users.confirm.reset_body')"
                     variant="primary" icon="mail"
-                    :confirm-label="__('admin.users.actions.reset_password')" confirm-icon="mail"
+                    :confirm-label="__('admin.users.confirm.reset_action')" confirm-icon="mail"
                     :trigger-label="__('admin.users.actions.reset_password')" trigger-icon="refresh"
                     trigger-variant="secondary" :trigger-context="$user->name" />
 
@@ -196,7 +196,7 @@
                     :title="__('admin.users.confirm.logout_title', ['name' => $user->name])"
                     :description="__('admin.users.confirm.logout_body')"
                     variant="primary" icon="logout"
-                    :confirm-label="__('admin.users.actions.logout_everywhere')" confirm-icon="logout"
+                    :confirm-label="__('admin.users.confirm.logout_action')" confirm-icon="logout"
                     :trigger-label="__('admin.users.actions.logout_everywhere')" trigger-icon="logout"
                     trigger-variant="secondary" :trigger-context="$user->name" />
             </div>

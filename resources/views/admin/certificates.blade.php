@@ -105,7 +105,7 @@
                        and all — so it belongs to a small form of its own, below, by `form=`.
                      The boxes are the bulk form's own named inputs; the script only counts
                      them, so the form works with no script at all. --}}
-                <form method="POST" action="{{ route('admin.certificates.issueBulk') }}" class="bulkform"
+                <form method="POST" action="{{ route('admin.certificates.issueBulk') }}" class="bulkform" id="bulk-issue-form"
                     x-data="atharBulkSelect({ name: 'user_id[]', spoken: @js(__('certificates.admin.selected_spoken'), JSON_UNESCAPED_UNICODE) })"
                     x-on:change="count()" x-on:pageshow.window="count()">
                     @csrf
@@ -168,9 +168,19 @@
                             <span>{{ __('certificates.admin.selected_label') }}</span>
                             <b class="u-num"><span x-text="picked">0</span> / <span x-text="total">{{ $eligible->count() }}</span></b>
                         </p>
+                        {{-- One press issues to everyone ticked, so with script it first says how many
+                             (D-147). Without script it is the plain submit and the server decides. --}}
                         <x-ui.button icon="badge" variant="primary" size="sm" type="submit" class="bulkbar__apply"
-                            data-action="issue-selected" x-bind:disabled="picked === 0">{{ __('certificates.admin.issue_selected') }}</x-ui.button>
+                            data-action="issue-selected" x-bind:disabled="picked === 0"
+                            x-on:click.prevent="$dispatch('ui-dialog-open', 'confirm-issue-selected')">{{ __('certificates.admin.issue_selected') }}</x-ui.button>
                     </div>
+
+                    <x-ui.confirm name="confirm-issue-selected" target-form="bulk-issue-form" variant="primary" icon="badge"
+                        :title="__('certificates.admin.confirm_issue_title')" :description="__('certificates.admin.confirm_issue_body')"
+                        :confirm-label="__('certificates.admin.confirm_issue_action')" confirm-icon="badge"
+                        described-by="issue-selected-summary">
+                        <p id="issue-selected-summary">{{ __('certificates.admin.selected_label') }} <b class="u-num" x-text="picked">0</b></p>
+                    </x-ui.confirm>
                 </form>
 
                 @foreach ($eligible as $candidate)
@@ -351,10 +361,13 @@
                                                 :href="route('certificate.verify', $certificate->verifyCode)">{{ __('app.view_details') }}</x-ui.button>
 
                                             @if ($certificate->isRevoked)
-                                                <form method="POST" action="{{ route('admin.certificates.reissue', $certificate->id) }}">
-                                                    @csrf
-                                                    <x-ui.button icon="refresh" variant="secondary" size="sm" type="submit" :context="$certificate->holderName">{{ __('certificates.admin.reissue') }}</x-ui.button>
-                                                </form>
+                                                <x-ui.confirm name="reissue-{{ $certificate->id }}"
+                                                    :action="route('admin.certificates.reissue', $certificate->id)" variant="primary" icon="refresh"
+                                                    :title="__('certificates.admin.reissue_title', ['name' => $certificate->holderName])"
+                                                    :description="__('certificates.admin.reissue_body')"
+                                                    :confirm-label="__('certificates.admin.reissue')" confirm-icon="refresh"
+                                                    :trigger-label="__('certificates.admin.reissue')" trigger-icon="refresh"
+                                                    trigger-variant="secondary" :trigger-context="$certificate->holderName" />
                                             @else
                                                 <x-ui.button icon="ban" variant="danger-ghost" size="sm" :context="$certificate->holderName"
                                                     :href="route('admin.certificates.index', array_merge(request()->query(), ['revoke' => $certificate->id]))">{{ __('certificates.admin.revoke') }}</x-ui.button>

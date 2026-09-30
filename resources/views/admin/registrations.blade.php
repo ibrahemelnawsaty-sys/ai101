@@ -104,7 +104,7 @@
                                     </td>
                                     <td role="cell" class="u-nowrap">
                                         @if ($request->isPending)
-                                            <x-ui.button icon="eye" variant="primary" size="sm"
+                                            <x-ui.button icon="eye" variant="primary" size="sm" :context="$request->name"
                                                 :href="route('admin.registrations.index', array_merge(request()->query(), ['review' => $request->id]))">{{ __('app.view_details') }}</x-ui.button>
                                         @else
                                             <span class="u-muted">{{ $request->decidedByLabel }}</span>

@@ -57,6 +57,7 @@ return [
         'title' => 'Cohorts',
         'create' => 'Create a cohort',
         'fields' => [
+            'program' => 'Programme',
             'name' => 'Cohort name',
             'program_locked_hint' => 'The programme of a cohort cannot be changed once it is created. Create a new cohort for another programme.',
             'starts_at' => 'Start date',
@@ -73,6 +74,7 @@ return [
         'detach_trainer_title' => 'Removing :name from this cohort',
         'detach_trainer_body' => 'The trainer will no longer see anything of this cohort. Their earlier records are kept, and they can be assigned again.',
         'detach_coordinator_title' => 'Removing :name from this cohort',
+        'detach_primary_body' => 'This is the cohort’s primary coordinator. If more than one other coordinator would remain, first choose "Make primary" for one of them, or the system will refuse the removal.',
         'detach_coordinator_body' => 'The coordinator will no longer record attendance for this cohort. Their earlier records are kept, and they can be assigned again.',
         'assign_trainer' => 'Assign a trainer',
         'assign_coordinator' => 'Assign a coordinator',
@@ -146,6 +148,7 @@ return [
 
     /* The send screen (D-87). */
     'broadcasts' => [
+        'confirm_to' => 'To',
         'confirm_title' => 'Sending the message to the cohort',
         'confirm_body' => 'The message will reach everyone in the chosen cohort, and by e-mail those who receive the administration’s messages there. It cannot be taken back once sent.',
         'body_required' => 'Write the message before sending.',
@@ -336,6 +339,8 @@ return [
         'account_activated' => 'The account was activated and its holder can sign in again.',
         'account_suspended' => 'The account was suspended and its sessions ended; its holder cannot sign in until you activate it again.',
         'confirm' => [
+            'reset_action' => 'Send the link',
+            'logout_action' => 'End the sessions',
             'suspend_title' => 'Suspending the account of :name',
             'suspend_body' => 'The account holder will not be able to sign in, and their current sessions end at once. Their data and records stay as they are, and you can activate the account again.',
             'reset_title' => 'Sending a password reset link to :name',
