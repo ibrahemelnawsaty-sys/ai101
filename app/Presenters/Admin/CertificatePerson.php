@@ -8,6 +8,7 @@ use App\Models\Cohort;
 use App\Models\User;
 use App\Presenters\Concerns\PresentsFormValues;
 use App\Presenters\Concerns\PresentsVariants;
+use App\Presenters\Support\StaffReasons;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Grading\ScoreCalculator;
 use App\Support\ViewModel;
@@ -53,7 +54,7 @@ final class CertificatePerson extends ViewModel
             'score' => self::score($score),
             'scoreMax' => ScoreCalculator::GRAND_TOTAL,
             'scoreMet' => $eligibility->meetsScore($user, $cohort),
-            'reasons' => $eligibility->reasons($user, $cohort),
+            'reasons' => StaffReasons::of($eligibility, $user, $cohort),
         ]);
     }
 }

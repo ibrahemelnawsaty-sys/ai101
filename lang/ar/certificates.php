@@ -132,6 +132,14 @@ return [
         'project_not_graded' => 'لم يُقيَّم مشروعك الختامي بعد.',
     ],
 
+    'reasons_staff' => [
+        'attendance_below_minimum' => 'نسبة الحضور ‎:current% وهي أقل من الحد المطلوب ‎:required%.',
+        'score_below_pass' => 'الدرجة النهائية :current من :max وهي أقل من حد النجاح :required.',
+        'not_enrolled' => 'لا يوجد التحاق فعّال في هذه الدفعة.',
+        'cohort_not_completed' => 'لم تُختتم الدفعة بعد، وتُصدر الشهادات بعد اختتامها.',
+        'project_not_graded' => 'لم يُقيَّم المشروع الختامي بعد.',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | TVTC certificate — issued by the external authority (PRD §1.2)

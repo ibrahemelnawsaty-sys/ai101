@@ -106,6 +106,14 @@ return [
         'project_not_graded' => 'Your final project has not been graded yet.',
     ],
 
+    'reasons_staff' => [
+        'attendance_below_minimum' => 'The attendance rate is :current%, below the required :required%.',
+        'score_below_pass' => 'The final score is :current of :max, below the pass mark of :required.',
+        'not_enrolled' => 'There is no active enrolment in this cohort.',
+        'cohort_not_completed' => 'The cohort has not been concluded yet; certificates are issued after it is.',
+        'project_not_graded' => 'The final project has not been graded yet.',
+    ],
+
     'tvtc_title' => 'Certificate from the Technical and Vocational Training Corporation',
     'tvtc_ready' => 'Your TVTC certificate is ready to download',
     'tvtc_pending_title' => 'Awaiting issue by the authority',

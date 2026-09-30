@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\Week;
 use App\Presenters\Shared\ChartPoint;
 use App\Presenters\Support\Options;
+use App\Presenters\Support\StaffReasons;
 use App\Presenters\Trainer\AtRiskPerson;
 use App\Presenters\Trainer\ReportSummary;
 use App\Services\Certificates\CertificateEligibility;
@@ -387,7 +388,7 @@ final class ReportController extends Controller
                 $rates[(string) $user->getKey()] ?? 0.0,
                 $minimum,
                 $this->scores->finalScore($user, $cohort),
-                $this->eligibility->reasons($user, $cohort),
+                StaffReasons::of($this->eligibility, $user, $cohort),
             ))
             ->values();
     }
