@@ -1016,8 +1016,14 @@ export default function landingEditor() {
                 return;
             }
 
+            // The frame can be gone by the time the render arrives (a tab was changed and the
+            // preview pane with it, within a fraction of a second of an edit): there is
+            // nothing to write to, and the next edit renders again.
+            const frame = this.frameNamed(target);
+            if (!frame) return;
+
             this.pendingFrame = target;
-            this.frameNamed(target).srcdoc = html;
+            frame.srcdoc = html;
         },
 
         frameLoaded(name) {

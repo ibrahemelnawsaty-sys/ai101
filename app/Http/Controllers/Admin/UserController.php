@@ -110,7 +110,12 @@ final class UserController extends Controller
                 ->through(static fn (User $row): UserRow => UserRow::from($row, $viewer)),
             'counts' => $this->counts(),
             'roleOptions' => Options::fromEnum(UserRole::class),
-            'statusOptions' => Options::fromEnum(UserStatus::class),
+            // «Deleted» accounts are soft-deleted and never listed, so offering the state
+            // as a filter promised rows that could not exist (D-147).
+            'statusOptions' => array_values(array_filter(
+                Options::fromEnum(UserStatus::class),
+                static fn (array $option): bool => $option['value'] !== UserStatus::Deleted->value,
+            )),
         ];
     }
 
@@ -308,7 +313,12 @@ final class UserController extends Controller
             $this->destroySessionsOf($subject);
         }
 
-        return back()->with('status', __('admin.users.status_changed'));
+        // Says WHICH of the two happened: «the account status was updated» was one sentence for
+        // a suspension that ends someone's access and an activation that gives it back.
+        return back()->with(
+            'status',
+            $target === UserStatus::Active ? __('admin.users.account_activated') : __('admin.users.account_suspended'),
+        );
     }
 
     /**

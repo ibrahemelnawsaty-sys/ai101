@@ -243,3 +243,41 @@ it('D-147: الرسالة الجماعية تسبقها نافذة تأكيد ت
 
     expect(App\Models\Broadcast::query()->where('cohort_id', $cohort->id)->count())->toBe(1);
 });
+
+it('D-147: تعطيل الحساب وإرسال رابط كلمة المرور وإنهاء الجلسات تسبقها نوافذ تسمّي الشخص، ونماذج النوافذ تعمل', function (): void {
+    config(['session.driver' => 'database']);
+
+    $sysadmin = makeUser('system_admin');
+    $person = makeParticipant(makeCohort());
+
+    $html = $this->actingAs($sysadmin)->get(route('admin.users.show', $person))->assertOk()->getContent();
+
+    foreach (['suspend-account', 'reset-password', 'logout-everywhere'] as $dialog) {
+        expect($html)->toContain('id="'.$dialog.'-form"');
+    }
+
+    expect($html)->toContain(__('admin.users.confirm.suspend_body'))
+        ->and($html)->toContain(__('admin.users.confirm.logout_body'));
+
+    [$action, $fields] = browserForm($html, '//form[@id="suspend-account-form"]');
+
+    expect($action)->toBe(route('admin.users.status', $person))
+        ->and($fields['status'])->toBe('suspended');
+
+    Auth::forgetGuards();
+
+    $this->actingAs($sysadmin)->post($action, $fields)
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', __('admin.users.account_suspended'));
+
+    expect($person->fresh()->status->value)->toBe('suspended');
+
+    // Suspended, the page offers the way back — and activating says so.
+    $page = $this->actingAs($sysadmin)->get(route('admin.users.show', $person))->getContent();
+    [$action, $fields] = browserForm($page, '//form[.//input[@name="status"][@value="active"]]');
+
+    Auth::forgetGuards();
+
+    $this->actingAs($sysadmin)->post($action, $fields)
+        ->assertSessionHas('status', __('admin.users.account_activated'));
+});

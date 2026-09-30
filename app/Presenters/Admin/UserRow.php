@@ -44,9 +44,14 @@ final class UserRow extends ViewModel
             'email' => (string) $subject->getAttribute('email'),
             'roleLabel' => $role?->label() ?? '—',
             'roleVariant' => self::roleVariantOf($role),
-            'statusLabel' => $status?->label() ?? '—',
-            'statusVariant' => self::userStatusVariantOf($status),
-            'statusIcon' => self::userStatusIconOf($status),
+            // An invited account that has not accepted yet is «active» in the column and cannot
+            // sign in: the row says what is true, in the same pill (D-147).
+            'statusLabel' => $subject->isPendingInvitation() ? (string) __('admin.users.invitation_pending') : ($status?->label() ?? '—'),
+            'statusVariant' => $subject->isPendingInvitation() ? 'warning' : self::userStatusVariantOf($status),
+            'statusIcon' => $subject->isPendingInvitation() ? 'clock' : self::userStatusIconOf($status),
+            'resendLabel' => $subject->isPendingInvitation()
+                ? (string) __('admin.users.actions.resend_invitation')
+                : (string) __('admin.users.actions.resend_verification'),
             'lastLoginAt' => $subject->getAttribute('last_login_at'),
             'awaitingVerification' => $subject->getAttribute('email_verified_at') === null,
             'canBePreviewed' => Gate::forUser($viewer)->allows('preview', $subject),

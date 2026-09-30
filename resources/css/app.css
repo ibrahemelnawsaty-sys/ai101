@@ -916,6 +916,13 @@ min-block-size: var(--s9);
     transition: background var(--t-fast);
   }
   .impbar__stop:hover { background: var(--scrim-3); }
+  /* A phone: the sentence took a one-word-wide column between the countdown and the end
+     button and ran into the countdown. The icon and the sentence get the first line, the
+     countdown and the end button the second (D-147). */
+  @media (max-width: 599px) {
+    .impbar__msg { flex: 1 1 calc(100% - var(--icon-md) - var(--s3)); }
+    .impbar__timer { flex: 1 1 auto; }
+  }
 
   /* -------------------------------------------------------------- FOOTER */
   .foot {

@@ -111,7 +111,7 @@ return [
 
     /* The confirmation in front of the role-change form (admin/users/show). */
     'change' => [
-        'title' => 'تأكيد تغيير الدور',
+        'title' => 'تأكيد تغيير دور :name',
         'description' => 'يُطبَّق التغيير فورًا، ويُسجَّل في سجل التدقيق مع السبب الذي كتبته.',
         'current' => 'الدور الحالي',
         'new' => 'الدور الجديد',

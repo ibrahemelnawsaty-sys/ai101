@@ -210,6 +210,26 @@ final class PublishLandingRequest extends FormRequest
         return ['settings.is_registration_open.prohibited' => (string) __('admin.landing.registration_moved_error')];
     }
 
+    /**
+     * What the editor's own labels call these fields. Without them a refusal read
+     * «…settings.seats override…» — a field path — and, drawn nowhere, was not read at all
+     * (D-147).
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'settings.seats_override' => (string) __('admin.landing.seats_override'),
+            'settings.countdown_enabled' => (string) __('admin.landing.countdown_enabled'),
+            'settings.hero_title' => (string) __('admin.landing.hero_title'),
+            'settings.hero_subtitle' => (string) __('admin.landing.hero_subtitle'),
+            'settings.about_body' => (string) __('admin.landing.about_body'),
+            'faq.*.question' => (string) __('admin.landing.faq_question'),
+            'faq.*.answer' => (string) __('admin.landing.faq_answer'),
+        ];
+    }
+
     /** The cohort the editor was showing, when it said. */
     public function cohortId(): ?string
     {

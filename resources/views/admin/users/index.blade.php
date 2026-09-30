@@ -124,18 +124,18 @@
                                         {{ $user->lastLoginAt ? \App\Support\Dates::dateTime($user->lastLoginAt) : '—' }}
                                     </td>
                                     <td role="cell" class="u-nowrap">
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button variant="secondary" size="sm" :context="$user->name"
                                             :href="route('admin.users.show', $user->id)">{{ __('admin.users.actions.view_profile') }}</x-ui.button>
 
                                         @if ($user->awaitingVerification)
                                             <form method="POST" action="{{ route('admin.users.resendVerification', $user->id) }}" class="u-inline">
                                                 @csrf
-                                                <x-ui.button icon="send" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.resend_verification') }}</x-ui.button>
+                                                <x-ui.button icon="send" variant="secondary" size="sm" type="submit" :context="$user->name">{{ $user->resendLabel }}</x-ui.button>
                                             </form>
                                         @elseif ($user->canBePreviewed)
                                             <form method="POST" action="{{ route('admin.users.preview', $user->id) }}" class="u-inline">
                                                 @csrf
-                                                <x-ui.button variant="secondary" size="sm" icon="eye" type="submit">{{ __('admin.users.actions.preview') }}</x-ui.button>
+                                                <x-ui.button variant="secondary" size="sm" icon="eye" type="submit" :context="$user->name">{{ __('admin.users.actions.preview') }}</x-ui.button>
                                             </form>
                                         @else
                                             {{-- The server's own reason (D-117). --}}

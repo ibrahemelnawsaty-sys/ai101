@@ -67,9 +67,10 @@ final class UserProfile extends ViewModel
             'role' => $role->value ?? '',
             'roleLabel' => $role?->label() ?? '—',
             'roleVariant' => self::roleVariantOf($role),
-            'statusLabel' => $status?->label() ?? '—',
-            'statusVariant' => self::userStatusVariantOf($status),
-            'statusIcon' => self::userStatusIconOf($status),
+            // Same as the list: an invitation nobody has accepted is not «active» (D-147).
+            'statusLabel' => $subject->isPendingInvitation() ? (string) __('admin.users.invitation_pending') : ($status?->label() ?? '—'),
+            'statusVariant' => $subject->isPendingInvitation() ? 'warning' : self::userStatusVariantOf($status),
+            'statusIcon' => $subject->isPendingInvitation() ? 'clock' : self::userStatusIconOf($status),
 
             'lastLoginAt' => $subject->getAttribute('last_login_at'),
             'registeredAt' => $subject->getAttribute('created_at'),

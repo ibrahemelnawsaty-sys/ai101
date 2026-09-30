@@ -78,6 +78,17 @@ final class StoreUserRequest extends FormRequest
     }
 
     /**
+     * The global wording for a taken address speaks to someone REGISTERING («do you want to
+     * sign in?»); the administrator inviting them is not that person (D-147).
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['email.unique' => (string) __('admin.users.email_taken')];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array

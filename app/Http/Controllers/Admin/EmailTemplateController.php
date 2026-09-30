@@ -111,9 +111,18 @@ final class EmailTemplateController extends Controller
             $this->overrides->forget();
         }
 
+        // A text identical to the original is not a customisation and is stored as none: saying
+        // «the new wording is on its way» about a template that just went back to the default
+        // would be false (D-147).
+        $customised = false;
+
+        foreach ($request->texts() as $field => $text) {
+            $customised = $customised || $this->templates->isOverride($template, $field, $text);
+        }
+
         return redirect()
             ->route('admin.settings.template', $template)
-            ->with('status', __('admin.email_editor.saved'));
+            ->with('status', $customised ? __('admin.email_editor.saved') : __('admin.email_editor.saved_default'));
     }
 
     public function reset(ResetEmailTemplateRequest $request, string $template): RedirectResponse

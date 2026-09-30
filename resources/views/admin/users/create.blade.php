@@ -49,7 +49,7 @@
             :action-label="__('admin.users.back_to_list')" :action-href="route('admin.users.index')" />
     @else
         @if ($errors->any())
-            <div class="note note--bad" role="alert" aria-live="polite">
+            <div class="note note--bad" role="alert" aria-live="polite" data-open-panel tabindex="-1">
                 <b>{{ __('auth.shared.error_summary_title') }}</b>
                 <ul>
                     @foreach ($errors->all() as $message)

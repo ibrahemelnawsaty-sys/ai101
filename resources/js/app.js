@@ -1529,7 +1529,11 @@ window.Athar = {
     initTilt,
     initMagnets,
     confetti,
-    toast: (message, tone) => toastStore.push(message, tone),
+    // Through Alpine's store, not the plain object it was built from: Alpine wraps the
+    // registered object in a reactive proxy, and a push on the raw one changes an array
+    // nothing is watching — the landing editor's «published», its errors and «session
+    // expired» all went into the raw array and were never drawn (D-147).
+    toast: (message, tone) => (Alpine.store('toast') || toastStore).push(message, tone),
 };
 
 /**

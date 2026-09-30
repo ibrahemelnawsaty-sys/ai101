@@ -148,7 +148,7 @@
             </form>
 
             <x-ui.confirm name="change-role" target-form="role-change-form" variant="primary" icon="info"
-                :title="__('roles.change.title')" :description="__('roles.change.description')"
+                :title="__('roles.change.title', ['name' => $user->name])" :description="__('roles.change.description')"
                 :confirm-label="__('roles.change.confirm')" confirm-icon="check"
                 described-by="role-change-summary">
                 <dl class="rolechange" id="role-change-summary">
@@ -159,26 +159,46 @@
             </x-ui.confirm>
             </div>
 
+            {{-- Three actions that reach a person who is not here to object: each tells WHO and WHAT
+                 before it happens, and says what it leaves alone (D-147). Activating is the one
+                 that only gives something back, so it asks nothing. --}}
             <div class="row__acts">
-                <form method="POST" action="{{ route('admin.users.status', $user->id) }}">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="status" value="{{ $user->toggleStatusValue }}">
-                    <x-ui.button variant="secondary" size="sm" type="submit"
-                        :disabled="! $user->canChangeStatus">
-                        {{ $user->isSuspended ? __('admin.users.actions.activate') : __('admin.users.actions.suspend') }}
-                    </x-ui.button>
-                </form>
+                @if ($user->isSuspended)
+                    <form method="POST" action="{{ route('admin.users.status', $user->id) }}">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="{{ $user->toggleStatusValue }}">
+                        <x-ui.button variant="secondary" size="sm" type="submit" :context="$user->name"
+                            :disabled="! $user->canChangeStatus">{{ __('admin.users.actions.activate') }}</x-ui.button>
+                    </form>
+                @elseif ($user->canChangeStatus)
+                    <x-ui.confirm name="suspend-account" :action="route('admin.users.status', $user->id)" method="PATCH"
+                        :title="__('admin.users.confirm.suspend_title', ['name' => $user->name])"
+                        :description="__('admin.users.confirm.suspend_body')"
+                        :confirm-label="__('admin.users.actions.suspend')" confirm-icon="ban"
+                        :trigger-label="__('admin.users.actions.suspend')" trigger-icon="ban"
+                        trigger-variant="secondary" :trigger-context="$user->name">
+                        <input type="hidden" name="status" value="{{ $user->toggleStatusValue }}">
+                    </x-ui.confirm>
+                @else
+                    <x-ui.button variant="secondary" size="sm" type="button" state="disabled" :context="$user->name">{{ __('admin.users.actions.suspend') }}</x-ui.button>
+                @endif
 
-                <form method="POST" action="{{ route('admin.users.resetPassword', $user->id) }}">
-                    @csrf
-                    <x-ui.button icon="refresh" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.reset_password') }}</x-ui.button>
-                </form>
+                <x-ui.confirm name="reset-password" :action="route('admin.users.resetPassword', $user->id)"
+                    :title="__('admin.users.confirm.reset_title', ['name' => $user->name])"
+                    :description="__('admin.users.confirm.reset_body')"
+                    variant="primary" icon="mail"
+                    :confirm-label="__('admin.users.actions.reset_password')" confirm-icon="mail"
+                    :trigger-label="__('admin.users.actions.reset_password')" trigger-icon="refresh"
+                    trigger-variant="secondary" :trigger-context="$user->name" />
 
-                <form method="POST" action="{{ route('admin.users.logoutEverywhere', $user->id) }}">
-                    @csrf
-                    <x-ui.button icon="logout" variant="secondary" size="sm" type="submit">{{ __('admin.users.actions.logout_everywhere') }}</x-ui.button>
-                </form>
+                <x-ui.confirm name="logout-everywhere" :action="route('admin.users.logoutEverywhere', $user->id)"
+                    :title="__('admin.users.confirm.logout_title', ['name' => $user->name])"
+                    :description="__('admin.users.confirm.logout_body')"
+                    variant="primary" icon="logout"
+                    :confirm-label="__('admin.users.actions.logout_everywhere')" confirm-icon="logout"
+                    :trigger-label="__('admin.users.actions.logout_everywhere')" trigger-icon="logout"
+                    trigger-variant="secondary" :trigger-context="$user->name" />
             </div>
 
             <p class="footnote">{{ __('admin.users.constraints.audited') }}</p>

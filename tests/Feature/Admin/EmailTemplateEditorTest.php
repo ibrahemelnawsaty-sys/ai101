@@ -165,7 +165,9 @@ it('BR-31: حقل يُفرَّغ أو يُعاد إلى نصّه الأصلي ي
 
     // Subject back to the file's own words, body blank: both go.
     // The FILE's own subject — the translator would now serve the override.
-    saveTemplate($this, 'welcome', ['subject' => app(EmailTemplates::class)->defaultOf('welcome', 'subject'), 'body' => '   ']);
+    // D-147: and the page says so — «the new wording is on its way» would be false.
+    saveTemplate($this, 'welcome', ['subject' => app(EmailTemplates::class)->defaultOf('welcome', 'subject'), 'body' => '   '])
+        ->assertSessionHas('status', __('admin.email_editor.saved_default'));
 
     expect(EmailTemplateOverride::query()->count())->toBe(0)
         ->and(welcomeLetter()->envelope()->subject)->toBe('أهلًا بك في AI 101');

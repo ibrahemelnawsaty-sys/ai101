@@ -107,7 +107,7 @@ return [
     ],
 
     'change' => [
-        'title' => 'Confirm the role change',
+        'title' => 'Confirm the role change of :name',
         'description' => 'The change applies at once and is recorded in the audit log with the reason you wrote.',
         'current' => 'Current role',
         'new' => 'New role',
