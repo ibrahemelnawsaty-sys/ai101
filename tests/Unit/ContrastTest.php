@@ -312,3 +312,39 @@ it('D-139: نصّ شريط التقدّم على بطاقة الدرجة الك�
         // …and the avatar's initials on the avatar's own fill.
         ->and(contrastRatio('#FFFFFF', $tokens['violet-500']))->toBeGreaterThanOrEqual(4.5);
 });
+
+/** A token's hex in the LIGHT shell: follows `var(--x)` references through the token file. */
+function lightTokenHex(string $name): string
+{
+    $source = (string) File::get(resource_path('css/tokens.css'));
+
+    preg_match('/\[data-surface="light"\]\s*\{(.*?)\n\}/s', $source, $light);
+
+    $seen = 0;
+
+    while ($seen++ < 6) {
+        if (preg_match('/--'.preg_quote($name, '/').':\s*var\(--([a-z0-9-]+)\)/', $light[1] ?? '', $ref) === 1
+            || preg_match('/--'.preg_quote($name, '/').':\s*var\(--([a-z0-9-]+)\)/', $source, $ref) === 1) {
+            $name = $ref[1];
+
+            continue;
+        }
+
+        break;
+    }
+
+    expect(preg_match('/--'.preg_quote($name, '/').':\s*(#[0-9A-Fa-f]{6})/', $source, $hex))->toBe(1, "token --{$name} has no hex");
+
+    return $hex[1];
+}
+
+it('D-140: --text-faint في السمة الفاتحة يبلغ 4.5:1 على الأسطح الثلاثة التي يجلس عليها — كان 2.78 على الأبيض و2.38 على surface-3', function (): void {
+    // It carries real text (the app bar's sub-line, a resource's size and date, a
+    // grade's date, the locked steps of the journey): the 4.5:1 of PRD §17 and
+    // CLAUDE.md applies to it. The owner chose to darken the grey (D-140, option أ).
+    $faint = lightTokenHex('text-faint');
+
+    foreach (['surface-1', 'surface-2', 'surface-3'] as $surface) {
+        expect(contrastRatio($faint, lightTokenHex($surface)))->toBeGreaterThanOrEqual(4.5, "--text-faint on --{$surface}");
+    }
+});

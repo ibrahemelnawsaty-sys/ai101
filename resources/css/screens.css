@@ -509,7 +509,7 @@ min-block-size: var(--d-8);
 .chat__ci.is-on { background: var(--surface-1); box-shadow: var(--sh-sm); }
 .chat__ci .ui-badge--count { flex: none; background: var(--violet-500); color: var(--white); }
 .chat__ci b { display: block; font-size: var(--fs-sm); color: var(--text-strong); }
-.chat__ci span { font-size: var(--fs-xs); color: var(--text-faint); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-inline-size: var(--d-1); }
+.chat__ct > span { font-size: var(--fs-xs); color: var(--text-faint); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-inline-size: var(--d-1); }
 .chat__ct { margin-inline-start: auto; }
 .chat__main { display: flex; flex-direction: column; min-inline-size: 0; }
 .chat__hd { padding: var(--s3) var(--s5); border-block-end: var(--bw-hairline) solid var(--border-1); display: flex; align-items: center; gap: var(--s3); }

@@ -307,3 +307,33 @@ it('D-139: عنوان جدول ورقة الطباعة بلا «:week» حرفي
     // that says «جلسات خارج الأسابيع».
     expect(__('schedule.table_caption', ['week' => 'جلسات خارج الأسابيع']))->not->toContain('جلسات جلسات');
 });
+
+/*
+|--------------------------------------------------------------------------
+| D-140 — the rest of the contrast list, measured by scanning every page
+|--------------------------------------------------------------------------
+*/
+
+it('D-140: صف الجلسة الملغاة يخفت بلون نصّه لا بشفافية الصف كله — شارة «ملغاة» بشفافية .62 كانت 2.86:1', function (): void {
+    $css = (string) file_get_contents(resource_path('css/states.css'));
+
+    preg_match('/\.is-cancelled\s*\{([^}]*)\}/', $css, $rule);
+
+    expect($rule)->not->toBeEmpty()
+        ->and($rule[1])->not->toContain('opacity')
+        ->and($css)->toMatch('/tr\.is-cancelled > td[^{]*\{[^}]*color: var\(--text-muted\)/');
+});
+
+it('D-140: نجمة الحقل الإلزامي بلون نص الحالة الخاطئة — --bad وحده 4.38:1', function (): void {
+    $css = (string) file_get_contents(resource_path('css/components.css'));
+
+    expect($css)->toMatch('/\.ui-field__required\s*\{[^}]*color: var\(--status-bad-text\)/');
+});
+
+it('D-140: شارة عدّاد المحادثات لا يلوّنها رمادي سطر المعاينة — «span» داخل عنصر المحادثة لم يعد يصيبها', function (): void {
+    // `.chat__ci span { color: faint }` reached the badge's own number: grey on violet.
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->not->toMatch('/\.chat__ci span\s*\{/')
+        ->and($css)->toMatch('/\.chat__ct > span\s*\{/');
+});

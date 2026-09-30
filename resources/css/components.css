@@ -336,7 +336,7 @@ font-size: var(--fs-sm);
   color: var(--text-strong);
   margin-block-end: var(--s1);
 }
-.ui-field__required { color: var(--bad); font-style: normal; margin-inline-start: var(--s1); }
+.ui-field__required { color: var(--status-bad-text); font-style: normal; margin-inline-start: var(--s1); }
 
 .ui-field__hint {
   display: flex;

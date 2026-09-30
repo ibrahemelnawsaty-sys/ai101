@@ -55,7 +55,11 @@ box-shadow: 0 0 0 var(--bw-marker) var(--teal-100);
 
 /* ---------------------------------------------------------- CANCELLED */
 /* Never colour alone: the markup also renders a «cancelled» pill. */
-.is-cancelled { opacity: 0.62; }
+/* Dimmed by the colour of its TEXT, not by the opacity of the whole row: the row
+   held the «cancelled» pill, and at .62 the pill measured 2.86:1 (D-140). */
+.is-cancelled { color: var(--text-muted); }
+tr.is-cancelled > td,
+.is-cancelled b { color: var(--text-muted); }
 .is-cancelled b,
 .is-cancelled td:first-child { text-decoration: line-through; }
 

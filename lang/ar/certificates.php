@@ -57,8 +57,8 @@ return [
         'met' => 'مستوفى',
         'not_met' => 'غير مستوفى',
         'attendance' => 'نسبة الحضور',
-        'attendance_requirement' => 'الحد الأدنى :required%',
-        'attendance_current' => 'النسبة الحالية :current%',
+        'attendance_requirement' => 'الحد الأدنى ‎:required%',
+        'attendance_current' => 'النسبة الحالية ‎:current%',
         'score' => 'الدرجة النهائية',
         'score_requirement' => 'حد النجاح :required من :max',
         'score_current' => 'الدرجة الحالية :current من :max',
@@ -100,7 +100,7 @@ return [
     'conditions_pending' => 'شروط الشهادة',
     'met' => 'مستوفى',
     'not_met' => 'غير مستوفى',
-    'min_attendance' => 'الحد الأدنى :rate%',
+    'min_attendance' => 'الحد الأدنى ‎:rate%',
     'why_not_title' => 'ما ينقصك بالضبط',
 
     // Flash notices after issuing or revoking
@@ -124,7 +124,7 @@ return [
     ],
 
     'reasons' => [
-        'attendance_below_minimum' => 'نسبة حضورك :current% وهي أقل من الحد المطلوب :required%.',
+        'attendance_below_minimum' => 'نسبة حضورك ‎:current% وهي أقل من الحد المطلوب ‎:required%.',
         'score_below_pass' => 'درجتك النهائية :current من :max وهي أقل من حد النجاح :required.',
         'not_enrolled' => 'لا يوجد التحاق فعّال لك في هذه الدفعة.',
         'cohort_not_completed' => 'لم تُختتم الدفعة بعد، وتُصدر الشهادات بعد اختتامها.',

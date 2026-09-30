@@ -145,7 +145,7 @@ return [
 
     'progress' => [
         'label' => 'نسبة الإنجاز',
-        'threshold' => 'الحد المطلوب :value%',
+        'threshold' => 'الحد المطلوب ‎:value%',
     ],
 
     'timeline' => [

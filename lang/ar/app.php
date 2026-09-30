@@ -159,7 +159,7 @@ return [
 
     'ratio' => [
         'of' => ':count من :total',
-        'percent' => ':value%',
+        'percent' => '‎:value%',
         'score_of' => ':score من :max',
     ],
 
