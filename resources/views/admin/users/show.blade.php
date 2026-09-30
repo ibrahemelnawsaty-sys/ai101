@@ -198,32 +198,28 @@
 
             @if ($user->enrollments->isNotEmpty())
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.users.enrollments_title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.cohorts.fields.name') }}</th>
-                                <th scope="col">{{ __('admin.users.table.role') }}</th>
-                                <th scope="col">{{ __('attendance.rate.title') }}</th>
-                                <th scope="col">{{ __('grades.total.title') }}</th>
-                                <th scope="col">{{ __('admin.users.table.status') }}</th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.role') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.rate.title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.total.title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.status') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($user->enrollments as $enrollment)
-                                <tr>
-                                    <th scope="row">
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         {{ $enrollment->cohortName }}
                                         <span class="u-muted">{{ $enrollment->programName }}</span>
                                     </th>
-                                    <td>{{ $enrollment->roleLabel }}</td>
-                                    <td class="u-num">
-                                        {{ $enrollment->hasAttendance ? $enrollment->attendancePercent . '%' : '—' }}
-                                    </td>
-                                    <td class="u-num u-nowrap">
-                                        {{ $enrollment->hasScore ? $enrollment->score . ' / ' . $enrollment->scoreMax : '—' }}
-                                    </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.role') }}">{{ $enrollment->roleLabel }}</td>
+                                    <td role="cell" data-label="{{ __('attendance.rate.title') }}"><span class="u-num">{{ $enrollment->hasAttendance ? $enrollment->attendancePercent . '%' : '—' }}</span></td>
+                                    <td role="cell" data-label="{{ __('grades.total.title') }}" class="u-nowrap"><span class="u-num">{{ $enrollment->hasScore ? $enrollment->score . ' / ' . $enrollment->scoreMax : '—' }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.status') }}">
                                         <x-ui.pill :variant="$enrollment->statusVariant">{{ $enrollment->statusLabel }}</x-ui.pill>
                                     </td>
                                 </tr>

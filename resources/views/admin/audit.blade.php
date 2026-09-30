@@ -59,7 +59,7 @@
         <x-ui.card class="dc--span u-mt-4" flush>
             @if (is_null($entries))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 10; $i++)
                                 <tr>
@@ -82,35 +82,35 @@
                     :action-href="request()->hasAny(['q', 'actor', 'action', 'entity', 'from', 'to']) ? route('admin.audit.index') : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.audit.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.audit.table.at') }}</th>
-                                <th scope="col">{{ __('admin.audit.table.actor') }}</th>
-                                <th scope="col">{{ __('admin.audit.table.action') }}</th>
-                                <th scope="col">{{ __('admin.audit.table.entity') }}</th>
-                                <th scope="col">{{ __('admin.audit.table.ip') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.audit.table.at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.audit.table.actor') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.audit.table.action') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.audit.table.entity') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.audit.table.ip') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($entries as $entry)
-                                <tr @class(['is-selected' => $entry->id === ($opened->id ?? null)])>
-                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($entry->at) }}</td>
-                                    <th scope="row">
-                                        <span class="cellpair">
-                                            <x-ui.avatar size="sm" :name="$entry->actorName" />
+                                <tr role="row" @class(['is-selected' => $entry->id === ($opened->id ?? null)])>
+                                    <td role="cell" data-label="{{ __('admin.audit.table.at') }}" class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($entry->at) }}</td>
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair cellpair--inline">
+                                            <x-ui.avatar size="sm" :name="$entry->actorName" decorative />
                                             {{ $entry->actorName }}
                                         </span>
                                     </th>
-                                    <td>{{ $entry->actionLabel }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.audit.table.action') }}">{{ $entry->actionLabel }}</td>
+                                    <td role="cell" data-label="{{ __('admin.audit.table.entity') }}">
                                         {{ $entry->entityLabel }}
                                         <span class="u-muted u-ltr" dir="ltr">{{ $entry->entityId }}</span>
                                     </td>
-                                    <td class="u-num u-ltr u-nowrap" dir="ltr">{{ $entry->ipAddress }}</td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" data-label="{{ __('admin.audit.table.ip') }}" class="u-nowrap"><span dir="ltr" class="u-ltr u-num">{{ $entry->ipAddress }}</span></td>
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$entry->entityLabel.' '.$entry->entityId"
                                             :href="route('admin.audit.index', array_merge(request()->query(), ['entry' => $entry->id]))">{{ __('app.view_details') }}</x-ui.button>
                                     </td>

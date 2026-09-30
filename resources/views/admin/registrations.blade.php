@@ -50,7 +50,7 @@
         <x-ui.card class="dc--span u-mt-4" flush>
             @if (is_null($requests))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 6; $i++)
                                 <tr>
@@ -73,34 +73,34 @@
                     :action-href="request()->hasAny(['q', 'cohort', 'state']) ? route('admin.registrations.index') : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.registrations.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.users.table.user') }}</th>
-                                <th scope="col">{{ __('admin.users.table.email') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.name') }}</th>
-                                <th scope="col">{{ __('admin.registrations.requested_at') }}</th>
-                                <th scope="col">{{ __('admin.users.table.status') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.user') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.email') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.registrations.requested_at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.status') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($requests as $request)
-                                <tr @class(['is-selected' => $request->id === ($reviewing->id ?? null)])>
-                                    <th scope="row">
-                                        <span class="cellpair">
-                                            <x-ui.avatar size="sm" :name="$request->name" />
+                                <tr role="row" @class(['is-selected' => $request->id === ($reviewing->id ?? null)])>
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair cellpair--inline">
+                                            <x-ui.avatar size="sm" :name="$request->name" decorative />
                                             {{ $request->name }}
                                         </span>
                                     </th>
-                                    <td dir="ltr" class="u-ltr">{{ $request->email }}</td>
-                                    <td>{{ $request->cohortName }}</td>
-                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($request->requestedAt) }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.email') }}"><span dir="ltr" class="u-ltr">{{ $request->email }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.name') }}">{{ $request->cohortName }}</td>
+                                    <td role="cell" data-label="{{ __('admin.registrations.requested_at') }}" class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($request->requestedAt) }}</td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.status') }}">
                                         <x-ui.pill :variant="$request->stateVariant" :icon="$request->stateIcon">{{ $request->stateLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         @if ($request->isPending)
                                             <x-ui.button icon="eye" variant="primary" size="sm"
                                                 :href="route('admin.registrations.index', array_merge(request()->query(), ['review' => $request->id]))">{{ __('app.view_details') }}</x-ui.button>

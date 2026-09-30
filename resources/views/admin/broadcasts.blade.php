@@ -132,29 +132,29 @@
                     :description="__('admin.broadcasts.history_empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.broadcasts.history_title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.broadcasts.table.sent_at') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.kind') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.subject') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.cohort') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.recipients') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.emails') }}</th>
-                                <th scope="col">{{ __('admin.broadcasts.table.sender') }}</th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.sent_at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.kind') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.subject') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.cohort') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.recipients') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.emails') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.broadcasts.table.sender') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($history as $row)
-                                <tr>
-                                    <th scope="row" class="u-when">{{ $row->sentAt }}</th>
-                                    <td><x-ui.pill :variant="$row->kindVariant">{{ $row->kindLabel }}</x-ui.pill></td>
-                                    <td>{{ $row->subject }}</td>
-                                    <td>{{ $row->cohortName }}</td>
-                                    <td class="u-num">{{ $row->recipients }}</td>
-                                    <td class="u-num">{{ $row->emails }}</td>
-                                    <td>{{ $row->senderName }}</td>
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead u-when">{{ $row->sentAt }}</th>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.kind') }}"><x-ui.pill :variant="$row->kindVariant">{{ $row->kindLabel }}</x-ui.pill></td>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.subject') }}">{{ $row->subject }}</td>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.cohort') }}">{{ $row->cohortName }}</td>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.recipients') }}"><span class="u-num">{{ $row->recipients }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.emails') }}"><span class="u-num">{{ $row->emails }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.broadcasts.table.sender') }}">{{ $row->senderName }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

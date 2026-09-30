@@ -41,6 +41,7 @@
 
     <h2 class="abrief__sub roles__h u-mt-4" id="matrix-h">{{ __('roles.matrix_title') }}</h2>
     <p class="hint">{{ __('roles.matrix_intro') }}</p>
+    <p class="hint roles__scroll-hint"><x-ui.icon name="info" />{{ __('roles.matrix_scroll_hint') }}</p>
 
     {{-- A scrolling region a keyboard can reach (tabindex) and a screen reader can name. --}}
     <div class="tscroll u-mt-2" role="region" tabindex="0" aria-labelledby="matrix-h">

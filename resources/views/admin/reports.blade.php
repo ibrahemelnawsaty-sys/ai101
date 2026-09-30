@@ -132,7 +132,7 @@
         <x-ui.card class="dc--span u-mt-4" flush>
             @if (is_null($cohortRows))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -153,30 +153,30 @@
                     :description="__('admin.reports.empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.reports.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.cohorts.fields.name') }}</th>
-                                <th scope="col">{{ __('admin.reports.col_participants') }}</th>
-                                <th scope="col">{{ __('admin.reports.average_attendance') }}</th>
-                                <th scope="col">{{ __('admin.reports.average_score') }}</th>
-                                <th scope="col">{{ __('admin.reports.submission_rate') }}</th>
-                                <th scope="col">{{ __('admin.reports.completion_rate') }}</th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.reports.col_participants') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.reports.average_attendance') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.reports.average_score') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.reports.submission_rate') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.reports.completion_rate') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($cohortRows as $row)
-                                <tr>
-                                    <th scope="row">
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         {{ $row->cohortName }}
                                         <span class="u-muted">{{ $row->programName }}</span>
                                     </th>
-                                    <td class="u-num">{{ $row->participants }}</td>
-                                    <td class="u-num">{{ $row->averageAttendance }}%</td>
-                                    <td class="u-num u-nowrap">{{ $row->averageScore }} / {{ $row->scoreMax }}</td>
-                                    <td class="u-num">{{ $row->submissionRate }}%</td>
-                                    <td class="u-num">{{ $row->completionRate }}%</td>
+                                    <td role="cell" data-label="{{ __('admin.reports.col_participants') }}"><span class="u-num">{{ $row->participants }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.average_attendance') }}"><span class="u-num">{{ $row->averageAttendance }}%</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.average_score') }}" class="u-nowrap"><span class="u-num">{{ $row->averageScore }} / {{ $row->scoreMax }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.submission_rate') }}"><span class="u-num">{{ $row->submissionRate }}%</span></td>
+                                    <td role="cell" data-label="{{ __('admin.reports.completion_rate') }}"><span class="u-num">{{ $row->completionRate }}%</span></td>
                                 </tr>
                             @endforeach
                         </tbody>

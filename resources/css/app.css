@@ -2001,7 +2001,8 @@ input[type="file"] { max-inline-size: 100%; min-inline-size: 0; }
   .form__aside,
   .row__url,
   .authshell__top .logo,
-  .nav .logo {
+  .nav .logo,
+  .emed__orig summary {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--touch-min);

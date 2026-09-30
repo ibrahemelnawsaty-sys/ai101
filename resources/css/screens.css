@@ -1551,6 +1551,10 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .le__seg-btn:hover { color: var(--text-strong); }
 .le__seg-btn[aria-pressed="true"] { background: var(--violet-700); color: var(--white); }
 .le__seg-btn:focus-visible { outline: var(--bw-strong) solid var(--focus-ring); outline-offset: var(--bw-hairline); }
+/* A finger, not a cursor: the language and device switches of the landing editor (D-147). */
+@media (pointer: coarse) {
+  .le__seg-btn { min-block-size: var(--touch-min); }
+}
 
 .le__reset-all { margin-inline-start: auto; }
 
@@ -1981,6 +1985,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 .atable .atable__cell { text-align: center; color: var(--text-muted); }
 .atable .atable__cell .ui-icon { margin-inline: auto; color: var(--status-ok-text); }
 .atable .roles__col { text-align: center; }
+/* Only a phone scrolls the matrix sideways, so only a phone is told (D-147). */
+.roles__scroll-hint { display: none; }
+@media (max-width: 699px) { .roles__scroll-hint { display: flex; } }
 
 /* The summary inside the role-change confirmation (D-133). */
 .rolechange { display: grid; gap: var(--s3); }

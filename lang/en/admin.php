@@ -58,6 +58,7 @@ return [
         'create' => 'Create a cohort',
         'fields' => [
             'name' => 'Cohort name',
+            'program_locked_hint' => 'The programme of a cohort cannot be changed once it is created. Create a new cohort for another programme.',
             'starts_at' => 'Start date',
             'ends_at' => 'End date',
             'capacity' => 'Capacity',

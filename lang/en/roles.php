@@ -18,6 +18,8 @@ return [
     'matrix_title' => 'Permission matrix',
     'matrix_intro' => '"Yes" means the role reaches this screen or action. What it sees there is set by the reach written on its card, and the server decides on every request; this page explains, it is not the source of a permission. The columns are the role on the account: someone who is a trainer in one cohort and a trainee in another holds both roles\' abilities, each in its own cohort.',
 
+    'matrix_scroll_hint' => 'The table is wider than the screen: drag it sideways to see the other roles; the capability column stays in place.',
+
     'matrix' => [
         'capability' => 'Permission',
         'yes' => 'Yes',

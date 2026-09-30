@@ -69,7 +69,7 @@
 
             @if (is_null($users))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 8; $i++)
                                 <tr>
@@ -92,38 +92,38 @@
                     :action-href="request()->hasAny(['q', 'role', 'status']) ? route('admin.users.index') : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.users.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.users.table.user') }}</th>
-                                <th scope="col">{{ __('admin.users.table.email') }}</th>
-                                <th scope="col">{{ __('admin.users.table.role') }}</th>
-                                <th scope="col">{{ __('admin.users.table.status') }}</th>
-                                <th scope="col">{{ __('admin.users.table.last_login') }}</th>
-                                <th scope="col"><span class="sr">{{ __('admin.users.table.actions') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.user') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.email') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.role') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.status') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.last_login') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('admin.users.table.actions') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($users as $user)
-                                <tr>
-                                    <th scope="row">
-                                        <span class="cellpair">
-                                            <x-ui.avatar size="sm" :name="$user->name" />
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair cellpair--inline">
+                                            <x-ui.avatar size="sm" :name="$user->name" decorative />
                                             {{ $user->name }}
                                         </span>
                                     </th>
-                                    <td dir="ltr" class="u-ltr">{{ $user->email }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.email') }}"><span dir="ltr" class="u-ltr">{{ $user->email }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.role') }}">
                                         <x-ui.pill :variant="$user->roleVariant">{{ $user->roleLabel }}</x-ui.pill>
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.status') }}">
                                         <x-ui.pill :variant="$user->statusVariant" :icon="$user->statusIcon">{{ $user->statusLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-when u-nowrap">
+                                    <td role="cell" data-label="{{ __('admin.users.table.last_login') }}" class="u-when u-nowrap">
                                         {{ $user->lastLoginAt ? \App\Support\Dates::dateTime($user->lastLoginAt) : '—' }}
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button variant="secondary" size="sm"
                                             :href="route('admin.users.show', $user->id)">{{ __('admin.users.actions.view_profile') }}</x-ui.button>
 

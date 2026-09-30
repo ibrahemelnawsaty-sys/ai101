@@ -42,7 +42,7 @@
         <x-ui.card class="dc--span u-mt-4" flush>
             @if (is_null($programs))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -65,29 +65,29 @@
                     :action-href="request()->hasAny(['q', 'status']) ? route('admin.programs.index') : route('admin.programs.index', ['edit' => 'new'])" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.programs.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.programs.fields.name') }}</th>
-                                <th scope="col">{{ __('admin.programs.fields.slug') }}</th>
-                                <th scope="col">{{ __('admin.programs.fields.hours') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.title') }}</th>
-                                <th scope="col">{{ __('admin.programs.fields.status') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.programs.fields.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.programs.fields.slug') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.programs.fields.hours') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.programs.fields.status') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($programs as $program)
-                                <tr @class(['is-selected' => $program->id === ($editing->id ?? null)])>
-                                    <th scope="row">{{ $program->name }}</th>
-                                    <td dir="ltr" class="u-ltr">{{ $program->slug }}</td>
-                                    <td class="u-num">{{ $program->hours }}</td>
-                                    <td class="u-num">{{ $program->cohortsCount }}</td>
-                                    <td>
+                                <tr role="row" @class(['is-selected' => $program->id === ($editing->id ?? null)])>
+                                    <th scope="row" role="rowheader" class="atable__lead">{{ $program->name }}</th>
+                                    <td role="cell" data-label="{{ __('admin.programs.fields.slug') }}"><span dir="ltr" class="u-ltr">{{ $program->slug }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.programs.fields.hours') }}"><span class="u-num">{{ $program->hours }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.title') }}"><span class="u-num">{{ $program->cohortsCount }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.programs.fields.status') }}">
                                         <x-ui.pill :variant="$program->statusVariant" :icon="$program->statusIcon">{{ $program->statusLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$program->name"
                                             :href="route('admin.programs.index', ['edit' => $program->id])">{{ __('app.edit') }}</x-ui.button>
                                         <x-ui.button variant="secondary" size="sm"

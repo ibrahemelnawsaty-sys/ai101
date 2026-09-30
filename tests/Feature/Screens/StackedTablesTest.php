@@ -3,13 +3,17 @@
 declare(strict_types=1);
 
 /**
- * Phase 4 (4-ج) — the trainer's tables on a phone.
+ * Phases 4 and 5 — the tables of the trainer's and the administrator's screens on a phone.
  *
  * Eight trainer screens drew a table of five to eight columns that scrolled
  * sideways inside its box on a 390px screen (1107px, 914px, 828px…), hiding the
  * status and the action column. Each is now a stack of cards, the way the
  * participant's three were in Phase 3 (D-139): one card per row, every cell
  * carrying its own column's name, the header row kept for assistive technology.
+ *
+ * Phase 5 (D-147) puts the administrator's and the system administrator's tables under the
+ * same guards: eleven views of five to eight columns that scrolled sideways (1170px in a
+ * 972px frame on the cohorts list, 1081px on the users list) now stack too.
  *
  * These read the SOURCE, because what can rot is a table that was added or edited
  * without its roles and its cell names; the pixels are measured in a browser and
@@ -22,6 +26,14 @@ const TRAINER_STACKED_VIEWS = [
     'trainer/resources', 'trainer/reports', 'trainer/final-project', 'trainer/attendance',
 ];
 
+const ADMIN_STACKED_VIEWS = [
+    'admin/cohorts', 'admin/programs', 'admin/registrations', 'admin/certificates',
+    'admin/audit', 'admin/reports', 'admin/broadcasts',
+    'admin/users/index', 'admin/users/show', 'admin/users/import',
+];
+
+const STACKED_VIEWS = [...TRAINER_STACKED_VIEWS, ...ADMIN_STACKED_VIEWS];
+
 /** @return list<string> every `<table class="atable atable--stack …">…</table>` of a view */
 function stackedTablesOf(string $view): array
 {
@@ -31,13 +43,13 @@ function stackedTablesOf(string $view): array
     return $tables[0];
 }
 
-it('D-143: كل جدول مدرّب بأعمدة عريضة صار بطاقات على الجوال', function (): void {
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+it('D-143: كل جدول مدرّب أو إداري بأعمدة عريضة صار بطاقات على الجوال', function (): void {
+    foreach (STACKED_VIEWS as $view) {
         expect(stackedTablesOf($view))->not->toBeEmpty($view);
     }
 
     // …and none of them is left as a bare table with a header and no cards.
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         $html = (string) file_get_contents(resource_path("views/{$view}.blade.php"));
         preg_match_all('/<table class="atable"(?:(?!<\/table>).)*<thead/s', $html, $bare);
 
@@ -46,7 +58,7 @@ it('D-143: كل جدول مدرّب بأعمدة عريضة صار بطاقات 
 });
 
 it('D-143: كل صف وخلية ورأس في الجداول المكدّسة يحمل دوره، وبلا دور خارجها', function (): void {
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         foreach (stackedTablesOf($view) as $table) {
             expect(preg_match_all('/<tr(?![^>]*\brole=)/', $table))->toBe(0, "{$view}: <tr> without role")
                 ->and(preg_match_all('/<t[dh](?![^>]*\brole=)/', $table))->toBe(0, "{$view}: <td>/<th> without role");
@@ -60,7 +72,7 @@ it('D-143: كل صف وخلية ورأس في الجداول المكدّسة ي
 });
 
 it('D-143: كل خلية بطاقة تحمل اسم عمودها، ما عدا خلية الإجراءات الأخيرة وخلية الملاحظة', function (): void {
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         foreach (stackedTablesOf($view) as $table) {
             preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/s', $table, $rows);
 
@@ -84,7 +96,7 @@ it('D-143: كل خلية بطاقة تحمل اسم عمودها، ما عدا �
 });
 
 it('D-143: تسمية كل خلية بطاقة هي نفسها ترويسة عمودها — لا عمود آخر ولا تسمية منقولة من جدول آخر', function (): void {
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         foreach (stackedTablesOf($view) as $table) {
             preg_match('/<thead[^>]*>(.*?)<\/thead>/s', $table, $head);
             preg_match_all('/<th\b[^>]*scope="col"[^>]*>(.*?)<\/th>/s', $head[1] ?? '', $headers);
@@ -123,7 +135,7 @@ it('D-143: تسمية كل خلية بطاقة هي نفسها ترويسة عم
 });
 
 it('D-143: الرقم اللاتيني داخل خلية بطاقة في عنصر داخلي لا على الخلية — `.u-num` على الخلية يقلب موضع الاسم والقيمة', function (): void {
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         foreach (stackedTablesOf($view) as $table) {
             expect(preg_match('/<td\b[^>]*class="[^"]*\bu-num\b/', $table))->toBe(0, "{$view}: u-num on a <td>");
         }
@@ -209,7 +221,7 @@ it('D-143: هيكل التحميل بشكل بطاقات تحت 1200px، وكل 
 
     expect($css)->toMatch('/@media \(max-width: 1199px\) \{\s*\/\*[^*]*skeleton[^*]*\*\/\s*\.tscroll:has\(> \.atable--skel\)/s');
 
-    foreach (TRAINER_STACKED_VIEWS as $view) {
+    foreach (STACKED_VIEWS as $view) {
         $html = (string) file_get_contents(resource_path("views/{$view}.blade.php"));
 
         // No bare `class="atable"` is left: it is a stack, a skeleton, or the matrix.

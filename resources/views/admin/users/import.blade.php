@@ -126,22 +126,22 @@
                 </p>
 
                 <div class="tscroll u-mt-4">
-                    <table class="atable">
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.users.import.row') }}</th>
-                                <th scope="col">{{ __('admin.users.export.name') }}</th>
-                                <th scope="col">{{ __('auth.shared.email') }}</th>
-                                <th scope="col">{{ __('admin.users.table.status') }}</th>
+                    <table class="atable atable--stack" role="table">
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.users.import.row') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.export.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('auth.shared.email') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.users.table.status') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($rows as $row)
-                                <tr>
-                                    <td class="u-num">{{ $row->number }}</td>
-                                    <td>{{ $row->displayName() }}</td>
-                                    <td dir="ltr" class="row__ltr">{{ $row->email() }}</td>
-                                    <td>
+                                <tr role="row">
+                                    <td role="cell" data-label="{{ __('admin.users.import.row') }}"><span class="u-num">{{ $row->number }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.users.export.name') }}">{{ $row->displayName() }}</td>
+                                    <td role="cell" data-label="{{ __('auth.shared.email') }}"><span dir="ltr" class="row__ltr">{{ $row->email() }}</span></td>
+                                    <td role="cell" data-label="{{ __('admin.users.table.status') }}">
                                         @if ($row->isValid())
                                             <x-ui.pill variant="success" icon="check">{{ __('admin.users.import.row_ok') }}</x-ui.pill>
                                         @else

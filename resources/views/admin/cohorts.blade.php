@@ -50,7 +50,7 @@
         <x-ui.card class="dc--span u-mt-4" flush>
             @if (is_null($cohorts))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -73,55 +73,55 @@
                     :action-href="route('admin.cohorts.index', array_merge(request()->query(), ['edit' => 'new']))" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('admin.cohorts.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('admin.cohorts.fields.name') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.starts_at') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.capacity') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.trainers') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.coordinators') }}</th>
-                                <th scope="col">{{ __('admin.cohorts.fields.status') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.name') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.starts_at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.capacity') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.trainers') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.coordinators') }}</th>
+                                <th scope="col" role="columnheader">{{ __('admin.cohorts.fields.status') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($cohorts as $cohort)
-                                <tr @class(['is-selected' => $cohort->id === ($editing->id ?? null)])>
-                                    <th scope="row">
+                                <tr role="row" @class(['is-selected' => $cohort->id === ($editing->id ?? null)])>
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         {{ $cohort->name }}
                                         <span class="u-muted">{{ $cohort->programName }}</span>
                                     </th>
-                                    <td class="u-when u-nowrap">
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.starts_at') }}" class="u-when">
                                         {{ \App\Support\Dates::longDate($cohort->startsAt) }}
                                         —
                                         {{ \App\Support\Dates::longDate($cohort->endsAt) }}
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.capacity') }}">
                                         <x-ui.progress-bar :value="$cohort->seatsTaken" :max="$cohort->capacity"
                                             size="sm" :variant="$cohort->seatsVariant"
                                             :label="__('admin.cohorts.fields.capacity')" />
                                         <span class="u-num">{{ $cohort->seatsTaken }} / {{ $cohort->capacity }}</span>
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.trainers') }}">
                                         @if (count($cohort->trainerNames) === 0)
                                             <span class="u-muted">{{ __('app.none') }}</span>
                                         @else
                                             {{ implode(' · ', $cohort->trainerNames) }}
                                         @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.coordinators') }}">
                                         @if (count($cohort->coordinatorNames) === 0)
                                             <span class="u-muted">{{ __('app.none') }}</span>
                                         @else
                                             {{ implode(' · ', $cohort->coordinatorNames) }}
                                         @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('admin.cohorts.fields.status') }}">
                                         <x-ui.pill :variant="$cohort->statusVariant" :icon="$cohort->statusIcon">{{ $cohort->statusLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         {{-- One panel at a time (D-117): each link drops the others'
                                              parameters, so two forms never share a screen. --}}
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$cohort->name"
@@ -158,8 +158,13 @@
                     <div class="f2">
                         <x-ui.input name="name" required :label="__('admin.cohorts.fields.name')"
                             :value="old('name', $editing->name)" />
+                        {{-- The server never moves an existing cohort to another programme
+                             (UpdateCohortRequest has no such field), so the control is shown
+                             locked with the reason, not as a choice that silently does nothing. --}}
                         <x-ui.select name="program_id" required :label="__('admin.programs.title')"
-                            :options="$programOptions" :value="old('program_id', $editing->programId)" />
+                            :options="$programOptions" :value="old('program_id', $editing->programId)"
+                            :state="$editing->exists ? 'disabled' : 'default'"
+                            :hint="$editing->exists ? __('admin.cohorts.fields.program_locked_hint') : null" />
                     </div>
 
                     <div class="f2">
