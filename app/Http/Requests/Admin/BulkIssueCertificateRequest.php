@@ -49,6 +49,23 @@ final class BulkIssueCertificateRequest extends FormRequest
         ];
     }
 
+    /**
+     * Words for the one refusal a person can meet from the screen: pressing the
+     * button with nobody ticked. The rules above are untouched.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $select = (string) __('certificates.errors.select_first');
+
+        return [
+            'user_id.required' => $select,
+            'user_id.array' => $select,
+            'user_id.min' => $select,
+        ];
+    }
+
     public function cohort(): Cohort
     {
         /** @var Cohort $cohort */

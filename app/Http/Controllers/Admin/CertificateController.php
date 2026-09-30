@@ -22,6 +22,7 @@ use App\Presenters\Admin\CertificateCandidate;
 use App\Presenters\Admin\CertificateCounts;
 use App\Presenters\Admin\CertificatePerson;
 use App\Presenters\Admin\CertificateRow;
+use App\Presenters\Support\FormErrors;
 use App\Presenters\Support\Options;
 use App\Services\Audit\AuditLogger;
 use App\Services\Certificates\CertificateEligibility;
@@ -99,6 +100,8 @@ final class CertificateController extends Controller
 
         return view('admin.certificates', [
             'contextLabel' => $cohort?->getAttribute('name'),
+            'cohortId' => $cohort?->getKey(),
+            'formErrors' => FormErrors::apart($request->session()->get('errors'), ['override_reason', 'revoke_reason']),
             'isSearching' => $search !== null,
             'counts' => CertificateCounts::of(
                 eligible: $eligible->count(),
@@ -319,7 +322,7 @@ final class CertificateController extends Controller
     }
 
     /**
-     * Issue to everyone in one cohort who already qualifies.
+     * Issue to the people ticked on the screen who already qualify (D-144).
      *
      * Nothing is forced: each candidate is put through exactly the same
      * eligibility check as a single issue, and anyone who does not qualify is
@@ -348,7 +351,10 @@ final class CertificateController extends Controller
             $issued++;
         }
 
-        return back()->with('status', __('certificates.bulk_issued', ['count' => $issued]));
+        return back()->with(
+            'status',
+            $issued > 0 ? __('certificates.bulk_issued', ['count' => $issued]) : __('certificates.bulk_none'),
+        );
     }
 
     /**

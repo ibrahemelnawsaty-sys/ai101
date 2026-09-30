@@ -2096,18 +2096,25 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
 }
 
 @media (max-width: 1199px) {
-  /* The attendance roster's card (D-143). Sixty participants is sixty cards, so the
-     two times sit side by side, the status and the edit take a full line each, and
-     the row selector sits on the name's own line instead of a row of its own. */
-  .atable--roster tbody tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s4); padding-block: var(--s1); }
-  .atable--roster.atable--stack th[scope="row"] { grid-column: 1 / -1; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-start: var(--touch); }
+  /* A card with a row selector (D-143): the attendance roster and the certificates that
+     can be issued in one go (D-144). Sixty participants is sixty cards, so the two short
+     values sit side by side, the wide ones take a full line each, and the selector sits
+     on the name's own line instead of a row of its own. */
+  .atable--roster tbody tr,
+  .atable--pickable tbody tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s4); padding-block: var(--s1); }
+  .atable--roster.atable--stack th[scope="row"],
+  .atable--pickable.atable--stack th[scope="row"] { grid-column: 1 / -1; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-start: var(--touch); }
   /* On the SAME side as "select all" above the list, so the two boxes line up. */
-  .atable--roster .atable__pick { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 1; display: block; padding: 0; border: 0; }
-  .atable--roster .atable__pick::before { content: none; }
+  .atable--roster .atable__pick,
+  .atable--pickable .atable__pick { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 1; display: block; padding: 0; border: 0; }
+  .atable--roster .atable__pick::before,
+  .atable--pickable .atable__pick::before { content: none; }
   .atable--roster td[data-cell="in"],
-  .atable--roster td[data-cell="out"] { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; }
+  .atable--roster td[data-cell="out"],
+  .atable--pickable td[data-cell="half"] { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; }
   .atable--roster td[data-cell="status"],
-  .atable--roster td[data-cell="edit"] { grid-column: 1 / -1; }
+  .atable--roster td[data-cell="edit"],
+  .atable--pickable td[data-cell="full"] { grid-column: 1 / -1; }
 }
 
 @media (max-width: 1199px) {

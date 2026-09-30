@@ -204,7 +204,7 @@
                             <tr>
                                 <th scope="col">{{ __('admin.cohorts.fields.name') }}</th>
                                 <th scope="col">{{ __('admin.users.table.role') }}</th>
-                                <th scope="col">{{ __('attendance.rate.label') }}</th>
+                                <th scope="col">{{ __('attendance.rate.title') }}</th>
                                 <th scope="col">{{ __('grades.total.title') }}</th>
                                 <th scope="col">{{ __('admin.users.table.status') }}</th>
                             </tr>

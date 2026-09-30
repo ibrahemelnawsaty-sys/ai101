@@ -160,11 +160,13 @@ it('D-143: العدّاد يُنطَق من منطقة حيّة دائمة في 
 it('D-143: مربّع صف البطاقة على جهة «تحديد الكل» نفسها، وحشوة الترويسة بانتقاء يغلب قاعدة البطاقة', function (): void {
     $screens = (string) file_get_contents(resource_path('css/screens.css'));
 
-    expect($screens)->toMatch('/\.atable--roster \.atable__pick\s*\{[^}]*inset-inline-start:\s*0;/s')
-        ->and($screens)->not->toMatch('/\.atable--roster \.atable__pick\s*\{[^}]*inset-inline-end/s')
+    // The certificates that can be issued in one go share the roster's card (D-144), so
+    // its selectors are listed together with `.atable--pickable`.
+    expect($screens)->toMatch('/\.atable--roster \.atable__pick,\s*\.atable--pickable \.atable__pick\s*\{[^}]*inset-inline-start:\s*0;/s')
+        ->and($screens)->not->toMatch('/\.atable--roster \.atable__pick,[^{]*\{[^}]*inset-inline-end/s')
         // `.atable--stack th[scope="row"]` sets `padding: var(--s2) 0`; the roster's reserved
         // room for the box only wins with the same weight (it computed to 0px before).
-        ->and($screens)->toMatch('/\.atable--roster\.atable--stack th\[scope="row"\]\s*\{[^}]*padding-inline-start:\s*var\(--touch\)/s');
+        ->and($screens)->toMatch('/\.atable--roster\.atable--stack th\[scope="row"\],\s*\.atable--pickable\.atable--stack th\[scope="row"\]\s*\{[^}]*padding-inline-start:\s*var\(--touch\)/s');
 });
 
 it('D-143: كل لوحة تفتحها روابط المدرب تعلن نفسها ليُؤتى بها إلى الشاشة، والسكربت يفعل ذلك', function (): void {

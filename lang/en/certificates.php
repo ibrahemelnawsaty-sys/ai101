@@ -92,6 +92,7 @@ return [
         'not_eligible' => 'The certificate conditions are not met yet: the attendance rate and the pass mark are both required.',
         'already_issued' => 'A certificate has already been issued to this participant in this cohort.',
         'not_enrolled' => 'This participant is not enrolled in this cohort.',
+        'select_first' => 'Nobody is selected yet. Tick at least one person in the list, then press "Issue to those eligible".',
         'revoked' => 'This certificate has been revoked.',
         'serial_generation_failed' => 'A serial number could not be generated right now. Try again shortly.',
         'override_reason_required' => 'Write why you are overriding the conditions, in at least :min characters. The reason is written to the audit log.',
@@ -121,7 +122,11 @@ return [
     'admin' => [
         'title' => 'Issue certificates',
         'issue_one' => 'Issue the certificate',
-        'issue_all_eligible' => 'Issue to everyone eligible',
+        'issue_selected' => 'Issue to those eligible',
+        'selected_label' => 'Selected',
+        'selected_spoken' => 'Selected :picked of :total',
+        'select_hint' => 'Tick the people you want to issue for and press "Issue to those eligible", or issue for one person with the button on their row.',
+        'form_error_title' => 'The request could not be completed',
         'revoke' => 'Revoke the certificate',
         'reissue' => 'Reissue',
         'eligible_list' => 'Participants who meet the conditions',
@@ -137,7 +142,8 @@ return [
         'override_reason' => 'Reason for the override',
         'override_reason_hint' => 'The reason is written to the audit log, and issue is impossible without it.',
         'issued_count' => ':count certificates issued.',
-        'revoked_done' => 'The certificate was revoked, and the verification page now shows it as revoked.',
+        'revoke_warning' => 'This certificate will be revoked and the verification page will show it as revoked. You can issue its holder a new one later with "Reissue".',
+        'override_note' => 'The conditions below are not met, and issuing now is a manual override of them, recorded under your name.',
         'serial_format_hint' => 'Serial number format: ATHAR-AI101-2026-0001',
         'empty_title' => 'Nobody meets the conditions yet',
         'empty_body' => 'The eligible list appears once attendance is complete and final scores are recorded.',
@@ -151,7 +157,8 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'bulk_issued' => 'Certificates were issued to every eligible participant in this cohort. New certificates: :count.',
+    'bulk_issued' => 'Certificates were issued to the selected participants who are eligible. New certificates: :count.',
+    'bulk_none' => 'No new certificate was issued: the people you selected already hold one or no longer meet the conditions.',
     'reissued' => 'The previous certificate was revoked and a replacement was issued. The change is recorded in the audit log.',
 
     'export' => [
