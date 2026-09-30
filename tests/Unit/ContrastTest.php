@@ -348,3 +348,20 @@ it('D-140: --text-faint في السمة الفاتحة يبلغ 4.5:1 على ا�
         expect(contrastRatio($faint, lightTokenHex($surface)))->toBeGreaterThanOrEqual(4.5, "--text-faint on --{$surface}");
     }
 });
+
+it('D-146: نص النجاح يبلغ 4.5:1 على شارته الشفافة حتى فوق صف جدول أثناء التمرير — لا في السكون فقط', function (): void {
+    $text = lightTokenHex('ok-700');
+    $ok = '#0E9F6E';       // the pill's own fill is this at 10% alpha (--ok-a10)
+    $rowHover = '#F8F5FC'; // --violet-050, what a hovered table row turns
+
+    // The pill background as the eye gets it: 10% green over the row it sits on.
+    $over = static function (string $under) use ($ok): string {
+        $mix = static fn (int $i): int => (int) round(hexdec(substr($ok, 1 + 2 * $i, 2)) * 0.10 + hexdec(substr($under, 1 + 2 * $i, 2)) * 0.90);
+
+        return sprintf('#%02X%02X%02X', $mix(0), $mix(1), $mix(2));
+    };
+
+    expect(contrastRatio($text, $over($rowHover)))->toBeGreaterThanOrEqual(4.5)
+        ->and(contrastRatio($text, $over('#FFFFFF')))->toBeGreaterThanOrEqual(4.5)
+        ->and(contrastRatio($text, '#FFFFFF'))->toBeGreaterThanOrEqual(4.5);
+});

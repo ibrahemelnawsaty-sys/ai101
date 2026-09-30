@@ -88,7 +88,7 @@
          Every warm value below measured at hue 31°–34°.  Zero gold.
      ====================================================================== */
   --ok:        #0E9F6E;
-  --ok-700:    #0A7C57;   /* D-23 · 5.21 on white — use for status TEXT */
+  --ok-700:    #097652;   /* D-23 · D-146 · 5.64 on white, 4.68 on a hovered table row (was #0A7C57: 4.32 there) — status TEXT */
   --ok-100:    #E4F7EF;
   --ok-800:    #0B7A55;
 

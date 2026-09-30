@@ -4,12 +4,12 @@
     "name": "alpine"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BWMhU7zk.css",
+    "file": "assets/app-D4PIDx1h.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/public.css": {
-    "file": "assets/public-B-OA9_1o.css",
+    "file": "assets/public-BxSglJlg.css",
     "src": "resources/css/public.css",
     "isEntry": true
   },

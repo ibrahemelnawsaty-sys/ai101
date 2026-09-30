@@ -15,8 +15,12 @@ use Illuminate\Support\Collection;
  *   1. the session that is LIVE — AttendanceWindow::isLive (S ≤ now ≤ E, false for
  *      a cancelled one): the definition the live pill and the poll already use,
  *      asked and not restated;
- *   2. else the NEXT session — the earliest that has not started;
- *   3. else the LAST session held.
+ *   2. else the session that has JUST ENDED and whose check-out window is still
+ *      open (E < now ≤ E+60m, D-103) — the roster a trainer needs next: people are
+ *      still checking out, and absences and corrections are written after the end.
+ *      The window's own edge is asked of AttendanceWindow, no number is repeated;
+ *   3. else the NEXT session — the earliest that has not started;
+ *   4. else the LAST session held.
  *
  * It only chooses what to SHOW. It records nothing, opens no window, and decides
  * no one's status: a session named in the address always wins, and the trainer
@@ -27,7 +31,7 @@ use Illuminate\Support\Collection;
  *
  * The clock is a parameter, never read here (BR-07).
  *
- * @see BR-07, BR-08 · PRD §9.9.7 · D-142
+ * @see BR-07, BR-08, BR-09 · PRD §9.9.7 · D-103, D-142
  */
 final class RosterSession
 {
@@ -53,6 +57,18 @@ final class RosterSession
         }
 
         $held = $byStart->reject(fn (Session $session): bool => $this->window->isCancelled($session))->values();
+
+        // Ended, but still taking check-outs. If two sessions are in that state, the one
+        // that ended last is the one just left.
+        $closing = $held
+            ->filter(fn (Session $session): bool => $this->window->hasEnded($session, $at)
+                && ! $this->window->checkOutWindowHasClosed($session, $at))
+            ->sortBy(fn (Session $session): int => $this->window->endsAt($session)->getTimestamp())
+            ->last();
+
+        if ($closing instanceof Session) {
+            return $closing;
+        }
 
         $next = $held->first(fn (Session $session): bool => $this->window->startsAt($session)->greaterThan($at));
 

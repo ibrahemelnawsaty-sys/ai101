@@ -61,8 +61,35 @@ it('BR-07: عند S وعند E بالضبط تفتح على الجلسة الج�
         ->and(rosterOpensOn($this, '2026-10-05 21:00:00'))->toBe($this->a->id);
 });
 
-it('BR-07: بعد E بثانية تنتقل إلى القادمة — الجلسة الثانية لا الأولى المنتهية', function (): void {
-    expect(rosterOpensOn($this, '2026-10-05 21:00:01'))->toBe($this->b->id);
+it('BR-09: بعد E بثانية تبقى الجلسة المنتهية للتوّ — الانصراف مفتوح والتصحيح بعدها (D-142)', function (): void {
+    expect(rosterOpensOn($this, '2026-10-05 21:00:00'))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-05 21:00:01'))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-05 21:30:00'))->toBe($this->a->id);
+});
+
+it('BR-09: حدّ E+60m — تبقى المنتهية حتى آخر ثانية من نافذة انصرافها ثم تنتقل إلى القادمة', function (): void {
+    expect(rosterOpensOn($this, '2026-10-05 21:59:59'))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-05 22:00:00'))->toBe($this->a->id)   // E+60m — last instant, inclusive
+        ->and(rosterOpensOn($this, '2026-10-05 22:00:01'))->toBe($this->b->id);  // E+60m+1s — window closed
+});
+
+it('BR-09: الجارية تغلب المنتهية للتوّ — جلسة تبدأ قبل أن تُغلق نافذة انصراف سابقتها', function (): void {
+    // C starts at 21:30, half an hour after A ended (A's check-out is open until 22:00).
+    $c = sessionInCohort($this->cohort, riyadhAt('2026-10-05 21:30:00'), riyadhAt('2026-10-05 23:00:00'), ['title' => 'Session C']);
+
+    expect(rosterOpensOn($this, '2026-10-05 21:29:59'))->toBe($this->a->id)
+        ->and(rosterOpensOn($this, '2026-10-05 21:30:00'))->toBe($c->id);
+});
+
+it('BR-09: من جلستين انتهتا ونافذتاهما مفتوحتان يُفتح ما انتهى آخرًا، والملغاة لا تُفتح', function (): void {
+    $late = sessionInCohort($this->cohort, riyadhAt('2026-10-05 19:00:00'), riyadhAt('2026-10-05 21:30:00'), ['title' => 'Overlaps A']);
+
+    // At 21:45 both A (ended 21:00) and `late` (ended 21:30) are still taking check-outs.
+    expect(rosterOpensOn($this, '2026-10-05 21:45:00'))->toBe($late->id);
+
+    $late->update(['status' => SessionStatus::Cancelled->value]);
+
+    expect(rosterOpensOn($this, '2026-10-05 21:45:00'))->toBe($this->a->id);
 });
 
 it('BR-07: بعد آخر جلسة تفتح على آخر جلسة عُقدت', function (): void {
