@@ -1458,8 +1458,12 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .row:first-child { padding-block-start: 0; }
   .row:last-child { border-block-end: 0; padding-block-end: 0; }
   .row__m { flex: 1; min-inline-size: 0; }
-  .row__m b { display: block; font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* A title may take two lines before it is cut: "عرض المشاريع النهائية وتكريم المتدربين وت…"
+     hid the half of a session's name that says which session it is (D-143). */
+  .row__m b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text-strong); overflow: hidden; overflow-wrap: anywhere; }
   .row__m span { font-size: var(--fs-xs); color: var(--text-muted); }
+  /* Each meta line of a row is its own line: date and time, then type and mode. */
+  .row__m > span { display: block; }
   .row__e { flex: none; text-align: end; }
 
   /* --------------------------------------------------------------- FORMS */

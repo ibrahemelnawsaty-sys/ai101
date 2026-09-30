@@ -85,10 +85,13 @@ it('D-143: كل صف وخلية في جدول الكشف تحمل دورها، �
 
     preg_match_all('/<table class="atable atable--stack.*?<\/table>/s', $html, $tables);
 
-    expect($tables[0])->toHaveCount(1);
+    // The roster, the excuse queue and the recorded sessions — each one whole.
+    expect($tables[0])->toHaveCount(3);
 
-    expect(preg_match_all('/<tr(?![^>]*\brole=)/', $tables[0][0]))->toBe(0)
-        ->and(preg_match_all('/<t[dh](?![^>]*\brole=)/', $tables[0][0]))->toBe(0);
+    foreach ($tables[0] as $table) {
+        expect(preg_match_all('/<tr(?![^>]*\brole=)/', $table))->toBe(0)
+            ->and(preg_match_all('/<t[dh](?![^>]*\brole=)/', $table))->toBe(0);
+    }
 
     $outside = preg_replace('/<table class="atable atable--stack.*?<\/table>/s', '', $html) ?? '';
 

@@ -93,47 +93,47 @@
                     :action-href="request()->hasAny(['q', 'state']) ? route('trainer.participants') : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.participants.roster_caption') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.col_participant') }}</th>
-                                <th scope="col">{{ __('trainer.participants.col_contact') }}</th>
-                                <th scope="col">{{ __('attendance.rate.label') }}</th>
-                                <th scope="col">{{ __('trainer.participants.col_submissions') }}</th>
-                                <th scope="col">{{ __('grades.total.title') }}</th>
-                                <th scope="col">{{ __('trainer.participants.col_state') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.participants.col_contact') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.rate.label') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.participants.col_submissions') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.total.title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.participants.col_state') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($rows as $row)
-                                <tr @class(['is-selected' => $row->id === ($selected->id ?? null)])>
-                                    <th scope="row">
+                                <tr role="row" @class(['is-selected' => $row->id === ($selected->id ?? null)])>
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         <span class="cellpair">
                                             <x-ui.avatar size="sm" :name="$row->name" />
                                             {{ $row->name }}
                                         </span>
                                     </th>
-                                    <td dir="ltr" class="u-ltr">{{ $row->email }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.participants.col_contact') }}" dir="ltr" class="u-ltr">{{ $row->email }}</td>
+                                    <td role="cell" data-label="{{ __('attendance.rate.label') }}">
                                         <x-ui.progress-bar :value="$row->attendancePercent" size="sm"
                                             :variant="$row->attendanceVariant"
                                             :label="__('attendance.rate.label')" />
                                         <span class="u-num">{{ $row->attendancePercent }}%</span>
                                     </td>
-                                    <td class="u-num u-nowrap">{{ $row->submittedCount }} / {{ $row->assignmentsCount }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.participants.col_submissions') }}" class="u-nowrap"><span class="u-num">{{ $row->submittedCount }} / {{ $row->assignmentsCount }}</span></td>
+                                    <td role="cell" data-label="{{ __('grades.total.title') }}">
                                         @if ($row->hasScore)
                                             <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->scoreMax }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.participants.col_state') }}">
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$row->name"
                                             :href="route('trainer.participants', array_merge(request()->query(), ['view' => $row->id]))">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>
@@ -199,35 +199,35 @@
                         :description="__('trainer.participants.submissions_empty_body')" />
                 @else
                     <div class="tscroll">
-                        <table class="atable">
+                        <table class="atable atable--stack" role="table">
                             <caption class="sr">{{ __('trainer.participants.section_submissions') }}</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{{ __('trainer.assignments.col_title') }}</th>
-                                    <th scope="col">{{ __('trainer.submissions.col_submitted_at') }}</th>
-                                    <th scope="col">{{ __('trainer.submissions.col_state') }}</th>
-                                    <th scope="col">{{ __('grades.score') }}</th>
-                                    <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                            <thead role="rowgroup">
+                                <tr role="row">
+                                    <th scope="col" role="columnheader">{{ __('trainer.assignments.col_title') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('trainer.submissions.col_submitted_at') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('trainer.submissions.col_state') }}</th>
+                                    <th scope="col" role="columnheader">{{ __('grades.score') }}</th>
+                                    <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody role="rowgroup">
                                 @foreach ($selected->submissions as $submission)
-                                    <tr>
-                                        <th scope="row">{{ $submission->assignmentTitle }}</th>
-                                        <td class="u-when u-nowrap">
+                                    <tr role="row">
+                                        <th scope="row" role="rowheader" class="atable__lead">{{ $submission->assignmentTitle }}</th>
+                                        <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when u-nowrap">
                                             {{ $submission->submittedAt ? \App\Support\Dates::dateTime($submission->submittedAt) : '—' }}
                                         </td>
-                                        <td>
+                                        <td role="cell" data-label="{{ __('trainer.submissions.col_state') }}">
                                             <x-ui.pill :variant="$submission->stateVariant" :icon="$submission->stateIcon">{{ $submission->stateLabel }}</x-ui.pill>
                                         </td>
-                                        <td>
+                                        <td role="cell" data-label="{{ __('grades.score') }}">
                                             @if ($submission->isGraded)
                                                 <b class="row__score u-num"><span>{{ $submission->score }}</span><small> / {{ $submission->maxScore }}</small></b>
                                             @else
                                                 <span class="u-muted">—</span>
                                             @endif
                                         </td>
-                                        <td class="u-nowrap">
+                                        <td role="cell" class="u-nowrap">
                                             @if ($submission->hasSubmission)
                                                 <x-ui.button variant="secondary" size="sm"
                                                     :href="$submission->gradeHref">{{ $submission->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}</x-ui.button>

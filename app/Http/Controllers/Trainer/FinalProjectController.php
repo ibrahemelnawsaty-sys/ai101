@@ -15,6 +15,7 @@ use App\Presenters\Trainer\ProjectSubmissionRow;
 use App\Services\Grading\EvaluationRecorder;
 use App\Services\Grading\GradingQueue;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -41,6 +42,11 @@ final class FinalProjectController extends Controller
     use OpensNextHandIn;
     use ReadsCohortScope;
 
+    /** `?versions=all` lists the earlier versions of a hand-in too (D-143). */
+    private const VERSIONS_PARAM = 'versions';
+
+    private const VERSIONS_ALL = 'all';
+
     public function __construct(
         private readonly EvaluationRecorder $evaluations,
         private readonly GradingQueue $queue,
@@ -58,18 +64,27 @@ final class FinalProjectController extends Controller
                 'contextLabel' => $cohort?->getAttribute('name'),
                 'project' => FinalProjectBrief::missing(),
                 'submissions' => collect(),
+                'showsEarlier' => false,
+                'hiddenVersions' => 0,
+                'versionsParam' => self::VERSIONS_PARAM,
+                'versionsAll' => self::VERSIONS_ALL,
                 'selected' => null,
                 'errorState' => null,
             ]);
         }
 
         $selectedId = $this->selectedId($request);
-        $submissions = $this->submissions($project, $selectedId);
+        $showsEarlier = $request->query(self::VERSIONS_PARAM) === self::VERSIONS_ALL;
+        $submissions = $this->submissions($project, $selectedId, $showsEarlier);
 
         return view('trainer.final-project', [
             'contextLabel' => $cohort?->getAttribute('name'),
             'project' => FinalProjectBrief::from($project),
             'submissions' => $submissions,
+            'showsEarlier' => $showsEarlier,
+            'hiddenVersions' => $showsEarlier ? 0 : $this->hiddenVersions($project),
+            'versionsParam' => self::VERSIONS_PARAM,
+            'versionsAll' => self::VERSIONS_ALL,
             'selected' => $selectedId === null ? null : $submissions->first(
                 // ArrayAccess, not ->id: the ViewModel publishes through __get,
                 // so only the declared offsetGet() has a type the analyser can read.
@@ -80,21 +95,42 @@ final class FinalProjectController extends Controller
     }
 
     /**
-     * Everything handed in for this project, newest first. Only the row the
-     * grading panel is open on carries what was handed in: the table never
-     * shows it, and each of its files is a signed link to mint (D-121,
-     * security review).
+     * What was handed in for this project: the newest version of each
+     * participant's hand-in unless the trainer asks for the earlier ones too
+     * (BR-19 keeps them all, and an older one that was handed in again is never
+     * the one to mark — Submission's twin scope says it once). The row the panel
+     * is open on is always listed, so a link to an earlier version still opens.
+     *
+     * Waiting for a mark first, oldest first: the order «save and go to the
+     * next» walks (GradingQueue, D-136). Only the row the grading panel is open
+     * on carries what was handed in: the table never shows it, and each of its
+     * files is a signed link to mint (D-121, security review).
      *
      * @return Collection<int, ProjectSubmissionRow>
      */
-    private function submissions(FinalProject $project, ?string $selectedId): Collection
+    private function submissions(FinalProject $project, ?string $selectedId, bool $showsEarlier): Collection
     {
         $maxScore = (float) ($project->getAttribute('max_score') ?? 0);
 
-        return ProjectSubmission::query()
+        $query = ProjectSubmission::query()
             ->with(['user.profile', 'latestEvaluation'])
-            ->where('final_project_id', $project->getKey())
-            ->orderByDesc('submitted_at')
+            ->withExists('evaluations')
+            ->where('final_project_id', $project->getKey());
+
+        if (! $showsEarlier) {
+            $query->where(static function (Builder $only) use ($selectedId): void {
+                $only->newestVersionOnly();
+
+                if ($selectedId !== null) {
+                    $only->orWhere('id', $selectedId);
+                }
+            });
+        }
+
+        return $query
+            ->orderBy('evaluations_exists')
+            ->orderBy('submitted_at')
+            ->orderBy('id')
             ->get()
             ->map(static fn (ProjectSubmission $row): ProjectSubmissionRow => ProjectSubmissionRow::from(
                 $row,
@@ -102,6 +138,14 @@ final class FinalProjectController extends Controller
                 withAnswers: (string) $row->getKey() === $selectedId,
             ))
             ->values();
+    }
+
+    /** How many earlier versions the default listing tucks away. */
+    private function hiddenVersions(FinalProject $project): int
+    {
+        $all = ProjectSubmission::query()->where('final_project_id', $project->getKey());
+
+        return (clone $all)->count() - (clone $all)->newestVersionOnly()->count();
     }
 
     /**

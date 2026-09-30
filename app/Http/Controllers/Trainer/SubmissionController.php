@@ -73,6 +73,11 @@ final class SubmissionController extends Controller
 
     private const PER_PAGE = 50;
 
+    /** `?versions=all` lists the earlier versions of a hand-in too (D-143). */
+    private const VERSIONS_PARAM = 'versions';
+
+    private const VERSIONS_ALL = 'all';
+
     /** The Article 17 screen name. */
     private const SCREEN = 'trainer-submissions';
 
@@ -117,6 +122,10 @@ final class SubmissionController extends Controller
                 'remindAssignmentId' => null,
                 'selectedParam' => self::SELECTED_PARAM,
                 'carriedQuery' => [],
+                'showsEarlier' => false,
+                'hiddenVersions' => 0,
+                'versionsParam' => self::VERSIONS_PARAM,
+                'versionsAll' => self::VERSIONS_ALL,
             ]);
         }
 
@@ -125,7 +134,23 @@ final class SubmissionController extends Controller
             ->orderBy('due_at')
             ->get();
 
-        $page = $this->query($request, $assignments->modelKeys())
+        $filtered = $this->query($request, $assignments->modelKeys());
+        $showsEarlier = $request->query(self::VERSIONS_PARAM) === self::VERSIONS_ALL;
+
+        // The newest version of each hand-in is what gets marked (BR-19), so it
+        // is what the board lists unless the trainer asks for the earlier ones
+        // too; how many are tucked away is said on the page, never silent.
+        $visible = $showsEarlier ? clone $filtered : (clone $filtered)->newestVersionOnly();
+        $hiddenVersions = $showsEarlier ? 0 : (clone $filtered)->count() - (clone $visible)->count();
+
+        // Waiting for a mark first, oldest first — the order «save and go to the
+        // next» walks (GradingQueue, D-136), so the top row is the next one.
+        $page = $visible
+            ->with(['assignment', 'user.profile', 'latestEvaluation'])
+            ->withExists('evaluations')
+            ->orderBy('evaluations_exists')
+            ->orderBy('submitted_at')
+            ->orderBy('id')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
@@ -157,6 +182,10 @@ final class SubmissionController extends Controller
             'remindAssignmentId' => $this->remindAssignmentId($request, $assignments, $cohort),
             'selectedParam' => self::SELECTED_PARAM,
             'carriedQuery' => $this->carriedQuery($request),
+            'showsEarlier' => $showsEarlier,
+            'hiddenVersions' => $hiddenVersions,
+            'versionsParam' => self::VERSIONS_PARAM,
+            'versionsAll' => self::VERSIONS_ALL,
         ]);
     }
 
@@ -195,10 +224,11 @@ final class SubmissionController extends Controller
     }
 
     /**
-     * The board query, bound to the scoped cohort's assignments and narrowed by
-     * the three filters the toolbar offers. A filter can only narrow: the
-     * `whereIn` on the cohort's own assignment ids is applied first and is not
-     * removable from the query string (BR-23).
+     * The board's FILTERS over the scoped cohort's assignments — no order, no
+     * eager loads, no version rule — so the same builder can be counted twice
+     * (with and without the earlier versions) and paged once. A filter can only
+     * narrow: the `whereIn` on the cohort's own assignment ids is applied first
+     * and is not removable from the query string (BR-23).
      *
      * @param  array<int, mixed>  $assignmentIds
      * @return Builder<Submission>
@@ -206,9 +236,7 @@ final class SubmissionController extends Controller
     private function query(Request $request, array $assignmentIds): Builder
     {
         $query = Submission::query()
-            ->with(['assignment', 'user.profile', 'latestEvaluation'])
-            ->whereIn('assignment_id', $assignmentIds)
-            ->orderByDesc('submitted_at');
+            ->whereIn('assignment_id', $assignmentIds);
 
         $assignment = $request->query('assignment');
 
@@ -356,6 +384,11 @@ final class SubmissionController extends Controller
             if (is_string($value) && $value !== '') {
                 $carried[$key] = $value;
             }
+        }
+
+        // The one value the toggle ever writes; anything else is dropped.
+        if ($request->query(self::VERSIONS_PARAM) === self::VERSIONS_ALL) {
+            $carried[self::VERSIONS_PARAM] = self::VERSIONS_ALL;
         }
 
         return $carried;
@@ -583,7 +616,12 @@ final class SubmissionController extends Controller
             ->pluck('id')
             ->all();
 
-        $rows = $this->query($request, $assignmentIds)->get();
+        // Every version, newest hand-in first, as before: the sheet has a column
+        // for the version, so the board's "newest only" default is not applied.
+        $rows = $this->query($request, $assignmentIds)
+            ->with(['assignment', 'user.profile', 'latestEvaluation'])
+            ->orderByDesc('submitted_at')
+            ->get();
 
         $lines = ["\u{FEFF}".$this->csvRow([
             __('trainer.submissions.export.participant'),

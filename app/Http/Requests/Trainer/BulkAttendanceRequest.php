@@ -68,6 +68,26 @@ final class BulkAttendanceRequest extends FormRequest
         ];
     }
 
+    /**
+     * What each refusal SAYS. The rules are untouched; only the words are: the
+     * stock text named a field called "المستخدم", which tells a trainer nothing
+     * about what to do next.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'user_id.required' => (string) __('trainer.attendance.bulk_pick_required'),
+            'user_id.min' => (string) __('trainer.attendance.bulk_pick_required'),
+            'user_id.max' => (string) __('trainer.attendance.bulk_pick_too_many', ['max' => self::MAX_ROWS]),
+            'user_id.*.required' => (string) __('trainer.attendance.bulk_pick_invalid'),
+            'user_id.*.string' => (string) __('trainer.attendance.bulk_pick_invalid'),
+            'user_id.*.uuid' => (string) __('trainer.attendance.bulk_pick_invalid'),
+            'user_id.*.exists' => (string) __('trainer.attendance.bulk_pick_invalid'),
+        ];
+    }
+
     public function trainingSession(): Session
     {
         /** @var Session $session */

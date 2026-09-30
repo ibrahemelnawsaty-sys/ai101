@@ -185,12 +185,15 @@
                                     @foreach ($roster->entries as $entry)
                                         <tr role="row" data-participant="{{ $entry->participantId }}">
                                             <td role="cell" class="atable__pick" data-label="{{ __('trainer.attendance.select_row') }}">
+                                                {{-- After a refusal the same rows are ticked again, so the
+                                                     person sees what they sent and the message beside it. --}}
                                                 <x-ui.checkbox name="user_id[]" :value="$entry->participantId"
+                                                    :checked="in_array($entry->participantId, (array) old('user_id', []), true)"
                                                     :label="__('trainer.attendance.select_participant', ['name' => $entry->participantName])"
                                                     label-hidden />
                                             </td>
                                             <th scope="row" role="rowheader" class="atable__lead">
-                                                <span class="cellpair">
+                                                <span class="cellpair cellpair--inline">
                                                     <x-ui.avatar size="sm" :name="$entry->participantName" />
                                                     {{ $entry->participantName }}
                                                 </span>
@@ -235,27 +238,27 @@
                     :description="__('attendance.exceptions_queue.empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('attendance.exceptions_queue.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('attendance.exceptions_queue.col_participant') }}</th>
-                                <th scope="col">{{ __('attendance.exceptions_queue.col_session') }}</th>
-                                <th scope="col">{{ __('attendance.exceptions_queue.col_type') }}</th>
-                                <th scope="col">{{ __('attendance.exceptions_queue.col_reason') }}</th>
-                                <th scope="col">{{ __('attendance.exceptions_queue.col_requested_at') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('attendance.exceptions_queue.col_participant') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.exceptions_queue.col_session') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.exceptions_queue.col_type') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.exceptions_queue.col_reason') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.exceptions_queue.col_requested_at') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($pendingExceptions as $item)
-                                <tr>
-                                    <th scope="row">{{ $item->participantName }}</th>
-                                    <td>{{ $item->sessionTitle }} <span class="u-when u-muted">{{ $item->sessionDate }}</span></td>
-                                    <td><x-ui.pill variant="neutral">{{ $item->typeLabel }}</x-ui.pill></td>
-                                    <td>{{ $item->reason }}</td>
-                                    <td class="u-when u-nowrap">{{ $item->requestedAt }}</td>
-                                    <td>
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">{{ $item->participantName }}</th>
+                                    <td role="cell" data-label="{{ __('attendance.exceptions_queue.col_session') }}">{{ $item->sessionTitle }} <span class="u-when u-muted">{{ $item->sessionDate }}</span></td>
+                                    <td role="cell" data-label="{{ __('attendance.exceptions_queue.col_type') }}"><x-ui.pill variant="neutral">{{ $item->typeLabel }}</x-ui.pill></td>
+                                    <td role="cell" data-label="{{ __('attendance.exceptions_queue.col_reason') }}">{{ $item->reason }}</td>
+                                    <td role="cell" data-label="{{ __('attendance.exceptions_queue.col_requested_at') }}" class="u-when u-nowrap">{{ $item->requestedAt }}</td>
+                                    <td role="cell">
                                         <div class="row__acts" x-data="{ rejecting: false }">
                                             <form method="POST" action="{{ route('trainer.attendance-exceptions.approve', $item->id) }}">
                                                 @csrf
@@ -297,30 +300,32 @@
                     :description="__('trainer.sessions.recordings_empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.sessions.recordings_title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('attendance.col_session') }}</th>
-                                <th scope="col">{{ __('trainer.sessions.col_recording') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('attendance.col_session') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.sessions.col_recording') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($recordingSessions as $row)
-                                <tr>
-                                    <th scope="row">
-                                        {{ $row->topic }}
-                                        <span class="u-when u-muted">{{ $row->date }}</span>
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair">
+                                            {{ $row->topic }}
+                                            <span class="u-when">{{ $row->date }}</span>
+                                        </span>
                                     </th>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.sessions.col_recording') }}">
                                         @if ($row->hasRecording)
                                             <x-ui.pill variant="success">{{ __('trainer.sessions.link_set') }}</x-ui.pill>
                                         @else
                                             <x-ui.pill variant="neutral">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td role="cell">
                                         <x-ui.button variant="secondary" size="sm" :href="$row->editHref">
                                             {{ $row->hasRecording ? __('app.edit') : __('trainer.sessions.add_recording_action') }}
                                         </x-ui.button>
@@ -451,7 +456,9 @@
                         :title="__('trainer.attendance.matrix_empty_title')"
                         :description="__('trainer.attendance.matrix_empty_body')" />
                 @else
-                    <div class="tscroll">
+                    {{-- A grid that always scrolls sideways: a focusable, named region, so the
+                         keyboard can scroll it too. --}}
+                    <div class="tscroll" role="region" tabindex="0" aria-label="{{ __('trainer.attendance.matrix_title') }}">
                         <table class="atable mtable">
                             <caption class="sr">{{ __('trainer.attendance.matrix_title') }}</caption>
                             <thead>

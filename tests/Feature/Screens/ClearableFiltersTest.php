@@ -48,11 +48,12 @@ it('FR-SCHED-13: القيمة الفارغة التي يرسلها خيار «ا
 
 it('FR-NOTIF-02: كل قائمة داخل نموذج مرشّح (GET) قابلة للمسح، إلا ما تُلزم الشاشة باختياره', function (): void {
     // Where the page cannot work without a choice, "All" would be a lie: the
-    // grading board needs an assignment, the roster a session, the final-project
-    // screen a cohort, and the trainer's reports a cohort of their own.
+    // roster needs a session, the final-project screen a cohort, and the
+    // trainer's reports a cohort of their own. (The grading board is NOT on this
+    // list: with no assignment it lists every assignment's hand-ins, which is
+    // "All" — a placeholder saying "choose" above a full list said the opposite.)
     $required = [
         'trainer/attendance.blade.php' => ['session'],
-        'trainer/submissions.blade.php' => ['assignment'],
         'admin/final-project.blade.php' => ['cohort'],
         'trainer/reports.blade.php' => ['cohort'],
     ];

@@ -72,34 +72,34 @@
                     :action-href="$canManage ? route('trainer.assignments', ['edit' => 'new']) : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.assignments.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.assignments.col_title') }}</th>
-                                <th scope="col">{{ __('schedule.filter_week') }}</th>
-                                <th scope="col">{{ __('assignments.deadline') }}</th>
-                                <th scope="col">{{ __('grades.score') }}</th>
-                                <th scope="col">{{ __('trainer.assignments.col_submitted') }}</th>
-                                <th scope="col">{{ __('app.status') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.assignments.col_title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('schedule.filter_week') }}</th>
+                                <th scope="col" role="columnheader">{{ __('assignments.deadline') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.score') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.assignments.col_submitted') }}</th>
+                                <th scope="col" role="columnheader">{{ __('app.status') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($assignments as $assignment)
-                                <tr>
-                                    <th scope="row">
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         {{ $assignment->title }}
                                         @if ($assignment->isMandatory)
                                             <x-ui.pill variant="brand" size="sm">{{ __('assignments.mandatory') }}</x-ui.pill>
                                         @endif
                                     </th>
-                                    <td>{{ $assignment->weekTitle }}</td>
-                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</td>
-                                    <td class="u-num">{{ $assignment->maxScore }}</td>
-                                    <td class="u-num">{{ $assignment->submittedCount }} / {{ $assignment->cohortSize }}</td>
-                                    <td><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" data-label="{{ __('schedule.filter_week') }}">{{ $assignment->weekTitle }}</td>
+                                    <td role="cell" data-label="{{ __('assignments.deadline') }}" class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($assignment->dueAt) }}</td>
+                                    <td role="cell" data-label="{{ __('grades.score') }}"><span class="u-num">{{ $assignment->maxScore }}</span></td>
+                                    <td role="cell" data-label="{{ __('trainer.assignments.col_submitted') }}"><span class="u-num">{{ $assignment->submittedCount }} / {{ $assignment->cohortSize }}</span></td>
+                                    <td role="cell" data-label="{{ __('app.status') }}"><x-ui.pill :variant="$assignment->statusVariant">{{ $assignment->statusLabel }}</x-ui.pill></td>
+                                    <td role="cell" class="u-nowrap">
                                         @if ($canManage)
                                             <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$assignment->title"
                                                 :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>

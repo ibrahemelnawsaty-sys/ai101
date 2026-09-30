@@ -135,3 +135,58 @@ it('BR-27: بلا سبب كافٍ يبقى الرفض قائمًا ويُعرض 
 
     expect(Attendance::query()->count())->toBe(0);
 });
+
+it('BR-10: بلا تحديد يقول الخادم ما العمل بكلمات المدرب، والشاشة تعرض ذلك فوق الجدول', function (): void {
+    freezeAt(riyadhAt('2026-10-05 21:30:00'));
+    $roster = route('trainer.attendance', ['session' => $this->session->id]);
+
+    $this->actingAs($this->trainer)
+        ->from($roster)
+        ->followingRedirects()
+        ->post(route('trainer.attendance.bulk', $this->session), [
+            'attendance_status' => 'absent',
+            'edit_reason' => 'Did not attend and sent no notice beforehand.',
+        ])
+        ->assertOk()
+        ->assertSee(e((string) __('trainer.attendance.bulk_pick_required')), false);
+
+    expect(Attendance::query()->count())->toBe(0);
+});
+
+it('BR-22: معرّف من خارج الجلسة يُرفض بجملة تشرح الحل لا بـ«المستخدم غير صالح»، ولا يُكتب شيء', function (): void {
+    freezeAt(riyadhAt('2026-10-05 21:30:00'));
+    $stranger = makeParticipant(makeCohort());
+
+    $this->actingAs($this->trainer)
+        ->from(route('trainer.attendance', ['session' => $this->session->id]))
+        ->post(route('trainer.attendance.bulk', $this->session), [
+            'user_id' => [$stranger->id],
+            'attendance_status' => 'absent',
+            'edit_reason' => 'Did not attend and sent no notice beforehand.',
+        ])
+        ->assertSessionHasErrors(['user_id.0' => (string) __('trainer.attendance.bulk_pick_invalid')]);
+
+    expect(Attendance::query()->count())->toBe(0);
+});
+
+it('BR-27: بعد الرفض تعود الصفوف المحدَّدة محدَّدة — يرى المدرب ما أرسل والرسالة بجانبه', function (): void {
+    freezeAt(riyadhAt('2026-10-05 21:30:00'));
+    $roster = route('trainer.attendance', ['session' => $this->session->id]);
+
+    $html = $this->actingAs($this->trainer)
+        ->from($roster)
+        ->followingRedirects()
+        ->post(route('trainer.attendance.bulk', $this->session), [
+            'user_id' => [$this->first->id],
+            'attendance_status' => 'absent',
+            'edit_reason' => 'short',
+        ])
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<input[^>]*value="'.preg_quote($this->first->id, '/').'"[^>]*>/', (string) $html, $box);
+    preg_match('/<input[^>]*value="'.preg_quote($this->second->id, '/').'"[^>]*>/', (string) $html, $other);
+
+    expect($box[0] ?? '')->toContain('checked')
+        ->and($other[0] ?? '')->not->toContain('checked');
+});

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * One delivery of an assignment by one participant. Re-delivery inserts a new row
@@ -138,6 +139,30 @@ class Submission extends Model
             'assignment_id',
             Assignment::query()->where('cohort_id', $cohortId)->select('id'),
         );
+    }
+
+    /**
+     * Only the NEWEST version each participant handed in for each assignment.
+     *
+     * BR-19 keeps every version, and an older one that has been handed in again
+     * is never the one to mark. This is the single statement of that rule: the
+     * grading queue (GradingQueue) and the trainer's board both ask it here
+     * instead of each writing the anti-join, so they cannot drift apart.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeNewestVersionOnly(Builder $query): Builder
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query->whereNotExists(static function (QueryBuilder $newer) use ($table): void {
+            $newer->select('newer.id')
+                ->from($table.' as newer')
+                ->whereColumn('newer.user_id', $table.'.user_id')
+                ->whereColumn('newer.assignment_id', $table.'.assignment_id')
+                ->whereColumn('newer.version', '>', $table.'.version');
+        });
     }
 
     /**

@@ -390,7 +390,7 @@ min-block-size: var(--s6);
 .abrief__due--error   { color: var(--status-bad-text); }
 
 .filelist { display: grid; gap: var(--s2); }
-.filelist a { display: inline-flex; align-items: center; gap: var(--s1); }
+.filelist a { display: inline-flex; align-items: center; gap: var(--s1); min-block-size: var(--touch); }
 .filelist--inline { display: flex; flex-wrap: wrap; gap: var(--s2); }
 /* D-136 — a file in a message or in the composer: the icon BESIDE its name (the
    global reset makes an svg a block), and a link that reads as one without relying
@@ -654,10 +654,34 @@ html, body.page--app { scroll-padding-block-end: var(--bulkbar-h, 0px); }
 .mcell--none    { color: var(--text-faint); }
 .cellpair { display: flex; flex-direction: column; gap: var(--s1); }
 .cellpair span { font-size: var(--fs-xs); color: var(--text-muted); }
+/* A row heading (a topic, a title) is words, not a code: the header-cell rule that keeps
+   a COLUMN title on one line was reaching it too, so a long session topic set the width
+   of the whole table and pushed its action column out of view (D-143). */
+.atable tbody th[scope="row"] { white-space: normal; }
+/* An avatar or an icon BESIDE its text: the stacked pair above was drawn for a name
+   over a sub-line, and made a row of every board 74px tall (D-143). */
+.cellpair--inline { flex-direction: row; align-items: center; gap: var(--s2); }
+.cellpair--inline > .ui-avatar { flex: none; }
+a.cellpair--inline { min-block-size: var(--touch); }
+/* Says which hand-ins the board lists, with the way to change it. */
+.versionnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s4);
+  padding: var(--s1) var(--s4);
+  background: var(--surface-2);
+  border-block: var(--bw-hairline) solid var(--border-1);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.versionnote p { margin: 0; }
 
 .row--plain { border-block-end: 0; }
 .row--sk { pointer-events: none; }
 .row__acts { flex: none; display: flex; gap: var(--s2); align-items: center; }
+.row__acts--wrap { flex: 0 1 auto; flex-wrap: wrap; }
 /* A row's time ("قبل 21 ساعة") is a note about the row, not the row: it took the
    page's 16px and read louder than the notification's own title (D-139). */
 .row__e > time { font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
@@ -781,6 +805,23 @@ min-block-size: var(--s9);
 .mtable td { padding: var(--s3); border-block-end: var(--bw-hairline) solid var(--border-1); color: var(--text-body); }
 .mtable td:first-child { color: var(--text-strong); font-weight: var(--fw-semi); }
 .mtable code { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-accent-2); direction: ltr; unicode-bidi: isolate; }
+/* The attendance matrix is a grid, not a list, so it stays a grid on a phone — but a
+   session date is not one 117px unbroken line each (fourteen of them made it 1738px),
+   and the names stay in view while the sessions scroll (D-143). A date wraps at its
+   spaces, so every line is a whole day, month or year. */
+.mtable thead th { white-space: normal; text-align: center; padding-inline: var(--s2); }
+.mtable td { padding-inline: var(--s2); }
+.mtable thead th:first-child, .mtable thead th:last-child { text-align: start; white-space: nowrap; }
+.mtable tbody th[scope="row"] { white-space: nowrap; }
+.mtable thead th:first-child, .mtable tbody th[scope="row"] {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: var(--z-raised);
+  background: var(--surface-1);
+  box-shadow: 1px 0 0 var(--border-1);
+}
+.mtable thead th:first-child { background: var(--surface-2); }
+.mtable tbody tr:hover th[scope="row"] { background: var(--violet-050); }
 
 /* ==========================================================================
    13 · FORMS — the registration wizard, profile and every auth form
@@ -1963,6 +2004,8 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
     padding: var(--s2) 0;
     font-weight: var(--fw-semi);
     color: var(--text-strong);
+    /* The row-header fill of the wide table would draw a grey bar inside the card. */
+    background: transparent;
     border-block-end: var(--bw-hairline) solid var(--n-200);
   }
   .atable--stack td {
@@ -1994,6 +2037,8 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
   .atable--stack .ui-countdown { max-inline-size: 100%; }
   .atable--stack .ui-countdown--compact .ui-countdown__grid { flex-wrap: wrap; }
   .atable--stack td .ui-pill { max-inline-size: 100%; white-space: normal; }
+  /* A card's actions sit at its end, as the bare buttons did before they were wrapped. */
+  .atable--stack td > .row__acts { margin-inline-start: auto; }
   .atable--stack tr.atable__note { padding-block: var(--s2); background: transparent; border-style: dashed; }
   .atable--stack tr.atable__note td { display: block; padding: 0; border: 0; }
 }
@@ -2003,8 +2048,7 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
      two times sit side by side, the status and the edit take a full line each, and
      the row selector sits on the name's own line instead of a row of its own. */
   .atable--roster tbody tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s4); padding-block: var(--s1); }
-  .atable--roster .atable__lead { grid-column: 1 / -1; background: transparent; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-end: var(--touch); }
-  .atable--roster .cellpair { flex-direction: row; align-items: center; gap: var(--s3); }
+  .atable--roster .atable__lead { grid-column: 1 / -1; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-end: var(--touch); }
   .atable--roster .atable__pick { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 1; display: block; padding: 0; border: 0; }
   .atable--roster .atable__pick::before { content: none; }
   .atable--roster td[data-cell="in"],

@@ -42,7 +42,7 @@
             <div class="tablebar">
                 <form method="GET" action="{{ route('trainer.submissions') }}" class="toolbar__filters">
                     <x-ui.search-input name="q" :value="request('q')" :placeholder="__('trainer.submissions.search')" />
-                    <x-ui.select name="assignment" :label="__('trainer.submissions.filter_assignment')" :options="$assignmentOptions" :value="request('assignment')" />
+                    <x-ui.select clearable name="assignment" :label="__('trainer.submissions.filter_assignment')" :options="$assignmentOptions" :value="request('assignment')" />
                     <x-ui.select clearable name="status" :label="__('trainer.submissions.filter_status')" :options="$statusOptions" :value="request('status')" />
                     <x-ui.button icon="filter" variant="secondary" size="sm" type="submit">{{ __('app.apply_filters') }}</x-ui.button>
                 </form>
@@ -92,41 +92,71 @@
                     :action-label="request()->hasAny(['q', 'assignment', 'status']) ? __('app.clear_filters') : null"
                     :action-href="request()->hasAny(['q', 'assignment', 'status']) ? route('trainer.submissions') : null" />
             @else
+                {{-- Which hand-ins are listed: the newest version of each unless the
+                     trainer asks for the earlier ones too (BR-19 keeps them all). --}}
+                @if ($showsEarlier || $hiddenVersions > 0)
+                    <div class="versionnote">
+                        <p>
+                            @if ($showsEarlier)
+                                {{ __('trainer.submissions.versions_all_shown') }}
+                            @else
+                                {{ trans_choice('trainer.submissions.versions_hidden', $hiddenVersions, ['count' => $hiddenVersions]) }}
+                            @endif
+                        </p>
+                        @if ($showsEarlier)
+                            <x-ui.button variant="ghost" size="sm" icon="eye"
+                                :href="route('trainer.submissions', request()->except([$versionsParam, 'page']))">{{ __('trainer.submissions.versions_hide') }}</x-ui.button>
+                        @else
+                            <x-ui.button variant="ghost" size="sm" icon="eye"
+                                :href="route('trainer.submissions', array_merge(request()->except('page'), [$versionsParam => $versionsAll]))">{{ __('trainer.submissions.versions_show') }}</x-ui.button>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.submissions.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.col_participant') }}</th>
-                                <th scope="col">{{ __('trainer.submissions.col_submitted_at') }}</th>
-                                <th scope="col">{{ __('trainer.submissions.col_file') }}</th>
-                                <th scope="col">{{ __('trainer.submissions.col_state') }}</th>
-                                <th scope="col">{{ __('grades.score') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.submissions.col_assignment') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.submissions.col_submitted_at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.submissions.col_file') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.submissions.col_state') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.score') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($rows as $row)
-                                <tr @class(['is-selected' => $row->id === $selected?->id])>
-                                    <th scope="row">
-                                        <span class="cellpair">
+                                <tr role="row" @class(['is-selected' => $row->id === $selected?->id])>
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair cellpair--inline">
                                             <x-ui.avatar size="sm" :name="$row->participantName" />
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
-                                    <td class="u-when u-nowrap">
-                                        {{ $row->submittedAt ? \App\Support\Dates::dateTime($row->submittedAt) : '—' }}
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_assignment') }}">{{ $row->assignmentTitle }}</td>
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when">
+                                        @if ($row->submittedAt)
+                                            <span class="cellpair">
+                                                {{ \App\Support\Dates::shortDate($row->submittedAt) }}
+                                                <span>{{ \App\Support\Dates::time12($row->submittedAt) }}</span>
+                                            </span>
+                                        @else
+                                            —
+                                        @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_file') }}">
                                         @if ($row->fileLabel && $row->downloadUrl)
-                                            <a href="{{ $row->downloadUrl }}" class="cellpair">
+                                            <a href="{{ $row->downloadUrl }}" class="cellpair cellpair--inline">
                                                 <x-ui.icon name="file" />
                                                 <span dir="ltr">{{ $row->fileLabel }}</span>
                                             </a>
                                         @elseif ($row->fileLabel)
                                             {{-- No signed-download route for a submitted file exists yet;
                                                  the name is shown plainly rather than as a dead link. --}}
-                                            <span class="cellpair">
+                                            <span class="cellpair cellpair--inline">
                                                 <x-ui.icon name="file" />
                                                 <span dir="ltr">{{ $row->fileLabel }}</span>
                                             </span>
@@ -134,17 +164,20 @@
                                             <span class="u-muted">{{ __('app.none') }}</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_state') }}">
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
+                                        @if ($row->version > 1)
+                                            <x-ui.pill variant="neutral">{{ __('trainer.submissions.version_n', ['n' => $row->version]) }}</x-ui.pill>
+                                        @endif
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('grades.score') }}">
                                         @if ($row->isGraded)
                                             <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->maxScore }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button size="sm"
                                             :variant="$row->isGraded ? 'secondary' : 'primary'"
                                             :href="route('trainer.submissions', array_merge(request()->query(), [$selectedParam => $row->id]))">

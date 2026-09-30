@@ -68,33 +68,33 @@
                     :action-href="$canManage ? route('trainer.sessions', ['edit' => 'new']) : null" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.sessions.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('schedule.col_date') }}</th>
-                                <th scope="col">{{ __('schedule.col_time') }}</th>
-                                <th scope="col">{{ __('schedule.col_topic') }}</th>
-                                <th scope="col">{{ __('trainer.sessions.col_type') }}</th>
-                                <th scope="col">{{ __('trainer.sessions.col_staff') }}</th>
-                                <th scope="col">{{ __('schedule.col_status') }}</th>
-                                <th scope="col">{{ __('trainer.sessions.col_link') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('schedule.col_date') }}</th>
+                                <th scope="col" role="columnheader">{{ __('schedule.col_time') }}</th>
+                                <th scope="col" role="columnheader">{{ __('schedule.col_topic') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.sessions.col_type') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.sessions.col_staff') }}</th>
+                                <th scope="col" role="columnheader">{{ __('schedule.col_status') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.sessions.col_link') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($sessions as $session)
-                                <tr @class(['is-cancelled' => $session->isCancelled])>
-                                    <td class="u-nowrap">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
-                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
-                                    <th scope="row">{{ $session->topic }}</th>
-                                    <td>{{ $session->typeLabel }}</td>
-                                    <td>
+                                <tr role="row" @class(['is-cancelled' => $session->isCancelled])>
+                                    <td role="cell" data-label="{{ __('schedule.col_date') }}" class="u-when">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
+                                    <td role="cell" data-label="{{ __('schedule.col_time') }}" class="u-when">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
+                                    <th scope="row" role="rowheader" class="atable__lead">{{ $session->topic }}</th>
+                                    <td role="cell" data-label="{{ __('trainer.sessions.col_type') }}">{{ $session->typeLabel }}</td>
+                                    <td role="cell" data-label="{{ __('trainer.sessions.col_staff') }}">
                                         <div>{{ $session->trainerName }}</div>
                                         <div>{{ $session->coordinatorName }}</div>
                                     </td>
-                                    <td><x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill></td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('schedule.col_status') }}"><x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill></td>
+                                    <td role="cell" data-label="{{ __('trainer.sessions.col_link') }}">
                                         @if ($session->isInPerson)
                                             @if ($session->hasLocation)
                                                 <x-ui.pill variant="success" icon="check">{{ __('trainer.sessions.location_set') }}</x-ui.pill>
@@ -107,22 +107,24 @@
                                             <x-ui.pill variant="warning" icon="warn">{{ __('trainer.sessions.link_missing') }}</x-ui.pill>
                                         @endif
                                     </td>
-                                    <td class="u-nowrap">
-                                        @if ($canManage)
-                                            <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$session->topic"
-                                                :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
-                                        @endif
-                                        <x-ui.button variant="secondary" size="sm"
-                                            :href="route('trainer.attendance', ['session' => $session->id])">{{ __('nav.attendance') }}</x-ui.button>
-                                        @if ($canManage && ! $session->isCancelled)
-                                            <x-ui.button icon="x" variant="danger" size="sm"
-                                                :href="route('trainer.sessions', ['cancel' => $session->id])">{{ __('trainer.sessions.cancel') }}</x-ui.button>
-                                        @endif
+                                    <td role="cell">
+                                        <div class="row__acts row__acts--wrap">
+                                            @if ($canManage)
+                                                <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$session->topic"
+                                                    :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
+                                            @endif
+                                            <x-ui.button variant="secondary" size="sm"
+                                                :href="route('trainer.attendance', ['session' => $session->id])">{{ __('nav.attendance') }}</x-ui.button>
+                                            @if ($canManage && ! $session->isCancelled)
+                                                <x-ui.button icon="x" variant="danger" size="sm"
+                                                    :href="route('trainer.sessions', ['cancel' => $session->id])">{{ __('trainer.sessions.cancel') }}</x-ui.button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @if ($session->isCancelled)
-                                    <tr class="atable__note">
-                                        <td colspan="7">{{ __('schedule.cancelled_reason', ['reason' => $session->cancellationReason]) }}</td>
+                                    <tr role="row" class="atable__note">
+                                        <td role="cell" colspan="7">{{ __('schedule.cancelled_reason', ['reason' => $session->cancellationReason]) }}</td>
                                     </tr>
                                 @endif
                             @endforeach

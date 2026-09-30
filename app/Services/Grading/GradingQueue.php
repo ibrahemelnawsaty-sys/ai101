@@ -6,7 +6,6 @@ namespace App\Services\Grading;
 
 use App\Models\ProjectSubmission;
 use App\Models\Submission;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * Which hand-in the trainer opens after «save and go to the next».
@@ -31,20 +30,12 @@ final class GradingQueue
 {
     public function nextAssignmentSubmission(Submission $current): ?Submission
     {
-        $table = $current->getTable();
-
         /** @var Submission|null $next */
         $next = Submission::query()
             ->where('assignment_id', $current->getAttribute('assignment_id'))
             ->whereKeyNot($current->getKey())
             ->whereDoesntHave('evaluations')
-            ->whereNotExists(static function (QueryBuilder $newer) use ($table): void {
-                $newer->select('newer.id')
-                    ->from($table.' as newer')
-                    ->whereColumn('newer.user_id', $table.'.user_id')
-                    ->whereColumn('newer.assignment_id', $table.'.assignment_id')
-                    ->whereColumn('newer.version', '>', $table.'.version');
-            })
+            ->newestVersionOnly()
             ->orderBy('submitted_at')
             ->orderBy('id')
             ->first();
@@ -54,20 +45,12 @@ final class GradingQueue
 
     public function nextProjectSubmission(ProjectSubmission $current): ?ProjectSubmission
     {
-        $table = $current->getTable();
-
         /** @var ProjectSubmission|null $next */
         $next = ProjectSubmission::query()
             ->where('final_project_id', $current->getAttribute('final_project_id'))
             ->whereKeyNot($current->getKey())
             ->whereDoesntHave('evaluations')
-            ->whereNotExists(static function (QueryBuilder $newer) use ($table): void {
-                $newer->select('newer.id')
-                    ->from($table.' as newer')
-                    ->whereColumn('newer.user_id', $table.'.user_id')
-                    ->whereColumn('newer.final_project_id', $table.'.final_project_id')
-                    ->whereColumn('newer.version', '>', $table.'.version');
-            })
+            ->newestVersionOnly()
             ->orderBy('submitted_at')
             ->orderBy('id')
             ->first();

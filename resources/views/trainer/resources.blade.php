@@ -90,27 +90,27 @@
                     :description="__('trainer.resources.empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.resources.title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.resources.field_title') }}</th>
-                                <th scope="col">{{ __('resources.filter_type') }}</th>
-                                <th scope="col">{{ __('schedule.filter_week') }}</th>
-                                <th scope="col">{{ __('trainer.resources.col_downloads') }}</th>
-                                <th scope="col">{{ __('app.status') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.resources.field_title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('resources.filter_type') }}</th>
+                                <th scope="col" role="columnheader">{{ __('schedule.filter_week') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.resources.col_downloads') }}</th>
+                                <th scope="col" role="columnheader">{{ __('app.status') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($resources as $resource)
-                                <tr>
-                                    <th scope="row">{{ $resource->title }}</th>
-                                    <td>{{ $resource->typeLabel }}</td>
-                                    <td>{{ $resource->weekTitle ?? __('resources.general_group') }}</td>
-                                    <td class="u-num">{{ $resource->downloadCount }}</td>
-                                    <td><x-ui.pill :variant="$resource->stateVariant">{{ $resource->stateLabel }}</x-ui.pill></td>
-                                    <td class="u-nowrap">
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">{{ $resource->title }}</th>
+                                    <td role="cell" data-label="{{ __('resources.filter_type') }}">{{ $resource->typeLabel }}</td>
+                                    <td role="cell" data-label="{{ __('schedule.filter_week') }}">{{ $resource->weekTitle ?? __('resources.general_group') }}</td>
+                                    <td role="cell" data-label="{{ __('trainer.resources.col_downloads') }}"><span class="u-num">{{ $resource->downloadCount }}</span></td>
+                                    <td role="cell" data-label="{{ __('app.status') }}"><x-ui.pill :variant="$resource->stateVariant">{{ $resource->stateLabel }}</x-ui.pill></td>
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$resource->title"
                                             :href="route('trainer.resources', $carriedQuery + ['edit' => $resource->id])">{{ __('app.edit') }}</x-ui.button>
                                         {{-- The route is declared DELETE (routes/web.php); the method

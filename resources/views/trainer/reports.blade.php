@@ -151,40 +151,40 @@
                     :description="__('trainer.attendance.at_risk_empty_body')" />
             @else
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.attendance.at_risk_title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.col_participant') }}</th>
-                                <th scope="col">{{ __('attendance.rate.label') }}</th>
-                                <th scope="col">{{ __('grades.total.title') }}</th>
-                                <th scope="col">{{ __('trainer.reports.col_reason') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.rate.label') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.total.title') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.reports.col_reason') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($atRisk as $person)
-                                <tr>
-                                    <th scope="row">
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="atable__lead">
                                         <span class="cellpair">
                                             <x-ui.avatar size="sm" :name="$person->name" />
                                             {{ $person->name }}
                                         </span>
                                     </th>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('attendance.rate.label') }}">
                                         <x-ui.pill :variant="$person->attendanceVariant" icon="warn">
                                             <span class="u-num">{{ $person->attendancePercent }}%</span>
                                         </x-ui.pill>
                                     </td>
-                                    <td class="u-num u-nowrap">{{ $person->score }} / {{ $person->scoreMax }}</td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('grades.total.title') }}" class="u-nowrap"><span class="u-num">{{ $person->score }} / {{ $person->scoreMax }}</span></td>
+                                    <td role="cell" data-label="{{ __('trainer.reports.col_reason') }}">
                                         <ul class="note__list">
                                             @foreach ($person->reasons as $reason)
                                                 <li>{{ $reason }}</li>
                                             @endforeach
                                         </ul>
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button icon="eye" :icon-only="true" variant="secondary" size="sm" :context="$person->name"
                                             :href="route('trainer.participants', ['view' => $person->id])">{{ __('trainer.participants.view_profile') }}</x-ui.button>
                                     </td>

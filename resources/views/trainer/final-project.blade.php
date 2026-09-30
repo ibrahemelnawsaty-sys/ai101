@@ -126,39 +126,68 @@
                     :title="__('trainer.final_project.empty_title')"
                     :description="__('trainer.final_project.empty_body')" />
             @else
+                {{-- Which hand-ins are listed: the newest version of each unless the
+                     trainer asks for the earlier ones too (BR-19 keeps them all). --}}
+                @if ($showsEarlier || $hiddenVersions > 0)
+                    <div class="versionnote">
+                        <p>
+                            @if ($showsEarlier)
+                                {{ __('trainer.submissions.versions_all_shown') }}
+                            @else
+                                {{ trans_choice('trainer.submissions.versions_hidden', $hiddenVersions, ['count' => $hiddenVersions]) }}
+                            @endif
+                        </p>
+                        @if ($showsEarlier)
+                            <x-ui.button variant="ghost" size="sm" icon="eye"
+                                :href="route('trainer.finalProject', request()->except([$versionsParam]))">{{ __('trainer.submissions.versions_hide') }}</x-ui.button>
+                        @else
+                            <x-ui.button variant="ghost" size="sm" icon="eye"
+                                :href="route('trainer.finalProject', array_merge(request()->query(), [$versionsParam => $versionsAll]))">{{ __('trainer.submissions.versions_show') }}</x-ui.button>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.final_project.submissions_title') }}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{{ __('trainer.col_participant') }}</th>
-                                <th scope="col">{{ __('trainer.submissions.col_submitted_at') }}</th>
-                                <th scope="col">{{ __('trainer.final_project.col_state') }}</th>
-                                <th scope="col">{{ __('grades.score') }}</th>
-                                <th scope="col"><span class="sr">{{ __('app.actions.label') }}</span></th>
+                        <thead role="rowgroup">
+                            <tr role="row">
+                                <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.submissions.col_submitted_at') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.final_project.col_state') }}</th>
+                                <th scope="col" role="columnheader">{{ __('grades.score') }}</th>
+                                <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody role="rowgroup">
                             @foreach ($submissions as $row)
-                                <tr @class(['is-selected' => $row->id === ($selected->id ?? null)])>
-                                    <th scope="row">
-                                        <span class="cellpair">
+                                <tr role="row" @class(['is-selected' => $row->id === ($selected->id ?? null)])>
+                                    <th scope="row" role="rowheader" class="atable__lead">
+                                        <span class="cellpair cellpair--inline">
                                             <x-ui.avatar size="sm" :name="$row->participantName" />
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
-                                    <td class="u-when u-nowrap">{{ \App\Support\Dates::dateTime($row->submittedAt) }}</td>
-                                    <td>
-                                        <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when">
+                                        <span class="cellpair">
+                                            {{ \App\Support\Dates::shortDate($row->submittedAt) }}
+                                            <span>{{ \App\Support\Dates::time12($row->submittedAt) }}</span>
+                                        </span>
                                     </td>
-                                    <td>
+                                    <td role="cell" data-label="{{ __('trainer.final_project.col_state') }}">
+                                        <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
+                                        @if ($row->version > 1)
+                                            <x-ui.pill variant="neutral">{{ __('trainer.submissions.version_n', ['n' => $row->version]) }}</x-ui.pill>
+                                        @endif
+                                    </td>
+                                    <td role="cell" data-label="{{ __('grades.score') }}">
                                         @if ($row->isGraded)
                                             <b class="row__score u-num"><span>{{ $row->score }}</span><small> / {{ $row->maxScore }}</small></b>
                                         @else
                                             <span class="u-muted">—</span>
                                         @endif
                                     </td>
-                                    <td class="u-nowrap">
+                                    <td role="cell" class="u-nowrap">
                                         <x-ui.button size="sm"
                                             :variant="$row->isGraded ? 'secondary' : 'primary'"
                                             :href="route('trainer.finalProject', array_merge(request()->query(), ['grade' => $row->id]))">

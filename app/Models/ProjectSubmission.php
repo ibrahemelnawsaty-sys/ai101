@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * One delivery of the closing project. Versioning follows the same rule as
@@ -138,6 +139,26 @@ class ProjectSubmission extends Model
     }
 
     // ---------------------------------------------------------------- scopes
+
+    /**
+     * Only the NEWEST version each participant handed in for one final project —
+     * the same statement of BR-19 as Submission::scopeNewestVersionOnly.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeNewestVersionOnly(Builder $query): Builder
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query->whereNotExists(static function (QueryBuilder $newer) use ($table): void {
+            $newer->select('newer.id')
+                ->from($table.' as newer')
+                ->whereColumn('newer.user_id', $table.'.user_id')
+                ->whereColumn('newer.final_project_id', $table.'.final_project_id')
+                ->whereColumn('newer.version', '>', $table.'.version');
+        });
+    }
 
     /**
      * @param  Builder<self>  $query
