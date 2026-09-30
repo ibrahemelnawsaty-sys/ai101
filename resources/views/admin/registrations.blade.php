@@ -69,10 +69,10 @@
                 {{-- «No requests awaiting review» is true of the default queue only; under a
                      state, a cohort or a search it would claim the wrong thing (D-147). --}}
                 <x-ui.empty-state icon="check"
-                    :title="request()->hasAny(['q', 'cohort', 'state']) ? __('app.no_search_results_title') : __('admin.registrations.empty_title')"
-                    :description="request()->hasAny(['q', 'cohort', 'state']) ? __('app.no_search_results') : __('admin.registrations.empty_body')"
-                    :action-label="request()->hasAny(['q', 'cohort', 'state']) ? __('app.clear_filters') : null"
-                    :action-href="request()->hasAny(['q', 'cohort', 'state']) ? route('admin.registrations.index') : null" />
+                    :title="request()->anyFilled(['q', 'cohort', 'state']) ? __('app.no_search_results_title') : __('admin.registrations.empty_title')"
+                    :description="request()->anyFilled(['q', 'cohort', 'state']) ? __('app.no_search_results') : __('admin.registrations.empty_body')"
+                    :action-label="request()->anyFilled(['q', 'cohort', 'state']) ? __('app.clear_filters') : null"
+                    :action-href="request()->anyFilled(['q', 'cohort', 'state']) ? route('admin.registrations.index') : null" />
             @else
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">

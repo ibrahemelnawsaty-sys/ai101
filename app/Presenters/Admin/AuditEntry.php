@@ -6,6 +6,7 @@ namespace App\Presenters\Admin;
 
 use App\Models\AuditLog;
 use App\Presenters\Concerns\PresentsFormValues;
+use App\Services\Audit\AuditLogger;
 use App\Support\ViewModel;
 
 /**
@@ -56,6 +57,17 @@ final class AuditEntry extends ViewModel
     /** What a recorded action code means; the code itself when lang has no phrase for it. */
     public static function actionLabel(string $code): string
     {
+        // `AuditLogger::reject()` records a refused attempt as the action's code plus a suffix:
+        // «check-in» refused reads «Refused attempt: check-in», not a raw code (D-147).
+        if (str_ends_with($code, AuditLogger::REJECTED_SUFFIX)) {
+            $base = substr($code, 0, -strlen(AuditLogger::REJECTED_SUFFIX));
+            $known = self::phrase('actions', $base);
+
+            if ($known !== $base) {
+                return (string) __('admin.audit.rejected_of', ['action' => $known]);
+            }
+        }
+
         return self::phrase('actions', $code);
     }
 

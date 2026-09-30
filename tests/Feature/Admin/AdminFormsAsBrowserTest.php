@@ -281,3 +281,90 @@ it('D-147: تعطيل الحساب وإرسال رابط كلمة المرور �
     $this->actingAs($sysadmin)->post($action, $fields)
         ->assertSessionHas('status', __('admin.users.account_activated'));
 });
+
+it('D-147: إنشاء دفعة جديدة بموعد إغلاق بصيغة المتصفح (T) يُحفظ كما يُحفظ التعديل', function (): void {
+    $html = $this->actingAs($this->admin)->get(route('admin.cohorts.index', ['edit' => 'new']))->assertOk()->getContent();
+
+    [$action, $fields] = browserForm($html, '//form[@method="POST"][@action="'.route('admin.cohorts.store').'"]', [
+        'name' => 'Cohort Created With Close',
+        'program_id' => $this->program->id,
+        'starts_at' => '2026-11-01',
+        'ends_at' => '2026-12-01',
+        'capacity' => '30',
+        'registration_closes_at' => '2026-10-25T23:59',
+        'status' => 'upcoming',
+    ]);
+
+    expect($fields['registration_closes_at'])->toBe('2026-10-25T23:59');
+
+    Auth::forgetGuards();
+
+    $this->actingAs($this->admin)->post($action, $fields)->assertSessionHasNoErrors();
+
+    $created = App\Models\Cohort::query()->where('name', 'Cohort Created With Close')->sole();
+
+    expect($created->registration_closes_at->utc()->format('Y-m-d H:i'))->toBe('2026-10-25 20:59');
+});
+
+it('D-147: رفض السعة الأقل من المقاعد المشغولة يذكر الرقم الحقيقي لا «مقعدًا واحدًا»', function (): void {
+    // `seats_taken` is the cohort's own counter, the number the rule reads.
+    $cohort = makeCohort(['program_id' => $this->program->id, 'status' => 'upcoming', 'capacity' => 10, 'seats_taken' => 3]);
+
+    $html = $this->actingAs($this->admin)->get(route('admin.cohorts.index', ['edit' => $cohort->id]))->getContent();
+    [$action, $fields] = browserForm($html, '//form[.//input[@name="_method"][@value="PATCH"]]', ['capacity' => '2']);
+
+    Auth::forgetGuards();
+
+    $this->actingAs($this->admin)->post($action, $fields)->assertSessionHasErrors('capacity');
+
+    // Three seats are taken, so the floor is THREE — the old text said «at least one seat».
+    expect(session('errors')->first('capacity'))->toContain('3')
+        ->and(session('errors')->first('capacity'))->not->toContain('سعة الدفعة لا تقل عن مقعد واحد');
+});
+
+it('D-147: قائمة المستخدمين لا تعرض «محذوف» مرشّحًا، وتُظهر الدعوة غير المقبولة بشارتها وزرّ إعادة إرسالها', function (): void {
+    $sysadmin = makeUser('system_admin');
+    $invited = makeParticipant(makeCohort(), ['email_verified_at' => null, 'invited_at' => riyadhAt('2026-09-30 09:00:00')]);
+
+    $list = $this->actingAs($sysadmin)->get(route('admin.users.index'))->assertOk()->getContent();
+
+    // The state filter offers the states an account can be LISTED in — not «deleted».
+    // (The options travel to the listbox as escaped JSON: `\u0022value\u0022:\u0022suspended\u0022`.)
+    expect($list)->not->toContain('\\u0022value\\u0022:\\u0022deleted\\u0022')
+        ->and($list)->toContain('\\u0022value\\u0022:\\u0022suspended\\u0022')
+        ->and($list)->toContain(__('admin.users.invitation_pending'))
+        ->and($list)->toContain(__('admin.users.actions.resend_invitation'))
+        ->and($list)->not->toContain(__('admin.users.actions.resend_verification'));
+
+    $show = $this->actingAs($sysadmin)->get(route('admin.users.show', $invited))->assertOk()->getContent();
+
+    expect($show)->toContain(__('admin.users.invitation_pending'));
+});
+
+it('D-147: رسالة البريد المكرّر في نموذج الدعوة ليست رسالة المسجِّل', function (): void {
+    $sysadmin = makeUser('system_admin');
+    $cohort = makeCohort();
+    $existing = makeParticipant($cohort);
+
+    $this->actingAs($sysadmin)->post(route('admin.users.store'), [
+        'first_name_ar' => 'محمد',
+        'email' => $existing->email,
+        'role' => 'participant',
+        'cohort_id' => $cohort->id,
+    ])->assertSessionHasErrors('email');
+
+    expect(session('errors')->first('email'))->toBe(__('admin.users.email_taken'))
+        ->and(session('errors')->first('email'))->not->toContain('تسجيل الدخول');
+});
+
+it('D-147: رفض إعدادات محرّر الهبوط يسمّي الحقل بعنوانه في المحرّر لا بمساره الخام', function (): void {
+    $sysadmin = makeUser('system_admin');
+
+    $response = $this->actingAs($sysadmin)->putJson(route('admin.landing.update'), ['settings' => ['seats_override' => 20000]])
+        ->assertStatus(422);
+
+    $message = (string) collect($response->json('errors'))->flatten()->first();
+
+    expect($message)->toContain(__('admin.landing.seats_override'))
+        ->and($message)->not->toContain('settings.seats');
+});

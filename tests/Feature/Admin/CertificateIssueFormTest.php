@@ -346,31 +346,37 @@ it('BR-26: إن لم يُصدَر شيء لأحد ممن حُدِّدوا تقو
 });
 
 it('BR-26: رفض التجاوز اليدوي (شهادة قائمة) يظهر على الصفحة، وسبب التجاوز يبقى تحت خانته لا في الملخّص', function (): void {
-    issueCertificateFor($this->short, $this->cohort);
-
     $back = route('admin.certificates.index', ['cohort' => $this->cohort->id, 'override' => $this->short->id]);
 
-    $this->actingAs($this->admin)->from($back)->post(route('admin.certificates.override', $this->short), [
-        'cohort_id' => $this->cohort->id,
-        'override_reason' => 'short',
-    ])->assertSessionHasErrors('override_reason');
+    // Two tabs: the panel is read while the person holds nothing; then another tab issues.
+    $html = $this->actingAs($this->admin)->get($back)->assertOk()->getContent();
+    [$action, $fields] = browserForm($html, '//form[.//textarea[@name="override_reason"]]', ['override_reason' => 'short']);
+
+    issueCertificateFor($this->short, $this->cohort);
+
+    Auth::forgetGuards();
+
+    $this->actingAs($this->admin)->from($back)->post($action, $fields)->assertSessionHasErrors('override_reason');
 
     $reasonMessage = (string) session('errors')->first('override_reason');
 
     $page = $this->actingAs($this->admin)->get($back)->getContent();
 
-    // The reason's own message is printed once, under its box — not again in the summary.
-    expect(substr_count($page, $reasonMessage))->toBe(1);
+    // The panel is not offered again for someone who now holds a certificate…
+    expect($page)->not->toContain('name="override_reason"');
 
-    $this->actingAs($this->admin)->from($back)->post(route('admin.certificates.override', $this->short), [
-        'cohort_id' => $this->cohort->id,
-        'override_reason' => 'The trainee finished an approved make-up track offline.',
-    ])->assertSessionHasErrors('cohort_id');
+    // …and a well-formed reason for that person is refused in words, in the summary.
+    $fields['override_reason'] = 'The trainee finished an approved make-up track offline.';
+
+    Auth::forgetGuards();
+
+    $this->actingAs($this->admin)->from($back)->post($action, $fields)->assertSessionHasErrors('cohort_id');
 
     $page = $this->actingAs($this->admin)->get($back)->getContent();
 
     expect($page)->toContain(__('certificates.errors.already_issued'))
-        ->and($page)->toContain(__('certificates.admin.form_error_title'));
+        ->and($page)->toContain(__('certificates.admin.form_error_title'))
+        ->and($reasonMessage)->not->toBe('');
 });
 
 it('BR-26: القائمة الجاهزة للإصدار تحمل اسم صاحب الصف في زرّه وفي مربّعه لقارئ الشاشة', function (): void {
@@ -381,4 +387,17 @@ it('BR-26: القائمة الجاهزة للإصدار تحمل اسم صاحب
     expect($html)->toContain('aria-label="'.__('certificates.admin.issue_one').' — ')
         ->and(substr_count($html, $before) >= 2)->toBeTrue()
         ->and(substr_count($html, $after) >= 2)->toBeTrue();
+});
+
+it('BR-26: تحديد أكثر مما يقبله طلب واحد يقول الرقم بكلمات، لا «أكثر من 200 عنصرًا»', function (): void {
+    [$action, , $fields] = pressButton(certificatesPage(), BULK_BUTTON, [$this->first->id]);
+
+    $fields['user_id'] = array_map(static fn (int $i): string => Illuminate\Support\Str::uuid()->toString(), range(1, 201));
+
+    Auth::forgetGuards();
+
+    $this->actingAs($this->admin)->post($action, $fields)->assertSessionHasErrors('user_id');
+
+    expect(session('errors')->first('user_id'))->toBe(__('certificates.errors.select_max', ['max' => 200]))
+        ->and(Certificate::query()->count())->toBe(0);
 });

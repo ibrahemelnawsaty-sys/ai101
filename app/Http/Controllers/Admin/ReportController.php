@@ -83,10 +83,13 @@ final class ReportController extends Controller
 
         // Built BEFORE through(), which replaces the paginator's collection in
         // place: after it, the paginator holds presenters, not cohorts.
+        // Only cohorts that have a measured average: a bar of 0% for an unmeasured cohort
+        // contradicted the table beside it, which says «—» (D-147, D-150).
         $attendanceByCohort = $cohorts->getCollection()
+            ->filter(static fn (Cohort $cohort): bool => array_key_exists((string) $cohort->getKey(), $attendance))
             ->map(static fn (Cohort $cohort): ChartPoint => ChartPoint::rate(
                 (string) $cohort->getAttribute('name'),
-                (float) ($attendance[(string) $cohort->getKey()] ?? 0.0),
+                (float) $attendance[(string) $cohort->getKey()],
                 (float) $cohort->getAttribute('min_attendance_rate'),
             ))
             ->values();

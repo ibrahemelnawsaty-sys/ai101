@@ -209,6 +209,10 @@ it('FR-ADMIN-12: مرشّح الدفعة في التقارير يحصر الجد
     makeParticipant($other);
     $admin = makeAdmin();
 
+    // Both cohorts have a measured average, so both have a bar: an unmeasured cohort has none
+    // (D-147) and the chart's narrowing could not be seen in it.
+    Enrollment::query()->update(['attendance_rate' => 80]);
+
     $all = $this->actingAs($admin)->get(route('admin.reports.index'))->assertOk();
     expect(collect($all->viewData('cohortRows')->items())->pluck('cohortName')->sort()->values()->all())
         ->toBe(['Cohort A', 'Cohort B']);

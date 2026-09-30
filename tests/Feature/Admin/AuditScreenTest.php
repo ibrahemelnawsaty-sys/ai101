@@ -17,6 +17,12 @@ use App\Models\AuditLog;
 use App\Presenters\Admin\AuditEntry;
 use App\Services\Audit\AuditLogger;
 
+/** A whole group of phrases (`actions` / `entities`), keyed by code. */
+function auditPhrases(string $group): array
+{
+    return (array) trans('admin.audit.'.$group);
+}
+
 beforeEach(function (): void {
     freezeAt(riyadhAt('2026-10-01 09:00:00'));
 
@@ -30,17 +36,20 @@ beforeEach(function (): void {
     $this->unknown = $audit->record(action: 'some.future_code', entityType: 'thing', entityId: 'thing-ccc-333', actorId: $this->admin->id);
 });
 
-it('D-147: كل رمز فعل معروف يُعرض بعبارة عربية، والمجهول يُعرض كما هو', function (): void {
-    expect(AuditEntry::actionLabel('certificate.revoked'))->toBe(__('admin.audit.actions')['certificate.revoked'])
+it('D-147: كل رمز فعل معروف يُعرض بعبارة عربية، والمرفوض بعبارة «محاولة مرفوضة»، والمجهول كما هو', function (): void {
+    expect(AuditEntry::actionLabel('certificate.revoked'))->toBe(auditPhrases('actions')['certificate.revoked'])
         ->and(AuditEntry::actionLabel('certificate.revoked'))->not->toContain('.')
         ->and(AuditEntry::actionLabel('some.future_code'))->toBe('some.future_code')
-        ->and(AuditEntry::entityLabel('App\\Models\\Broadcast'))->toBe(__('admin.audit.entities')['Broadcast'])
+        ->and(AuditEntry::entityLabel('App\\Models\\Broadcast'))->toBe(auditPhrases('entities')['Broadcast'])
         ->and(AuditEntry::entityLabel('thing'))->toBe('thing')
-        ->and(AuditEntry::actionLabel(''))->toBe('—');
+        ->and(AuditEntry::actionLabel(''))->toBe('—')
+        ->and(AuditEntry::actionLabel('attendance.check_in.rejected'))->toBe(__('admin.audit.rejected_of', ['action' => auditPhrases('actions')['attendance.check_in']]))
+        // A refusal of a code nobody has a phrase for stays raw: no phrase is invented (art. 4).
+        ->and(AuditEntry::actionLabel('some.future_code.rejected'))->toBe('some.future_code.rejected');
 });
 
 it('D-147: كل رمز فعل يكتبه التطبيق له عبارة في lang — فلا يعود رمز خام إلى الشاشة', function (): void {
-    $labels = array_keys((array) __('admin.audit.actions'));
+    $labels = array_keys((array) auditPhrases('actions'));
     $missing = [];
 
     $sources = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(app_path()));
@@ -52,7 +61,9 @@ it('D-147: كل رمز فعل يكتبه التطبيق له عبارة في lan
 
         $code = (string) file_get_contents($file->getPathname());
 
-        preg_match_all("/action:\s*'([a-z_]+(?:\.[a-z_]+)+)'/", $code, $literals);
+        // Named (`action: 'x.y'`) and positional (`->log('x.y'`, `->record('x.y'`, `->reject('x.y'`)
+        // calls alike: a code written the second way used to slip past this guard.
+        preg_match_all("/(?:action:\s*|->(?:log|record|reject)\(\s*)'([a-z_]+(?:\.[a-z_]+)+)'/", $code, $literals);
 
         foreach ($literals[1] as $literal) {
             if (! in_array($literal, $labels, true)) {
@@ -75,9 +86,9 @@ it('D-147: كل رمز فعل يكتبه التطبيق له عبارة في lan
 it('D-147: الشاشة تعرض العبارات لا الرموز، ومرشّحا الفعل والكيان بها كذلك', function (): void {
     $html = $this->actingAs($this->admin)->get(route('admin.audit.index'))->assertOk()->getContent();
 
-    expect($html)->toContain(__('admin.audit.actions')['certificate.revoked'])
-        ->and($html)->toContain(__('admin.audit.actions')['cohort.trainer_detached'])
-        ->and($html)->toContain(__('admin.audit.entities')['certificate'])
+    expect($html)->toContain(auditPhrases('actions')['certificate.revoked'])
+        ->and($html)->toContain(auditPhrases('actions')['cohort.trainer_detached'])
+        ->and($html)->toContain(auditPhrases('entities')['certificate'])
         // Values (the machine codes) still travel in the options; only the words changed.
         ->and($html)->toContain('certificate.revoked');
 });
@@ -85,13 +96,13 @@ it('D-147: الشاشة تعرض العبارات لا الرموز، ومرشّ
 it('D-147: مربّع البحث يبحث فعلًا — باسم الفاعل أو معرّف السجل المتأثر', function (): void {
     $byEntity = $this->actingAs($this->admin)->get(route('admin.audit.index', ['q' => 'cohort-bbb-222']))->assertOk()->getContent();
 
-    expect($byEntity)->toContain(__('admin.audit.actions')['cohort.trainer_detached'])
-        ->and($byEntity)->not->toContain(__('admin.audit.actions')['certificate.revoked']);
+    expect($byEntity)->toContain(auditPhrases('actions')['cohort.trainer_detached'])
+        ->and($byEntity)->not->toContain(auditPhrases('actions')['certificate.revoked']);
 
     $byActor = $this->actingAs($this->admin)->get(route('admin.audit.index', ['q' => $this->other->email]))->getContent();
 
-    expect($byActor)->toContain(__('admin.audit.actions')['cohort.trainer_detached'])
-        ->and($byActor)->not->toContain(__('admin.audit.actions')['certificate.revoked']);
+    expect($byActor)->toContain(auditPhrases('actions')['cohort.trainer_detached'])
+        ->and($byActor)->not->toContain(auditPhrases('actions')['certificate.revoked']);
 
     $none = $this->actingAs($this->admin)->get(route('admin.audit.index', ['q' => 'zzzzzzzz']))->getContent();
 
@@ -101,17 +112,20 @@ it('D-147: مربّع البحث يبحث فعلًا — باسم الفاعل �
 it('D-147: التصدير يحمل مرشّحات الشاشة نفسها ويكتب العبارات وتوقيت الرياض', function (): void {
     $all = $this->actingAs($this->admin)->get(route('admin.audit.export'))->assertOk()->getContent();
 
-    expect($all)->toContain(__('admin.audit.actions')['certificate.revoked'])
-        ->toContain(__('admin.audit.actions')['cohort.trainer_detached']);
+    expect($all)->toContain(auditPhrases('actions')['certificate.revoked'])
+        ->toContain(auditPhrases('actions')['cohort.trainer_detached']);
 
     $filtered = $this->actingAs($this->admin)
         ->get(route('admin.audit.export', ['action' => 'cohort.trainer_detached']))
         ->assertOk()->getContent();
 
-    expect($filtered)->toContain(__('admin.audit.actions')['cohort.trainer_detached'])
-        ->and($filtered)->not->toContain(__('admin.audit.actions')['certificate.revoked'])
+    expect($filtered)->toContain(auditPhrases('actions')['cohort.trainer_detached'])
+        ->and($filtered)->not->toContain(auditPhrases('actions')['certificate.revoked'])
         // Riyadh wall time, not the ISO-8601 UTC the row stores.
-        ->and($filtered)->toContain('2026-10-01 09:00')
+        ->and($filtered)->toContain('2026-10-01 09:00:00')
+        // The code and the record id stay in the file for offline filtering.
+        ->and($filtered)->toContain('cohort.trainer_detached')
+        ->and($filtered)->toContain('cohort-bbb-222')
         ->and($filtered)->not->toContain('T06:00:00');
 
     $byActor = $this->actingAs($this->admin)

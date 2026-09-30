@@ -35,6 +35,15 @@ it('D-147: متوسطا الحضور والدرجة بلا قياس يُعرضا
 
     expect($reports)->not->toContain('0 / 100')
         ->and($dash)->not->toContain('0 / 100');
+
+    // Positively: the dash IS what is drawn — in the headline cards, the cohort table and the
+    // dashboard — and the attendance chart has no bar for a cohort nobody measured.
+    preg_match_all('/<div class="[^"]*stat[^"]*"[^>]*>.*?<\/div>/s', $reports, $cards);
+
+    expect(substr_count($reports, '—'))->toBeGreaterThanOrEqual(4)
+        ->and(substr_count($dash, '—'))->toBeGreaterThanOrEqual(2)
+        ->and($reports)->not->toContain('trend__v u-num">0%')
+        ->and($reports)->toContain(__('admin.reports.empty_title'));
 });
 
 it('D-147: متى وُجد قياس يُعرض رقمه كما هو', function (): void {

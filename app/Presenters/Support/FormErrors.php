@@ -36,7 +36,7 @@ final class FormErrors
 
         $messages = [];
 
-        foreach ($bag->messages() as $field => $lines) {
+        foreach ($bag->getMessages() as $field => $lines) {
             if (in_array((string) $field, $inline, true)) {
                 continue;
             }

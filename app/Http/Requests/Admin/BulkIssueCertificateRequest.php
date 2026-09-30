@@ -63,6 +63,9 @@ final class BulkIssueCertificateRequest extends FormRequest
             'user_id.required' => $select,
             'user_id.array' => $select,
             'user_id.min' => $select,
+            // The screen lists up to 300 people and «select all» ticks them all; one call takes
+            // 200. Say so, in words, instead of «may not have more than 200 items» (D-147).
+            'user_id.max' => (string) __('certificates.errors.select_max', ['max' => self::MAX_CANDIDATES]),
         ];
     }
 

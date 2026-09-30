@@ -82,3 +82,24 @@ it('D-147: قائمة فارغة تحت مرشّح لا تقول «لا طلبا
 
     expect($default)->toContain(__('app.no_search_results_title'));
 });
+
+it('D-147: مرشّحات فارغة في العنوان (?q=&cohort=&state=) لا تُعدّ تصفية — تبقى قائمة الانتظار الافتراضية بحالتها الفارغة', function (): void {
+    Enrollment::query()->update(['status' => 'active']);
+
+    $page = $this->actingAs($this->admin)
+        ->get(route('admin.registrations.index', ['q' => '', 'cohort' => '', 'state' => '']))
+        ->assertOk()
+        ->getContent();
+
+    expect($page)->toContain(__('admin.registrations.empty_title'))
+        ->and($page)->not->toContain(__('app.no_search_results_title'));
+});
+
+it('D-147: لوحة المشرف تعدّ طلبات التسجيل بتعريف شاشتها نفسه — للمتدربين وحدهم', function (): void {
+    // A trainer's or coordinator's assignment row can be in any state; it is never an applicant.
+    Enrollment::query()->where('user_id', $this->coordinator->id)->update(['status' => 'pending']);
+
+    $dash = $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertOk()->getContent();
+
+    expect($dash)->not->toContain($this->coordinator->email);
+});

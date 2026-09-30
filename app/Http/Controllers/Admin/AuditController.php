@@ -88,14 +88,22 @@ final class AuditController extends Controller
             });
         }
 
-        // The search box: who acted (name, e-mail or phone) or the exact id of the record
-        // acted on. A provisional reading of a control that had none (D-147), kept narrow.
+        // The search box: who acted (name or e-mail) or the exact id of the record acted on.
+        // A provisional reading of a control that had none (D-147). The actors are resolved
+        // FIRST, into a short list of ids: an OR over a LIKE-matching subquery cannot use an
+        // index and would scan the whole append-only table on every search. The phone number is
+        // deliberately not searched — the screen never shows it.
         $search = ListFilter::text($request, 'q');
 
         if ($search !== null) {
-            $query->where(static function ($builder) use ($search): void {
-                $builder->where('entity_id', $search)
-                    ->orWhereHas('actor', static fn ($actor) => $actor->matchingPerson($search, withPhone: true));
+            $actorIds = User::query()
+                ->matchingPerson($search, withPhone: false)
+                ->limit(self::FILTER_LIMIT)
+                ->pluck('id')
+                ->all();
+
+            $query->where(static function ($builder) use ($search, $actorIds): void {
+                $builder->where('entity_id', $search)->orWhereIn('actor_id', $actorIds);
             });
         }
 
@@ -218,19 +226,27 @@ final class AuditController extends Controller
             __('admin.audit.export.at'),
             __('admin.audit.export.actor'),
             __('admin.audit.export.action'),
+            __('admin.audit.export.code'),
             __('admin.audit.export.entity'),
+            __('admin.audit.export.entity_id'),
             __('admin.audit.export.ip'),
         ])];
 
         foreach ($rows as $row) {
             $at = $row->getAttribute('created_at');
+            $code = (string) $row->getAttribute('action');
+            $type = (string) ($row->getAttribute('entity_type') ?? '');
 
             $lines[] = $this->csvRow([
-                // The time as the screen shows it: Riyadh, not the UTC the trail stores.
-                $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d H:i') : '',
+                // The time as the screen shows it — Riyadh, to the second — not the UTC the trail
+                // stores; the header says which clock it is.
+                $at instanceof \DateTimeInterface ? Clock::toRiyadh($at)->format('Y-m-d H:i:s') : '',
                 (string) ($row->actor?->getAttribute('email') ?? ''),
-                AuditEntry::actionLabel((string) $row->getAttribute('action')),
-                AuditEntry::entityLabel((string) ($row->getAttribute('entity_type') ?? '')),
+                AuditEntry::actionLabel($code),
+                // The raw code stays in the file for whoever filters it offline.
+                $code,
+                AuditEntry::entityLabel($type),
+                (string) ($row->getAttribute('entity_id') ?? ''),
                 (string) ($row->getAttribute('ip_address') ?? ''),
             ]);
         }

@@ -66,6 +66,9 @@ final class DashboardController extends Controller
             'stats' => $this->stats(),
             'pendingRegistrations' => Enrollment::query()
                 ->with(['user.profile', 'cohort'])
+                // The same definition of «a registration request» as the registrations screen: a
+                // participant's, not a trainer's or coordinator's assignment row (D-147).
+                ->where('role_in_cohort', EnrollmentRole::Participant->value)
                 ->where('status', EnrollmentStatus::Pending->value)
                 ->orderBy('created_at')
                 ->limit(self::QUEUE_LIMIT)

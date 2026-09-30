@@ -400,8 +400,11 @@ final class RegistrationController extends Controller
     {
         $this->authorize('viewAny', Enrollment::class);
 
+        // Capped like the audit export: any state can be asked for now, and a file is not a
+        // way around the one-page rule (art. 19).
         $rows = $this->filtered($request)
             ->with(['user.profile', 'cohort'])
+            ->limit(5000)
             ->get()
             ->map(static fn (Enrollment $enrollment): array => [
                 (string) ($enrollment->user?->profile?->getAttribute('full_name_ar') ?? ''),

@@ -12,7 +12,7 @@ declare(strict_types=1);
  * carrying its own column's name, the header row kept for assistive technology.
  *
  * Phase 5 (D-147) puts the administrator's and the system administrator's tables under the
- * same guards: eleven views of five to eight columns that scrolled sideways (1170px in a
+ * same guards: ten views of five to eight columns that scrolled sideways (1170px in a
  * 972px frame on the cohorts list, 1081px on the users list) now stack too.
  *
  * These read the SOURCE, because what can rot is a table that was added or edited

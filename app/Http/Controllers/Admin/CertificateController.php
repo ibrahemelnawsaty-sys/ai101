@@ -244,9 +244,14 @@ final class CertificateController extends Controller
         /** @var User|null $user */
         $user = User::query()->with('profile')->find($id);
 
-        return $user === null
-            ? null
-            : CertificatePerson::from($user, $cohort, $this->eligibility, $this->scores);
+        // After a successful override `back()` returns to this very address; someone who now
+        // holds a live certificate has nothing left to override, and the panel must not come
+        // back with a live button (D-69, D-147).
+        if ($user === null || $this->hasLiveCertificate($user, $cohort)) {
+            return null;
+        }
+
+        return CertificatePerson::from($user, $cohort, $this->eligibility, $this->scores);
     }
 
     /** The revocation panel, open on `?revoke={certificate}`. */
@@ -261,7 +266,12 @@ final class CertificateController extends Controller
         /** @var Certificate|null $certificate */
         $certificate = Certificate::query()->with('user.profile')->find($id);
 
-        return $certificate === null ? null : CertificateRow::from($certificate);
+        // Same as above: after the revocation the panel would ask to revoke what is revoked.
+        if ($certificate === null || $certificate->getAttribute('revoked_at') !== null) {
+            return null;
+        }
+
+        return CertificateRow::from($certificate);
     }
 
     /**
@@ -310,19 +320,31 @@ final class CertificateController extends Controller
     public function revoke(RevokeCertificateRequest $request, Certificate $certificate): RedirectResponse
     {
         // Revoking twice would overwrite the moment of the first revocation and write a
-        // second trail line whose «before» claims it was live (D-147).
-        if ($certificate->getAttribute('revoked_at') !== null) {
+        // second trail line whose «before» claims it was live (D-147). The row is read again
+        // under a lock, so two administrators pressing at once cannot both win.
+        $revoked = DB::transaction(function () use ($request, $certificate): bool {
+            /** @var Certificate|null $held */
+            $held = Certificate::query()->lockForUpdate()->find($certificate->getKey());
+
+            if ($held === null || $held->getAttribute('revoked_at') !== null) {
+                return false;
+            }
+
+            $this->audit->log(
+                action: AuditLogger::CERTIFICATE_REVOKED,
+                entity: $held,
+                before: ['revoked_at' => null],
+                after: ['reason' => $request->reason()],
+            );
+
+            $held->forceFill(['revoked_at' => Clock::now()])->save();
+
+            return true;
+        });
+
+        if (! $revoked) {
             return back()->withErrors(['certificate' => __('certificates.errors.revoked')]);
         }
-
-        $this->audit->log(
-            action: AuditLogger::CERTIFICATE_REVOKED,
-            entity: $certificate,
-            before: ['revoked_at' => null],
-            after: ['reason' => $request->reason()],
-        );
-
-        $certificate->forceFill(['revoked_at' => Clock::now()])->save();
 
         return back()->with('status', __('certificates.revoked'));
     }
@@ -409,6 +431,20 @@ final class CertificateController extends Controller
 
         if (! $holder instanceof User || $cohort === null) {
             return back()->withErrors(['certificate' => __('certificates.errors.not_enrolled')]);
+        }
+
+        // Another live certificate of the same person in the same cohort: a replacement would
+        // be a second one. The register's unique key refuses it today (D-149); this refuses it
+        // by rule, so it keeps refusing if that key is ever relaxed.
+        $liveElsewhere = Certificate::query()
+            ->where('user_id', $holder->getKey())
+            ->where('cohort_id', $cohort->getKey())
+            ->whereNull('revoked_at')
+            ->whereKeyNot($certificate->getKey())
+            ->exists();
+
+        if ($liveElsewhere) {
+            return back()->withErrors(['certificate' => __('certificates.errors.already_issued')]);
         }
 
         /** @var User $admin */

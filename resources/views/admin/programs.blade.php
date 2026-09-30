@@ -61,10 +61,10 @@
                 </div>
             @elseif ($programs->isEmpty())
                 <x-ui.empty-state icon="folder"
-                    :title="request()->hasAny(['q', 'state']) ? __('app.no_search_results_title') : __('admin.programs.empty_title')"
-                    :description="request()->hasAny(['q', 'state']) ? __('app.no_search_results') : __('admin.programs.empty_body')"
-                    :action-label="request()->hasAny(['q', 'state']) ? __('app.clear_filters') : __('admin.programs.create')"
-                    :action-href="request()->hasAny(['q', 'state']) ? route('admin.programs.index') : route('admin.programs.index', ['edit' => 'new'])" />
+                    :title="request()->anyFilled(['q', 'state']) ? __('app.no_search_results_title') : __('admin.programs.empty_title')"
+                    :description="request()->anyFilled(['q', 'state']) ? __('app.no_search_results') : __('admin.programs.empty_body')"
+                    :action-label="request()->anyFilled(['q', 'state']) ? __('app.clear_filters') : __('admin.programs.create')"
+                    :action-href="request()->anyFilled(['q', 'state']) ? route('admin.programs.index') : route('admin.programs.index', ['edit' => 'new'])" />
             @else
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">

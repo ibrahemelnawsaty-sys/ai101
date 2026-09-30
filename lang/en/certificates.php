@@ -92,6 +92,7 @@ return [
         'not_eligible' => 'The certificate conditions are not met yet: the attendance rate and the pass mark are both required.',
         'already_issued' => 'A certificate has already been issued to this participant in this cohort.',
         'not_enrolled' => 'This participant is not enrolled in this cohort.',
+        'select_max' => 'You ticked more than one request takes. Issue to at most :max people at a time, then repeat for the rest.',
         'select_first' => 'Nobody is selected yet. Tick at least one person in the list, then press "Issue to those eligible".',
         'revoked' => 'This certificate has been revoked.',
         'serial_generation_failed' => 'A serial number could not be generated right now. Try again shortly.',

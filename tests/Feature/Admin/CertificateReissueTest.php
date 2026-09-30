@@ -33,7 +33,13 @@ beforeEach(function (): void {
     $this->certificate = issueCertificateFor($this->holder, $this->cohort);
 });
 
-function revokeAsBrowser(string $certificateId, string $reason): TestResponse
+/**
+ * The revoke form as the page gives it, read while the certificate is live — and the post of it
+ * held until the caller says (two tabs: what the second tab sends after the first has won).
+ *
+ * @return array{0: string, 1: array<string, mixed>, 2: string}
+ */
+function revokeFormOf(string $certificateId, string $reason): array
 {
     $back = route('admin.certificates.index', ['cohort' => test()->cohort->id, 'revoke' => $certificateId]);
 
@@ -42,6 +48,13 @@ function revokeAsBrowser(string $certificateId, string $reason): TestResponse
     [$action, $fields] = browserForm($html, '//form[.//textarea[@name="revoke_reason"]]', ['revoke_reason' => $reason]);
 
     Auth::forgetGuards();
+
+    return [$action, $fields, $back];
+}
+
+function revokeAsBrowser(string $certificateId, string $reason): TestResponse
+{
+    [$action, $fields, $back] = revokeFormOf($certificateId, $reason);
 
     return test()->actingAs(test()->admin)->from($back)->post($action, $fields);
 }
@@ -58,14 +71,28 @@ it('BR-25: سحب الشهادة من نموذج الصفحة يختم وقت ا
 });
 
 it('BR-25: سحب شهادة مسحوبة يُرفض ولا يمسّ وقت السحب الأول ولا يضيف سطر تدقيق', function (): void {
+    // The second tab: its form was read while the certificate was live, and the first tab won.
+    [$action, $fields, $back] = revokeFormOf($this->certificate->id, 'Trying to revoke it once more.');
+
     $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
     $before = $this->certificate->fresh()->revoked_at;
 
-    revokeAsBrowser($this->certificate->id, 'Trying to revoke it once more.')
+    $this->actingAs($this->admin)->from($back)->post($action, $fields)
         ->assertSessionHasErrors('certificate');
 
     expect($this->certificate->fresh()->revoked_at->equalTo($before))->toBeTrue()
         ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(0);
+});
+
+it('BR-25: بعد السحب الناجح لا تعود لوحة السحب بزرّ حيّ على شهادة مسحوبة', function (): void {
+    revokeAsBrowser($this->certificate->id, 'Issued in error to the wrong person.')->assertSessionHasNoErrors();
+
+    $page = $this->actingAs($this->admin)
+        ->get(route('admin.certificates.index', ['cohort' => $this->cohort->id, 'revoke' => $this->certificate->id]))
+        ->assertOk()->getContent();
+
+    expect($page)->not->toContain('name="revoke_reason"')
+        ->and($page)->not->toContain(__('certificates.admin.revoke_warning'));
 });
 
 it('BR-25: إعادة إصدار لا تكتمل لا تغيّر شيئًا — لا ختم سحب ثانٍ ولا سطر تدقيق ولا صف جديد', function (): void {
@@ -91,4 +118,51 @@ it('BR-25: إعادة إصدار شهادة سارية لا تفشل نصفها 
     } else {
         expect($this->certificate->fresh()->revoked_at)->not->toBeNull();
     }
+});
+
+/*
+|--------------------------------------------------------------------------
+| The register as it would be if D-149 lets it hold a replacement row
+|--------------------------------------------------------------------------
+| Today `unique(user_id, cohort_id)` makes every reissue fail. These drop that key inside the
+| test to prove two rules that must hold WHEN it is relaxed, so the rule is not carried by the
+| key alone: a certificate that is already revoked keeps the moment it was revoked, and a person
+| never ends up holding two live certificates.
+*/
+
+function relaxRegisterKey(): void
+{
+    Illuminate\Support\Facades\Schema::table('certificates', static function (Illuminate\Database\Schema\Blueprint $table): void {
+        $table->dropUnique(['user_id', 'cohort_id']);
+    });
+}
+
+it('BR-25: لو سمح السجل ببديل فإعادة إصدار مسحوبة تحفظ وقت سحبها الأول وتُصدر واحدة سارية', function (): void {
+    relaxRegisterKey();
+
+    $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
+    $before = $this->certificate->fresh()->revoked_at;
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate))
+        ->assertSessionHasNoErrors();
+
+    expect(Certificate::query()->count())->toBe(2)
+        ->and(Certificate::query()->whereNull('revoked_at')->count())->toBe(1)
+        ->and($this->certificate->fresh()->revoked_at->equalTo($before))->toBeTrue()
+        // No second «revoked» line for a certificate that was revoked long before.
+        ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(0);
+});
+
+it('BR-26: لو سمح السجل ببديل فلا تُعاد إصدار مسحوبة قديمة لمن لديه شهادة سارية — لا شهادتان ساريتان', function (): void {
+    relaxRegisterKey();
+
+    $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
+    $live = issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9999', 'verify_code' => 'live-code-'.str_repeat('x', 20)]);
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate))
+        ->assertSessionHasErrors('certificate');
+
+    expect(Certificate::query()->whereNull('revoked_at')->count())->toBe(1)
+        ->and(Certificate::query()->count())->toBe(2)
+        ->and($live->fresh()->revoked_at)->toBeNull();
 });
