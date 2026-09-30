@@ -1462,8 +1462,9 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
      hid the half of a session's name that says which session it is (D-143). */
   .row__m b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text-strong); overflow: hidden; overflow-wrap: anywhere; }
   .row__m span { font-size: var(--fs-xs); color: var(--text-muted); }
-  /* Each meta line of a row is its own line: date and time, then type and mode. */
-  .row__m > span { display: block; }
+  /* Each meta line of a row is its own line: date and time, then type and mode. Only a
+     bare <span>: a pill, a badge or a flex pair placed there keeps its own display. */
+  .row__m > span:not([class]) { display: block; }
   .row__e { flex: none; text-align: end; }
 
   /* --------------------------------------------------------------- FORMS */

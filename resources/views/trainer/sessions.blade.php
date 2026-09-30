@@ -46,7 +46,7 @@
         <x-ui.card class="dc--span" flush>
             @if (is_null($sessions))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 6; $i++)
                                 <tr>
@@ -72,8 +72,7 @@
                         <caption class="sr">{{ __('trainer.sessions.title') }}</caption>
                         <thead role="rowgroup">
                             <tr role="row">
-                                <th scope="col" role="columnheader">{{ __('schedule.col_date') }}</th>
-                                <th scope="col" role="columnheader">{{ __('schedule.col_time') }}</th>
+                                <th scope="col" role="columnheader">{{ __('trainer.sessions.col_when') }}</th>
                                 <th scope="col" role="columnheader">{{ __('schedule.col_topic') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.sessions.col_type') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.sessions.col_staff') }}</th>
@@ -85,13 +84,21 @@
                         <tbody role="rowgroup">
                             @foreach ($sessions as $session)
                                 <tr role="row" @class(['is-cancelled' => $session->isCancelled])>
-                                    <td role="cell" data-label="{{ __('schedule.col_date') }}" class="u-when">{{ \App\Support\Dates::longDate($session->startsAt) }}</td>
-                                    <td role="cell" data-label="{{ __('schedule.col_time') }}" class="u-when">{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</td>
+                                    <td role="cell" data-label="{{ __('trainer.sessions.col_when') }}" class="u-when u-nowrap">
+                                        <span class="cellpair">
+                                            {{ \App\Support\Dates::longDate($session->startsAt) }}
+                                            <span>{{ \App\Support\Dates::timeRange12($session->startsAt, $session->endsAt) }}</span>
+                                        </span>
+                                    </td>
                                     <th scope="row" role="rowheader" class="atable__lead">{{ $session->topic }}</th>
                                     <td role="cell" data-label="{{ __('trainer.sessions.col_type') }}">{{ $session->typeLabel }}</td>
                                     <td role="cell" data-label="{{ __('trainer.sessions.col_staff') }}">
-                                        <div>{{ $session->trainerName }}</div>
-                                        <div>{{ $session->coordinatorName }}</div>
+                                        {{-- ONE value: two sibling divs in a flex card row were pulled to
+                                             opposite ends by `space-between`. --}}
+                                        <div>
+                                            <div>{{ $session->trainerName }}</div>
+                                            <div>{{ $session->coordinatorName }}</div>
+                                        </div>
                                     </td>
                                     <td role="cell" data-label="{{ __('schedule.col_status') }}"><x-ui.pill :variant="$session->statusVariant" :icon="$session->statusIcon">{{ $session->statusLabel }}</x-ui.pill></td>
                                     <td role="cell" data-label="{{ __('trainer.sessions.col_link') }}">
@@ -113,10 +120,10 @@
                                                 <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$session->topic"
                                                     :href="route('trainer.sessions', ['edit' => $session->id])">{{ __('app.edit') }}</x-ui.button>
                                             @endif
-                                            <x-ui.button variant="secondary" size="sm"
+                                            <x-ui.button variant="secondary" size="sm" :context="$session->topic"
                                                 :href="route('trainer.attendance', ['session' => $session->id])">{{ __('nav.attendance') }}</x-ui.button>
                                             @if ($canManage && ! $session->isCancelled)
-                                                <x-ui.button icon="x" variant="danger" size="sm"
+                                                <x-ui.button icon="x" variant="danger" size="sm" :context="$session->topic"
                                                     :href="route('trainer.sessions', ['cancel' => $session->id])">{{ __('trainer.sessions.cancel') }}</x-ui.button>
                                             @endif
                                         </div>
@@ -138,7 +145,7 @@
 
         {{-- Session editor -------------------------------------------------------- --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="cal"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="cal"
                 :title="$editing->exists ? __('trainer.sessions.edit_title') : __('trainer.sessions.create')">
 
                 <form method="POST"
@@ -225,7 +232,7 @@
 
         {{-- Cancellation, reason required ------------------------------------------ --}}
         @if ($cancelling)
-            <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('trainer.sessions.cancel_title')">
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="warn" :title="__('trainer.sessions.cancel_title')">
                 <div class="note note--warn">
                     <b>{{ __('trainer.sessions.cancel_notice_title') }}</b>
                     {{ __('trainer.sessions.cancel_notice_body') }}

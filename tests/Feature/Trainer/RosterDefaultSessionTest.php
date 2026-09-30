@@ -41,7 +41,10 @@ function rosterOpensOn(object $test, string $at, array $query = []): ?string
     freezeAt(riyadhAt($at));
     Illuminate\Support\Facades\Auth::forgetGuards();
 
+    // The address without a session is redirected to the one that names it, so the
+    // page is read after the hop (see the pinning tests below).
     $roster = $test->actingAs($test->trainer)
+        ->followingRedirects()
         ->get(route('trainer.attendance', $query))
         ->assertOk()
         ->viewData('roster');
@@ -96,9 +99,63 @@ it('BR-23: جلسة دفعة أخرى في العنوان لا تُفتح — ي
 it('BR-07: قائمة الاختيار تُظهر الجلسة المفتوحة فعلًا — لا «اختر من القائمة» فوق كشف جلسة بعينها', function (): void {
     freezeAt(riyadhAt('2026-10-06 19:00:00'));
 
-    $page = $this->actingAs($this->trainer)->get(route('trainer.attendance'))->assertOk();
+    $page = $this->actingAs($this->trainer)->followingRedirects()->get(route('trainer.attendance'))->assertOk();
 
-    expect($page->viewData('selectedSessionId'))->toBe($this->b->id);
+    // What the picker RENDERS, not only what the controller handed it: the hidden
+    // input the form submits carries the open session.
+    expect($page->viewData('selectedSessionId'))->toBe($this->b->id)
+        ->and($page->getContent())->toMatch('/name="session"[^>]*value="'.preg_quote($this->b->id, '/').'"/');
+});
+
+it('BR-07: العنوان بلا جلسة يُحوَّل إلى عنوان يسمّيها ويحفظ بقية الاستعلام — فلا يقلب انتهاء الجلسة كشفًا إلى آخر', function (): void {
+    freezeAt(riyadhAt('2026-10-06 19:00:00'));
+
+    $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
+        ->assertRedirect(route('trainer.attendance', ['cohort' => $this->cohort->id, 'session' => $this->b->id]));
+
+    // An address that already names a valid session is left alone — no redirect loop.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+
+    $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['session' => $this->a->id]))
+        ->assertOk();
+
+    // A session that is not this cohort's is not honoured: it is pinned to the default.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+
+    $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance', ['session' => 'not-a-session']))
+        ->assertRedirect(route('trainer.attendance', ['session' => $this->b->id]));
+});
+
+it('BR-27: فشل التسجيل الجماعي بعد انتهاء الجلسة يعود إلى كشفها هي — لا إلى الجلسة التالية', function (): void {
+    // 20:55 — session A is live; the trainer opens the roster with no session in
+    // the address, and is pinned to A.
+    freezeAt(riyadhAt('2026-10-05 20:55:00'));
+
+    $pinned = $this->actingAs($this->trainer)
+        ->get(route('trainer.attendance'))
+        ->assertRedirect()
+        ->headers->get('Location');
+
+    // 21:05 — A has ended; "the default" is now B. The form is refused (a reason
+    // that is too short) and Laravel sends the person back to where they were.
+    Illuminate\Support\Facades\Auth::forgetGuards();
+    freezeAt(riyadhAt('2026-10-05 21:05:00'));
+    $participant = makeParticipant($this->cohort);
+
+    $page = $this->actingAs($this->trainer)
+        ->from($pinned)
+        ->followingRedirects()
+        ->post(route('trainer.attendance.bulk', $this->a), [
+            'user_id' => [$participant->id],
+            'attendance_status' => 'absent',
+            'edit_reason' => 'short',
+        ])
+        ->assertOk();
+
+    expect($page->viewData('roster')['sessionId'])->toBe($this->a->id);
 });
 
 it('BR-07: إن أُلغيت كل الجلسات تُعرض آخرها — الشاشة لا تخلو من كشف الدفعة', function (): void {
@@ -114,7 +171,25 @@ it('BR-07: دفعة بلا جلسات — لا كشف ولا خطأ', function (
 
     freezeAt(riyadhAt('2026-10-05 19:00:00'));
 
+    // Nothing to name, so nothing to pin: the page itself, not a redirect.
     $roster = $this->actingAs($trainer)->get(route('trainer.attendance'))->assertOk()->viewData('roster');
 
     expect($roster['hasNoSession'])->toBeTrue();
+});
+
+it('BR-07: جلستان تبدآن في اللحظة نفسها — الافتراض ثابت بالمعرّف لا بترتيب الإدخال', function (): void {
+    $cohort = makeCohort(['status' => 'running']);
+    $trainer = makeTrainer($cohort);
+    $start = riyadhAt('2026-10-12 18:00:00');
+    $end = riyadhAt('2026-10-12 21:00:00');
+
+    // Inserted with the HIGHER id first, so insertion order is the opposite of id order.
+    sessionInCohort($cohort, $start, $end, ['id' => '00000000-0000-7000-8000-000000000002', 'title' => 'Two']);
+    $low = sessionInCohort($cohort, $start, $end, ['id' => '00000000-0000-7000-8000-000000000001', 'title' => 'One']);
+
+    freezeAt($start->addMinutes(10));
+
+    $roster = $this->actingAs($trainer)->followingRedirects()->get(route('trainer.attendance'))->assertOk()->viewData('roster');
+
+    expect($roster['sessionId'])->toBe($low->id);
 });

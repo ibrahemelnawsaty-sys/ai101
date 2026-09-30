@@ -609,6 +609,7 @@ border: var(--bw-hairline) solid var(--border-1);
 /* A select that names a long thing (a session title) took its full text width and
    pushed the whole page 25px past a phone; it may shrink and truncates instead. */
 .toolbar > .ui-field, .toolbar__filters > .ui-field { min-inline-size: 0; max-inline-size: 100%; }
+.tablebar__when { display: block; font-size: var(--fs-xs); color: var(--text-muted); }
 .tablebar { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; justify-content: space-between; padding-block-end: var(--s3); }
 
 /* Row selection over a list (the attendance roster, D-143). The bar above holds
@@ -631,17 +632,44 @@ border: var(--bw-hairline) solid var(--border-1);
   box-shadow: var(--sh-md);
 }
 .bulkbar.is-idle { display: none; }
-/* Focus is never left under the bar: the script writes its height here. */
-html, body.page--app { scroll-padding-block-end: var(--bulkbar-h, 0px); }
-@media (max-width: 699px) {
-  .bulkbar { gap: var(--s2) var(--s3); padding: var(--s2) var(--s4); }
-  .bulkbar__fields { flex-basis: 100%; gap: var(--s2); }
-  .bulkbar__fields > * { flex-basis: 100%; }
-}
 .bulkbar .ui-field { margin: 0; }
 .bulkbar__count { margin: 0; align-self: center; display: flex; gap: var(--s2); font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text-strong); }
+.bulkbar__toggle { display: none; }
 .bulkbar__fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s3) var(--s4); flex: 1 1 var(--d-4); min-inline-size: 0; }
 .bulkbar__fields > * { flex: 1 1 var(--d-2); min-inline-size: 0; }
+
+/* Focus is never left under the bar: the script writes its height (and whether it is on)
+   here, and the ring's own extent — a 2px line at a 4px offset — is added while it is. */
+html, body.page--app { scroll-padding-block-end: calc(var(--bulkbar-h) + var(--bulkbar-on) * var(--s2)); }
+/* …and the fixed header covers the top of the screen the same way, going backwards. */
+html, body.page--app { scroll-padding-block-start: calc(var(--header-h) + var(--impbar-h) + var(--s2)); }
+
+/* Under 1200px the bar is FIXED to the bottom of the screen, not sticky. A sticky bar
+   cannot leave the form that contains it: while the form's top was still low on the
+   first screen, "select all" put the bar over the very box just used, and the apply
+   button below the fold. Fixed, it is always at the edge. It is one line — the count and
+   a button — and opens onto the fields, so it does not take a third of a phone. */
+@media (max-width: 1199px) {
+  .bulkform { padding-block-end: var(--bulkbar-h); }
+  .bulkbar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s2) var(--s3);
+    padding: var(--s2) var(--s4);
+    padding-block-end: max(var(--s2), env(safe-area-inset-bottom));
+  }
+  .bulkbar.is-collapsible .bulkbar__toggle { display: inline-flex; }
+  .bulkbar.is-collapsible:not(.is-open) .bulkbar__fields,
+  .bulkbar.is-collapsible:not(.is-open) .bulkbar__apply { display: none; }
+  .bulkbar__fields { flex-basis: 100%; gap: var(--s2); }
+  .bulkbar__fields > * { flex-basis: 100%; }
+  .bulkbar.is-open { max-block-size: 70vh; overflow-y: auto; }
+  .bulkbar__apply { margin-inline-start: auto; }
+}
 .roster__count { font-size: var(--fs-xs); color: var(--text-muted); }
 
 .atable__note { font-size: var(--fs-xs); color: var(--text-muted); }
@@ -652,12 +680,28 @@ html, body.page--app { scroll-padding-block-end: var(--bulkbar-h, 0px); }
 .mcell--absent  { color: var(--status-bad-text); }
 .mcell--excused { color: var(--text-accent); }
 .mcell--none    { color: var(--text-faint); }
+/* The presenter names a cell's tone success / warning / error / info; these four
+   classes were written for present / late / absent / excused, so no letter but the
+   empty one ever matched and every code was drawn in body black. */
+/* `.mtable td` (0,1,1) is stronger than a bare class, so inside the grid the tone must
+   be named through it as well — otherwise the right class name still changes nothing. */
+.mcell--success, .mtable .mcell--success, .mtable .mcell--present { color: var(--status-ok-text); }
+.mcell--warning, .mtable .mcell--warning, .mtable .mcell--late    { color: var(--status-warn-text); }
+.mcell--error,   .mtable .mcell--error,   .mtable .mcell--absent  { color: var(--status-bad-text); }
+.mcell--info,    .mtable .mcell--info,    .mtable .mcell--excused { color: var(--text-accent); }
+.mtable .mcell--none { color: var(--text-faint); }
+.mlegend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s4); margin: 0; padding: var(--s3) var(--s4); font-size: var(--fs-xs); color: var(--text-muted); border-block-start: var(--bw-hairline) solid var(--border-1); }
+.mlegend dt { font-weight: var(--fw-semi); color: var(--text-strong); }
+.mlegend dd { margin: 0; display: inline-flex; align-items: center; gap: var(--s1); }
+.mlegend .mcell { display: inline-block; min-inline-size: var(--s5); padding: 0; }
 .cellpair { display: flex; flex-direction: column; gap: var(--s1); }
 .cellpair span { font-size: var(--fs-xs); color: var(--text-muted); }
 /* A row heading (a topic, a title) is words, not a code: the header-cell rule that keeps
    a COLUMN title on one line was reaching it too, so a long session topic set the width
-   of the whole table and pushed its action column out of view (D-143). */
-.atable tbody th[scope="row"] { white-space: normal; }
+   of the whole table and pushed its action column out of view (D-143). Scoped to the
+   tables that were reshaped: the admin tables still scroll, and wrapping their
+   headings only made their rows taller (independent review). */
+.atable--stack tbody th[scope="row"] { white-space: normal; }
 /* An avatar or an icon BESIDE its text: the stacked pair above was drawn for a name
    over a sub-line, and made a row of every board 74px tall (D-143). */
 .cellpair--inline { flex-direction: row; align-items: center; gap: var(--s2); }
@@ -714,7 +758,7 @@ a.cellpair--inline { min-block-size: var(--touch); }
   color: var(--status-bad-text);
 }
 .row__why li + li { margin-block-start: var(--s1); }
-.row__score { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); }
+.row__score { font-size: var(--fs-h4); font-weight: var(--fw-bold); color: var(--text-accent); white-space: nowrap; /* «10.68 / 12» broke after its slash at 1200–1365px */ }
 
 /* ---------------------------------------------------------- FIRST WELCOME */
 /* Shown once, on the first dashboard after an invited trainee sets their own
@@ -818,9 +862,17 @@ min-block-size: var(--s9);
   inset-inline-start: 0;
   z-index: var(--z-raised);
   background: var(--surface-1);
-  box-shadow: 1px 0 0 var(--border-1);
+  box-shadow: calc(var(--bw-hairline) * -1) 0 0 var(--border-1);
 }
 .mtable thead th:first-child { background: var(--surface-2); }
+/* In a left-to-right page the sticky column is the LEFT one, and its edge is on its right. */
+[dir="ltr"] .mtable thead th:first-child, [dir="ltr"] .mtable tbody th[scope="row"] { box-shadow: var(--bw-hairline) 0 0 var(--border-1); }
+/* A phone: the names may wrap, so they take a third of the width and not half. */
+@media (max-width: 699px) {
+  .mtable thead th:first-child, .mtable tbody th[scope="row"] { white-space: normal; min-inline-size: var(--d-1); max-inline-size: var(--d-1); }
+}
+/* The scrolling region is flush with its card, which clips: the ring goes inside it. */
+.tscroll[role="region"]:focus-visible { outline-offset: calc(var(--s1) * -0.5); }
 .mtable tbody tr:hover th[scope="row"] { background: var(--violet-050); }
 
 /* ==========================================================================
@@ -2048,13 +2100,26 @@ border-block-end: var(--bw-hairline) solid var(--border-1);
      two times sit side by side, the status and the edit take a full line each, and
      the row selector sits on the name's own line instead of a row of its own. */
   .atable--roster tbody tr { position: relative; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s4); padding-block: var(--s1); }
-  .atable--roster .atable__lead { grid-column: 1 / -1; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-end: var(--touch); }
-  .atable--roster .atable__pick { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 1; display: block; padding: 0; border: 0; }
+  .atable--roster.atable--stack th[scope="row"] { grid-column: 1 / -1; display: flex; align-items: center; min-block-size: var(--touch); padding-inline-start: var(--touch); }
+  /* On the SAME side as "select all" above the list, so the two boxes line up. */
+  .atable--roster .atable__pick { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 1; display: block; padding: 0; border: 0; }
   .atable--roster .atable__pick::before { content: none; }
   .atable--roster td[data-cell="in"],
   .atable--roster td[data-cell="out"] { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; }
   .atable--roster td[data-cell="status"],
   .atable--roster td[data-cell="edit"] { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1199px) {
+  /* The loading skeleton has the SHAPE of what is coming (Article 17): under 1200px that
+     is a stack of cards, not a wide grid of bars scrolling sideways. */
+  .tscroll:has(> .atable--skel) { border: 0; background: transparent; overflow: visible; margin-block-start: var(--s3); }
+  .atable--skel,
+  .atable--skel tbody,
+  .atable--skel tr,
+  .atable--skel td { display: block; }
+  .atable--skel tr { margin-block-end: var(--s3); padding: var(--s3) var(--s4); border: var(--bw-hairline) solid var(--border-1); border-radius: var(--r-md); background: var(--surface-1); }
+  .atable--skel td { padding: var(--s1) 0; border: 0; }
 }
 
 /* Between a phone and the rail the cards sit two to a row: one label-and-value

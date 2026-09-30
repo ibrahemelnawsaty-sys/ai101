@@ -180,6 +180,7 @@ it('BR-23: تقرير حضور الدفعة لا يحمل متدربًا من د
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present', 1);
 
     $body = $this->actingAs($this->trainer)
+        ->followingRedirects()
         ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
         ->assertOk()
         ->getContent();

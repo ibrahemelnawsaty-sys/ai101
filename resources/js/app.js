@@ -1246,16 +1246,6 @@ function atharThread() {
 }
 
 /**
- * The trainer's live roster (PRD §9.9.7).
- *
- * The table is also the bulk-marking form, so it is never replaced: each poll
- * patches only the cells named by `data-cell` — the two times, the status pill
- * and the edit control — plus the present count. The checkboxes and the reason
- * a trainer is typing are left alone. The markup comes from the server's own
- * partials. Polling runs only while the server says the session is live, stops
- * by itself when it ends, and a hidden tab does not poll.
- */
-/**
  * Row selection for a bulk form (D-143).
  *
  * The page is the form: the boxes are named inputs the server already reads, so
@@ -1267,6 +1257,7 @@ function atharBulkSelect() {
     return (config = {}) => ({
         picked: 0,
         total: 0,
+        open: false,
         watch: null,
 
         init() {
@@ -1285,11 +1276,14 @@ function atharBulkSelect() {
         destroy() {
             if (this.watch) this.watch.disconnect();
             document.documentElement.style.removeProperty('--bulkbar-h');
+            document.documentElement.style.removeProperty('--bulkbar-on');
         },
 
         reserve(bar) {
-            const height = bar.offsetParent === null ? 0 : bar.offsetHeight;
-            document.documentElement.style.setProperty('--bulkbar-h', `${height}px`);
+            const height = bar.offsetParent === null && getComputedStyle(bar).position !== 'fixed' ? 0 : bar.offsetHeight;
+            const root = document.documentElement.style;
+            root.setProperty('--bulkbar-h', `${height}px`);
+            root.setProperty('--bulkbar-on', height > 0 ? '1' : '0');
         },
 
         boxes() {
@@ -1303,6 +1297,7 @@ function atharBulkSelect() {
             const boxes = this.boxes();
             this.total = boxes.length;
             this.picked = boxes.filter((box) => box.checked).length;
+            if (this.picked === 0) this.open = false;
 
             const all = this.$refs.all;
             if (all) {
@@ -1317,9 +1312,42 @@ function atharBulkSelect() {
             });
             this.count();
         },
+
+        /** What a screen reader hears when the count changes: "Selected 2 of 57". */
+        get spokenCount() {
+            return String(config.spoken || '')
+                .replace(':picked', String(this.picked))
+                .replace(':total', String(this.total));
+        },
+
+        /** A phone's one-line bar opens onto the status and the reason. */
+        toggle() {
+            this.open = !this.open;
+            if (!this.open) return;
+            this.$nextTick(() => {
+                const first = this.$root.querySelector('.bulkbar__fields button, .bulkbar__fields input:not([type="hidden"])');
+                if (first) first.focus();
+            });
+        },
+
+        close() {
+            if (!this.open) return;
+            this.open = false;
+            if (this.$refs.toggle) this.$refs.toggle.focus();
+        },
     });
 }
 
+/**
+ * The trainer's live roster (PRD §9.9.7).
+ *
+ * The table is also the bulk-marking form, so it is never replaced: each poll
+ * patches only the cells named by `data-cell` — the two times, the status pill
+ * and the edit control — plus the present count. The checkboxes and the reason
+ * a trainer is typing are left alone. The markup comes from the server's own
+ * partials. Polling runs only while the server says the session is live, stops
+ * by itself when it ends, and a hidden tab does not poll.
+ */
 function atharRoster() {
     return (config = {}) => ({
         busy: false,
@@ -1521,8 +1549,28 @@ function syncThemeColour() {
     if (value) meta.setAttribute('content', value);
 }
 
+/**
+ * A link that opens a panel (grade this hand-in, edit this session…) reloads the page
+ * at the top, and on a phone the panel is thousands of pixels below the row that was
+ * tapped — nothing on screen said anything had happened. The panel marks itself with
+ * `data-open-panel`; if it is not already in view it is scrolled to (the fixed header
+ * is allowed for by the page's scroll padding) and given focus, so the next Tab is
+ * inside it and a screen reader is told where it is.
+ */
+function focusOpenPanel() {
+    const panel = document.querySelector('[data-open-panel]');
+    if (!panel) return;
+
+    const top = panel.getBoundingClientRect().top;
+    if (top >= 0 && top < window.innerHeight * 0.6) return;
+
+    panel.scrollIntoView({ block: 'start', behavior: 'auto' });
+    panel.focus({ preventScroll: true });
+}
+
 function boot() {
     syncThemeColour();
+    focusOpenPanel();
     initLogo();
     initReveals();
     initHighlights();

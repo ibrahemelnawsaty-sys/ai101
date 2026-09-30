@@ -40,7 +40,7 @@
                 <x-ui.skeleton height="var(--s5)" width="46%" />
                 <x-ui.skeleton height="var(--s3)" width="30%" class="u-mt-1" />
                 <div class="tscroll u-mt-4">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 8; $i++)
                                 <tr>
@@ -124,7 +124,7 @@
                 <div class="tablebar">
                     <div>
                         <b>{{ $roster->sessionTitle }}</b>
-                        <span class="u-when">
+                        <span class="u-when tablebar__when">
                             {{ \App\Support\Dates::longDate($roster->startsAt) }} ·
                             {{ \App\Support\Dates::timeRange12($roster->startsAt, $roster->endsAt) }}
                         </span>
@@ -150,15 +150,20 @@
                     {{-- Bulk marking, for emergencies only, reason required.
                          The boxes are the form's own named inputs; the script only
                          counts them (D-143). --}}
-                    <form method="POST" action="{{ route('trainer.attendance.bulk', $roster->sessionId) }}"
-                        x-data="atharBulkSelect({ name: 'user_id[]' })" x-on:change="count()"
-                        x-on:pageshow.window="count()">
+                    <form method="POST" action="{{ route('trainer.attendance.bulk', $roster->sessionId) }}" class="bulkform"
+                        x-data="atharBulkSelect({ name: 'user_id[]', spoken: @js(__('trainer.attendance.selected_spoken'), JSON_UNESCAPED_UNICODE) })"
+                        x-on:change="count()" x-on:pageshow.window="count()">
                         @csrf
 
                         <div class="selectbar">
                             <x-ui.checkbox :with-false="false" x-ref="all" x-on:change="toggleAll($event.target.checked)"
                                 :label="__('trainer.attendance.select_all')" />
                             <p class="selectbar__hint">{{ __('trainer.attendance.bulk_hint') }}</p>
+                            {{-- The count is SPOKEN from here, a live region that is always in
+                                 the page: the bar below is `display: none` until something is
+                                 ticked, and a live region that appears with its own first text
+                                 is not announced. --}}
+                            <p class="ui-sr" role="status" aria-live="polite" aria-atomic="true" x-text="spokenCount">{{ __('trainer.attendance.selected_spoken', ['picked' => 0, 'total' => $roster->entries->count()]) }}</p>
                         </div>
 
                         @error('user_id')
@@ -194,7 +199,7 @@
                                             </td>
                                             <th scope="row" role="rowheader" class="atable__lead">
                                                 <span class="cellpair cellpair--inline">
-                                                    <x-ui.avatar size="sm" :name="$entry->participantName" />
+                                                    <x-ui.avatar size="sm" :name="$entry->participantName" decorative />
                                                     {{ $entry->participantName }}
                                                 </span>
                                             </th>
@@ -210,18 +215,25 @@
 
                         {{-- Appears once someone is ticked and then stays in view, so the action
                              is never a long scroll away from the rows it applies to. --}}
-                        <div class="bulkbar" x-bind:class="{ 'is-idle': picked === 0 }">
-                            <p class="bulkbar__count" role="status" aria-live="polite">
+                        <div class="bulkbar" x-bind:class="{ 'is-idle': picked === 0, 'is-collapsible': true, 'is-open': open }"
+                            x-on:keydown.escape="close()">
+                            <p class="bulkbar__count">
                                 <span>{{ __('trainer.attendance.selected_label') }}</span>
                                 <b class="u-num"><span x-text="picked">0</span> / <span x-text="total">{{ $roster->entries->count() }}</span></b>
                             </p>
-                            <div class="bulkbar__fields">
+                            {{-- On a phone the fields do not fit beside the rows: the bar is one
+                                 line (the count and this button) until it is opened. Without
+                                 script it is never collapsed, and the form works as it is. --}}
+                            <x-ui.button variant="secondary" size="sm" type="button" class="bulkbar__toggle"
+                                x-ref="toggle" x-on:click="toggle()" x-bind:aria-expanded="open ? 'true' : 'false'"
+                                aria-controls="bulk-fields">{{ __('trainer.attendance.bulk_open') }}</x-ui.button>
+                            <div class="bulkbar__fields" id="bulk-fields">
                                 <x-ui.select name="attendance_status" :label="__('trainer.attendance.bulk_status')" :options="$statusOptions" required />
                                 <x-ui.input name="edit_reason" minlength="10" required
                                     :label="__('trainer.attendance.reason')"
                                     :hint="__('trainer.attendance.reason_hint', ['min' => 10])" />
                             </div>
-                            <x-ui.button icon="attendance" variant="secondary" size="sm" type="submit"
+                            <x-ui.button icon="attendance" variant="secondary" size="sm" type="submit" class="bulkbar__apply"
                                 x-bind:disabled="picked === 0">{{ __('trainer.attendance.apply_bulk') }}</x-ui.button>
                         </div>
                     </form>
@@ -340,7 +352,7 @@
 
         {{-- Recording upload panel, open on ?recording={id} (D-107) ----------- --}}
         @if ($recordingEditing)
-            <x-ui.card class="dc--span u-mt-4" icon="recording"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="recording"
                 :title="__('trainer.sessions.recording_edit_title', ['topic' => $recordingEditing->topic])">
 
                 <form method="POST" action="{{ route('trainer.sessions.recording', $recordingEditing->id) }}">
@@ -363,7 +375,7 @@
 
         {{-- Single manual edit ------------------------------------------------- --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="shield"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="shield"
                 :title="__('trainer.attendance.edit_title', ['name' => $editing->participantName])">
 
                 <div class="note note--warn">
@@ -438,7 +450,7 @@
             <x-ui.card class="dc--2" icon="chart" :title="__('trainer.attendance.matrix_title')" flush>
                 @if (is_null($matrix))
                     <div class="tscroll">
-                        <table class="atable">
+                        <table class="atable atable--skel">
                             <tbody>
                                 @for ($i = 0; $i < 6; $i++)
                                     <tr>
@@ -469,7 +481,7 @@
                                             <abbr title="{{ $session->topic }}">{{ \App\Support\Dates::shortDate($session->date) }}</abbr>
                                         </th>
                                     @endforeach
-                                    <th scope="col">{{ __('attendance.rate.label') }}</th>
+                                    <th scope="col">{{ __('attendance.rate.title') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -488,6 +500,14 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- The key to the letters: a `title` is not a key on a touch screen. --}}
+                    <dl class="mlegend" aria-label="{{ __('trainer.attendance.matrix_legend') }}">
+                        <dt>{{ __('trainer.attendance.matrix_legend') }}</dt>
+                        @foreach ($matrixLegend as $item)
+                            <dd><b class="mcell mcell--{{ $item['variant'] }}">{{ $item['code'] }}</b> {{ $item['label'] }}</dd>
+                        @endforeach
+                    </dl>
 
                     <x-ui.pagination :paginator="$matrix->rows" />
                 @endif

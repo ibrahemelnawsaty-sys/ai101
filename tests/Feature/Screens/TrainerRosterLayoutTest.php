@@ -113,13 +113,76 @@ it('D-143: المربّع بلا نص هدف لمس 44px في المحورين �
     expect($components)->toMatch('/\.ui-check--bare\s*\{[^}]*min-inline-size:\s*var\(--touch\);/');
 });
 
-it('D-143: التركيز بلوحة المفاتيح لا يختفي تحت الشريط — ارتفاعه يُكتب في حشوة التمرير', function (): void {
+it('D-143: التركيز بلوحة المفاتيح لا يختفي تحت الشريط ولا تحت الترويسة — ارتفاعاهما في حشوة التمرير', function (): void {
     $screens = (string) file_get_contents(resource_path('css/screens.css'));
+    $tokens = (string) file_get_contents(resource_path('css/tokens.css'));
     $js = (string) file_get_contents(resource_path('js/app.js'));
 
-    expect($screens)->toContain('scroll-padding-block-end: var(--bulkbar-h, 0px)')
+    // The bar's height (plus the ring's extent while it is on) is reserved at the END…
+    expect($screens)->toContain('scroll-padding-block-end: calc(var(--bulkbar-h) + var(--bulkbar-on) * var(--s2))')
+        // …and the fixed header (and the preview bar above it) at the START, going backwards.
+        ->and($screens)->toContain('scroll-padding-block-start: calc(var(--header-h) + var(--impbar-h) + var(--s2))')
+        // Both properties have a length default, so `calc()` is never given a bare 0.
+        ->and($tokens)->toMatch('/--bulkbar-h:\s*0px;/')
         ->and($js)->toContain("setProperty('--bulkbar-h'")
+        ->and($js)->toContain("setProperty('--bulkbar-on'")
         ->and($js)->toContain("Alpine.data('atharBulkSelect'");
+});
+
+it('D-143: تحت 1200px الشريط ثابت لا لاصق — الشريط اللاصق لا يخرج من نموذجه فيغطّي «تحديد الكل» نفسه', function (): void {
+    $screens = (string) file_get_contents(resource_path('css/screens.css'));
+
+    preg_match('/@media \(max-width: 1199px\) \{\s*\.bulkform.*?\n\}/s', $screens, $block);
+
+    expect($block)->not->toBeEmpty()
+        ->and($block[0])->toMatch('/\.bulkbar\s*\{[^}]*position:\s*fixed;/s')
+        // The last row is not left under it…
+        ->and($block[0])->toContain('.bulkform { padding-block-end: var(--bulkbar-h); }')
+        // …it is one line until it is opened, and only when script is there to open it.
+        ->and($block[0])->toContain('.bulkbar.is-collapsible:not(.is-open) .bulkbar__fields')
+        ->and($block[0])->toContain('.bulkbar.is-collapsible .bulkbar__toggle { display: inline-flex; }');
+});
+
+it('D-143: العدّاد يُنطَق من منطقة حيّة دائمة في الصفحة، لا من الشريط المخفي إلى أن يُحدَّد أول صف', function (): void {
+    $html = rosterHtml($this);
+
+    preg_match('/<div class="selectbar">.*?<\/form>/s', $html, $form);
+    preg_match('/<div class="bulkbar".*?<\/form>/s', $html, $bar);
+
+    expect($form[0] ?? '')->toContain('role="status" aria-live="polite" aria-atomic="true"')
+        ->and($form[0] ?? '')->toContain((string) __('trainer.attendance.selected_spoken', ['picked' => 0, 'total' => 3]))
+        // The bar itself announces nothing (it is display:none until something is ticked).
+        ->and($bar[0] ?? '')->not->toContain('aria-live')
+        ->and($bar[0] ?? '')->toContain('aria-controls="bulk-fields"')
+        ->and($bar[0] ?? '')->toContain('id="bulk-fields"');
+});
+
+it('D-143: مربّع صف البطاقة على جهة «تحديد الكل» نفسها، وحشوة الترويسة بانتقاء يغلب قاعدة البطاقة', function (): void {
+    $screens = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($screens)->toMatch('/\.atable--roster \.atable__pick\s*\{[^}]*inset-inline-start:\s*0;/s')
+        ->and($screens)->not->toMatch('/\.atable--roster \.atable__pick\s*\{[^}]*inset-inline-end/s')
+        // `.atable--stack th[scope="row"]` sets `padding: var(--s2) 0`; the roster's reserved
+        // room for the box only wins with the same weight (it computed to 0px before).
+        ->and($screens)->toMatch('/\.atable--roster\.atable--stack th\[scope="row"\]\s*\{[^}]*padding-inline-start:\s*var\(--touch\)/s');
+});
+
+it('D-143: كل لوحة تفتحها روابط المدرب تعلن نفسها ليُؤتى بها إلى الشاشة، والسكربت يفعل ذلك', function (): void {
+    $panels = [
+        'assignments' => 1, 'attendance' => 2, 'final-project' => 1, 'participants' => 1,
+        'sessions' => 2, 'submissions' => 1,
+    ];
+
+    foreach ($panels as $view => $count) {
+        $html = (string) file_get_contents(resource_path("views/trainer/{$view}.blade.php"));
+
+        expect(substr_count($html, 'data-open-panel tabindex="-1"'))->toBe($count, $view);
+    }
+
+    $js = (string) file_get_contents(resource_path('js/app.js'));
+
+    expect($js)->toContain("document.querySelector('[data-open-panel]')")
+        ->and($js)->toContain('panel.focus({ preventScroll: true })');
 });
 
 it('D-143: حقل في شريط أدوات يتقلّص بدل أن يدفع الصفحة — اسم جلسة طويل أزاح الصفحة كلها 25px على الجوال', function (): void {
@@ -133,4 +196,44 @@ it('D-143: نموذج الكشف يعرض خطأ اختيار المتدربين
 
     expect($html)->toContain("@error('user_id')")
         ->and($html)->toContain("@error('user_id.*')");
+});
+
+it('D-143: لمصفوفة الحضور مفتاح مرئي للحروف، مبنيّ من المصدر نفسه الذي يرسم الخلايا', function (): void {
+    $legend = App\Presenters\Trainer\MatrixCell::legend();
+
+    // One entry per status the grid can draw, plus «not recorded».
+    expect($legend)->toHaveCount(count(App\Enums\AttendanceStatus::cases()) + 1);
+
+    foreach (App\Enums\AttendanceStatus::cases() as $i => $status) {
+        expect($legend[$i]['code'])->toBe((string) __('attendance.matrix.short.'.$status->value))
+            ->and($legend[$i]['label'])->toBe($status->label());
+    }
+
+    $html = rosterHtml($this);
+
+    expect($html)->toContain('class="mlegend"');
+
+    foreach ($legend as $item) {
+        expect($html)->toContain('mcell mcell--'.$item['variant'])
+            ->and($html)->toContain($item['label']);
+    }
+});
+
+it('D-143: كل نغمة تُنتجها خلية المصفوفة لها قاعدة لون — لا حرف يبقى أسود لأن اسم صنفه لم يطابق', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    foreach (array_unique(array_column(App\Presenters\Trainer\MatrixCell::legend(), 'variant')) as $variant) {
+        // Named inside the grid too: `.mtable td` outweighs a bare class, and the tone
+        // then changes nothing (it did not, for as long as the class names disagreed).
+        expect($css)->toMatch('/\.mtable \.mcell--'.preg_quote($variant, '/').'[^{]*\{\s*color:/');
+    }
+});
+
+it('D-143: عمود أسماء المصفوفة اللاصق حدّه على جهته الصحيحة في RTL وفي LTR، وحلقة تركيز المنطقة داخلها', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->toContain('box-shadow: calc(var(--bw-hairline) * -1) 0 0 var(--border-1)')
+        ->and($css)->toMatch('/\[dir="ltr"\] \.mtable thead th:first-child[^{]*\{\s*box-shadow:\s*var\(--bw-hairline\) 0 0/')
+        ->and($css)->toMatch('/\.tscroll\[role="region"\]:focus-visible\s*\{\s*outline-offset:\s*calc\(var\(--s1\) \* -0\.5\)/')
+        ->and($css)->toMatch('/@media \(max-width: 699px\) \{\s*\.mtable thead th:first-child[^{]*\{[^}]*white-space:\s*normal/s');
 });

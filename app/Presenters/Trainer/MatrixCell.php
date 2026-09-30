@@ -25,6 +25,26 @@ final class MatrixCell extends ViewModel
 {
     use PresentsVariants;
 
+    /**
+     * The key to the letters: every status the grid can show, with its code, its
+     * words and its variant — read from the SAME `of()` that draws a cell, so the key
+     * cannot say something the cells do not. A `title` alone is not a key: a
+     * touch screen has no hover.
+     *
+     * @return list<array{code: string, label: string, variant: string}>
+     */
+    public static function legend(): array
+    {
+        $cells = array_map(static fn (AttendanceStatus $status): self => self::of($status), AttendanceStatus::cases());
+        $cells[] = self::of(null);
+
+        return array_map(static fn (self $cell): array => [
+            'code' => (string) $cell['shortCode'],
+            'label' => (string) $cell['statusLabel'],
+            'variant' => (string) $cell['variant'],
+        ], $cells);
+    }
+
     public static function of(?AttendanceStatus $status): self
     {
         return new self([

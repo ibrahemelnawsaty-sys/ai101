@@ -50,7 +50,7 @@
         <x-ui.card class="dc--span" flush>
             @if (is_null($assignments))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -104,7 +104,7 @@
                                             <x-ui.button icon="pencil" :icon-only="true" variant="secondary" size="sm" :context="$assignment->title"
                                                 :href="route('trainer.assignments', ['edit' => $assignment->id])">{{ __('app.edit') }}</x-ui.button>
                                         @endif
-                                        <x-ui.button variant="secondary" size="sm"
+                                        <x-ui.button variant="secondary" size="sm" :context="$assignment->title"
                                             :href="route('trainer.submissions', ['assignment' => $assignment->id])">{{ __('trainer.submissions.title') }}</x-ui.button>
                                     </td>
                                 </tr>
@@ -119,7 +119,7 @@
 
         {{-- Editor ---------------------------------------------------------------- --}}
         @if ($editing)
-            <x-ui.card class="dc--span u-mt-4" icon="file"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="file"
                 :title="$editing->exists ? __('trainer.assignments.edit_title') : __('trainer.assignments.create')">
 
                 <form method="POST"

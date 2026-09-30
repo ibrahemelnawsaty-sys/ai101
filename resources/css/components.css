@@ -561,7 +561,10 @@ block-size: var(--s5);
   display: grid;
   place-items: center;
   background: var(--surface-1);
-border: var(--bw-icon) solid var(--border-3);
+/* The box of an unticked control is what tells a person it IS a control: --border-3
+     measured 1.27:1 on white (3:1 is the floor for a control's boundary); --border-2, the
+     one the text fields already use, is 3.49:1 (D-146). */
+border: var(--bw-icon) solid var(--border-2);
   border-radius: var(--r-sm);
   color: transparent;
   transition:
@@ -572,7 +575,7 @@ border: var(--bw-icon) solid var(--border-3);
 .ui-check--radio .ui-check__box { border-radius: var(--r-full); }
 
 .ui-check__input:checked + .ui-check__box,
-.ui-check__input:indeterminate + .ui-check__box {
+.ui-check__input[type="checkbox"]:indeterminate + .ui-check__box {
   background: var(--violet-500);
   border-color: var(--violet-500);
   color: var(--white);
@@ -581,8 +584,10 @@ border: var(--bw-icon) solid var(--border-3);
 .ui-check__mark { inline-size: var(--s3); block-size: var(--s3); }
 .ui-check__mark use { stroke-width: var(--bw-glyph-mark); }
 .ui-check__dash { display: none; inline-size: var(--s3); block-size: var(--s1); background: currentColor; border-radius: var(--r-xs); }
-.ui-check__input:indeterminate + .ui-check__box .ui-check__dash { display: block; }
-.ui-check__input:indeterminate + .ui-check__box .ui-check__mark { display: none; }
+/* `:indeterminate` also matches every radio of a group with nothing chosen — so it is
+   scoped to a checkbox, or an unanswered radio group is painted as answered. */
+.ui-check__input[type="checkbox"]:indeterminate + .ui-check__box .ui-check__dash { display: block; }
+.ui-check__input[type="checkbox"]:indeterminate + .ui-check__box .ui-check__mark { display: none; }
 
 /* A box with no words beside it (a row selector, D-143) is still a 44px target
    in BOTH axes — the label is the click area, and with no text it was 24px wide. */

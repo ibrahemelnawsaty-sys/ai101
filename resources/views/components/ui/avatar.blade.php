@@ -18,6 +18,8 @@
       name      the display name — the source of both the initials and the alt
       src       photo URL; a missing file simply falls back to the initials
       ring      draw the brand ring around the avatar
+      decorative  the name is printed right beside it: the avatar is hidden from
+                  assistive technology (a row header read "the picture of X X")
 --}}
 @props([
     'variant' => 'default',
@@ -26,6 +28,7 @@
     'name' => '',
     'src' => null,
     'ring' => false,
+    'decorative' => false,
 ])
 
 @php
@@ -51,10 +54,10 @@
             'ui-avatar--' . $variant => $variant !== 'default',
             'ui-avatar--ring' => $ring,
         ]) }}
-        @if ($src === null) role="img" aria-label="{{ $alt }}" @endif
+        @if ($decorative) aria-hidden="true" @elseif ($src === null) role="img" aria-label="{{ $alt }}" @endif
     >
         @if ($src !== null)
-            <img src="{{ $src }}" alt="{{ $alt }}" loading="lazy" decoding="async">
+            <img src="{{ $src }}" alt="{{ $decorative ? '' : $alt }}" loading="lazy" decoding="async">
         @else
             <span class="ui-avatar__i" aria-hidden="true">{{ $initials }}</span>
         @endif

@@ -78,12 +78,16 @@ final class Checkbox extends UiComponent
         $this->checked = (bool) $checked;
         $this->indeterminate = (bool) $indeterminate;
         $this->required = (bool) $required;
-        // A list of boxes (`name="user_id[]"`) has no "false" to post: the companion
-        // would add a literal "0" to the very array the server validates as ids, so
-        // every bulk form built on one was refused (D-143).
-        $this->withFalse = (bool) $withFalse && ! str_ends_with((string) $name, '[]');
         $this->labelHidden = (bool) $labelHidden;
         $this->isDisabled = (bool) $disabled || $state === 'disabled';
+
+        // A list of boxes (`name="user_id[]"`) has no "false" to post: the companion
+        // would add a literal "0" to the very array the server validates as ids, so
+        // every bulk form built on one was refused (D-143). The one companion a list
+        // still needs is the DISABLED, ticked box — a disabled control posts nothing,
+        // and what it carries is its own value, never a "0".
+        $listed = str_ends_with((string) $name, '[]');
+        $this->withFalse = (bool) $withFalse && (! $listed || ($this->isDisabled && $this->checked));
         $this->hiddenValue = $this->isDisabled && $this->checked ? ($value ?? 1) : 0;
         $this->message = self::errorFor($name, $error);
         $this->baseId = self::fieldId('c', $name, $id);
@@ -91,8 +95,8 @@ final class Checkbox extends UiComponent
         // Sixty boxes named `user_id[]` all became `c-user-id`, and a <label for> then
         // points at the FIRST of them: the wide hit area beside any row toggled the top
         // row's box, and a screen reader read one name for all of them (D-143).
-        if ($name !== null && str_ends_with($name, '[]') && ($id === null || $id === '') && $options === null && is_scalar($value)) {
-            $this->baseId .= '-'.Str::slug((string) $value);
+        if ($listed && ($id === null || $id === '') && $options === null) {
+            $this->baseId .= '-'.self::listedSuffix($value);
         }
 
         $this->items = is_array($options) ? array_values($options) : null;
@@ -107,6 +111,31 @@ final class Checkbox extends UiComponent
         $this->errorId = $this->message !== null ? $this->baseId.'-error' : null;
         $this->hintId = $hint !== null ? $this->baseId.'-hint' : null;
         $this->describedBy = self::describedBy($this->errorId, $this->hintId);
+    }
+
+    /**
+     * The part of a listed box's id that tells it from its siblings.
+     *
+     * A value that survives `Str::slug` unchanged and is short (a UUID does) is
+     * used as it is, so the id stays readable. Any other value — different only
+     * in case or punctuation, an emoji, Arabic, three hundred characters, none at
+     * all — gets a short hash of the RAW value, so two different values can never
+     * share an id (a slug alone maps 'AB', 'ab' and 'a.b' to one).
+     */
+    private static function listedSuffix(mixed $value): string
+    {
+        if (! is_scalar($value)) {
+            return Str::random(6);
+        }
+
+        $raw = (string) $value;
+        $slug = Str::slug($raw);
+
+        if ($slug !== '' && $slug === $raw && strlen($slug) <= 64) {
+            return $slug;
+        }
+
+        return ($slug !== '' ? substr($slug, 0, 32).'-' : '').substr(hash('sha256', $raw), 0, 8);
     }
 
     public function optionId(int $index): string

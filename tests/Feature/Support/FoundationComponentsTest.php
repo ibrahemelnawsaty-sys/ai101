@@ -386,3 +386,26 @@ it('D-133: a dialog can be described by the summary inside it as well as by its 
 
     expect($bare)->toContain('aria-describedby="the-summary"');
 });
+
+it('D-143: a button with words and a context is named "the words — the context", so a row of fifty «تقييم» links can be told apart', function (): void {
+    $html = Blade::render('<x-ui.button size="sm" context="Sara Ahmed" href="/x">Grade</x-ui.button>');
+
+    // The accessible name still CONTAINS the visible words (WCAG 2.5.3, label in name).
+    expect($html)->toContain('aria-label="Grade — Sara Ahmed"')
+        ->and($html)->toContain('>Grade<')
+        ->and(Blade::render('<x-ui.button size="sm" href="/x">Grade</x-ui.button>'))->not->toContain('aria-label=')
+        // The icon-only form is unchanged: the glyph's words, the context, and the tip.
+        ->and(Blade::render('<x-ui.button icon="pencil" :icon-only="true" context="Sara" href="/x">Edit</x-ui.button>'))
+        ->toContain('aria-label="Edit — Sara"')->toContain('data-tip="Edit"');
+});
+
+it('D-143: an avatar beside the name it belongs to is hidden from assistive technology, so a row header is read once', function (): void {
+    $plain = Blade::render('<x-ui.avatar name="Sara Ahmed" />');
+    $decorative = Blade::render('<x-ui.avatar name="Sara Ahmed" decorative />');
+
+    expect($plain)->toContain('role="img"')->toContain('aria-label=')
+        ->and($decorative)->toContain('aria-hidden="true"')
+        ->and($decorative)->not->toContain('role="img"')
+        ->and($decorative)->not->toContain('aria-label=')
+        ->and(Blade::render('<x-ui.avatar name="Sara Ahmed" src="/a.png" decorative />'))->toContain('alt=""');
+});

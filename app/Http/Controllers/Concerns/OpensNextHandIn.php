@@ -21,9 +21,9 @@ use Illuminate\Http\Request;
  * The destination is built from what the SERVER knows: the cohort and the
  * assignment come from the hand-in itself, never from the request, and the
  * only things carried over from the trainer's own view are two board filters
- * (`status`, `q`), taken as plain strings. Nothing in the request can name
- * another route or another host, so the flag cannot become an open redirect
- * (art. 22, art. 24).
+ * (`status`, `q`) and the versions toggle when it is exactly `all`, taken as
+ * plain strings. Nothing in the request can name another route or another host,
+ * so the flag cannot become an open redirect (art. 22, art. 24).
  *
  * The user using this declares `private readonly GradingQueue $queue`.
  *
@@ -33,6 +33,11 @@ trait OpensNextHandIn
 {
     /** The board filters a trainer's own view carries across the hop. */
     private const CARRIED_FILTERS = ['status', 'q'];
+
+    /** `?versions=all` — the one value the versions toggle ever writes (D-143). */
+    private const VERSIONS_KEY = 'versions';
+
+    private const VERSIONS_ALL = 'all';
 
     /** The assignments board, on the oldest waiting hand-in of the same assignment. */
     protected function boardAfter(Request $request, Submission $current, string $message): RedirectResponse
@@ -53,20 +58,21 @@ trait OpensNextHandIn
     }
 
     /** The final-project screen, on the oldest waiting hand-in of the same project. */
-    protected function projectAfter(ProjectSubmission $current, string $message): RedirectResponse
+    protected function projectAfter(Request $request, ProjectSubmission $current, string $message): RedirectResponse
     {
         $cohortId = FinalProject::query()
             ->whereKey($current->getAttribute('final_project_id'))
             ->value('cohort_id');
 
+        $params = ['cohort' => $cohortId] + $this->carriedFilters($request, only: [self::VERSIONS_KEY]);
         $next = $this->queue->nextProjectSubmission($current);
 
         if ($next === null) {
-            return redirect()->route('trainer.finalProject', ['cohort' => $cohortId])
+            return redirect()->route('trainer.finalProject', $params)
                 ->with('status', $message.' '.__('trainer.grading.queue_done'));
         }
 
-        return redirect()->route('trainer.finalProject', ['cohort' => $cohortId, 'grade' => $next->getKey()])
+        return redirect()->route('trainer.finalProject', $params + ['grade' => $next->getKey()])
             ->with('status', $message);
     }
 
@@ -82,7 +88,7 @@ trait OpensNextHandIn
             $current = ProjectSubmission::query()->find($entityId);
 
             return $current instanceof ProjectSubmission
-                ? $this->projectAfter($current, $message)
+                ? $this->projectAfter($request, $current, $message)
                 : back()->with('status', $message);
         }
 
@@ -94,18 +100,25 @@ trait OpensNextHandIn
     }
 
     /**
+     * @param  list<string>|null  $only
      * @return array<string, string>
      */
-    private function carriedFilters(Request $request): array
+    private function carriedFilters(Request $request, ?array $only = null): array
     {
         $carried = [];
 
         foreach (self::CARRIED_FILTERS as $key) {
             $value = $request->query($key);
 
-            if (is_string($value) && $value !== '') {
+            if (($only === null || in_array($key, $only, true)) && is_string($value) && $value !== '') {
                 $carried[$key] = $value;
             }
+        }
+
+        // The toggle is carried as itself or not at all: only the exact value.
+        if (($only === null || in_array(self::VERSIONS_KEY, $only, true))
+            && $request->query(self::VERSIONS_KEY) === self::VERSIONS_ALL) {
+            $carried[self::VERSIONS_KEY] = self::VERSIONS_ALL;
         }
 
         return $carried;

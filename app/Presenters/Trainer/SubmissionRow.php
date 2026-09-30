@@ -37,7 +37,7 @@ final class SubmissionRow extends ViewModel
     use PresentsPeople;
     use PresentsVariants;
 
-    public static function from(Submission $submission): self
+    public static function from(Submission $submission, bool $isSuperseded = false): self
     {
         $user = self::related($submission, 'user');
         $assignment = self::related($submission, 'assignment');
@@ -65,6 +65,9 @@ final class SubmissionRow extends ViewModel
             'submittedAt' => $submission->getAttribute('submitted_at'),
             'isLate' => (bool) $submission->getAttribute('is_late'),
             'version' => (int) $submission->getAttribute('version'),
+            // A newer version of the same hand-in exists (BR-19): only set when the board
+            // lists earlier versions, where this one is not the copy to mark.
+            'isSuperseded' => $isSuperseded,
             'hasSubmission' => true,
             'fileLabel' => is_string($fileName) && $fileName !== '' ? $fileName : null,
             // The first file, signed (D-80). It was null by design: no route

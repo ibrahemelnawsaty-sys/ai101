@@ -386,6 +386,8 @@
      and the rail stick BELOW it rather than under it (D-86). Zero when there
      is no preview. */
   --impbar-h:      0px;
+  --bulkbar-h:     0px;      /* height of the roster's action bar while it is on screen — written by atharBulkSelect */
+  --bulkbar-on:    0;        /* 1 while that bar is on screen (adds the focus ring's extent) */
   --touch-min:     44px;     /* WCAG 2.1 AA floor · PRD §5.9, §13.2 */
   --touch:         var(--touch-min);   /* legacy alias — same single value */
   /* The rail's link list never shrinks below three links (D-115). Under that,

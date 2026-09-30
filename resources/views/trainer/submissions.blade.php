@@ -68,9 +68,30 @@
                 </div>
             </div>
 
+            {{-- Which hand-ins are listed: the newest version of each unless the
+                 trainer asks for the earlier ones too (BR-19 keeps them all). --}}
+            @if (! is_null($rows) && ($showsEarlier || $hiddenVersions > 0))
+                <div class="versionnote">
+                    <p>
+                        @if ($showsEarlier)
+                            {{ __('trainer.submissions.versions_all_shown') }}
+                        @else
+                            {{ trans_choice('trainer.submissions.versions_hidden', $hiddenVersions, ['count' => $hiddenVersions]) }}
+                        @endif
+                    </p>
+                    @if ($showsEarlier)
+                        <x-ui.button variant="ghost" size="sm" icon="eye"
+                            :href="route('trainer.submissions', request()->except([$versionsParam, 'page']))">{{ __('trainer.submissions.versions_hide') }}</x-ui.button>
+                    @else
+                        <x-ui.button variant="ghost" size="sm" icon="eye"
+                            :href="route('trainer.submissions', array_merge(request()->except('page'), [$versionsParam => $versionsAll]))">{{ __('trainer.submissions.versions_show') }}</x-ui.button>
+                    @endif
+                </div>
+            @endif
+
             @if (is_null($rows))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 6; $i++)
                                 <tr>
@@ -92,27 +113,6 @@
                     :action-label="request()->hasAny(['q', 'assignment', 'status']) ? __('app.clear_filters') : null"
                     :action-href="request()->hasAny(['q', 'assignment', 'status']) ? route('trainer.submissions') : null" />
             @else
-                {{-- Which hand-ins are listed: the newest version of each unless the
-                     trainer asks for the earlier ones too (BR-19 keeps them all). --}}
-                @if ($showsEarlier || $hiddenVersions > 0)
-                    <div class="versionnote">
-                        <p>
-                            @if ($showsEarlier)
-                                {{ __('trainer.submissions.versions_all_shown') }}
-                            @else
-                                {{ trans_choice('trainer.submissions.versions_hidden', $hiddenVersions, ['count' => $hiddenVersions]) }}
-                            @endif
-                        </p>
-                        @if ($showsEarlier)
-                            <x-ui.button variant="ghost" size="sm" icon="eye"
-                                :href="route('trainer.submissions', request()->except([$versionsParam, 'page']))">{{ __('trainer.submissions.versions_hide') }}</x-ui.button>
-                        @else
-                            <x-ui.button variant="ghost" size="sm" icon="eye"
-                                :href="route('trainer.submissions', array_merge(request()->except('page'), [$versionsParam => $versionsAll]))">{{ __('trainer.submissions.versions_show') }}</x-ui.button>
-                        @endif
-                    </div>
-                @endif
-
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">
                         <caption class="sr">{{ __('trainer.submissions.title') }}</caption>
@@ -132,12 +132,12 @@
                                 <tr role="row" @class(['is-selected' => $row->id === $selected?->id])>
                                     <th scope="row" role="rowheader" class="atable__lead">
                                         <span class="cellpair cellpair--inline">
-                                            <x-ui.avatar size="sm" :name="$row->participantName" />
+                                            <x-ui.avatar size="sm" :name="$row->participantName" decorative />
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
                                     <td role="cell" data-label="{{ __('trainer.submissions.col_assignment') }}">{{ $row->assignmentTitle }}</td>
-                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when">
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when u-nowrap">
                                         @if ($row->submittedAt)
                                             <span class="cellpair">
                                                 {{ \App\Support\Dates::shortDate($row->submittedAt) }}
@@ -166,8 +166,14 @@
                                     </td>
                                     <td role="cell" data-label="{{ __('trainer.submissions.col_state') }}">
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
-                                        @if ($row->version > 1)
+                                        {{-- Listing earlier versions: every row says which version it is,
+                                             and the copy that was handed in again says it is not the one
+                                             to mark. Otherwise only a second or later version is marked. --}}
+                                        @if ($row->version > 1 || $showsEarlier)
                                             <x-ui.pill variant="neutral">{{ __('trainer.submissions.version_n', ['n' => $row->version]) }}</x-ui.pill>
+                                        @endif
+                                        @if ($row->isSuperseded)
+                                            <x-ui.pill variant="neutral" icon="clock">{{ __('trainer.submissions.superseded') }}</x-ui.pill>
                                         @endif
                                     </td>
                                     <td role="cell" data-label="{{ __('grades.score') }}">
@@ -178,8 +184,8 @@
                                         @endif
                                     </td>
                                     <td role="cell" class="u-nowrap">
-                                        <x-ui.button size="sm"
-                                            :variant="$row->isGraded ? 'secondary' : 'primary'"
+                                        <x-ui.button size="sm" :context="$row->participantName"
+                                            :variant="$row->isGraded || $row->isSuperseded ? 'secondary' : 'primary'"
                                             :href="route('trainer.submissions', array_merge(request()->query(), [$selectedParam => $row->id]))">
                                             {{ $row->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}
                                         </x-ui.button>
@@ -196,7 +202,7 @@
 
         {{-- Quick grading form -------------------------------------------------- --}}
         @if ($selected)
-            <x-ui.card class="dc--span u-mt-4" icon="submissions"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="submissions"
                 :title="__('trainer.grading.title', ['name' => $selected->participantName])">
 
                 @if ($selected->isGraded)
@@ -238,7 +244,7 @@
                             </div>
                         @endif
                         <p class="footnote">
-                            {{ __('assignments.current_submission', ['version' => $selected->version]) }} ·
+                            {{ __('trainer.grading.version_line', ['version' => $selected->version]) }} ·
                             <span class="u-when">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
                         </p>
                     </div>

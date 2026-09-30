@@ -70,6 +70,7 @@ it('شاشة حضور الدفعة للمدرب: الحالة العادية ب�
     sessionAttendedBy($this->cohort, $this->participant, 'training', 'present');
 
     $body = $this->actingAs($this->trainer)
+        ->followingRedirects()
         ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
         ->assertOk()
         ->getContent();

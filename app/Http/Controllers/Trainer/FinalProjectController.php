@@ -82,7 +82,7 @@ final class FinalProjectController extends Controller
             'project' => FinalProjectBrief::from($project),
             'submissions' => $submissions,
             'showsEarlier' => $showsEarlier,
-            'hiddenVersions' => $showsEarlier ? 0 : $this->hiddenVersions($project),
+            'hiddenVersions' => $showsEarlier ? 0 : $this->hiddenVersions($project, $submissions),
             'versionsParam' => self::VERSIONS_PARAM,
             'versionsAll' => self::VERSIONS_ALL,
             'selected' => $selectedId === null ? null : $submissions->first(
@@ -127,25 +127,40 @@ final class FinalProjectController extends Controller
             });
         }
 
-        return $query
+        $rows = $query
             ->orderBy('evaluations_exists')
             ->orderBy('submitted_at')
             ->orderBy('id')
-            ->get()
+            ->get();
+
+        // A row that has a NEWER version is the copy not to mark; only asked when the
+        // board lists earlier versions, and only of the rows listed.
+        $newest = $showsEarlier
+            ? ProjectSubmission::query()->whereIn('id', $rows->modelKeys())->newestVersionOnly()->pluck('id')->flip()
+            : null;
+
+        return $rows
             ->map(static fn (ProjectSubmission $row): ProjectSubmissionRow => ProjectSubmissionRow::from(
                 $row,
                 $maxScore,
                 withAnswers: (string) $row->getKey() === $selectedId,
+                isSuperseded: $newest !== null && ! $newest->has((string) $row->getKey()),
             ))
             ->values();
     }
 
-    /** How many earlier versions the default listing tucks away. */
-    private function hiddenVersions(FinalProject $project): int
+    /**
+     * How many earlier versions the default listing tucks away: every version
+     * there is, minus the rows actually listed (which include an older one whose
+     * panel is open, so it is not "hidden").
+     *
+     * @param  Collection<int, ProjectSubmissionRow>  $listed
+     */
+    private function hiddenVersions(FinalProject $project, Collection $listed): int
     {
-        $all = ProjectSubmission::query()->where('final_project_id', $project->getKey());
+        $all = ProjectSubmission::query()->where('final_project_id', $project->getKey())->count();
 
-        return (clone $all)->count() - (clone $all)->newestVersionOnly()->count();
+        return max(0, $all - $listed->count());
     }
 
     /**
@@ -179,7 +194,7 @@ final class FinalProjectController extends Controller
         // «Save and go to the next» (FR-ASGN-29, D-136): the flag only chooses
         // where the trainer lands; the mark above is already recorded.
         return $request->wantsNext()
-            ? $this->projectAfter($submission, (string) __('grades.recorded'))
+            ? $this->projectAfter($request, $submission, (string) __('grades.recorded'))
             : back()->with('status', __('grades.recorded'));
     }
 }

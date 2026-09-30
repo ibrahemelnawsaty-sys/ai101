@@ -144,7 +144,9 @@ final class SubmissionController extends Controller
         $hiddenVersions = $showsEarlier ? 0 : (clone $filtered)->count() - (clone $visible)->count();
 
         // Waiting for a mark first, oldest first — the order «save and go to the
-        // next» walks (GradingQueue, D-136), so the top row is the next one.
+        // next» walks (GradingQueue, D-136). On the default board, filtered to one
+        // assignment, the top row is therefore the one it opens; with earlier versions
+        // listed, a superseded copy waiting for no mark can sort above it.
         $page = $visible
             ->with(['assignment', 'user.profile', 'latestEvaluation'])
             ->withExists('evaluations')
@@ -154,8 +156,17 @@ final class SubmissionController extends Controller
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
+        // Listing earlier versions, each row says whether a NEWER one exists — asked of
+        // the same scope the board and the queue use, and only for the rows on this page.
+        $newest = $showsEarlier
+            ? Submission::query()->whereIn('id', $page->pluck('id'))->newestVersionOnly()->pluck('id')->flip()
+            : null;
+
         $rows = $page->through(
-            static fn (Submission $row): SubmissionRow => SubmissionRow::from($row),
+            static fn (Submission $row): SubmissionRow => SubmissionRow::from(
+                $row,
+                isSuperseded: $newest !== null && ! $newest->has((string) $row->getKey()),
+            ),
         );
 
         return view('trainer.submissions', [

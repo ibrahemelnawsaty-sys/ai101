@@ -26,6 +26,7 @@ use App\Presenters\Trainer\AttendanceEditForm;
 use App\Presenters\Trainer\AttendanceMatrix;
 use App\Presenters\Trainer\AttendanceRoster;
 use App\Presenters\Trainer\CheckinCode;
+use App\Presenters\Trainer\MatrixCell;
 use App\Presenters\Trainer\MatrixRow;
 use App\Presenters\Trainer\PendingExceptionRow;
 use App\Presenters\Trainer\RecordingRow;
@@ -84,7 +85,7 @@ final class AttendanceController extends Controller
         private readonly RosterSession $defaultSession,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $cohort = $this->scopedCohort($request);
 
@@ -93,6 +94,7 @@ final class AttendanceController extends Controller
                 'contextLabel' => null,
                 'roster' => AttendanceRoster::none(),
                 'matrix' => AttendanceMatrix::of(collect(), $this->emptyPage($request)),
+                'matrixLegend' => MatrixCell::legend(),
                 'sessionOptions' => [],
                 'statusOptions' => Options::fromEnum(AttendanceStatus::class),
                 'atRisk' => collect(),
@@ -113,9 +115,23 @@ final class AttendanceController extends Controller
             ->where('cohort_id', $cohort->getKey())
             ->orderBy('date')
             ->orderBy('start_time')
+            ->orderBy('id')
             ->get();
 
         $session = $this->selectedSession($request, $sessions);
+
+        // The address must NAME the roster that is shown. The default depends on
+        // the clock, so an address without a session is not stable: a form posted
+        // from it and refused, or saved, would be sent back to "the default" of that
+        // later moment — a different session, with the ticked people still ticked
+        // (D-142, independent review). The rest of the query is kept as it came.
+        if ($session !== null && $request->query('session') !== (string) $session->getKey()) {
+            return redirect()->route('trainer.attendance', array_merge(
+                $request->query(),
+                ['session' => (string) $session->getKey()],
+            ));
+        }
+
         $participants = $this->participants($cohort);
 
         // One rate query for the whole cohort, from the service that owns the
@@ -134,6 +150,7 @@ final class AttendanceController extends Controller
                 ? AttendanceRoster::none()
                 : AttendanceRoster::of($session, $participants, $records, $this->window),
             'matrix' => $this->matrix($request, $cohort, $sessions, $participants, $rates),
+            'matrixLegend' => MatrixCell::legend(),
             // The picker shows the session the roster is OF, not "choose from the
             // list" above a roster of one (D-142).
             'selectedSessionId' => $session?->getKey(),

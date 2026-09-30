@@ -69,7 +69,7 @@
 
             @if (is_null($rows))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 8; $i++)
                                 <tr>
@@ -99,7 +99,7 @@
                             <tr role="row">
                                 <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.participants.col_contact') }}</th>
-                                <th scope="col" role="columnheader">{{ __('attendance.rate.label') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.rate.title') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.participants.col_submissions') }}</th>
                                 <th scope="col" role="columnheader">{{ __('grades.total.title') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.participants.col_state') }}</th>
@@ -110,17 +110,16 @@
                             @foreach ($rows as $row)
                                 <tr role="row" @class(['is-selected' => $row->id === ($selected->id ?? null)])>
                                     <th scope="row" role="rowheader" class="atable__lead">
-                                        <span class="cellpair">
-                                            <x-ui.avatar size="sm" :name="$row->name" />
+                                        <span class="cellpair cellpair--inline">
+                                            <x-ui.avatar size="sm" :name="$row->name" decorative />
                                             {{ $row->name }}
                                         </span>
                                     </th>
                                     <td role="cell" data-label="{{ __('trainer.participants.col_contact') }}" dir="ltr" class="u-ltr">{{ $row->email }}</td>
-                                    <td role="cell" data-label="{{ __('attendance.rate.label') }}">
+                                    <td role="cell" data-label="{{ __('attendance.rate.title') }}">
                                         <x-ui.progress-bar :value="$row->attendancePercent" size="sm"
                                             :variant="$row->attendanceVariant"
-                                            :label="__('attendance.rate.label')" />
-                                        <span class="u-num">{{ $row->attendancePercent }}%</span>
+                                            :label="__('attendance.rate.title')" />
                                     </td>
                                     <td role="cell" data-label="{{ __('trainer.participants.col_submissions') }}" class="u-nowrap"><span class="u-num">{{ $row->submittedCount }} / {{ $row->assignmentsCount }}</span></td>
                                     <td role="cell" data-label="{{ __('grades.total.title') }}">
@@ -149,7 +148,7 @@
 
         {{-- Full profile of one participant ---------------------------------------- --}}
         @if ($selected)
-            <x-ui.card class="dc--span u-mt-4" icon="user"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="user"
                 :title="__('trainer.participants.profile_title', ['name' => $selected->name])">
 
                 <div class="f2">
@@ -169,7 +168,7 @@
 
                         <x-ui.progress-bar :value="$selected->attendancePercent"
                             :variant="$selected->attendanceVariant"
-                            :label="__('attendance.rate.label')" />
+                            :label="__('attendance.rate.title')" />
                         <div class="pmeta">
                             <span>{{ trans_choice('attendance.rate.of_total', $selected->attendedSessions, ['attended' => $selected->attendedSessions, 'total' => $selected->totalSessions]) }}</span>
                             <span class="u-num">{{ $selected->attendancePercent }}%</span>

@@ -34,7 +34,7 @@ final class ProjectSubmissionRow extends ViewModel
     use PresentsPeople;
     use PresentsVariants;
 
-    public static function from(ProjectSubmission $submission, float $maxScore, bool $withAnswers = false): self
+    public static function from(ProjectSubmission $submission, float $maxScore, bool $withAnswers = false, bool $isSuperseded = false): self
     {
         $user = self::related($submission, 'user');
         $evaluation = self::related($submission, 'latestEvaluation');
@@ -54,6 +54,7 @@ final class ProjectSubmissionRow extends ViewModel
             'hasSubmission' => true,
             'answers' => $withAnswers ? HandInAnswer::collection($submission) : [],
             'version' => (int) $submission->getAttribute('version'),
+            'isSuperseded' => $isSuperseded,
             'submittedAt' => $submission->getAttribute('submitted_at'),
             'isLate' => (bool) $submission->getAttribute('is_late'),
 

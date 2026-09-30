@@ -170,7 +170,7 @@ it('D-107: جلسة غير منتهية لا تُعرض ضمن قائمة الت
         ['status' => 'scheduled'],
     );
 
-    $response = $this->actingAs($this->coordinator)->get(route('trainer.attendance'));
+    $response = $this->actingAs($this->coordinator)->followingRedirects()->get(route('trainer.attendance'));
 
     $response->assertOk();
     $response->assertViewHas('recordingSessions', function ($rows) use ($upcoming) {

@@ -362,9 +362,23 @@ function uiSelect(options = {}) {
             // the same problem it was flipped out of.
             this.dropUp = height > 0 && room < height && box.top > height;
 
+            // The list is as wide as its button — unless the button is narrow. A filter
+            // whose button says «الكل» is 73px, and an option like «تلخيص مفاهيم الأسبوع
+            // الأول» wrapped to one word a line (90–160px tall). So the panel keeps a
+            // floor of 14rem, opens from the button's own start edge (the right one in
+            // RTL) and is kept inside the screen.
+            const em = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const edge = em * 0.5;
+            const rtl = window.getComputedStyle(button).direction === 'rtl';
+            const width = Math.min(Math.max(box.width, em * 14), window.innerWidth - edge * 2);
+            const left = Math.min(
+                Math.max(rtl ? box.right - width : box.left, edge),
+                window.innerWidth - width - edge,
+            );
+
             panel.style.setProperty('top', (this.dropUp ? box.top - height : box.bottom) + 'px');
-            panel.style.setProperty('left', box.left + 'px');
-            panel.style.setProperty('width', box.width + 'px');
+            panel.style.setProperty('left', left + 'px');
+            panel.style.setProperty('width', width + 'px');
         },
 
         show() {

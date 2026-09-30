@@ -156,24 +156,21 @@ class Submission extends Model
     {
         $table = $query->getModel()->getTable();
 
-        return $query->whereNotExists(static function (QueryBuilder $newer) use ($table): void {
+        // The OUTER row is named as the query names it: `submissions`, or `s` in
+        // `from('submissions as s')` — correlating on the bare table name there
+        // would compare against a table that is not in the query.
+        $from = $query->getQuery()->from;
+        $outer = is_string($from) && str_contains($from, ' as ')
+            ? trim(explode(' as ', $from, 2)[1])
+            : $table;
+
+        return $query->whereNotExists(static function (QueryBuilder $newer) use ($table, $outer): void {
             $newer->select('newer.id')
                 ->from($table.' as newer')
-                ->whereColumn('newer.user_id', $table.'.user_id')
-                ->whereColumn('newer.assignment_id', $table.'.assignment_id')
-                ->whereColumn('newer.version', '>', $table.'.version');
+                ->whereColumn('newer.user_id', $outer.'.user_id')
+                ->whereColumn('newer.assignment_id', $outer.'.assignment_id')
+                ->whereColumn('newer.version', '>', $outer.'.version');
         });
-    }
-
-    /**
-     * The newest version delivered by each participant for one assignment.
-     *
-     * @param  Builder<self>  $query
-     * @return Builder<self>
-     */
-    public function scopeLatestVersions(Builder $query): Builder
-    {
-        return $query->orderByDesc('version');
     }
 
     /**

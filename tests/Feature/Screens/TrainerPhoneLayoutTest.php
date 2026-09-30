@@ -83,6 +83,45 @@ it('D-143: كل خلية بطاقة تحمل اسم عمودها، ما عدا �
     expect(true)->toBeTrue();
 });
 
+it('D-143: تسمية كل خلية بطاقة هي نفسها ترويسة عمودها — لا عمود آخر ولا تسمية منقولة من جدول آخر', function (): void {
+    foreach (TRAINER_STACKED_VIEWS as $view) {
+        foreach (stackedTablesOf($view) as $table) {
+            preg_match('/<thead[^>]*>(.*?)<\/thead>/s', $table, $head);
+            preg_match_all('/<th\b[^>]*scope="col"[^>]*>(.*?)<\/th>/s', $head[1] ?? '', $headers);
+            $columns = array_map(static fn (string $h): string => trim((string) preg_replace('/\s+/', ' ', $h)), $headers[1]);
+
+            expect($columns)->not->toBeEmpty($view);
+
+            preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/s', preg_replace('/<thead.*?<\/thead>/s', '', $table) ?? '', $rows);
+
+            foreach ($rows[1] as $row) {
+                if (str_contains($row, 'colspan=')) {
+                    continue; // a note row spans the table: it has no column
+                }
+
+                preg_match_all('/<(td|th)\b([^>]*)>/', $row, $cells, PREG_SET_ORDER);
+
+                // Every row template lays out one cell per header — the index IS the column.
+                expect(count($cells))->toBe(count($columns), "{$view}: a row has ".count($cells).' cells for '.count($columns).' headers');
+
+                foreach ($cells as $i => $cell) {
+                    if (preg_match('/data-label="([^"]*)"/', $cell[2], $label) !== 1) {
+                        continue;
+                    }
+
+                    // The roster's tick box has a header only a screen reader gets (the
+                    // `sr` span); its card row says what the tick is FOR instead.
+                    if (str_contains($columns[$i], 'class="sr"')) {
+                        continue;
+                    }
+
+                    expect(trim((string) preg_replace('/\s+/', ' ', $label[1])))->toBe($columns[$i], "{$view}: cell {$i} is labelled with another column");
+                }
+            }
+        }
+    }
+});
+
 it('D-143: الرقم اللاتيني داخل خلية بطاقة في عنصر داخلي لا على الخلية — `.u-num` على الخلية يقلب موضع الاسم والقيمة', function (): void {
     foreach (TRAINER_STACKED_VIEWS as $view) {
         foreach (stackedTablesOf($view) as $table) {
@@ -94,7 +133,10 @@ it('D-143: الرقم اللاتيني داخل خلية بطاقة في عنص�
 it('D-143: ترويسة الصف كلمات لا رمز — تلتفّ، ولا تحدّد عرض الجدول كله', function (): void {
     $css = (string) file_get_contents(resource_path('css/screens.css'));
 
-    expect($css)->toMatch('/\.atable tbody th\[scope="row"\]\s*\{\s*white-space:\s*normal;/');
+    expect($css)->toMatch('/\.atable--stack tbody th\[scope="row"\]\s*\{\s*white-space:\s*normal;/')
+        // …and ONLY there: the admin tables still scroll sideways, and a wrapped heading
+        // there only made their rows taller.
+        ->and($css)->not->toMatch('/(?<!-)\.atable tbody th\[scope="row"\]\s*\{[^}]*white-space:\s*normal/');
 });
 
 it('D-143: رابط الملف في الجدول هدف لمس حقيقي لا سطر 21px', function (): void {
@@ -127,7 +169,10 @@ it('D-143: عنوان الصف في القوائم يأخذ سطرين قبل أ
     // «عرض المشاريع النهائية وتكريم المتدربين وت…» hid which session it was.
     expect($css)->toMatch('/\.row__m b\s*\{[^}]*-webkit-line-clamp:\s*2;/s')
         ->and($css)->not->toMatch('/\.row__m b\s*\{[^}]*white-space:\s*nowrap/s')
-        ->and($css)->toMatch('/\.row__m > span\s*\{\s*display:\s*block;/');
+        // Only a BARE span: a pill, a badge or a flex pair placed there keeps its own display
+        // (the unscoped rule turned two pills into one 400px block on the admin screens).
+        ->and($css)->toMatch('/\.row__m > span:not\(\[class\]\)\s*\{\s*display:\s*block;/')
+        ->and($css)->not->toMatch('/\.row__m > span\s*\{\s*display:\s*block/');
 });
 
 it('D-143: رابط ملف التسليم في لوحة التقييم هدف لمس 44px لا سطر 28px', function (): void {
@@ -143,4 +188,51 @@ it('D-143: أزرار إجراءات الصف تلتفّ داخل خلية ال�
     expect($css)->toMatch('/\.row__acts--wrap\s*\{[^}]*flex-wrap:\s*wrap/s')
         ->and($css)->toMatch('/\.atable--stack td > \.row__acts\s*\{\s*margin-inline-start:\s*auto;/')
         ->and($view)->toContain('row__acts row__acts--wrap');
+});
+
+it('D-146: `:indeterminate` لا يطال الأزرار الدائرية — مجموعة بلا اختيار لا تُرسم كأنها مُجابة، والمربّع المعطّل الحدّ ≥ 3:1', function (): void {
+    $css = (string) file_get_contents(resource_path('css/components.css'));
+
+    // Every rule that reads `:indeterminate` on the control names a checkbox.
+    preg_match_all('/([^{}]*):indeterminate[^{}]*\{/', $css, $selectors);
+
+    foreach ($selectors[1] as $before) {
+        expect($before)->toContain('[type="checkbox"]');
+    }
+
+    // The unticked box's boundary is the field border (3.49:1), not the hairline (1.27:1).
+    expect($css)->toMatch('/border:\s*var\(--bw-icon\) solid var\(--border-2\);\s*border-radius:\s*var\(--r-sm\)/');
+});
+
+it('D-143: هيكل التحميل بشكل بطاقات تحت 1200px، وكل جدول مدرّب إما بطاقات أو هيكل أو المصفوفة', function (): void {
+    $css = (string) file_get_contents(resource_path('css/screens.css'));
+
+    expect($css)->toMatch('/@media \(max-width: 1199px\) \{\s*\/\*[^*]*skeleton[^*]*\*\/\s*\.tscroll:has\(> \.atable--skel\)/s');
+
+    foreach (TRAINER_STACKED_VIEWS as $view) {
+        $html = (string) file_get_contents(resource_path("views/{$view}.blade.php"));
+
+        // No bare `class="atable"` is left: it is a stack, a skeleton, or the matrix.
+        expect(preg_match('/<table class="atable"[ >]/', $html))->toBe(0, "{$view}: a bare table");
+    }
+});
+
+it('D-143: قائمة الموارد تقول «لا موارد تطابق بحثك» مع زرّ إزالة التصفية — لا «لم تُضف موارد بعد» فوق خمسة موارد', function (): void {
+    $cohort = makeCohort(['status' => 'running']);
+    $trainer = makeTrainer($cohort);
+
+    $filtered = $this->actingAs($trainer)
+        ->get(route('trainer.resources', ['cohort' => $cohort->id, 'q' => 'zzzz-no-such-resource']))
+        ->assertOk()
+        ->assertSee(e((string) __('trainer.resources.no_match_title')), false)
+        ->assertSee(e((string) __('app.clear_filters')), false);
+
+    expect($filtered->getContent())->not->toContain(e((string) __('trainer.resources.empty_title')));
+
+    Illuminate\Support\Facades\Auth::forgetGuards();
+
+    $this->actingAs($trainer)
+        ->get(route('trainer.resources', ['cohort' => $cohort->id]))
+        ->assertOk()
+        ->assertSee(e((string) __('trainer.resources.empty_title')), false);
 });

@@ -49,7 +49,7 @@ it('D-143: an input without label-hidden still draws its label', function (): vo
         ->and($html)->not->toContain('ui-sr');
 });
 
-it('D-143: the hidden label is a component prop, not a leaked attribute, everywhere it is used', function (): void {
+it('D-143: the three screens that hand `label-hidden` over still do, and both components declare it', function (): void {
     foreach (['admin/certificates', 'trainer/attendance', 'participant/messages'] as $view) {
         $source = (string) file_get_contents(resource_path('views/'.$view.'.blade.php'));
 
@@ -79,4 +79,33 @@ it('D-143: a list of boxes with one name gives each its own id, so each label po
 it('D-143: an explicit id and a plain single box keep the id they always had', function (): void {
     expect(Blade::render('<x-ui.checkbox name="agree" label="I agree" />'))->toContain('id="c-agree"')
         ->and(Blade::render('<x-ui.checkbox name="rows[]" id="mine" value="1" label="One" />'))->toContain('id="mine"');
+});
+
+it('D-143: قيمتان تختلفان بحالة الأحرف أو علامة الترقيم أو بلا نص لا تشتركان في معرّف', function (): void {
+    $values = ['AB', 'ab', 'a.b', '', '!!', '😀', 'سارة', str_repeat('x', 300), 'aaa-111'];
+
+    $ids = array_map(function (string $value): string {
+        $html = Blade::render('<x-ui.checkbox name="user_id[]" :value="$v" label="L" label-hidden />', ['v' => $value]);
+        preg_match('/<input[^>]*type="checkbox"[^>]*id="([^"]*)"/', $html, $m);
+
+        return $m[1] ?? '';
+    }, $values);
+
+    expect(array_unique($ids))->toHaveCount(count($values))
+        ->and($ids)->each->toMatch('/^[A-Za-z0-9_-]+$/')
+        ->and(max(array_map('strlen', $ids)))->toBeLessThan(90)
+        // A UUID-shaped value keeps the readable id the roster's tests rely on.
+        ->and($ids[8])->toBe('c-user-id-aaa-111');
+});
+
+it('D-143: قائمة مربّعات: المعطَّل المحدَّد يحمل قيمته الحقيقية في مرافق، والباقي بلا مرافق', function (): void {
+    $locked = Blade::render('<x-ui.checkbox name="user_id[]" value="u-7" label="L" :checked="true" :disabled="true" />');
+    $free = Blade::render('<x-ui.checkbox name="user_id[]" value="u-7" label="L" />');
+    $single = Blade::render('<x-ui.checkbox name="agree" label="L" :checked="true" :disabled="true" />');
+
+    expect($locked)->toContain('<input type="hidden" name="user_id[]" value="u-7">')
+        ->and($locked)->not->toContain('value="0"')
+        ->and($free)->not->toContain('type="hidden"')
+        // A plain single box is untouched: still the companion it always had.
+        ->and($single)->toContain('<input type="hidden" name="agree" value="1">');
 });

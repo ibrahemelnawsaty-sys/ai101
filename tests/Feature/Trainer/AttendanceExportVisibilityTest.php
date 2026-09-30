@@ -30,6 +30,7 @@ beforeEach(function (): void {
 it('D-131: المدرّب والمشرف العام يرون زر تصدير الحضور', function (): void {
     foreach ([makeTrainer($this->cohort), makeAdmin()] as $actor) {
         $this->actingAs($actor)
+            ->followingRedirects()
             ->get(route('trainer.attendance', $this->query))
             ->assertOk()
             ->assertSee(route('trainer.attendance.export'), false);
@@ -42,6 +43,7 @@ it('D-131: المنسّق لا يرى زر تصدير الحضور ويرفضه 
     $coordinator = makeCoordinator($this->cohort);
 
     $this->actingAs($coordinator)
+        ->followingRedirects()
         ->get(route('trainer.attendance', $this->query))
         ->assertOk()
         ->assertDontSee(route('trainer.attendance.export'), false);

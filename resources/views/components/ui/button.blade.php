@@ -71,7 +71,11 @@
     // The slot arrives already escaped; decode before {{ }} escapes it once more.
     $name = trim(html_entity_decode(strip_tags((string) ($label ?? $slot)), ENT_QUOTES));
     $glyphOnly = (bool) $iconOnly && $icon && $name !== '';
-    $spoken = $glyphOnly && filled($context) ? $name.' — '.trim(strip_tags((string) $context)) : $name;
+    // A button with words ("Grade") on a row of a table is one of fifty: with a context
+    // its accessible name is "the words — the context", which still CONTAINS the visible
+    // words (WCAG 2.5.3), so voice control and a screen reader's link list both work.
+    $hasContext = filled($context);
+    $spoken = $hasContext ? $name.' — '.trim(strip_tags((string) $context)) : $name;
 
     $iconClass = 'ui-icon'
         . ($size === 'sm' ? ' ui-icon--sm' : '')
@@ -101,6 +105,8 @@
     @if ($glyphOnly)
         aria-label="{{ $spoken }}"
         data-tip="{{ $name }}"
+    @elseif ($hasContext && $name !== '')
+        aria-label="{{ $spoken }}"
     @endif
 >
     @if ($isLoading)

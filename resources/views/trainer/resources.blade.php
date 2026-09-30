@@ -70,7 +70,7 @@
         <x-ui.card class="dc--span" flush>
             @if (is_null($resources))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -85,9 +85,13 @@
                     </table>
                 </div>
             @elseif ($resources->isEmpty())
+                {{-- A search or filter that finds nothing is NOT "no resources yet": the
+                     list was saying the second, with no way forward, above five resources. --}}
                 <x-ui.empty-state icon="folder"
-                    :title="__('trainer.resources.empty_title')"
-                    :description="__('trainer.resources.empty_body')" />
+                    :title="request()->hasAny(['q', 'week', 'state']) ? __('trainer.resources.no_match_title') : __('trainer.resources.empty_title')"
+                    :description="request()->hasAny(['q', 'week', 'state']) ? __('trainer.resources.no_match_body') : __('trainer.resources.empty_body')"
+                    :action-label="request()->hasAny(['q', 'week', 'state']) ? __('app.clear_filters') : null"
+                    :action-href="request()->hasAny(['q', 'week', 'state']) ? route('trainer.resources') : null" />
             @else
                 <div class="tscroll">
                     <table class="atable atable--stack" role="table">

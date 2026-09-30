@@ -30,6 +30,7 @@ beforeEach(function (): void {
 
 it('D-105: المنسّق يصل تحضير دفعته المسندة إليه', function (): void {
     $this->actingAs($this->coordinator)
+        ->followingRedirects()
         ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
         ->assertOk();
 });
@@ -115,6 +116,7 @@ it('D-105: المشرف يسند منسّقًا للدفعة عبر بريده،
     )->toBeTrue();
 
     $this->actingAs($newCoordinator)
+        ->followingRedirects()
         ->get(route('trainer.attendance', ['cohort' => $this->cohort->id]))
         ->assertOk();
 });

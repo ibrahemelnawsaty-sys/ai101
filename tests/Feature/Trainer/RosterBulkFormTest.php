@@ -117,7 +117,7 @@ it('BR-10: نموذج التحضير الجماعي كما يرسله المتص
         ->and(AuditLog::query()->whereIn('entity_id', Attendance::query()->pluck('id'))->count())->toBe(2);
 });
 
-it('BR-27: بلا سبب كافٍ يبقى الرفض قائمًا ويُعرض ولا يُكتب شيء', function (): void {
+it('BR-27: بلا سبب كافٍ يبقى الرفض قائمًا ولا يُكتب شيء', function (): void {
     freezeAt(riyadhAt('2026-10-05 21:30:00'));
 
     $html = $this->actingAs($this->trainer)
@@ -189,4 +189,42 @@ it('BR-27: بعد الرفض تعود الصفوف المحدَّدة محدَّ
 
     expect($box[0] ?? '')->toContain('checked')
         ->and($other[0] ?? '')->not->toContain('checked');
+});
+
+it('BR-22: كل رسالة رفض للتسجيل الجماعي لها نص في اللغتين، ولا يظهر مفتاحها بدل نصها', function (): void {
+    $request = new App\Http\Requests\Trainer\BulkAttendanceRequest;
+
+    foreach (['ar', 'en'] as $locale) {
+        app()->setLocale($locale);
+
+        foreach ($request->messages() as $rule => $message) {
+            expect($message)->not->toBe('')
+                ->and($message)->not->toStartWith('trainer.attendance.', "{$locale}: {$rule} shows its key");
+        }
+    }
+
+    app()->setLocale('ar');
+});
+
+it('BR-22: لا معرّفات، أو أكثر من الحدّ، أو معرّف بشكل خاطئ — كلٌّ برسالته التي تشرح الحل', function (): void {
+    freezeAt(riyadhAt('2026-10-05 21:30:00'));
+    $roster = route('trainer.attendance', ['session' => $this->session->id]);
+    $base = ['attendance_status' => 'absent', 'edit_reason' => 'Did not attend and sent no notice beforehand.'];
+
+    $cases = [
+        'no ids at all' => [$base + ['user_id' => []], 'user_id', 'bulk_pick_required', []],
+        'too many ids' => [$base + ['user_id' => array_map(fn (int $n): string => sprintf('00000000-0000-7000-8000-%012d', $n), range(1, 201))], 'user_id', 'bulk_pick_too_many', ['max' => 200]],
+        'not an id' => [$base + ['user_id' => ['not-a-uuid']], 'user_id.0', 'bulk_pick_invalid', []],
+    ];
+
+    foreach ($cases as $label => [$payload, $key, $lang, $replace]) {
+        Auth::forgetGuards();
+
+        $this->actingAs($this->trainer)
+            ->from($roster)
+            ->post(route('trainer.attendance.bulk', $this->session), $payload)
+            ->assertSessionHasErrors([$key => (string) __('trainer.attendance.'.$lang, $replace)]);
+    }
+
+    expect(Attendance::query()->count())->toBe(0);
 });

@@ -132,7 +132,7 @@
         <x-ui.card class="dc--span u-mt-4" icon="warn" :title="__('trainer.attendance.at_risk_title')">
             @if (is_null($atRisk))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 4; $i++)
                                 <tr>
@@ -156,7 +156,7 @@
                         <thead role="rowgroup">
                             <tr role="row">
                                 <th scope="col" role="columnheader">{{ __('trainer.col_participant') }}</th>
-                                <th scope="col" role="columnheader">{{ __('attendance.rate.label') }}</th>
+                                <th scope="col" role="columnheader">{{ __('attendance.rate.title') }}</th>
                                 <th scope="col" role="columnheader">{{ __('grades.total.title') }}</th>
                                 <th scope="col" role="columnheader">{{ __('trainer.reports.col_reason') }}</th>
                                 <th scope="col" role="columnheader"><span class="sr">{{ __('app.actions.label') }}</span></th>
@@ -166,12 +166,12 @@
                             @foreach ($atRisk as $person)
                                 <tr role="row">
                                     <th scope="row" role="rowheader" class="atable__lead">
-                                        <span class="cellpair">
-                                            <x-ui.avatar size="sm" :name="$person->name" />
+                                        <span class="cellpair cellpair--inline">
+                                            <x-ui.avatar size="sm" :name="$person->name" decorative />
                                             {{ $person->name }}
                                         </span>
                                     </th>
-                                    <td role="cell" data-label="{{ __('attendance.rate.label') }}">
+                                    <td role="cell" data-label="{{ __('attendance.rate.title') }}">
                                         <x-ui.pill :variant="$person->attendanceVariant" icon="warn">
                                             <span class="u-num">{{ $person->attendancePercent }}%</span>
                                         </x-ui.pill>

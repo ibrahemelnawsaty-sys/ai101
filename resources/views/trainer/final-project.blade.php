@@ -107,7 +107,7 @@
 
             @if (is_null($submissions))
                 <div class="tscroll">
-                    <table class="atable">
+                    <table class="atable atable--skel">
                         <tbody>
                             @for ($i = 0; $i < 5; $i++)
                                 <tr>
@@ -164,11 +164,11 @@
                                 <tr role="row" @class(['is-selected' => $row->id === ($selected->id ?? null)])>
                                     <th scope="row" role="rowheader" class="atable__lead">
                                         <span class="cellpair cellpair--inline">
-                                            <x-ui.avatar size="sm" :name="$row->participantName" />
+                                            <x-ui.avatar size="sm" :name="$row->participantName" decorative />
                                             {{ $row->participantName }}
                                         </span>
                                     </th>
-                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when">
+                                    <td role="cell" data-label="{{ __('trainer.submissions.col_submitted_at') }}" class="u-when u-nowrap">
                                         <span class="cellpair">
                                             {{ \App\Support\Dates::shortDate($row->submittedAt) }}
                                             <span>{{ \App\Support\Dates::time12($row->submittedAt) }}</span>
@@ -176,8 +176,14 @@
                                     </td>
                                     <td role="cell" data-label="{{ __('trainer.final_project.col_state') }}">
                                         <x-ui.pill :variant="$row->stateVariant" :icon="$row->stateIcon">{{ $row->stateLabel }}</x-ui.pill>
-                                        @if ($row->version > 1)
+                                        {{-- Listing earlier versions: every row says which version it is,
+                                             and the copy that was handed in again says it is not the one
+                                             to mark. Otherwise only a second or later version is marked. --}}
+                                        @if ($row->version > 1 || $showsEarlier)
                                             <x-ui.pill variant="neutral">{{ __('trainer.submissions.version_n', ['n' => $row->version]) }}</x-ui.pill>
+                                        @endif
+                                        @if ($row->isSuperseded)
+                                            <x-ui.pill variant="neutral" icon="clock">{{ __('trainer.submissions.superseded') }}</x-ui.pill>
                                         @endif
                                     </td>
                                     <td role="cell" data-label="{{ __('grades.score') }}">
@@ -188,8 +194,8 @@
                                         @endif
                                     </td>
                                     <td role="cell" class="u-nowrap">
-                                        <x-ui.button size="sm"
-                                            :variant="$row->isGraded ? 'secondary' : 'primary'"
+                                        <x-ui.button size="sm" :context="$row->participantName"
+                                            :variant="$row->isGraded || $row->isSuperseded ? 'secondary' : 'primary'"
                                             :href="route('trainer.finalProject', array_merge(request()->query(), ['grade' => $row->id]))">
                                             {{ $row->isGraded ? __('trainer.submissions.revise') : __('trainer.submissions.grade') }}
                                         </x-ui.button>
@@ -204,7 +210,7 @@
 
         {{-- Grading panel (BR-12, BR-13) ---------------------------------------- --}}
         @if ($selected)
-            <x-ui.card class="dc--span u-mt-4" icon="submissions"
+            <x-ui.card data-open-panel tabindex="-1" class="dc--span u-mt-4" icon="submissions"
                 :title="__('trainer.grading.title', ['name' => $selected->participantName])">
 
                 <div class="f2">
@@ -216,7 +222,7 @@
                         @include('partials.hand-in-answers', ['answers' => $selected->answers])
 
                         <p class="footnote">
-                            {{ __('assignments.current_submission', ['version' => $selected->version]) }} ·
+                            {{ __('trainer.grading.version_line', ['version' => $selected->version]) }} ·
                             <span class="u-when">{{ \App\Support\Dates::dateTime($selected->submittedAt) }}</span>
                         </p>
                     </div>
@@ -228,8 +234,8 @@
                          so a wrong project mark could never be corrected here. --}}
                     <form method="POST"
                         action="{{ $selected->isRevision
-                            ? route('trainer.submissions.revise', $selected->evaluationId)
-                            : route('trainer.finalProject.grade', $selected->id) }}"
+                            ? route('trainer.submissions.revise', ['evaluation' => $selected->evaluationId] + ($showsEarlier ? [$versionsParam => $versionsAll] : []))
+                            : route('trainer.finalProject.grade', ['submission' => $selected->id] + ($showsEarlier ? [$versionsParam => $versionsAll] : [])) }}"
                         x-data="{ feedback: @js(old('feedback', $selected->feedback ?? '')) }">
                         @csrf
                         @if ($selected->isRevision)
