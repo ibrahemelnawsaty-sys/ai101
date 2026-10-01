@@ -229,7 +229,7 @@ return [
             'data_sheet' => 'Trainees',
             'help_sheet' => 'Instructions',
             'help_title' => 'How to fill this file in',
-            'help_rules' => 'One row per trainee on the Trainees sheet: the Arabic name, the e-mail address and the mobile number. Only the first name is required - leave the other name cells empty for a two- or three-part name. The mobile number starts with 05 or 9665. Do not write a password: the platform generates it and mails it, and the trainee completes the rest from their own profile.',
+            'help_rules' => 'One row per trainee on the Trainees sheet: the Arabic name, the e-mail address and the mobile number. Only the first name is required - leave the other name cells empty for a two- or three-part name. The mobile number starts with 05 or 9665. Do not write a password: each trainee gets a one-use invitation link, chooses their own password there and completes the rest of their details.',
             'help_example' => 'A filled example - do not copy it onto the Trainees sheet:',
             'example' => [
                 'first_name_ar' => 'محمد',
@@ -890,6 +890,10 @@ return [
         'upload_limits' => 'Upload limits',
         'default_notifications' => 'Default notification settings',
         'timezone_note' => 'Display is Riyadh time and storage is UTC — this setting does not change.',
+        'readonly_note' => 'These values are set in the platform configuration file on the server, so changing them happens at deployment, not from this screen. What is shown here is what is active now.',
+        'defaults_note' => 'Every notification type is on by default, in the platform and by e-mail, and each user changes their own preferences from their notification settings. Anything about an enrolment decision, a certificate or an attendance excuse always arrives and cannot be turned off.',
+        'default_on' => 'On by default',
+        'always_on' => 'Always sent',
         'saved' => 'The settings were saved.',
     ],
 

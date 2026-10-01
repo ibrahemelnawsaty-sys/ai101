@@ -210,8 +210,24 @@ it('FR-ADMIN-12: مرشّح الدفعة في التقارير يحصر الجد
     $admin = makeAdmin();
 
     // Both cohorts have a measured average, so both have a bar: an unmeasured cohort has none
-    // (D-147) and the chart's narrowing could not be seen in it.
-    Enrollment::query()->update(['attendance_rate' => 80]);
+    // (D-147) and the chart's narrowing could not be seen in it. A session has ended in each and
+    // everyone came (D-150: the average is worked out from sessions and attendance).
+    foreach ([$this->cohort, $other] as $cohort) {
+        // Straight from the factory: sessionInCohort() would also make a stray cohort, which
+        // this test's exact list of cohorts would then show.
+        $session = App\Models\Session::factory()->create([
+            'cohort_id' => $cohort->id,
+            'date' => '2026-09-20',
+            'start_time' => '18:00:00',
+            'end_time' => '21:00:00',
+            'type' => 'training',
+            'status' => 'scheduled',
+        ]);
+
+        foreach (Enrollment::query()->where('cohort_id', $cohort->id)->pluck('user_id') as $userId) {
+            makeAttendance($session, User::query()->findOrFail($userId), 'present');
+        }
+    }
 
     $all = $this->actingAs($admin)->get(route('admin.reports.index'))->assertOk();
     expect(collect($all->viewData('cohortRows')->items())->pluck('cohortName')->sort()->values()->all())

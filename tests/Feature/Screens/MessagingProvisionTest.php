@@ -42,7 +42,7 @@ function threadsOf(User $user): array
 }
 
 it('D-82: متدرّب مدعوّ يُمنح قناة الإعلانات ومجموعة الدفعة ومحادثة مع مدرّبه', function (): void {
-    $user = app(AccountInviter::class)->invite(
+    $user = app(AccountInviter::class)->inviteByLink(
         email: 'new@example.com',
         role: UserRole::Participant,
         profileColumns: [

@@ -63,30 +63,6 @@ return [
     */
 
     /*
-     * The invitation: an account created FOR someone, carrying the temporary
-     * password they sign in with once.
-     *
-     * Article 7 governs every line: say what happened AND what to do. A reader
-     * who did not expect this letter must be able to tell, from the letter
-     * itself, what it is and whom to tell.
-     */
-    'invitation' => [
-        // The subject names the programme and never the credential. A subject
-        // line is shown on a lock screen and kept in mail-server logs.
-        'subject' => 'حسابك في :program جاهز',
-        'preheader' => 'بيانات دخولك إلى :program وخطوة واحدة تفصلك عن البداية.',
-        'heading' => 'أهلًا بك في مركز أثر',
-        'body' => 'أُنشئ لك حساب في :program ضمن :cohort، وأصبحت منضمًّا إليها رسميًّا. ينتظرك في المنصة جدولك ومهامك ومواد البرنامج وبطاقتك الرقمية.',
-        'program_label' => 'البرنامج',
-        'credentials_title' => 'بيانات الدخول',
-        'email_label' => 'البريد الإلكتروني',
-        'password_label' => 'كلمة المرور المؤقتة',
-        'temporary_note' => 'هذه كلمة مرور مؤقتة لمرّة واحدة، وستُطلب منك إنشاء كلمة مرورك الخاصة فور دخولك الأول. وتنتهي صلاحيتها في :date.',
-        'cta' => 'الدخول إلى منصة أثر',
-        'next_steps' => 'إن انتهت صلاحية كلمة المرور قبل أن تستخدمها، اختر «نسيت كلمة المرور» في صفحة الدخول وسيصلك رابط جديد فورًا.',
-        'not_you' => 'وصلتك هذه الرسالة لأن إدارة البرنامج أنشأت لك حسابًا بهذا العنوان. إن لم تكن تتوقّعها، لا تستعمل كلمة المرور وأبلِغنا على :email.',
-    ],
-    /*
      * The invitation link (D-85). It carries no credential: the button opens
      * the screen where the invited person completes their account and chooses
      * their own password.

@@ -10,19 +10,15 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
-use App\Mail\InvitationLetter;
 use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\Profile;
-use App\Models\Program;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Messages\ThreadProvisioner;
 use App\Services\Time\Clock;
-use App\Support\Dates;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Creates an account FOR someone and tells them it exists.
@@ -40,26 +36,22 @@ use Illuminate\Support\Facades\Mail;
  * the admin panel", naming a screen that did not exist (it now refuses the
  * participant role, D-69). Sixty trainees had no way to reach the platform.
  *
- * ONE PLACE, TWO CALLERS. The single-account form and the bulk import both come
- * through here, because the interesting parts — seating, the temporary
- * password, its expiry, the letter — are exactly the parts that drift when they
- * are written twice.
+ * ONE PLACE, ONE PATH (D-152). The single-account form and the bulk import both come
+ * through `inviteByLink()`, because the interesting parts — seating, the card, the
+ * conversations, the single-use link — are exactly the parts that drift when they are
+ * written twice. There used to be a second path that generated a temporary password and
+ * mailed it in plain text; the import used it, the form did not, and the two screens said
+ * opposite things about whether a password travels by e-mail. That path is deleted.
  *
- * THE PLAINTEXT PASSWORD NEVER LEAVES THIS METHOD. It is hashed into the row by
- * the model's `hashed` cast, handed to one encrypted queued letter, and dropped.
- * It is never returned to the caller, never written to `audit_logs`, never
- * flashed, and never shown to the administrator: an administrator who can read
- * a trainee's password can sign in as that trainee without leaving the
- * impersonation record BR-34 requires.
+ * NO PASSWORD IS MADE, SHOWN OR MAILED. The row gets a random value that is hashed and
+ * forgotten (the column cannot be null), the account stays UNVERIFIED until the link is
+ * followed, and `LoginController` refuses it until then. An administrator who could read a
+ * trainee's password could sign in as them without the impersonation record BR-34 requires.
  *
- * WHY THE ACCOUNT IS CREATED ALREADY VERIFIED
- * `LoginController` refuses an account whose `email_verified_at` is null, and
- * `resendVerification()` refuses one where it is set — so an invited account
- * that arrives unverified can neither sign in nor be helped. It is verified on
- * creation because the invitation IS the proof: the only way to know the
- * password is to have received the letter sent to that address.
+ * Accounts that were made by the old path keep `must_change_password` and the first-password
+ * screen: that gate is still in force for them, and is not this class's to remove.
  *
- * @see PRD §4.5.1, §9.2 · BR-30, BR-34 · CONSTITUTION Art. 5, Art. 12 · D-63
+ * @see PRD §4.5.1, §9.2 · BR-30, BR-34 · CONSTITUTION Art. 5, Art. 12 · D-63, D-85, D-152
  */
 final class AccountInviter
 {
@@ -71,84 +63,6 @@ final class AccountInviter
         private readonly CardIssuer $cards,
         private readonly ThreadProvisioner $threads,
     ) {}
-
-    /**
-     * Create one account, seat it, and send its invitation.
-     *
-     * Returns the User. It deliberately does NOT return the password.
-     *
-     * @param  array<string, mixed>  $profileColumns  already mapped to `profiles` column names
-     */
-    public function invite(
-        string $email,
-        UserRole $role,
-        array $profileColumns,
-        ?Cohort $cohort,
-    ): User {
-        $password = $this->passwords->generate();
-        $now = Clock::now();
-        $expiresAt = $now->addDays($this->expiryDays());
-
-        $user = DB::transaction(function () use ($email, $role, $profileColumns, $cohort, $password, $now, $expiresAt): User {
-            /** @var User $user */
-            $user = User::query()->create([
-                'email' => $email,
-                // The `hashed` cast on the model turns this into a bcrypt hash
-                // on assignment; the plaintext is never written to the row.
-                'password_hash' => $password,
-                'role' => $role->value,
-                'status' => UserStatus::Active->value,
-                'email_verified_at' => $now,
-                'locale' => (string) config('athar.locales.default', 'ar'),
-                'failed_login_count' => 0,
-                'locked_until' => null,
-                'must_change_password' => true,
-                'temp_password_expires_at' => $expiresAt,
-                'invited_at' => $now,
-            ]);
-
-            Profile::query()->create(array_merge($profileColumns, ['user_id' => $user->getKey()]));
-
-            if ($cohort !== null && $role === UserRole::Participant) {
-                $this->seat($user, $cohort, $now);
-
-                // The card is issued HERE, not through an event.
-                //
-                // `CardIssuer` is reached by two listeners, on `AccountVerified`
-                // and on `EnrollmentApproved`, and an invited account triggers
-                // neither: it is verified by this method rather than by clicking
-                // a link, and it is seated rather than approved. So every
-                // trainee in the cohort would have arrived to a card screen
-                // whose own empty state (`card.empty_body` in lang/ar) promises
-                // the card is created automatically the moment the account is
-                // verified and enrolled -- a promise nothing kept.
-                //
-                // Not `EnrollmentApproved::dispatch()`, which would ALSO send
-                // the approval letter beside the invitation: two letters, thirty
-                // seconds apart, telling the same person the same thing.
-                //
-                // `issueFor` is idempotent — `(user_id, cohort_id)` is unique
-                // and it returns the existing row — so a retried import cannot
-                // mint a second card.
-                $this->cards->issueFor($user);
-            }
-
-            // The audit records that an invitation happened and to which
-            // address. It records NOTHING about the credential — not its
-            // length, not a prefix, not a hash.
-            $this->audit->log('user.invited', $user, null, [
-                'email' => $email,
-                'role' => $role->value,
-                'cohort_id' => $cohort?->getKey(),
-            ]);
-
-            return $user;
-        });
-
-        $this->send($user, $password, $cohort, $expiresAt);
-
-        return $user;
-    }
 
     /**
      * Invite someone the platform knows almost nothing about.
@@ -318,65 +232,5 @@ final class AccountInviter
         $this->threads->seatParticipant($user, $locked);
 
         return true;
-    }
-
-    /**
-     * The letter, queued once and encrypted.
-     *
-     * A delivery that fails must not undo the account: the row is already
-     * committed, the administrator can re-send, and rolling back an existing
-     * trainee because a mail server was slow would be the worse outcome. The
-     * Mailable is queued, so what is caught here is a failure to WRITE the job,
-     * not a failure to deliver it — delivery failures land in `failed_jobs`.
-     */
-    private function send(User $user, string $password, ?Cohort $cohort, CarbonImmutable $expiresAt): void
-    {
-        Mail::to($user->getAttribute('email'))->send(new InvitationLetter(
-            displayName: $this->displayName($user),
-            email: (string) $user->getAttribute('email'),
-            password: $password,
-            loginUrl: route('login'),
-            expiresOn: Dates::longDate($expiresAt),
-            programName: $this->programName($cohort),
-            cohortName: $cohort === null ? '' : (string) $cohort->getAttribute('name'),
-        ));
-    }
-
-    private function displayName(User $user): string
-    {
-        $profile = $user->relationLoaded('profile')
-            ? $user->getRelation('profile')
-            : $user->profile()->first();
-
-        if (! $profile instanceof Profile) {
-            return '';
-        }
-
-        return trim((string) $profile->getAttribute('first_name_ar'));
-    }
-
-    private function programName(?Cohort $cohort): string
-    {
-        $fallback = (string) config('athar.program_name');
-
-        if ($cohort === null) {
-            return $fallback;
-        }
-
-        $program = $cohort->relationLoaded('program')
-            ? $cohort->getRelation('program')
-            : $cohort->program()->first();
-
-        return $program instanceof Program
-            ? (string) $program->getAttribute('name_ar')
-            : $fallback;
-    }
-
-    /** BR-36: the window is configuration, never a literal in this file. */
-    private function expiryDays(): int
-    {
-        $days = (int) config('athar.invitations.temp_password_days', 7);
-
-        return $days > 0 ? $days : 7;
     }
 }

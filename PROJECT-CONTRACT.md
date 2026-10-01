@@ -318,7 +318,7 @@ final class CertificateEligibility
 | `/admin/*` | `admin.*` | `auth` · `role:admin` — عدا الأربعة التالية (`D-117`) |
 | `/admin/users*` | `admin.users.*` | `auth` · `role:system_admin` (`D-117`) — `admin.users.export` يرفضه `UserPolicy::export()` للجميع |
 | `/admin/landing*` | `admin.landing.*` | `auth` · `role:system_admin` (`D-117`) — لا يحمل مفتاح التسجيل |
-| `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings` |
+| `/admin/settings*` | `admin.settings.*` | `auth` · `role:system_admin` · الكتابة `not.impersonating` (`D-117`) — `console.settings`. **الشاشة نفسها للقراءة فقط** (`D-148`: لا `settings.update` ولا `settings.notifications`)؛ الكتابة الوحيدة فيها قوالب البريد (`settings.template.*`، `D-136`) |
 | `PUT /admin/registrations/intake/{cohort}` | `admin.registrations.intake` | `auth` · `role:admin` · `not.impersonating` (`D-117`) — فتح التسجيل وإغلاقه، `CohortPolicy::manageRegistrations` |
 | `POST /admin/users/{user}/preview` | `admin.users.preview` | `auth` · `role:system_admin` · `not.impersonating` (`D-117`) |
 | `POST /admin/final-project/{project}/fields` | `admin.finalProject.fields.store` | `auth` · `role:admin` · `not.impersonating` (`D-121`) — `SaveFinalProjectFieldRequest` + `FinalProjectPolicy::update` |
@@ -331,6 +331,10 @@ final class CertificateEligibility
 **حدّ الطلب `throttle:support`** (`RouteServiceProvider`، `D-124`) — على مسارات الكتابة الثمانية في التذاكر (`support.store` · `reply` · `close` · `note` · `resolve` · `escalate` · `return` · `assign`):
 السطر النصي **30 في الدقيقة** بمفتاح `lines|user:<id>`، والطلب الذي يحمل `attachments` **20 في الساعة** بمفتاح `files|user:<id>` — عدّادان منفصلان للحساب،
 فلا تُحسب ملاحظات المنسّق النصية على حدّ الملفات، ولا يُحسب شيء منها على `throttle:upload` في بقية المنصة.
+
+**حدّ الطلب `throttle:password-admin`** (`RouteServiceProvider`، `D-151`) — على مسارَي مدير النظام `admin.users.resetPassword` و`admin.users.resendVerification` وحدهما:
+**3 في الساعة** بمفتاح `user:<المشرف>|target:<الحساب المستهدف>`، يتقاسمه الإجراءان لكل شخص، ولا يقرأ جسم الطلب (حقل `email` مخفي لا يغيّره). المسارات العامة
+(`forgot-password` · `reset-password` · `invitation` · `verify-email/resend`) تبقى على `throttle:password` بمفتاح البريد.
 
 **النموذج المتأخر عن حال التذكرة** (`ValidatesTicketInput::failedAuthorization`، `D-124`): نماذج صفحة التذكرة ترسل `seen` = `TicketWorkflow::formStamp()`
 (بصمة الدرجة والمرحلة ومن عنده التذكرة وانتهاء مهلتها، مفتاحها مفتاح التطبيق). إن رفضت السياسة الطلب وختمه غير ختم التذكرة الآن وصاحبه يقرؤها:

@@ -5,12 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\UpdateNotificationDefaultsRequest;
-use App\Http\Requests\Admin\UpdateSettingsRequest;
 use App\Presenters\Admin\GeneralSettings;
-use App\Services\Audit\AuditLogger;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 
 /**
  * General settings (PRD §9.18).
@@ -24,12 +20,15 @@ use Illuminate\Http\RedirectResponse;
  * The display timezone is fixed at Asia/Riyadh by CONSTITUTION Art. 11 and is
  * likewise shown rather than offered.
  *
- * @see BR-36 · PRD §9.18 · CONSTITUTION Art. 11, Art. 6 · D-117
+ * There is no write here (D-148): the screen's form posted six fields its request
+ * did not know, and the controller recorded «saved» in the audit trail without
+ * writing a value anywhere. The e-mail templates are the settings that really save,
+ * and they have their own controller (D-136).
+ *
+ * @see BR-36 · PRD §9.18 · CONSTITUTION Art. 11, Art. 6 · D-117, D-148
  */
 final class SettingController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
-
     public function edit(): View
     {
         $this->authorize('console.settings');
@@ -40,40 +39,5 @@ final class SettingController extends Controller
             'locale' => (string) config('athar.locales.default', 'ar'),
             'errorState' => null,
         ]);
-    }
-
-    public function update(UpdateSettingsRequest $request): RedirectResponse
-    {
-        $this->audit->record(
-            action: 'settings.updated',
-            entityType: 'settings',
-            entityId: null,
-            before: null,
-            after: $request->validated(),
-        );
-
-        return back()->with('status', __('admin.settings.saved'));
-    }
-
-    /**
-     * Platform-wide notification defaults (PRD §9.16.1).
-     *
-     * There is no table for platform defaults in PROJECT-CONTRACT §4 — the
-     * per-user table `notification_preferences` is the only one — so the choice
-     * is recorded in the append-only trail rather than written to a table this
-     * slice would have had to invent (Art. 4). The gap is raised with this
-     * slice for a product decision.
-     */
-    public function notifications(UpdateNotificationDefaultsRequest $request): RedirectResponse
-    {
-        $this->audit->record(
-            action: 'settings.notifications_updated',
-            entityType: 'settings',
-            entityId: null,
-            before: null,
-            after: $request->validated(),
-        );
-
-        return back()->with('status', __('admin.settings.saved'));
     }
 }

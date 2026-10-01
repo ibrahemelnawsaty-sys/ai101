@@ -332,7 +332,7 @@ it('D-117: 403 — المشرف العام لا يصل الحسابات ولا �
         ->put(route('admin.landing.update'), ['settings' => ['hero_subtitle' => 'CANARY-TAMPERED']])
         ->assertForbidden();
     $this->actingAs($this->supervisor)
-        ->put(route('admin.settings.update'), ['locale' => 'ar', 'timezone' => 'Asia/Riyadh'])
+        ->put(route('admin.settings.template.update', 'invitation_link'), ['subject' => 'Tampered', 'body' => 'Tampered'])
         ->assertForbidden();
 
     $fresh = $this->participant->fresh();
@@ -341,7 +341,7 @@ it('D-117: 403 — المشرف العام لا يصل الحسابات ولا �
         ->and($fresh->role->value)->toBe('participant')
         ->and($fresh->status->value)->toBe('active')
         ->and(ImpersonationSession::query()->count())->toBe(0)
-        ->and(AuditLog::query()->where('action', 'settings.updated')->count())->toBe(0)
+        ->and(AuditLog::query()->where('action', 'like', 'settings.%')->count())->toBe(0)
         ->and(systemAdminRoleDeniedRows($this->supervisor))->toBeGreaterThanOrEqual(count($gets) + 6);
 });
 
@@ -350,14 +350,7 @@ it('D-117: المشرف العام يحتفظ بلوحته، وإعدادات ا
     $this->actingAs($this->supervisor)->get(route('admin.cohorts.index'))->assertOk();
 
     $this->actingAs($this->sysadmin)->get(route('admin.settings.edit'))->assertOk();
-    $this->actingAs($this->sysadmin)->get(route('admin.settings.template', 'invitation'))->assertStatus(200);
-
-    assertAccepted($this->actingAs($this->sysadmin)->put(route('admin.settings.update'), [
-        'locale' => 'ar',
-        'timezone' => 'Asia/Riyadh',
-    ]));
-
-    expect(AuditLog::query()->where('action', 'settings.updated')->where('actor_id', $this->sysadmin->id)->count())->toBe(1);
+    $this->actingAs($this->sysadmin)->get(route('admin.settings.template', 'invitation_link'))->assertStatus(200);
 });
 
 it('D-117: قائمة المشرف العام بلا الحسابات وصفحة الهبوط والإعدادات، وقائمة مدير النظام بها وحدها', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presenters\Admin;
 
+use App\Presenters\Participant\PreferencePresenter;
 use App\Support\NotificationTypes;
 use App\Support\ViewModel;
 
@@ -15,13 +16,13 @@ use App\Support\ViewModel;
  * config file would drift from it (art. 6).
  *
  * There is no table for PLATFORM-WIDE defaults in PROJECT-CONTRACT §4: the only
- * table is the per-user `notification_preferences`. The screen therefore shows
- * every event with both channels on and both editable, and the controller
- * records the administrator's choice in the append-only trail rather than
- * writing to a table this slice would have had to invent (art. 4). The gap is
- * reported with this slice.
+ * table is the per-user `notification_preferences`, and no row means yes
+ * (`MailPreferences`). So the screen SHOWS how it is — every event is on by default
+ * in both channels, and the types `PreferencePresenter::ALWAYS_ON` names cannot be
+ * stopped by the person — and offers no control: a switch with nothing behind it
+ * was removed (D-148).
  *
- * @see BR-31, BR-36 · PRD §9.16.1, §9.18 · CONSTITUTION art. 4, art. 6
+ * @see BR-31, BR-36 · PRD §9.16.1, §9.18 · CONSTITUTION art. 4, art. 6 · D-148
  */
 final class NotificationPreferenceRow extends ViewModel
 {
@@ -38,10 +39,8 @@ final class NotificationPreferenceRow extends ViewModel
             'description' => is_string($type['body'] ?? null)
                 ? (string) preg_replace('/:[a-z_]+/', '…', $type['body'])
                 : '',
-            'platform' => true,
-            'email' => true,
-            'platformEditable' => true,
-            'emailEditable' => true,
+            // Always sent, whatever the person chose — the same list the preferences screen locks.
+            'locked' => in_array($key, PreferencePresenter::ALWAYS_ON, true),
         ]);
     }
 

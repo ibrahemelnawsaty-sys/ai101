@@ -3,28 +3,26 @@
 declare(strict_types=1);
 
 /**
- * An account created FOR someone: invited, forced to choose a password, let in.
+ * An account that was handed a temporary password: forced to choose its own, let in.
  *
- * WHY THIS SUITE EXISTS
- * Registration for the first cohort closed and there was no other way in. The
- * admin panel's "add a user" button rendered the list again — `create()` passed
- * `'creating' => true` to a template that never read it — and even when
- * `store()` was reached it produced an account in NO cohort, with no letter, and
- * with `email_verified_at` already stamped so `resendVerification()` refused to
- * help. Sixty trainees had no route to the platform (D-63).
+ * WHY THIS SUITE STILL EXISTS (D-152)
+ * Nothing makes such an account any more — the owner decided the bulk import invites by a
+ * single-use link like every other invitation, and the code that generated and mailed a
+ * temporary password is gone (ImportInvitesByLinkTest holds that). But accounts made by the old
+ * path are in the table: verified, `must_change_password`, a window to use the password in. The
+ * gate they meet is still in force, and the cases below hold the parts that are silent when it
+ * breaks: a flag that is set but never cleared, a middleware that must not trap the screen it
+ * redirects to, an expiry that must be refused where recovery is still reachable, and a first
+ * change that must not mail a «your password changed» warning about itself.
  *
- * The cases below hold the parts that are silent when they break: a flag that
- * is set but never cleared, a letter that carries a credential, a middleware
- * that must not trap the screen it redirects to, and an expiry that must be
- * refused where recovery is still reachable.
+ * The accounts here are built in that old state directly: `legacyTemporaryAccount()`.
  *
- * @see PRD §4.5.1, §9.2, §9.3.3 · BR-29, BR-30, BR-34 · D-63
+ * @see PRD §4.5.1, §9.2, §9.3.3 · BR-29, BR-30, BR-34 · D-63, D-69, D-152
  */
 
 use App\Enums\UserRole;
-use App\Mail\InvitationLetter;
-use App\Models\AuditLog;
 use App\Models\Enrollment;
+use App\Models\Profile;
 use App\Models\User;
 use App\Services\Credentials\AccountInviter;
 use App\Services\Credentials\TemporaryPassword;
@@ -56,66 +54,33 @@ function inviteProfileColumns(): array
     ];
 }
 
-it('D-63: الدعوة تُنشئ الحساب وتُلحقه بالدفعة وتُطابر رسالته', function (): void {
-    Mail::fake();
+/**
+ * An account in the state the old temporary-password path left it in: verified, in its cohort,
+ * told to choose a password, holding the temporary one it was given.
+ *
+ * @return array{0: User, 1: string} the account and the temporary password
+ */
+function legacyTemporaryAccount(object $test, string $email = 'canary@example.com'): array
+{
+    $temporary = app(TemporaryPassword::class)->generate();
 
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
+    $user = User::factory()->create([
+        'email' => $email,
+        'role' => UserRole::Participant->value,
+        'status' => 'active',
+        'email_verified_at' => Clock::now(),
+        'must_change_password' => true,
+        'temp_password_expires_at' => Clock::now()->addDays((int) config('athar.invitations.temp_password_days', 7)),
+        'invited_at' => Clock::now(),
+    ]);
 
-    expect((bool) $user->getAttribute('must_change_password'))->toBeTrue()
-        ->and($user->getAttribute('temp_password_expires_at'))->not->toBeNull()
-        ->and($user->getAttribute('invited_at'))->not->toBeNull()
-        // Verified on creation: LoginController refuses an unverified account
-        // and resendVerification() refuses a verified one, so an invited
-        // account that arrived unverified could neither sign in nor be helped.
-        ->and($user->getAttribute('email_verified_at'))->not->toBeNull();
+    withPassword($user, $temporary);
 
-    // The seat is the whole point: without it the account has no assignments,
-    // no sessions, no card and no certificate path.
-    expect(Enrollment::query()
-        ->where('user_id', $user->getKey())
-        ->where('cohort_id', $this->cohort->getKey())
-        ->count())->toBe(1);
+    Profile::query()->create(array_merge(inviteProfileColumns(), ['user_id' => $user->getKey()]));
+    enroll($user, $test->cohort, 'participant');
 
-    Mail::assertQueued(InvitationLetter::class, fn (InvitationLetter $letter): bool => $letter->email === 'canary@example.com');
-});
-
-it('BR-30: كلمة المرور المؤقتة لا تصل إلى سجلّ التدقيق إطلاقًا', function (): void {
-    Mail::fake();
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    // The letter is the only place the plaintext exists. Whatever it carries
-    // must not appear anywhere in the trail — an administrator who can read a
-    // trainee's password can sign in as them with no impersonation record.
-    $sent = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$sent): bool {
-        $sent = $letter->password;
-
-        return true;
-    });
-
-    expect($sent)->toBeString()->and($sent)->not->toBe('');
-
-    $trail = AuditLog::query()
-        ->where('entity_id', $user->getKey())
-        ->get()
-        ->map(static fn (AuditLog $row): string => json_encode($row->getAttributes(), JSON_UNESCAPED_UNICODE) ?: '')
-        ->implode(' ');
-
-    expect($trail)->not->toContain($sent)
-        // And the row it did write says an invitation happened.
-        ->and($trail)->toContain('user.invited');
-});
+    return [$user->fresh(), $temporary];
+}
 
 it('D-63: كلمة المرور المولّدة تجتاز قواعد المنصة نفسها', function (): void {
     // A generator that produced a password the platform then rejects would fail
@@ -138,12 +103,7 @@ it('D-63: كلمة المرور المولّدة تجتاز قواعد المن�
 it('المادة 5: الحساب المدعوّ لا يصل إلى أي شاشة قبل تغيير كلمة مروره', function (): void {
     Mail::fake();
 
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
+    [$user] = legacyTemporaryAccount($this);
 
     // Not one route, and not a redirect after sign-in: the back button, a typed
     // URL and yesterday's open tab all walk past those.
@@ -162,20 +122,7 @@ it('المادة 5: الحساب المدعوّ لا يصل إلى أي شاشة
 
 it('D-63: تعيين كلمة المرور الأولى يمسح العَلَم والصلاحية ويحتفل مرة واحدة', function (): void {
     Mail::fake();
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    $temporary = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
-        $temporary = $letter->password;
-
-        return true;
-    });
+    [$user, $temporary] = legacyTemporaryAccount($this, 'canary@example.com');
 
     $this->actingAs($user)
         ->put(route('password.first.update'), [
@@ -212,20 +159,7 @@ it('D-63: تعيين كلمة المرور الأولى يمسح العَلَم 
 it('D-75: عرضٌ فاشل للّوحة يُبقي الترحيب للزيارة التالية', function (): void {
     Mail::fake();
     $key = App\Http\Controllers\Participant\DashboardController::WELCOME_KEY;
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'welcome@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    $temporary = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
-        $temporary = $letter->password;
-
-        return true;
-    });
+    [$user, $temporary] = legacyTemporaryAccount($this, 'welcome@example.com');
 
     $this->actingAs($user)->put(route('password.first.update'), [
         'current_password' => $temporary,
@@ -262,20 +196,7 @@ it('D-75: المدرّب المدعوّ لا يبقى مفتاح الترحيب 
 
 it('D-63: التغيير الأول لا يُرسل تحذير «غُيّرت كلمة مرورك»', function (): void {
     Mail::fake();
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    $temporary = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
-        $temporary = $letter->password;
-
-        return true;
-    });
+    [$user, $temporary] = legacyTemporaryAccount($this, 'canary@example.com');
 
     $this->actingAs($user)->put(route('password.first.update'), [
         'current_password' => $temporary,
@@ -292,20 +213,7 @@ it('D-63: التغيير الأول لا يُرسل تحذير «غُيّرت ك
 
 it('BR-30: كلمة مرور مؤقتة منتهية تُرفض عند الدخول لا بعده', function (): void {
     Mail::fake();
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    $temporary = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
-        $temporary = $letter->password;
-
-        return true;
-    });
+    [$user, $temporary] = legacyTemporaryAccount($this, 'canary@example.com');
 
     // Past the window configured in config/athar.php.
     freezeAt(riyadhAt('2026-09-20 09:00:00')->addDays(
@@ -339,20 +247,7 @@ it('المادة 17: شاشة إضافة مستخدم تُصيَّر فعلًا 
 
 it('BR-29: التغيير الأول ينهي كل جلسة أخرى لهذا الحساب', function (): void {
     Mail::fake();
-
-    $user = app(AccountInviter::class)->invite(
-        email: 'canary@example.com',
-        role: UserRole::Participant,
-        profileColumns: inviteProfileColumns(),
-        cohort: $this->cohort,
-    );
-
-    $temporary = null;
-    Mail::assertQueued(InvitationLetter::class, function (InvitationLetter $letter) use (&$temporary): bool {
-        $temporary = $letter->password;
-
-        return true;
-    });
+    [$user, $temporary] = legacyTemporaryAccount($this, 'canary@example.com');
 
     // A second live session for the same account. This is not a contrived case:
     // the invitation carries a plaintext password to an inbox that gets
@@ -407,13 +302,13 @@ it('D-69: دعوتان إلى دفعة واحدة تأخذ كلٌّ منهما �
     $first = App\Models\Cohort::query()->findOrFail($this->cohort->getKey());
     $second = App\Models\Cohort::query()->findOrFail($this->cohort->getKey());
 
-    app(AccountInviter::class)->invite(
+    app(AccountInviter::class)->inviteByLink(
         email: 'one@example.com',
         role: UserRole::Participant,
         profileColumns: array_merge(inviteProfileColumns(), ['phone' => '0512345671']),
         cohort: $first,
     );
-    app(AccountInviter::class)->invite(
+    app(AccountInviter::class)->inviteByLink(
         email: 'two@example.com',
         role: UserRole::Participant,
         profileColumns: array_merge(inviteProfileColumns(), ['phone' => '0512345672']),

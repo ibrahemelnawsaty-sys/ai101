@@ -83,6 +83,48 @@ final class ScoreCalculator
     }
 
     /**
+     * The overall mark of a whole list of people, in a fixed handful of queries.
+     *
+     * Exactly what finalScore() gives for each of them — same published assignments, same «last
+     * evaluation of an assignment wins», same latest project mark, same caps and rounding, and an
+     * evaluation counts for a person only when it names one of THEIR hand-ins. It exists so a
+     * report that averages a whole cohort does not ask finalScore() sixty times (about seven
+     * queries each, art. 19), while the rule stays in this class (art. 6). The tests hold the
+     * two side by side.
+     *
+     * @param  array<int, string>  $userIds
+     * @return array<string, float> person id => mark out of 100; every id is present
+     */
+    public function finalScores(array $userIds, Cohort $cohort): array
+    {
+        $ids = array_values(array_unique(array_map(static fn (mixed $id): string => (string) $id, $userIds)));
+
+        $scores = [];
+
+        foreach ($ids as $id) {
+            $scores[$id] = 0.0;
+        }
+
+        if ($ids === []) {
+            return $scores;
+        }
+
+        $assignments = $this->assignmentTotalsFor($ids, $cohort);
+        $projects = $this->projectMarksFor($ids, $cohort);
+
+        foreach ($ids as $id) {
+            $assignmentsScore = $this->clamp($assignments[$id] ?? 0.0, self::ASSIGNMENTS_TOTAL);
+            $projectScore = array_key_exists($id, $projects)
+                ? $this->clamp($projects[$id], self::PROJECT_TOTAL)
+                : 0.0;
+
+            $scores[$id] = $this->clamp($assignmentsScore + $projectScore, self::GRAND_TOTAL);
+        }
+
+        return $scores;
+    }
+
+    /**
      * Whether the participant reaches the cohort's pass mark.
      */
     public function passes(User $user, Cohort $cohort): bool
@@ -214,6 +256,132 @@ final class ScoreCalculator
         }
 
         return $scores;
+    }
+
+    /**
+     * assignmentScores() summed, for many people at once (uncapped — the caller clamps).
+     *
+     * @param  list<string>  $userIds
+     * @return array<string, float> person id => sum of their latest mark per published assignment
+     */
+    private function assignmentTotalsFor(array $userIds, Cohort $cohort): array
+    {
+        $assignmentIds = Assignment::query()
+            ->where('cohort_id', $cohort->getKey())
+            ->where('status', AssignmentStatus::Published)
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        if ($assignmentIds === []) {
+            return [];
+        }
+
+        $submissions = Submission::query()
+            ->whereIn('user_id', $userIds)
+            ->whereIn('assignment_id', $assignmentIds)
+            ->get(['id', 'user_id', 'assignment_id']);
+
+        if ($submissions->isEmpty()) {
+            return [];
+        }
+
+        /** @var array<string, array{user: string, assignment: string}> $owner */
+        $owner = [];
+
+        foreach ($submissions as $submission) {
+            $owner[(string) $submission->getAttribute('id')] = [
+                'user' => (string) $submission->getAttribute('user_id'),
+                'assignment' => (string) $submission->getAttribute('assignment_id'),
+            ];
+        }
+
+        $evaluations = Evaluation::query()
+            ->whereIn('user_id', $userIds)
+            ->where('entity_type', EvaluationEntity::Assignment)
+            ->whereIn('entity_id', array_keys($owner))
+            ->orderBy('evaluated_at')
+            ->get(['entity_id', 'user_id', 'score', 'evaluated_at']);
+
+        /** @var array<string, array<string, float>> $latest person id => assignment id => latest mark */
+        $latest = [];
+
+        foreach ($evaluations as $evaluation) {
+            $hand = $owner[(string) $evaluation->getAttribute('entity_id')] ?? null;
+
+            // A mark counts for a person only on one of THEIR hand-ins.
+            if ($hand === null || $hand['user'] !== (string) $evaluation->getAttribute('user_id')) {
+                continue;
+            }
+
+            // Ascending by evaluation time, so the last write wins.
+            $latest[$hand['user']][$hand['assignment']] = max(0.0, (float) $evaluation->getAttribute('score'));
+        }
+
+        $totals = [];
+
+        foreach ($latest as $userId => $marks) {
+            $totals[$userId] = array_sum($marks);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * projectScore() before its cap, for many people at once.
+     *
+     * @param  list<string>  $userIds
+     * @return array<string, float> person id => latest final-project mark; absent when none
+     */
+    private function projectMarksFor(array $userIds, Cohort $cohort): array
+    {
+        $finalProjectId = FinalProject::query()
+            ->where('cohort_id', $cohort->getKey())
+            ->value('id');
+
+        if ($finalProjectId === null) {
+            return [];
+        }
+
+        $submissions = ProjectSubmission::query()
+            ->where('final_project_id', $finalProjectId)
+            ->whereIn('user_id', $userIds)
+            ->get(['id', 'user_id']);
+
+        if ($submissions->isEmpty()) {
+            return [];
+        }
+
+        /** @var array<string, string> $ownerOf submission id => person id */
+        $ownerOf = [];
+
+        foreach ($submissions as $submission) {
+            $ownerOf[(string) $submission->getAttribute('id')] = (string) $submission->getAttribute('user_id');
+        }
+
+        $evaluations = Evaluation::query()
+            ->whereIn('user_id', $userIds)
+            ->where('entity_type', EvaluationEntity::FinalProject)
+            ->whereIn('entity_id', array_keys($ownerOf))
+            ->orderByDesc('evaluated_at')
+            ->get(['entity_id', 'user_id', 'score', 'evaluated_at']);
+
+        $marks = [];
+
+        foreach ($evaluations as $evaluation) {
+            $userId = $ownerOf[(string) $evaluation->getAttribute('entity_id')] ?? null;
+
+            if ($userId === null || $userId !== (string) $evaluation->getAttribute('user_id')) {
+                continue;
+            }
+
+            // Newest first: the first mark seen for a person is their latest.
+            if (! array_key_exists($userId, $marks)) {
+                $marks[$userId] = (float) $evaluation->getAttribute('score');
+            }
+        }
+
+        return $marks;
     }
 
     /**

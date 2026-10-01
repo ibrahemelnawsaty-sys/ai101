@@ -390,8 +390,8 @@ it('BR-31: معاينة إعادة كلمة المرور تمرّ بالصنف �
         ->and($html)->toContain(__('emails.password_reset.ignore_note'));
 });
 
-it('BR-31: صفوف القوالب التي تخصّ رسائل أخرى (فاتورة الاستلام والدعوة) تُعاين بنصّها الجديد', function (): void {
-    foreach (['invitation', 'final_project_received'] as $key) {
+it('BR-31: صفوف القوالب التي تخصّ رسائل أخرى (فاتورة الاستلام ودعوة الرابط) تُعاين بنصّها الجديد', function (): void {
+    foreach (['invitation_link', 'final_project_received'] as $key) {
         Illuminate\Support\Facades\Auth::forgetGuards();
         $response = $this->actingAs($this->sys)->postJson(route('admin.settings.template.preview', $key), [])->assertOk();
 

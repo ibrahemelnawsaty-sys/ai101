@@ -20,6 +20,7 @@ use App\Presenters\Admin\RegistrationRow;
 use App\Presenters\Admin\UngradedGroup;
 use App\Services\Certificates\CertificateEligibility;
 use App\Services\Grading\ScoreCalculator;
+use App\Services\Reports\CohortAverages;
 use App\Support\ScreenState;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -51,6 +52,7 @@ final class DashboardController extends Controller
     public function __construct(
         private readonly CertificateEligibility $eligibility,
         private readonly ScoreCalculator $scores,
+        private readonly CohortAverages $averages,
     ) {}
 
     public function __invoke(): View
@@ -87,23 +89,20 @@ final class DashboardController extends Controller
     /**
      * The six figures PRD §9.18 names.
      *
-     * The two averages read the denormalised `enrollments` columns rather than
-     * asking a service per participant: this is a platform-wide headline, and a
-     * per-row calculation over every enrolment would breach the query budget
-     * (art. 19). Any figure that decides something about one person — whether
-     * they passed, whether they qualify — is asked of its service on the screen
-     * that shows it.
+     * The two averages are asked of the services that own the figures, cohort by cohort, and pooled
+     * over the people measured (CohortAverages, D-150) — the attendance rate from
+     * CertificateEligibility and the mark from ScoreCalculator, the same numbers the certificates
+     * screen shows. The columns on `enrollments` they used to read are not consulted.
      */
     private function stats(): DashboardStats
     {
-        $attendance = Enrollment::query()->whereNotNull('attendance_rate')->avg('attendance_rate');
-        $score = Enrollment::query()->whereNotNull('final_score')->avg('final_score');
+        $overall = $this->averages->of(Cohort::query()->get())['overall'];
 
         return DashboardStats::of(
             totalRegistered: User::query()->count(),
             activeUsers: User::query()->where('status', UserStatus::Active->value)->count(),
-            averageAttendance: $attendance === null ? null : (float) $attendance,
-            averageScore: $score === null ? null : (float) $score,
+            averageAttendance: $overall['attendance'],
+            averageScore: $overall['score'],
             ungradedSubmissions: Submission::query()->whereDoesntHave('evaluations')->count(),
             certificatesIssued: Certificate::query()->whereNull('revoked_at')->count(),
         );

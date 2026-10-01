@@ -12,9 +12,11 @@ declare(strict_types=1);
  * real revocation was lost. Revoking an already revoked certificate did the same and said
  * «done».
  *
- * Whether the register should allow a replacement row at all is an open decision (D-149).
- * What is fixed here does not depend on it: a reissue that cannot be completed changes
- * nothing, and a certificate is revoked once.
+ * The owner decided (D-149, option A) that the register holds a replacement row: the
+ * `unique(user_id, cohort_id)` key was replaced by a plain index, and «one live certificate per
+ * person and cohort» is a rule the server checks inside the transaction that writes it
+ * (CertificateRegisterKeyTest). What is held here: a reissue that cannot be completed changes
+ * nothing, a certificate is revoked once, and the replacement is a new row with a new serial.
  *
  * @see BR-25 · PRD §9.17 · CONSTITUTION art. 8 · D-147, D-149
  */
@@ -98,48 +100,62 @@ it('BR-25: بعد السحب الناجح لا تعود لوحة السحب بز
 it('BR-25: إعادة إصدار لا تكتمل لا تغيّر شيئًا — لا ختم سحب ثانٍ ولا سطر تدقيق ولا صف جديد', function (): void {
     $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
     $before = $this->certificate->fresh()->revoked_at;
+
+    // Another certificate of the same person is already live, so a replacement cannot be written.
+    issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9100', 'verify_code' => str_repeat('e', 40)]);
     $rows = AuditLog::query()->count();
 
-    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate));
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate))
+        ->assertSessionHasErrors('certificate');
 
-    expect(Certificate::query()->count())->toBe(1)
+    expect(Certificate::query()->count())->toBe(2)
         ->and($this->certificate->fresh()->revoked_at->equalTo($before))->toBeTrue()
         ->and(AuditLog::query()->count())->toBe($rows);
 });
 
-it('BR-25: إعادة إصدار شهادة سارية لا تفشل نصفها — إن تعذّرت بقيت سارية', function (): void {
-    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate));
+it('BR-25: إعادة إصدار شهادة سارية تسحبها وتُصدر بديلًا برقم جديد في معاملة واحدة', function (): void {
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('status', __('certificates.reissued'));
 
-    // Today the register cannot hold a replacement (D-149); the point is that the old
-    // certificate is not left revoked with nothing in its place.
-    if (Certificate::query()->count() === 1) {
-        expect($this->certificate->fresh()->revoked_at)->toBeNull()
-            ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(0);
-    } else {
-        expect($this->certificate->fresh()->revoked_at)->not->toBeNull();
-    }
+    $replacement = Certificate::query()->whereNull('revoked_at')->sole();
+
+    expect(Certificate::query()->count())->toBe(2)
+        ->and($replacement->id)->not->toBe($this->certificate->id)
+        ->and($replacement->serial_number)->not->toBe($this->certificate->serial_number)
+        ->and($replacement->verify_code)->not->toBe($this->certificate->verify_code)
+        ->and($this->certificate->fresh()->revoked_at)->not->toBeNull()
+        ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(1)
+        ->and(AuditLog::query()->where('action', 'certificate.issued')->count())->toBe(1);
+});
+
+it('BR-25: الرقم القديم يبقى بمعناه — رابط التحقق للمسحوبة «ملغاة» وللبديل «سارية»', function (): void {
+    $oldCode = $this->certificate->verify_code;
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $this->certificate))
+        ->assertSessionHasNoErrors();
+
+    $newCode = Certificate::query()->whereNull('revoked_at')->sole()->verify_code;
+
+    Auth::forgetGuards();
+
+    $old = $this->get(route('certificate.verify', ['code' => $oldCode]))->assertOk()->getContent();
+    $new = $this->get(route('certificate.verify', ['code' => $newCode]))->assertOk()->getContent();
+
+    expect($old)->toContain(e(__('certificates.revoked_title')))
+        ->and($new)->not->toContain(e(__('certificates.revoked_title')));
 });
 
 /*
 |--------------------------------------------------------------------------
-| The register as it would be if D-149 lets it hold a replacement row
+| The register holds a replacement row (D-149)
 |--------------------------------------------------------------------------
-| Today `unique(user_id, cohort_id)` makes every reissue fail. These drop that key inside the
-| test to prove two rules that must hold WHEN it is relaxed, so the rule is not carried by the
-| key alone: a certificate that is already revoked keeps the moment it was revoked, and a person
-| never ends up holding two live certificates.
+| Two rules that must hold now that the key no longer carries them: a certificate that is
+| already revoked keeps the moment it was revoked, and a person never ends up holding two live
+| certificates.
 */
 
-function relaxRegisterKey(): void
-{
-    Illuminate\Support\Facades\Schema::table('certificates', static function (Illuminate\Database\Schema\Blueprint $table): void {
-        $table->dropUnique(['user_id', 'cohort_id']);
-    });
-}
-
-it('BR-25: لو سمح السجل ببديل فإعادة إصدار مسحوبة تحفظ وقت سحبها الأول وتُصدر واحدة سارية', function (): void {
-    relaxRegisterKey();
-
+it('BR-25: إعادة إصدار مسحوبة تحفظ وقت سحبها الأول وتُصدر واحدة سارية', function (): void {
     $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
     $before = $this->certificate->fresh()->revoked_at;
 
@@ -153,9 +169,7 @@ it('BR-25: لو سمح السجل ببديل فإعادة إصدار مسحوب�
         ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(0);
 });
 
-it('BR-26: لو سمح السجل ببديل فلا تُعاد إصدار مسحوبة قديمة لمن لديه شهادة سارية — لا شهادتان ساريتان', function (): void {
-    relaxRegisterKey();
-
+it('BR-26: لا تُعاد إصدار مسحوبة قديمة لمن لديه شهادة سارية — لا شهادتان ساريتان', function (): void {
     $this->certificate->update(['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
     $live = issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9999', 'verify_code' => 'live-code-'.str_repeat('x', 20)]);
 

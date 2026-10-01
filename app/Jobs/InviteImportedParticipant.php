@@ -87,7 +87,8 @@ final class InviteImportedParticipant implements ShouldQueue
             return;
         }
 
-        $inviter->invite(
+        // The one invitation path: a single-use link, no password anywhere (D-152).
+        $inviter->inviteByLink(
             email: $this->email,
             role: UserRole::Participant,
             profileColumns: $this->profileColumns,

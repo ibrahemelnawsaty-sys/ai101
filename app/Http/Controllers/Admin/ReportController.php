@@ -17,6 +17,7 @@ use App\Presenters\Admin\ReportCohortRow;
 use App\Presenters\Admin\ReportSummary;
 use App\Presenters\Shared\ChartPoint;
 use App\Presenters\Support\Options;
+use App\Services\Reports\CohortAverages;
 use App\Support\Dates;
 use App\Support\ListFilter;
 use Illuminate\Contracts\View\View;
@@ -33,7 +34,9 @@ use Illuminate\Support\Collection;
  *
  * The figures here are counts, not judgements. Anything that decides whether a
  * person passed or qualified is asked of the services that own that decision,
- * on the screens that show it (Art. 6).
+ * on the screens that show it (Art. 6). The two averages — attendance and mark — are
+ * asked of those same services per cohort (CohortAverages, D-150), not read from a
+ * column nothing keeps current.
  *
  * Every aggregate is one grouped query keyed by cohort, never a loop that asks
  * per row: a report is the screen most likely to turn into an N+1 (Art. 19).
@@ -48,6 +51,8 @@ final class ReportController extends Controller
 
     /** How many buckets the registrations trend shows. */
     private const TREND_BUCKETS = 8;
+
+    public function __construct(private readonly CohortAverages $averages) {}
 
     public function index(Request $request): View
     {
@@ -76,8 +81,20 @@ final class ReportController extends Controller
 
         $participants = $this->participantCounts($ids);
         $completed = $this->completedCounts($ids);
-        $attendance = $this->averageAttendance($ids);
-        $scores = $this->averageScores($ids);
+        // The two averages are asked of the services that own the figures, per cohort (D-150).
+        $averages = $this->averages->of($cohorts->getCollection());
+        $attendance = [];
+        $scores = [];
+
+        foreach ($averages['cohorts'] as $cohortId => $average) {
+            if ($average['attendance'] !== null) {
+                $attendance[$cohortId] = $average['attendance'];
+            }
+
+            if ($average['score'] !== null) {
+                $scores[$cohortId] = $average['score'];
+            }
+        }
         $expected = $this->expectedSubmissions($ids, $participants);
         $submitted = $this->submissionCounts($ids);
 
@@ -117,7 +134,7 @@ final class ReportController extends Controller
 
         return view('admin.reports', [
             'contextLabel' => null,
-            'summary' => $this->summary($participants, $completed, $attendance, $scores, $expected, $submitted, $only),
+            'summary' => $this->summary($participants, $completed, $averages['overall'], $expected, $submitted, $only),
             'registrationsOverTime' => $this->registrationsOverTime($request, $only),
             'attendanceByCohort' => $attendanceByCohort,
             'cohortRows' => $rows,
@@ -129,29 +146,24 @@ final class ReportController extends Controller
     /**
      * @param  array<string, int>  $participants
      * @param  array<string, int>  $completed
-     * @param  array<string, float>  $attendance
-     * @param  array<string, float>  $scores
+     * @param  array{attendance: float|null, score: float|null}  $overall  pooled over the people measured
      * @param  array<string, int>  $expected
      * @param  array<string, int>  $submitted
      */
     private function summary(
         array $participants,
         array $completed,
-        array $attendance,
-        array $scores,
+        array $overall,
         array $expected,
         array $submitted,
         ?string $cohortId = null,
     ): ReportSummary {
-        $attendanceValues = array_values($attendance);
-        $scoreValues = array_values($scores);
-
         return ReportSummary::of(
             registrations: Enrollment::query()
                 ->when($cohortId !== null, static fn ($query) => $query->where('cohort_id', $cohortId))
                 ->count(),
-            averageAttendance: $attendanceValues === [] ? null : array_sum($attendanceValues) / count($attendanceValues),
-            averageScore: $scoreValues === [] ? null : array_sum($scoreValues) / count($scoreValues),
+            averageAttendance: $overall['attendance'],
+            averageScore: $overall['score'],
             submissionRate: self::ratio((float) array_sum($submitted), (float) array_sum($expected)),
             completionRate: self::ratio((float) array_sum($completed), (float) array_sum($participants)),
         );
@@ -228,50 +240,6 @@ final class ReportController extends Controller
                 ->selectRaw('cohort_id, COUNT(*) as aggregate')
                 ->get(),
         );
-    }
-
-    /**
-     * @param  array<int, mixed>  $cohortIds
-     * @return array<string, float>
-     */
-    private function averageAttendance(array $cohortIds): array
-    {
-        $rows = Enrollment::query()
-            ->whereIn('cohort_id', $cohortIds)
-            ->whereNotNull('attendance_rate')
-            ->groupBy('cohort_id')
-            ->selectRaw('cohort_id, AVG(attendance_rate) as aggregate')
-            ->get();
-
-        $map = [];
-
-        foreach ($rows as $row) {
-            $map[(string) $row->getAttribute('cohort_id')] = (float) $row->getAttribute('aggregate');
-        }
-
-        return $map;
-    }
-
-    /**
-     * @param  array<int, mixed>  $cohortIds
-     * @return array<string, float>
-     */
-    private function averageScores(array $cohortIds): array
-    {
-        $rows = Enrollment::query()
-            ->whereIn('cohort_id', $cohortIds)
-            ->whereNotNull('final_score')
-            ->groupBy('cohort_id')
-            ->selectRaw('cohort_id, AVG(final_score) as aggregate')
-            ->get();
-
-        $map = [];
-
-        foreach ($rows as $row) {
-            $map[(string) $row->getAttribute('cohort_id')] = (float) $row->getAttribute('aggregate');
-        }
-
-        return $map;
     }
 
     /**

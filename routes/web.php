@@ -898,10 +898,10 @@ Route::middleware(['auth', 'verified', 'role:system_admin'])
             ->middleware('not.impersonating')
             ->name('users.status');
         Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])
-            ->middleware(['not.impersonating', 'throttle:password'])
+            ->middleware(['not.impersonating', 'throttle:password-admin'])
             ->name('users.resetPassword');
         Route::post('/users/{user}/resend-verification', [AdminUserController::class, 'resendVerification'])
-            ->middleware(['not.impersonating', 'throttle:password'])
+            ->middleware(['not.impersonating', 'throttle:password-admin'])
             ->name('users.resendVerification');
         Route::post('/users/{user}/logout-everywhere', [AdminUserController::class, 'logoutEverywhere'])
             ->middleware('not.impersonating')
@@ -954,12 +954,7 @@ Route::middleware(['auth', 'verified', 'role:system_admin'])
             ->where('template', '[a-z_]+')
             ->middleware('throttle:60,1')
             ->name('settings.template.preview');
-        Route::put('/settings', [AdminSettingController::class, 'update'])
-            ->middleware('not.impersonating')
-            ->name('settings.update');
-        Route::put('/settings/notifications', [AdminSettingController::class, 'notifications'])
-            ->middleware('not.impersonating')
-            ->name('settings.notifications');
+        // D-148 — the general settings are shown, not written: they live in config/athar.php.
     });
 
 /*

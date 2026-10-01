@@ -1,19 +1,21 @@
 {{--
     Admin · general settings (BR-36).
 
-    Centre contact details, e-mail templates, upload limits and the default
-    notification preferences. Everything here is content, and BR-36 is the reason
-    it lives in the database rather than in a constant somewhere.
+    Centre contact details, upload limits and the default notification preferences are
+    SHOWN here, read-only: they live in config/athar.php, which reads the environment
+    (BR-36), so changing them is a deployment, not a click (D-148 — the form that looked
+    editable and saved nothing was removed). The e-mail templates are the part that really
+    saves, and they stay editable (D-136).
 
     The timezone is deliberately NOT editable: storage is UTC and display is
     Asia/Riyadh, and server time is the single reference for every calculation
     (BR-07). The field is shown read-only with the reason next to it, rather than
     hidden, so nobody goes looking for it in the code.
 
-    Four states: error · loading skeleton shaped like the form · empty (no e-mail
+    Four states: error · loading skeleton shaped like the list · empty (no e-mail
     templates seeded yet) · normal.
 
-    @see PRD §9.18, §12.5 · BR-07, BR-27, BR-31, BR-36
+    @see PRD §9.18, §12.5 · BR-07, BR-27, BR-31, BR-36 · D-148
 --}}
 @extends('layouts.app')
 
@@ -35,92 +37,64 @@
         </x-ui.card>
     @else
 
-        {{-- Centre information ------------------------------------------------------ --}}
+        {{-- Centre information: what is deployed, read-only (D-148) ---------------------- --}}
         <x-ui.card class="dc--span" icon="globe" :title="__('admin.settings.centre_info')">
-            <form method="POST" action="{{ route('admin.settings.update') }}">
-                @csrf
-                @method('PUT')
+            {{-- The values live in config/athar.php, which reads the environment (BR-36). A form that
+                 looked editable and saved nothing was removed (D-148); this says where they are set. --}}
+            <p class="hint">
+                <x-ui.icon name="lock" />
+                {{ __('admin.settings.readonly_note') }}
+            </p>
 
-                <div class="f2">
-                    <x-ui.input name="centre_name" required
-                        :label="__('admin.settings.fields.centre_name')"
-                        :value="old('centre_name', $settings->centreName)" />
-                    <x-ui.input name="program_name" required
-                        :label="__('admin.settings.fields.program_name')"
-                        :hint="__('admin.settings.fields.program_name_hint')"
-                        :value="old('program_name', $settings->programName)" />
-                </div>
+            <div class="f2">
+                <dl class="deflist">
+                    <div><dt>{{ __('admin.settings.fields.centre_name') }}</dt><dd>{{ $settings->centreName }}</dd></div>
+                    <div><dt>{{ __('admin.settings.fields.program_name') }}</dt><dd>{{ $settings->programName }}</dd></div>
+                    <div><dt>{{ __('admin.settings.fields.contact_email') }}</dt><dd dir="ltr">{{ $settings->contactEmail }}</dd></div>
+                    <div><dt>{{ __('admin.settings.fields.whatsapp') }}</dt><dd dir="ltr">{{ $settings->whatsapp }}</dd></div>
+                </dl>
 
-                <div class="f2">
-                    <x-ui.input name="contact_email" type="email" dir="ltr" required
-                        :label="__('admin.settings.fields.contact_email')"
-                        :value="old('contact_email', $settings->contactEmail)" />
-                    <x-ui.input name="whatsapp" type="tel" dir="ltr"
-                        :label="__('admin.settings.fields.whatsapp')"
-                        :value="old('whatsapp', $settings->whatsapp)" />
-                </div>
+                <dl class="deflist">
+                    <div>
+                        <dt>{{ __('admin.settings.timezone') }}</dt>
+                        <dd dir="ltr">{{ $settings->timezone }}</dd>
+                    </div>
+                    <div><dt>{{ __('admin.settings.fields.max_file_mb') }}</dt><dd><span class="u-num">{{ $settings->maxFileMb }}</span></dd></div>
+                    <div><dt>{{ __('admin.settings.fields.max_files') }}</dt><dd><span class="u-num">{{ $settings->maxFiles }}</span></dd></div>
+                </dl>
+            </div>
 
-                <x-ui.input name="timezone" readonly dir="ltr"
-                    :label="__('admin.settings.timezone')"
-                    :hint="__('admin.settings.timezone_note')"
-                    :value="$settings->timezone" />
-
-                <h3 class="abrief__sub">{{ __('admin.settings.upload_limits') }}</h3>
-
-                <div class="f2">
-                    <x-ui.input name="max_file_mb" type="number" min="1" step="1" required
-                        :label="__('admin.settings.fields.max_file_mb')"
-                        :value="old('max_file_mb', $settings->maxFileMb)" />
-                    <x-ui.input name="max_files" type="number" min="1" step="1" required
-                        :label="__('admin.settings.fields.max_files')"
-                        :value="old('max_files', $settings->maxFiles)" />
-                </div>
-
-                <p class="hint">
-                    <x-ui.icon name="shield" />
-                    {{ __('admin.settings.fields.upload_allowlist_note') }}
-                </p>
-
-                <div class="row__acts">
-                    <x-ui.button icon="check" variant="primary" type="submit">{{ __('app.save_changes') }}</x-ui.button>
-                </div>
-            </form>
+            <p class="hint">{{ __('admin.settings.timezone_note') }}</p>
+            <p class="hint">
+                <x-ui.icon name="shield" />
+                {{ __('admin.settings.fields.upload_allowlist_note') }}
+            </p>
         </x-ui.card>
 
-        {{-- Default notification preferences ----------------------------------------- --}}
+        {{-- Default notification preferences: how it really is, read-only (D-148) -------- --}}
         <x-ui.card class="dc--2 u-mt-4" icon="bell" :title="__('admin.settings.default_notifications')">
             @if ($settings->notificationDefaults->isEmpty())
                 <x-ui.empty-state icon="bell"
                     :title="__('admin.settings.notifications_empty_title')"
                     :description="__('admin.settings.notifications_empty_body')" />
             @else
-                <form method="POST" action="{{ route('admin.settings.notifications') }}">
-                    @csrf
-                    @method('PUT')
+                <p class="hint">{{ __('admin.settings.defaults_note') }}</p>
 
-                    @foreach ($settings->notificationDefaults as $preference)
-                        <div class="row">
-                            <div class="row__m">
-                                <b>{{ $preference->label }}</b>
-                                <span>{{ $preference->description }}</span>
-                            </div>
-                            <div class="row__e">
-                                <x-ui.toggle name="defaults[{{ $preference->key }}][platform]"
-                                    :checked="$preference->platform"
-                                    :disabled="! $preference->platformEditable"
-                                    :label="__('notifications.toggle_aria', ['event' => $preference->label, 'channel' => __('notifications.channel_platform')])" />
-                                <x-ui.toggle name="defaults[{{ $preference->key }}][email]"
-                                    :checked="$preference->email"
-                                    :disabled="! $preference->emailEditable"
-                                    :label="__('notifications.toggle_aria', ['event' => $preference->label, 'channel' => __('notifications.channel_email')])" />
-                            </div>
+                @foreach ($settings->notificationDefaults as $preference)
+                    <div class="row">
+                        <div class="row__m">
+                            <b>{{ $preference->label }}</b>
+                            <span>{{ $preference->description }}</span>
                         </div>
-                    @endforeach
-
-                    <div class="row__acts">
-                        <x-ui.button icon="check" variant="primary" size="sm" type="submit">{{ __('app.save_changes') }}</x-ui.button>
+                        <div class="row__e">
+                            @if ($preference->locked)
+                                <x-ui.pill variant="primary" icon="lock">{{ __('admin.settings.always_on') }}</x-ui.pill>
+                            @else
+                                <x-ui.pill variant="neutral" icon="check">{{ __('admin.settings.default_on') }}</x-ui.pill>
+                            @endif
+                        </div>
                     </div>
-                </form>
+                @endforeach
             @endif
         </x-ui.card>
 

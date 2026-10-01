@@ -8,6 +8,7 @@ use App\Enums\CohortStatus;
 use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Events\CertificateIssued;
+use App\Exceptions\CertificateException;
 use App\Http\Controllers\Concerns\ExportsCsv;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BulkIssueCertificateRequest;
@@ -302,13 +303,17 @@ final class CertificateController extends Controller
             return back()->withErrors(['user_id' => __('certificates.errors.already_issued')]);
         }
 
-        $this->persist(
+        $issued = $this->issueIfNoneLive(
             $holder,
             $cohort,
             $admin,
             $eligible ? AuditLogger::CERTIFICATE_ISSUED : AuditLogger::CERTIFICATE_OVERRIDDEN,
             $request->overrideReason(),
         );
+
+        if ($issued === null) {
+            return back()->withErrors(['user_id' => __('certificates.errors.already_issued')]);
+        }
 
         return back()->with('status', __('certificates.issued'));
     }
@@ -375,8 +380,10 @@ final class CertificateController extends Controller
                 continue;
             }
 
-            $this->persist($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, null);
-            $issued++;
+            // Someone else may have issued to this person since the look above: skipped, not counted.
+            if ($this->issueIfNoneLive($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, null) !== null) {
+                $issued++;
+            }
         }
 
         return back()->with(
@@ -406,13 +413,17 @@ final class CertificateController extends Controller
             return back()->withErrors(['cohort_id' => __('certificates.errors.already_issued')]);
         }
 
-        $this->persist(
+        $issued = $this->issueIfNoneLive(
             $holder,
             $cohort,
             $admin,
             AuditLogger::CERTIFICATE_OVERRIDDEN,
             $request->reason(),
         );
+
+        if ($issued === null) {
+            return back()->withErrors(['cohort_id' => __('certificates.errors.already_issued')]);
+        }
 
         return back()->with('status', __('certificates.issued'));
     }
@@ -454,21 +465,35 @@ final class CertificateController extends Controller
         // replacement that cannot be written (the register allows one row per person and
         // cohort — D-149) must leave the old row, its revocation time and the trail exactly
         // as they were, not revoke it again and stop.
-        DB::transaction(function () use ($certificate, $holder, $cohort, $admin): void {
-            // A certificate that is already revoked keeps the moment it was revoked.
-            if ($certificate->getAttribute('revoked_at') === null) {
-                $this->audit->log(
-                    action: AuditLogger::CERTIFICATE_REVOKED,
-                    entity: $certificate,
-                    before: ['revoked_at' => null],
-                    after: ['reason' => 'reissue'],
-                );
+        try {
+            DB::transaction(function () use ($certificate, $holder, $cohort, $admin): void {
+                // The person's row first, so the whole replacement queues behind any other
+                // certificate being written for them (D-149).
+                User::query()->whereKey($holder->getKey())->lockForUpdate()->first();
 
-                $certificate->forceFill(['revoked_at' => Clock::now()])->save();
+                // A certificate that is already revoked keeps the moment it was revoked.
+                if ($certificate->getAttribute('revoked_at') === null) {
+                    $this->audit->log(
+                        action: AuditLogger::CERTIFICATE_REVOKED,
+                        entity: $certificate,
+                        before: ['revoked_at' => null],
+                        after: ['reason' => 'reissue'],
+                    );
+
+                    $certificate->forceFill(['revoked_at' => Clock::now()])->save();
+                }
+
+                // Raises alreadyIssued() when another live certificate appeared meanwhile: the
+                // whole unit rolls back, so the old one is not left revoked with nothing in its place.
+                $this->persist($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, 'reissue');
+            });
+        } catch (CertificateException $refused) {
+            if ($refused->langKey() !== 'certificates.errors.already_issued') {
+                throw $refused;
             }
 
-            $this->persist($holder, $cohort, $admin, AuditLogger::CERTIFICATE_ISSUED, 'reissue');
-        });
+            return back()->withErrors(['certificate' => __('certificates.errors.already_issued')]);
+        }
 
         return back()->with('status', __('certificates.reissued'));
     }
@@ -515,6 +540,23 @@ final class CertificateController extends Controller
         ], $rows, 'athar-certificates.csv');
     }
 
+    /**
+     * persist(), or null when the person already holds a live certificate by the time the row is
+     * written (the in-transaction check, D-149) — nothing is written in that case.
+     */
+    private function issueIfNoneLive(User $holder, Cohort $cohort, User $admin, string $action, ?string $reason): ?Certificate
+    {
+        try {
+            return $this->persist($holder, $cohort, $admin, $action, $reason);
+        } catch (CertificateException $refused) {
+            if ($refused->langKey() !== 'certificates.errors.already_issued') {
+                throw $refused;
+            }
+
+            return null;
+        }
+    }
+
     private function hasLiveCertificate(User $holder, Cohort $cohort): bool
     {
         return Certificate::query()
@@ -527,6 +569,9 @@ final class CertificateController extends Controller
     /**
      * Mint the serial, write the row and record it — the one place a
      * certificate comes into existence, whichever endpoint asked for it.
+     *
+     * @throws CertificateException alreadyIssued() when the person already holds a live one — the
+     *                              caller maps it to its own refusal; nothing was written
      */
     private function persist(
         User $holder,
@@ -539,6 +584,16 @@ final class CertificateController extends Controller
 
         /** @var Certificate $issued */
         $issued = $this->serials->allocate($cohort, fn (string $serial): Certificate => DB::transaction(function () use ($serial, $holder, $cohort, $admin, $at, $action, $reason): Certificate {
+            // «One live certificate per person and cohort» is kept here, not by the register's key
+            // (D-149). The person's own row is the lock: a second request for the same person waits
+            // for the first to commit and then sees its certificate. The look made before the
+            // transaction is only for a friendly message; this one decides.
+            User::query()->whereKey($holder->getKey())->lockForUpdate()->first();
+
+            if ($this->hasLiveCertificate($holder, $cohort)) {
+                throw CertificateException::alreadyIssued();
+            }
+
             /** @var Certificate $certificate */
             $certificate = Certificate::query()->create([
                 'user_id' => $holder->getKey(),

@@ -373,7 +373,9 @@ final class SubmissionController extends Controller
             submitted: (clone $base)->count(),
             late: (clone $base)->where('is_late', true)->count(),
             missing: ($participants * $publishedCount) - $handedIn,
-            awaitingGrading: (clone $base)->whereDoesntHave('evaluations')->count(),
+            // The newest copy of each hand-in only — the definition GradingQueue walks (D-145).
+            // «arrived» and «late» above stay over every version: each one did arrive.
+            awaitingGrading: (clone $base)->newestVersionOnly()->whereDoesntHave('evaluations')->count(),
         );
     }
 

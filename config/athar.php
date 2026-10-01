@@ -241,15 +241,19 @@ return [
     | Invitations (D-63)
     |--------------------------------------------------------------------------
     |
-    | An account created for someone by an administrator signs in once with a
-    | temporary password and must replace it immediately.
+    | An account created for someone by an administrator — one at a time or by
+    | the bulk import — is opened with a single-use invitation LINK, in which the
+    | person chooses their own password (D-85, D-152). No password is generated
+    | or mailed any more.
     |
-    | `temp_password_days` is why the temporary password is temporary: without
-    | an expiry it is a permanent password sitting in an inbox, and inboxes are
-    | forwarded, shared and breached. Seven days is long enough for a trainee
-    | who is travelling and short enough that a forgotten invitation stops being
-    | a live credential. Nobody is stranded when it lapses -- password recovery
-    | works, and the letter says so.
+    | `temp_password_days` is how long that link lives, and it is also the window
+    | of the accounts the old path made, which still carry a temporary password
+    | and meet the first-password screen: without an expiry a credential in an
+    | inbox is permanent, and inboxes are forwarded, shared and breached. Seven
+    | days is long enough for a trainee who is travelling and short enough that
+    | a forgotten invitation stops being live. Nobody is stranded when it lapses
+    | -- the administrator can send the link again, and recovery works. (The
+    | name is kept: it is an environment variable on every installation.)
     |
     | `import_max_rows` bounds one upload. Every row costs a bcrypt hash inside
     | a single web request, and shared hosting will cut the request off rather

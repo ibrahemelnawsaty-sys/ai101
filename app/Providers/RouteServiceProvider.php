@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
  * Named rate limiters, one per row of PRD §12.4.
  *
  * Routes reach them by name - `throttle:login`, `throttle:register`,
- * `throttle:password`, `throttle:attendance`, `throttle:upload`,
+ * `throttle:password`, `throttle:password-admin`, `throttle:attendance`, `throttle:upload`,
  * `throttle:messages`, `throttle:public` - exactly as PROJECT-CONTRACT §10
  * spells them.
  *
@@ -50,6 +51,15 @@ final class RouteServiceProvider extends ServiceProvider
         // 3 password-reset requests per e-mail per hour.
         RateLimiter::for('password', fn (Request $request): Limit => Limit::perHour(3)
             ->by($this->emailKey($request)));
+
+        // D-151 — the administrator's «send a recovery link» and «send the activation again»:
+        // 3 an hour per (administrator, target account), shared by the two actions. The public
+        // limiter above is keyed by the e-mail field, which these forms do not send, so it fell
+        // back to the office's IP address: the third action of the hour from anyone, on any
+        // account, blocked everyone for an hour, and a hidden `email` field dodged it. Nothing
+        // here reads the request body.
+        RateLimiter::for('password-admin', fn (Request $request): Limit => Limit::perHour(3)
+            ->by($this->adminTargetKey($request)));
 
         // 10 check-in / check-out attempts per user per minute.
         RateLimiter::for('attendance', fn (Request $request): Limit => Limit::perMinute(10)
@@ -95,6 +105,20 @@ final class RouteServiceProvider extends ServiceProvider
         }
 
         return Str::lower(trim($email));
+    }
+
+    /**
+     * The administrator and the account they act on (D-151). The route's `{user}` is read as the
+     * router holds it: the id itself (throttling runs before the binding is substituted) or the
+     * model when it already is one. An unauthenticated caller falls back to the address — such a
+     * request is turned away by `auth` first, but a key is never left empty (art. 7).
+     */
+    private function adminTargetKey(Request $request): string
+    {
+        $target = $request->route('user');
+        $targetId = $target instanceof Model ? (string) $target->getKey() : (string) $target;
+
+        return $this->actorKey($request).'|target:'.$targetId;
     }
 
     /**
