@@ -37,11 +37,12 @@ namespace App\Services\Credentials;
  * suitable here — they use the ordinary generator, which is seeded and
  * predictable. The shuffle below is Fisher-Yates over `random_int`.
  *
- * THE PLAINTEXT LIVES FOR ONE REQUEST. It is hashed into `password_hash`, put
- * into one queued letter, and dropped. It is never logged, never written to
- * `audit_logs`, never flashed to the session, and never shown back to the
- * administrator — an administrator who can read a trainee's password can sign
- * in as them without leaving an impersonation record.
+ * TODAY ITS ONLY USE IS A RANDOM VALUE NOBODY KNOWS (D-152). Invitations carry a
+ * single-use link, not a password: `AccountInviter::inviteByLink()` hashes one of these into
+ * the row because the column cannot be null, and forgets it — never logged, never written to
+ * `audit_logs`, never flashed, never mailed, never shown to the administrator, who could
+ * otherwise sign in as a trainee without leaving an impersonation record. (It used to be
+ * mailed in plain text by the import; that path is deleted.)
  *
  * @see PRD §9.2, §12.1 · BR-30 · CONSTITUTION.md Article 12 · D-63
  */

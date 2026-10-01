@@ -207,3 +207,32 @@ it('art. 19: عدد الاستعلامات ثابت — لا يزيد بعدد �
 
     expect($count(12))->toBe($count(3));
 });
+
+it('D-150: دفعة فيها مهمة منشورة ومشروع ولم يسلّم أحد في القائمة شيئًا تعطي صفرًا لكل منهم', function (): void {
+    $a = makeParticipant($this->cohort);
+    $b = makeParticipant($this->cohort);
+
+    // A published assignment and a final project exist, and nobody on the list has handed in.
+    makeAssignment($this->cohort, ['max_score' => 20]);
+    makeFinalProject($this->cohort);
+
+    bulkEqualsSingle($this, [$a, $b]);
+
+    expect($this->calculator->finalScores([$a->id, $b->id], $this->cohort))
+        ->toBe([(string) $a->id => 0.0, (string) $b->id => 0.0]);
+});
+
+it('BR-22: تسليم مشروع في دفعة أخرى وتقييمه لا يدخل درجة هذه الدفعة', function (): void {
+    $a = makeParticipant($this->cohort);
+
+    $other = makeCohort(['pass_score' => 60]);
+    enroll($a, $other, 'participant');
+    makeEvaluation('final_project', makeProjectSubmission(makeFinalProject($other), $a)->id, $a, 40);
+
+    // This cohort has its own final project, which A has not handed in.
+    makeFinalProject($this->cohort);
+
+    bulkEqualsSingle($this, [$a]);
+
+    expect($this->calculator->finalScores([$a->id], $this->cohort)[(string) $a->id])->toBe(0.0);
+});

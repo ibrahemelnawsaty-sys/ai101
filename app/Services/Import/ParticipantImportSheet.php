@@ -49,8 +49,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  *     role changes have their own audited endpoint that demands a written
  *     reason.
  *   · `status` — the account is created active.
- *   · `password` — the platform generates it. Nobody types a trainee's
- *     password, and nobody reads it back.
+ *   · `password` — there is none. Each trainee gets a single-use invitation link and chooses
+ *     their own (D-152); nobody types a trainee's password, and nobody reads it back.
  *   · `cohort` — chosen once, on the upload screen. Sixty rows repeating the
  *     same cohort name is sixty chances to mistype it.
  *

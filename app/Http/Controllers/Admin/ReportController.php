@@ -71,7 +71,7 @@ final class ReportController extends Controller
 
         $cohorts = Cohort::query()
             ->with('program')
-            ->withCount(['enrollments', 'sessions', 'certificates'])
+            ->withCount(['enrollments', 'sessions', 'certificates as certificates_count' => static fn ($query) => $query->whereNull('revoked_at')])
             ->when($only !== null, static fn ($query) => $query->whereKey($only))
             ->orderByDesc('start_date')
             ->paginate(self::PER_PAGE)
@@ -343,7 +343,9 @@ final class ReportController extends Controller
             ->withCount([
                 'enrollments as participants_count' => static fn ($query) => $query->where('role_in_cohort', EnrollmentRole::Participant->value),
                 'sessions',
-                'certificates',
+                // The live ones, as the dashboard counts them: a revoked certificate and its
+                // replacement are one certificate, not two.
+                'certificates as certificates_count' => static fn ($query) => $query->whereNull('revoked_at'),
             ])
             ->when($only !== null, static fn ($query) => $query->whereKey($only))
             ->orderByDesc('start_date')

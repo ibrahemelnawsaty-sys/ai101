@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
  * Named rate limiters, one per row of PRD §12.4.
  *
  * Routes reach them by name - `throttle:login`, `throttle:register`,
- * `throttle:password`, `throttle:password-admin`, `throttle:attendance`, `throttle:upload`,
+ * `throttle:password`, `throttle:password-admin`, `throttle:invitation`, `throttle:attendance`, `throttle:upload`,
  * `throttle:messages`, `throttle:public` - exactly as PROJECT-CONTRACT §10
  * spells them.
  *
@@ -60,6 +60,17 @@ final class RouteServiceProvider extends ServiceProvider
         // here reads the request body.
         RateLimiter::for('password-admin', fn (Request $request): Limit => Limit::perHour(3)
             ->by($this->adminTargetKey($request)));
+
+        // D-153 — accepting an invitation (the one way in for every imported participant). The
+        // form posts `invited_email`, not `email`, so `throttle:password` keyed it by the IP address:
+        // a class in one room accepted three invitations an hour and the fourth got a 429 on a
+        // correct first attempt. A link belongs to one person, so the key is the link (hashed: the
+        // raw token is a credential and must not sit in the cache table), with a generous ceiling
+        // for the address against someone guessing links. A stated assumption awaiting the owner.
+        RateLimiter::for('invitation', fn (Request $request): array => [
+            Limit::perHour(10)->by('invite-token|'.hash('sha256', (string) $request->route('token'))),
+            Limit::perHour(60)->by('invite-address|'.$this->addressKey($request)),
+        ]);
 
         // 10 check-in / check-out attempts per user per minute.
         RateLimiter::for('attendance', fn (Request $request): Limit => Limit::perMinute(10)
@@ -118,7 +129,10 @@ final class RouteServiceProvider extends ServiceProvider
         $target = $request->route('user');
         $targetId = $target instanceof Model ? (string) $target->getKey() : (string) $target;
 
-        return $this->actorKey($request).'|target:'.$targetId;
+        // Lower-cased: a UUID is hexadecimal, `HasUuids` accepts it in either case and a case-
+        // insensitive collation (MySQL's utf8mb4_unicode_ci) finds the same row for every spelling —
+        // without this one account would have as many counters as it has spellings.
+        return $this->actorKey($request).'|target:'.Str::lower($targetId);
     }
 
     /**

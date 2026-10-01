@@ -117,7 +117,8 @@ it('D-85: الدعوة تُرسَل باسم وبريد فقط — بلا كلم
         && $letter->hasTo('invited@example.com')
         && str_contains($letter->url, route('invitation.accept', ['token' => $token])));
 
-    Mail::assertNotQueued(App\Mail\InvitationLetter::class);
+    // One letter, and it is the link: nothing else was queued for this invitation.
+    Mail::assertQueuedCount(1);
 });
 
 it('D-85: رسالة الدعوة تُصيَّر فعلًا — رابط بلا كلمة مرور وبلا مفتاح خام', function (): void {

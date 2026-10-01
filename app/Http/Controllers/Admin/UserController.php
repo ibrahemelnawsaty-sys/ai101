@@ -330,6 +330,17 @@ final class UserController extends Controller
     {
         $this->authorize('resetPassword', $user);
 
+        // An account that never accepted its invitation has no password to recover and an address
+        // nobody has proven: a recovery link is a dead end. It needs its invitation again — the
+        // same branch the public recovery route takes (D-152).
+        if ($user->isPendingInvitation()) {
+            $this->inviter->resendLink($user);
+
+            $this->audit->log('user.invitation_resent', $user);
+
+            return back()->with('status', __('admin.users.invitation_resent'));
+        }
+
         $this->issueToken($user, EmailTokenType::Reset);
 
         $this->audit->log('user.password_reset_sent', $user);

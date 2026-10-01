@@ -6,6 +6,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Enums\EmailTokenType;
 use App\Enums\Gender;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Auth\Concerns\IssuesEmailTokens;
 use App\Http\Requests\Concerns\ProfileFieldRules;
 use App\Models\EmailToken;
@@ -140,7 +141,9 @@ final class AcceptInvitationRequest extends FormRequest
     {
         $user = $this->tokenRecord()?->user;
 
-        return $user instanceof User ? $user : null;
+        // A suspended account's link is dead (BR-28): accepting used to force `active` and sign the
+        // person in, so a wrong or withdrawn row of an import re-activated itself.
+        return $user instanceof User && $user->status === UserStatus::Active ? $user : null;
     }
 
     /** The token row itself, so the controller can spend exactly the one it read. */

@@ -104,17 +104,45 @@ it('BR-30: المسار العام لاستعادة كلمة المرور يبق
     $this->post(route('password.email'), ['email' => 'other@example.test'])->assertStatus(302);
 });
 
-it('D-151: المحدِّدان المسمّيان — العام بالبريد والإداري بالمشرف والهدف — لا مفتاح IP لأي منهما في مسار الإدارة', function (): void {
-    $source = (string) file_get_contents(base_path('routes/web.php'));
+it('D-151: المسارَان الإداريان يحملان محدِّد المشرف والهدف وحده — لا محدِّد IP والبريد العام', function (): void {
+    foreach (['admin.users.resetPassword', 'admin.users.resendVerification'] as $name) {
+        $middleware = Illuminate\Support\Facades\Route::getRoutes()->getByName($name)?->gatherMiddleware() ?? [];
 
-    foreach (['users.resetPassword', 'users.resendVerification'] as $name) {
-        $at = strpos($source, "->name('{$name}')");
-
-        expect($at)->not->toBeFalse();
-
-        $route = substr($source, max(0, (int) $at - 220), 260);
-
-        expect($route)->toContain("'throttle:password-admin'")
-            ->and($route)->not->toContain("'throttle:password'");
+        expect($middleware)->toContain('throttle:password-admin')
+            ->and($middleware)->not->toContain('throttle:password');
     }
+
+    // The public recovery route is untouched: still the e-mail-keyed limiter.
+    expect(Illuminate\Support\Facades\Route::getRoutes()->getByName('password.email')?->gatherMiddleware())
+        ->toContain('throttle:password');
+});
+
+it('D-151: الحدّ ثلاث محاولات في نافذة ساعة كاملة، ومفتاحه بالمشرف والهدف', function (): void {
+    $id = (string) Illuminate\Support\Str::uuid();
+    $request = Illuminate\Http\Request::create("/admin/users/{$id}/reset-password", 'POST');
+    $route = new Illuminate\Routing\Route('POST', '/admin/users/{user}/reset-password', static fn (): null => null);
+    $route->bind($request);
+    $request->setRouteResolver(static fn (): Illuminate\Routing\Route => $route);
+    $request->setUserResolver(fn () => $this->sys);
+
+    $limit = (Illuminate\Support\Facades\RateLimiter::limiter('password-admin'))($request);
+
+    expect($limit->maxAttempts)->toBe(3)
+        ->and($limit->decaySeconds)->toBe(3600)
+        ->and($limit->key)->toBe('user:'.$this->sys->getKey().'|target:'.$id);
+});
+
+it('D-151: الحساب الواحد مفتاح واحد مهما كتب المرسل حالة أحرف المعرّف — لا يتضاعف الحدّ بالتهجئة', function (): void {
+    $target = makeParticipant();
+
+    foreach (range(1, 3) as $i) {
+        sendResetLink($this, $target)->assertRedirect();
+    }
+
+    // The same account, spelled in capitals: the limiter runs before the binding, so it must
+    // already count it as the same person (a case-insensitive database finds the row either way).
+    Auth::forgetGuards();
+    $this->actingAs($this->sys)
+        ->post('/admin/users/'.strtoupper((string) $target->getKey()).'/reset-password')
+        ->assertStatus(429);
 });

@@ -170,7 +170,7 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/invitation/{token}', [InvitationController::class, 'show'])
         ->name('invitation.accept');
     Route::post('/invitation/{token}', [InvitationController::class, 'store'])
-        ->middleware('throttle:password')
+        ->middleware('throttle:invitation')
         ->name('invitation.store');
 });
 

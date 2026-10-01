@@ -23,8 +23,8 @@ use Illuminate\Support\Facades\DB;
  *
  * `RequirePasswordChange` sends every request here while
  * `users.must_change_password` is true, so this controller is the only way out.
- * It clears exactly what `AccountInviter::invite()` set — the flag and the
- * expiry — and nothing else: two files, one fact, and the mirror written on
+ * It clears exactly what the old temporary-password path set (D-152 removed it;
+ * accounts made by it still exist) — the flag and the expiry — and nothing else: two files, one fact, and the mirror written on
  * purpose so they cannot drift.
  *
  * THE SECURITY NOTICE IS SUPPRESSED HERE, DELIBERATELY.
@@ -79,8 +79,8 @@ final class FirstPasswordController extends Controller
 
         DB::transaction(function () use ($user, $request): void {
             $user->setAttribute('password_hash', (string) $request->validated('password'));
-            // The mirror of AccountInviter::invite(): the flag it set and the
-            // expiry it stamped both stop meaning anything now.
+            // The mirror of the old temporary-password path (deleted, D-152): the flag
+            // it set and the expiry it stamped both stop meaning anything now.
             $user->setAttribute('must_change_password', false);
             $user->setAttribute('temp_password_expires_at', null);
 

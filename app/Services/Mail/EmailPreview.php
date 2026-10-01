@@ -64,7 +64,7 @@ final class EmailPreview
      * template is one AtharLetter.
      *
      * The preview of the rest is the letter shell with sample values: the
-     * invitation's credentials block and the receipt's QR are drawn by their own
+     * receipt's QR are drawn by their own
      * Mailables and are not reproduced here — their subject and body are.
      */
     private function letter(string $template): Mailable

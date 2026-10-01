@@ -131,8 +131,8 @@ final class EmailPalette
 
         $theme['font'] = $tokens['font'];
 
-        // The invitation prints a temporary password, read one character at a
-        // time by somebody retyping it. It used to be set in a monospaced
+        // The old invitation letter printed a temporary password, read one character at a
+        // time by somebody retyping it (it is gone, D-152; the token is still required). It used to be set in a monospaced
         // stack; since the owner asked for one typeface everywhere (D-86) the
         // mono role resolves to the body face. What keeps the password legible
         // now is the generator, whose alphabet leaves out 0/O and 1/l/I, and

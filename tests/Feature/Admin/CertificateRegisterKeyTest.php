@@ -159,3 +159,72 @@ it('BR-26: إعادة الإصدار التي يسبقها إصدارٌ آخر �
         ->and(Certificate::query()->whereNull('revoked_at')->count())->toBe(2)
         ->and(AuditLog::query()->whereIn('action', ['certificate.revoked', 'certificate.issued'])->count())->toBe(0);
 });
+
+it('BR-25: إعادة إصدار شهادة سُحبت للتوّ في طلب آخر لا تمحو وقت السحب الأول ولا تكتب سطر سحب ثانٍ', function (): void {
+    $original = issueCertificateFor($this->holder, $this->cohort, ['revoked_at' => null]);
+    $revokedAt = riyadhAt('2026-11-20 08:59:00');
+
+    // Another tab revokes it after this request has looked at it as live.
+    raceOnLiveLookup(function () use ($original, $revokedAt): void {
+        Certificate::query()->whereKey($original->id)->update(['revoked_at' => $revokedAt]);
+    });
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.reissue', $original))
+        ->assertSessionHasNoErrors();
+
+    expect($original->fresh()->revoked_at->equalTo($revokedAt))->toBeTrue()
+        ->and(AuditLog::query()->where('action', 'certificate.revoked')->count())->toBe(0)
+        ->and(Certificate::query()->whereNull('revoked_at')->count())->toBe(1)
+        ->and(Certificate::query()->count())->toBe(2);
+});
+
+it('BR-26: «إصدار الشهادة» لشخص أُصدرت له شهادة بين الفحص والكتابة يُرفض ولا يقول «تم»', function (): void {
+    raceOnLiveLookup(function (): void {
+        issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9004', 'verify_code' => str_repeat('f', 40)]);
+    });
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.issue'), [
+        'user_id' => $this->holder->id,
+        'cohort_id' => $this->cohort->id,
+        'override' => true,
+        'override_reason' => 'The cohort director approved this in writing.',
+    ])->assertSessionHasErrors('user_id')->assertSessionMissing('status');
+
+    expect(Certificate::query()->whereNull('revoked_at')->count())->toBe(1)
+        ->and(AuditLog::query()->whereIn('action', ['certificate.issued', 'certificate.overridden'])->count())->toBe(0);
+});
+
+it('BR-26: الإصدار الجماعي لا يعدّ من سبقه إصدارٌ آخر بين الفحص والكتابة — «لم تُصدَر شهادة جديدة»', function (): void {
+    // Nobody needs to qualify for this case: the cohort asks for nothing.
+    $this->cohort->update(['pass_score' => 0, 'min_attendance_rate' => 0]);
+
+    raceOnLiveLookup(function (): void {
+        issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9005', 'verify_code' => str_repeat('g', 40)]);
+    });
+
+    $this->actingAs($this->admin)->post(route('admin.certificates.issueBulk'), [
+        'cohort_id' => $this->cohort->id,
+        'user_id' => [$this->holder->id],
+    ])->assertSessionHas('status', __('certificates.bulk_none'));
+
+    expect(Certificate::query()->whereNull('revoked_at')->count())->toBe(1)
+        ->and(AuditLog::query()->where('action', 'certificate.issued')->count())->toBe(0);
+});
+
+it('BR-25: عدّاد الشهادات في ملف التقارير يعدّ السارية وحدها — مسحوبة وبديلها شهادة واحدة لا اثنتان', function (): void {
+    issueCertificateFor($this->holder, $this->cohort, ['revoked_at' => riyadhAt('2026-11-10 09:00:00')]);
+    issueCertificateFor($this->holder, $this->cohort, ['serial_number' => 'ATHAR-AI101-2026-9006', 'verify_code' => str_repeat('h', 40)]);
+
+    $csv = $this->actingAs($this->admin)->get(route('admin.reports.export'))->assertOk()->getContent();
+    $rows = array_map('str_getcsv', array_filter(explode("\n", (string) $csv)));
+    $header = array_shift($rows);
+    $column = array_search(__('admin.reports.export.certificates'), array_map(static fn ($h): string => ltrim((string) $h, "\xEF\xBB\xBF"), $header), true);
+
+    expect($column)->not->toBeFalse();
+
+    $name = $this->cohort->name;
+    $mine = collect($rows)->first(static fn (array $row): bool => ($row[1] ?? null) === $name);
+
+    expect($mine)->not->toBeNull()
+        ->and($mine[$column])->toBe('1');
+});

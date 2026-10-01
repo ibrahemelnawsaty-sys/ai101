@@ -894,7 +894,6 @@ return [
         'defaults_note' => 'Every notification type is on by default, in the platform and by e-mail, and each user changes their own preferences from their notification settings. Anything about an enrolment decision, a certificate or an attendance excuse always arrives and cannot be turned off.',
         'default_on' => 'On by default',
         'always_on' => 'Always sent',
-        'saved' => 'The settings were saved.',
     ],
 
     'states' => [

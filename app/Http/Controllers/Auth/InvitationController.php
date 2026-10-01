@@ -58,6 +58,12 @@ final class InvitationController extends Controller
         // Resolved on arrival, so a dead link opens the screen that says so
         // rather than a form that fails only after everything has been typed.
         $user = $this->findUsableToken($token, EmailTokenType::Invite)?->user;
+
+        // A suspended account's link shows the same page as a spent one (BR-28).
+        if ($user instanceof User && $user->status !== UserStatus::Active) {
+            $user = null;
+        }
+
         $profile = $user instanceof User
             ? Profile::query()->where('user_id', $user->getKey())->first()
             : null;
@@ -104,7 +110,8 @@ final class InvitationController extends Controller
             }
 
             $user->setAttribute('password_hash', (string) $request->validated('password'));
-            $user->setAttribute('status', UserStatus::Active->value);
+            // The status is NOT touched: only an active account gets here (invitee()), and an
+            // administrator's suspension is theirs to lift, not the link's (BR-28).
             // The link reached the address, so the address is proven — the same
             // reasoning as an activation link, and what lets them sign in.
             $user->setAttribute('email_verified_at', $at);

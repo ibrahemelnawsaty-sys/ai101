@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Enums\UserRole;
 use App\Models\Cohort;
 use App\Services\Credentials\AccountInviter;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -31,13 +32,17 @@ use Illuminate\Support\Facades\Log;
  * accounts and two letters for one person. `AccountInviter` already refuses to
  * seat somebody twice; this refuses to create them twice.
  *
+ * ENCRYPTED ON THE QUEUE. The payload is a person's name, address and mobile number — two hundred
+ * of them per upload — and would sit in cleartext in `jobs.payload` (and in `failed_jobs` for
+ * fourteen days), unlike the letter it leads to, which is already encrypted (D-152).
+ *
  * PRIMITIVES ONLY. A queued job carrying an Eloquent model re-fetches it when
  * it runs and throws if the row has moved on — and this one may run minutes
  * after it was pushed.
  *
  * @see PRD §4.2 · CONSTITUTION Art. 10 · D-63
  */
-final class InviteImportedParticipant implements ShouldQueue
+final class InviteImportedParticipant implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 

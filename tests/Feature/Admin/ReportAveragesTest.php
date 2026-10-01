@@ -195,3 +195,45 @@ it('art. 19: استعلامات التقارير ولوحة المشرف لا ت
     expect($queries('admin.reports.index'))->toBe($reportsBefore)
         ->and($queries('admin.dashboard'))->toBe($dashboardBefore);
 });
+
+it('D-150: خدمة المتوسطات بلا دفعات تعطي فراغًا ومتوسطًا عامًّا بلا قياس', function (): void {
+    expect(app(CohortAverages::class)->of([]))->toBe([
+        'cohorts' => [],
+        'overall' => ['attendance' => null, 'score' => null],
+    ]);
+});
+
+it('D-150: المتوسط العام للدرجة كذلك يجمع الأشخاص — لا متوسط متوسطي دفعتين', function (): void {
+    $small = makeCohort(['status' => 'running', 'name' => 'Cohort Small Marks']);
+    $only = makeParticipant($small);
+    gradeAssignment($small, $only, 50, 50);
+    makeEvaluation('final_project', makeProjectSubmission(makeFinalProject($small), $only)->id, $only, 50);
+
+    $averages = averagesOf($this, [$this->cohort, $small]);
+
+    // 50 and 0 in the first cohort, 100 in the second: (50 + 0 + 100) / 3, not (25 + 100) / 2.
+    expect($averages['overall']['score'])->toBe(50.0)
+        ->and($averages['cohorts'][$small->id]['score'])->toBe(100.0);
+});
+
+it('D-150: ملخّص التقارير ولوحة المشرف يجمعان كل الدفعات لا الأولى ولا متوسطات المتوسطات', function (): void {
+    $small = makeCohort(['status' => 'running', 'name' => 'Cohort Small Summary']);
+    $only = makeParticipant($small);
+
+    foreach ([5, 12, 19, 26] as $day) {
+        $start = riyadhAt('2026-10-'.str_pad((string) $day, 2, '0', STR_PAD_LEFT).' 18:00:00');
+        makeAttendance(sessionInCohort($small, $start, $start->addHours(3)), $only, 'present');
+    }
+
+    gradeAssignment($small, $only, 50, 50);
+    makeEvaluation('final_project', makeProjectSubmission(makeFinalProject($small), $only)->id, $only, 50);
+
+    $reports = $this->actingAs($this->admin)->get(route('admin.reports.index'))->assertOk();
+    $dash = $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertOk()->getContent();
+
+    // Three people: attendance (75 + 25 + 100) / 3 = 66.7 → 67%, marks (50 + 0 + 100) / 3 = 50.
+    expect($reports->viewData('summary')->averageAttendanceLabel)->toBe('67%')
+        ->and($reports->viewData('summary')->averageScoreLabel)->toBe('50 / 100')
+        ->and($dash)->toContain('67%')
+        ->and($dash)->toContain('50 / 100');
+});
