@@ -30,6 +30,20 @@
       "gender": "male"
     },
     {
+      "role": "coordinator",
+      "local_part": "coordinator",
+      "phone": "0590000005",
+      "first_name_ar": "منسق",
+      "second_name_ar": "عبدالله",
+      "third_name_ar": "سعد",
+      "last_name_ar": "الدفعة",
+      "first_name_en": "Cohort",
+      "second_name_en": "Abdullah",
+      "third_name_en": "Saad",
+      "last_name_en": "Coordinator",
+      "gender": "male"
+    },
+    {
       "role": "trainer",
       "local_part": "trainer",
       "phone": "0590000002",

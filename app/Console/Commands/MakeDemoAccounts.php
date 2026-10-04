@@ -29,8 +29,9 @@ use Illuminate\Support\Str;
 
 /**
  * Provision the accounts a reviewer needs to walk the platform: a system
- * administrator, a general supervisor, a trainer and an enrolled participant
- * (D-117 split the one administrator into the first two).
+ * administrator, a general supervisor, a coordinator, a trainer and an enrolled
+ * participant (D-117 split the one administrator into the first two; D-105 added
+ * the coordinator).
  *
  * `athar:make-user` creates a single admin or trainer, and refuses the
  * participant role (D-69): a trainee needs an enrolment in a cohort and journey
@@ -68,7 +69,7 @@ final class MakeDemoAccounts extends Command
         {--domain=athar-demo.test : Address domain for the created accounts}';
 
     /** @var string */
-    protected $description = 'Create a system administrator, a general supervisor, a trainer and an enrolled participant for walking the platform.';
+    protected $description = 'Create a system administrator, a general supervisor, a coordinator, a trainer and an enrolled participant for walking the platform.';
 
     public function handle(JourneyEvaluator $journey, RoleResolver $roles, AuditLogger $audit): int
     {
@@ -600,9 +601,11 @@ final class MakeDemoAccounts extends Command
             return;
         }
 
-        $roleInCohort = $role === UserRole::Trainer
-            ? EnrollmentRole::Trainer
-            : EnrollmentRole::Participant;
+        $roleInCohort = match ($role) {
+            UserRole::Trainer => EnrollmentRole::Trainer,
+            UserRole::Coordinator => EnrollmentRole::Coordinator,
+            default => EnrollmentRole::Participant,
+        };
 
         $already = Enrollment::query()
             ->where('cohort_id', $cohort->getKey())

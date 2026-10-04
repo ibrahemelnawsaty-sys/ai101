@@ -107,3 +107,14 @@ it('D-117: خطوتا ما بعد النشر — حساب admin@ القائم ي
     expect($live->fresh()->role->value)->toBe('system_admin')
         ->and(App\Models\AuditLog::query()->where('action', 'user.role_changed')->where('entity_id', $live->id)->count())->toBe(1);
 });
+
+it('D-105: المنسّق التجريبي يُنشأ بدور منسّق ويلتحق بالدفعة منسّقًا', function (): void {
+    makeCohort(['status' => 'open', 'capacity' => 60]);
+
+    $this->artisan('athar:demo-accounts', ['--password' => 'Demo-Passw0rd!'])->assertSuccessful();
+
+    $coordinator = User::query()->where('email', 'coordinator@athar-demo.test')->sole();
+
+    expect($coordinator->role->value)->toBe('coordinator')
+        ->and(App\Models\Enrollment::query()->where('user_id', $coordinator->id)->sole()->role_in_cohort->value)->toBe('coordinator');
+});
