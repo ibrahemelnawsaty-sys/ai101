@@ -65,6 +65,14 @@ rsync -a --delete "$APP/public/images/" "$WEB/images/" 2>/dev/null || true
 cp "$APP/public/favicon.ico" "$WEB/" 2>/dev/null || true
 cp "$APP/public/robots.txt"  "$WEB/" 2>/dev/null || true
 
+# upload_max_filesize/post_max_size are PHP_INI_PERDIR — git pull alone never
+# raises them, and they live only here, not in $WEB, under the Option B shim.
+# Missing this copy is exactly how every participant lost the ability to
+# upload a final-project file or hand it in: PHP enforced the host's small
+# defaults and discarded the request before Laravel ever saw it (deploy/README.md
+# §2.4; D-121, D-124).
+cp "$APP/public/.user.ini" "$WEB/.user.ini"
+
 # Compiled Blade holds the OLD markup until it is cleared, so a template change
 # — a removed attribute, a renamed variable — keeps behaving the old way.
 php artisan optimize:clear

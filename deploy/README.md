@@ -155,6 +155,23 @@ Target: 150–400 ms. Above ~800 ms, record the measurement in `D-06` and escala
 
 ### 2.4 PHP limits
 
+`upload_max_filesize`, `post_max_size` and `max_file_uploads` are `PHP_INI_PERDIR` —
+Laravel cannot raise them at runtime, and `.htaccess`'s `php_value` does nothing
+under the php-fpm/CGI SAPI Hostinger actually runs (that only works with `mod_php`).
+**`public/.user.ini` now ships these in the repository** — the SAPI reads a
+`.user.ini` per directory with no hPanel step and no root — so `git pull` (Option
+A) or `deploy/update.sh` (Option B, which copies it to `$WEB` on every run) keeps
+the live ceiling in step with `config/athar.php` on its own.
+
+This is NOT a reason to skip hPanel: it found the account's host limits stuck at
+their small defaults once already (D-121, D-124's "تحتاج تأكيدًا" item 2 — `post_max_size`
+was logged as an unconfirmed assumption and never verified live, and every
+participant's final-project hand-in silently lost its files to PHP before Laravel
+ever ran, until `.user.ini` closed the gap). Set hPanel too, as the second,
+independent layer, and re-check both after any PHP version switch — Hostinger
+resets a version's PHP options on a change, but a `.user.ini` tracked in git
+survives it:
+
 hPanel → **PHP Configuration → PHP options**. Set at least:
 
 | Option | Value | Why |
@@ -167,6 +184,17 @@ hPanel → **PHP Configuration → PHP options**. Set at least:
 | `max_input_vars` | `3000` | Large admin forms |
 | `display_errors` | `Off` | Never leak stack traces |
 | `opcache.enable` | `On` | Required for acceptable response times on shared CPU |
+
+Verify what the live SAPI actually sees — not what a panel says it is set to —
+with a throwaway script (delete it immediately after reading it, §1.4's rule
+for every diagnostic file placed in the web root):
+
+```php
+<?php // $WEB/_ini_check.php — DELETE AFTER READING
+foreach (['upload_max_filesize', 'post_max_size', 'max_file_uploads', 'memory_limit'] as $k) {
+    echo "$k = " . ini_get($k) . "\n";
+}
+```
 
 CLI runs (cron, queue) are **not** bound by `max_execution_time` in the same way; the queue worker is bounded
 explicitly by `--max-time=55` instead (see `deploy/cron.md`).
@@ -324,6 +352,7 @@ $HOME/
 └── public_html/                # $WEB — served over HTTP
     ├── index.php               # either Laravel's own, or deploy/public_html-index.php
     ├── .htaccess               # from deploy/.htaccess
+    ├── .user.ini               # from public/.user.ini (§2.4) — dotfile-blocked by .htaccess, not public
     ├── build/                  # Vite build output
     ├── favicon.ico  robots.txt
     └── (fonts, images, brand assets)
@@ -614,7 +643,8 @@ Then copy the hardened rules into that directory:
 cp "$HOME/athar-app/deploy/.htaccess" "$HOME/athar-app/public/.htaccess"
 ```
 
-Laravel's own `public/index.php` is used unchanged. Nothing else is required. This is the cleanest
+Laravel's own `public/index.php` is used unchanged, and `public/.user.ini` (§2.4) is
+already inside the document root — nothing to copy for it. This is the cleanest
 arrangement: one copy of the assets, no path rewriting, no drift between two directories.
 
 Caveat: some Hostinger plans do not expose a document-root field for the primary domain. If yours does not,
@@ -639,6 +669,12 @@ cp "$HOME/athar-app/public/robots.txt"   "$WEB/" 2>/dev/null || true
 rsync -a --delete "$HOME/athar-app/public/fonts/"  "$WEB/fonts/"  2>/dev/null || true
 rsync -a --delete "$HOME/athar-app/public/brand/"  "$WEB/brand/"  2>/dev/null || true
 rsync -a --delete "$HOME/athar-app/public/images/" "$WEB/images/" 2>/dev/null || true
+
+# 3-bis. The PHP upload limits (§2.4). NOT optional and NOT covered by step 3's
+# "forgetting it" warning about stale CSS — forgetting THIS one silently caps
+# every upload at whatever the host's default was, which is how final-project
+# hand-ins broke for every participant before this file existed (D-121, D-124).
+cp "$HOME/athar-app/public/.user.ini" "$WEB/.user.ini"
 
 # 4. Remove anything the host pre-installed in the web root
 rm -f "$WEB/default.php" "$WEB/index.html" "$WEB/hostinger-*.html"
@@ -854,6 +890,7 @@ restore code only, keep the platform in maintenance mode, and escalate.
 | `deploy/cron-setup.txt` | The exact lines to paste into hPanel |
 | `deploy/public_html-index.php` | The Option B shim |
 | `deploy/.htaccess` | HTTPS force, security headers, dotfile blocking, Laravel rewrites |
+| `public/.user.ini` | Per-directory PHP upload limits (§2.4) — the actual fix for "participants can't upload / can't submit the final project"; `deploy/update.sh` copies it to `$WEB` on every deploy |
 | `deploy/backup.md` | Daily DB backup (30 days), weekly file backup, quarterly restore drill |
 | `deploy/backup-db.sh` · `deploy/backup-files.sh` | The backup scripts referenced by cron |
 | `docs/03-decisions/DECISIONS.md` | `D-01` … `D-09` plus `D-24` (hostname), all `مفتوح` and all relevant to this file |

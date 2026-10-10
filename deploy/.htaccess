@@ -177,11 +177,16 @@ RedirectMatch 404 (?i)^/(app|bootstrap|config|database|lang|resources|routes|tes
 # 5. Request body ceiling
 # -----------------------------------------------------------------------------
 # PRD section 12.5: a server-level cap on request size, independent of PHP's
-# post_max_size. 30 MB = 25 MB file + form overhead.
+# post_max_size. Set ABOVE post_max_size (32 MB, public/.user.ini), never
+# below it: Apache enforces this one before the request reaches PHP at all,
+# so a value under post_max_size means Apache's own error page answers every
+# large-but-legitimate hand-in instead of Laravel's Arabic 413 screen
+# (resources/views/errors/413.blade.php), which only ever gets a chance to
+# run once PHP does. 35 MB clears post_max_size's 32 MB with room to spare.
 # If the host returns 500 on every request after adding this, the plan does not
 # allow AllowOverride Limit - comment it out and rely on post_max_size alone.
 
-LimitRequestBody 31457280
+LimitRequestBody 36700160
 
 
 # -----------------------------------------------------------------------------
